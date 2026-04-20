@@ -180,8 +180,8 @@ function App() {
         <h1>Max Idle</h1>
         <p className="status">{status}</p>
 
-        <p className="label">Live idle time</p>
-        <p className="counter">{liveIdleSeconds.toLocaleString()}s</p>
+        <p className="label">Current idle time</p>
+        <p className="counter">{uncollectedIdleSeconds.toLocaleString()}s</p>
 
         <div className="stats">
           <p>
@@ -189,9 +189,6 @@ function App() {
           </p>
           <p>
             <span>Spendable:</span> {playerState?.collectedIdleSeconds.toLocaleString() ?? 0}s
-          </p>
-          <p>
-            <span>Uncollected right now:</span> {uncollectedIdleSeconds.toLocaleString()}s
           </p>
         </div>
 
