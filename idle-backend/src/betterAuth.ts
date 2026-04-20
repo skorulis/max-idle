@@ -4,6 +4,7 @@ import { fromNodeHeaders } from "better-auth/node";
 import type { Request } from "express";
 import type { PoolClient, Pool } from "pg";
 import type { AppConfig } from "./types.js";
+import { generateAnonymousUsername, isUsernameTakenError } from "./username.js";
 
 function buildSocialProviders(config: AppConfig) {
   const providers: Record<string, { clientId: string; clientSecret: string }> = {};
@@ -58,15 +59,27 @@ export async function ensureGameIdentityForAuthUser(
   }
 
   const gameUserId = randomUUID();
-  await db.query("BEGIN");
-  try {
-    await db.query(`INSERT INTO users (id, is_anonymous, email) VALUES ($1, FALSE, $2)`, [gameUserId, userEmail]);
-    await db.query(`INSERT INTO player_states (user_id) VALUES ($1)`, [gameUserId]);
-    await db.query(`INSERT INTO auth_identities (auth_user_id, game_user_id) VALUES ($1, $2)`, [authUserId, gameUserId]);
-    await db.query("COMMIT");
-    return gameUserId;
-  } catch (error) {
-    await db.query("ROLLBACK");
-    throw error;
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    await db.query("BEGIN");
+    try {
+      const generatedUsername = generateAnonymousUsername();
+      await db.query(`INSERT INTO users (id, is_anonymous, username, email) VALUES ($1, FALSE, $2, $3)`, [
+        gameUserId,
+        generatedUsername,
+        userEmail
+      ]);
+      await db.query(`INSERT INTO player_states (user_id) VALUES ($1)`, [gameUserId]);
+      await db.query(`INSERT INTO auth_identities (auth_user_id, game_user_id) VALUES ($1, $2)`, [authUserId, gameUserId]);
+      await db.query("COMMIT");
+      return gameUserId;
+    } catch (error) {
+      await db.query("ROLLBACK");
+      if (isUsernameTakenError(error)) {
+        continue;
+      }
+      throw error;
+    }
   }
+
+  throw new Error("USERNAME_GENERATION_FAILED");
 }

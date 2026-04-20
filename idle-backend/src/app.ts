@@ -12,6 +12,7 @@ import {
 } from "./betterAuth.js";
 import { calculateElapsedSeconds } from "./time.js";
 import type { AppConfig, AuthClaims } from "./types.js";
+import { generateAnonymousUsername, isUsernameTakenError, isValidUsername } from "./username.js";
 
 function toNumber(value: unknown): number {
   if (typeof value === "number") {
@@ -32,8 +33,7 @@ type BetterAuthSession = {
   };
   user: {
     id: string;
-    email: string;
-    name: string;
+    email: string | null;
   };
 } | null;
 
@@ -146,10 +146,31 @@ export function createApp(pool: Pool, config: AppConfig) {
     const client = await pool.connect();
     try {
       const userId = randomUUID();
-      await client.query("BEGIN");
-      await client.query(`INSERT INTO users (id, is_anonymous) VALUES ($1, TRUE)`, [userId]);
-      await client.query(`INSERT INTO player_states (user_id) VALUES ($1)`, [userId]);
-      await client.query("COMMIT");
+      let created = false;
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        await client.query("BEGIN");
+        try {
+          const generatedUsername = generateAnonymousUsername();
+          await client.query(`INSERT INTO users (id, is_anonymous, username) VALUES ($1, TRUE, $2)`, [
+            userId,
+            generatedUsername
+          ]);
+          await client.query(`INSERT INTO player_states (user_id) VALUES ($1)`, [userId]);
+          await client.query("COMMIT");
+          created = true;
+          break;
+        } catch (error) {
+          await client.query("ROLLBACK");
+          if (isUsernameTakenError(error)) {
+            continue;
+          }
+          throw error;
+        }
+      }
+
+      if (!created) {
+        throw new Error("USERNAME_GENERATION_FAILED");
+      }
 
       const token = signAnonymousToken(userId, config.jwtSecret);
       res.status(201).json({ userId, token });
@@ -245,18 +266,25 @@ export function createApp(pool: Pool, config: AppConfig) {
     try {
       const session = await getSession(auth, req);
       if (session?.user.id) {
-        const result = await pool.query<{ game_user_id: string }>(
-          `SELECT game_user_id FROM auth_identities WHERE auth_user_id = $1`,
-          [session.user.id]
-        );
+        const client = await pool.connect();
+        try {
+          const gameUserId = await ensureGameIdentityForAuthUser(client, session.user.id, session.user.email);
+          const result = await client.query<{ email: string | null; username: string }>(
+            `SELECT email, username FROM users WHERE id = $1`,
+            [gameUserId]
+          );
+          const userRow = result.rows[0];
 
-        res.json({
-          isAnonymous: false,
-          email: session.user.email,
-          name: session.user.name,
-          gameUserId: result.rows[0]?.game_user_id ?? null,
-          socialProviders: socialConfig
-        });
+          res.json({
+            isAnonymous: false,
+            email: userRow?.email ?? session.user.email,
+            username: userRow?.username ?? null,
+            gameUserId,
+            socialProviders: socialConfig
+          });
+        } finally {
+          client.release();
+        }
         return;
       }
 
@@ -267,11 +295,14 @@ export function createApp(pool: Pool, config: AppConfig) {
       }
 
       const claims = verifyToken(token, config.jwtSecret);
-      const userResult = await pool.query<{ email: string | null }>(`SELECT email FROM users WHERE id = $1`, [claims.sub]);
+      const userResult = await pool.query<{ email: string | null; username: string | null }>(
+        `SELECT email, username FROM users WHERE id = $1`,
+        [claims.sub]
+      );
       res.json({
         isAnonymous: true,
         email: userResult.rows[0]?.email ?? null,
-        name: null,
+        username: userResult.rows[0]?.username ?? null,
         gameUserId: claims.sub,
         canUpgrade: true,
         socialProviders: socialConfig
@@ -344,6 +375,50 @@ export function createApp(pool: Pool, config: AppConfig) {
       }
 
       await relayAuthResponse(authResponse, res);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/account/username", async (req, res, next) => {
+    try {
+      const identity = await resolveIdentity(auth, pool, config.jwtSecret, req);
+      if (identity.claims.isAnonymous) {
+        res.status(400).json({ error: "Anonymous usernames cannot be changed" });
+        return;
+      }
+
+      const username = String(req.body?.username ?? "").trim();
+      if (!isValidUsername(username)) {
+        res.status(400).json({
+          error: "Username must be 3-32 chars using letters, numbers, or underscores"
+        });
+        return;
+      }
+
+      try {
+        const updateResult = await pool.query<{ username: string }>(
+          `UPDATE users SET username = $2 WHERE id = $1 RETURNING username`,
+          [identity.claims.sub, username]
+        );
+
+        if (!updateResult.rows[0]) {
+          res.status(404).json({ error: "User not found" });
+          return;
+        }
+
+        res.json({ username: updateResult.rows[0].username });
+      } catch (error) {
+        const pgError = error as { code?: string };
+        if (pgError.code === "23505") {
+          res.status(409).json({
+            error: "Username is already taken",
+            code: "USERNAME_TAKEN"
+          });
+          return;
+        }
+        throw error;
+      }
     } catch (error) {
       next(error);
     }

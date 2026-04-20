@@ -82,3 +82,4 @@ npm test
 ```bash
 docker compose down
 ```
+Use -v to delete the data

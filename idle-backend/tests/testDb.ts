@@ -13,6 +13,7 @@ export async function createTestPool(): Promise<Pool> {
 
   const schemaSql = readFileSync(resolve(process.cwd(), "sql/001_init.sql"), "utf-8");
   const authIdentitySql = readFileSync(resolve(process.cwd(), "sql/002_auth_identity.sql"), "utf-8");
+  const usernameSql = readFileSync(resolve(process.cwd(), "sql/003_username.sql"), "utf-8");
   const betterAuthSql = `
     CREATE TABLE IF NOT EXISTS "user" (
       id TEXT PRIMARY KEY,
@@ -63,6 +64,7 @@ export async function createTestPool(): Promise<Pool> {
   `;
   await pool.query(schemaSql);
   await pool.query(authIdentitySql);
+  await pool.query(usernameSql);
   await pool.query(betterAuthSql);
   return pool;
 }

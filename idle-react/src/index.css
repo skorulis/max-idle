@@ -193,3 +193,9 @@ input {
   color: #b91c1c;
   font-size: 14px;
 }
+
+.success {
+  margin-top: 12px;
+  color: #15803d;
+  font-size: 14px;
+}

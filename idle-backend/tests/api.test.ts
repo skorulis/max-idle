@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { Pool } from "pg";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -19,6 +20,10 @@ describe("auth + player lifecycle", () => {
     appleClientSecret: undefined
   };
   let pool: Pool;
+
+  function uniqueEmail(): string {
+    return `${randomUUID()}@example.com`;
+  }
 
   beforeAll(async () => {
     pool = await createTestPool();
@@ -76,13 +81,15 @@ describe("auth + player lifecycle", () => {
     expect(accountResponse.status).toBe(200);
     expect(accountResponse.body.isAnonymous).toBe(true);
     expect(accountResponse.body.canUpgrade).toBe(true);
+    expect(accountResponse.body.username).toMatch(/^anonymous/);
   });
 
   it("registers and logs in with cookie sessions", async () => {
     const app = createApp(pool, config);
+    const email = uniqueEmail();
     const registerResponse = await request(app).post("/auth/register").send({
       name: "Test User",
-      email: "test@example.com",
+      email,
       password: "password1234"
     });
     expect(registerResponse.status).toBe(200);
@@ -90,15 +97,80 @@ describe("auth + player lifecycle", () => {
     const accountResponse = await request(app).get("/account").set("Cookie", registerResponse.headers["set-cookie"] ?? []);
     expect(accountResponse.status).toBe(200);
     expect(accountResponse.body.isAnonymous).toBe(false);
-    expect(accountResponse.body.email).toBe("test@example.com");
+    expect(accountResponse.body.email).toBe(email);
+    expect(accountResponse.body.username).toMatch(/^anonymous/);
 
     const loginResponse = await request(app).post("/auth/login").send({
-      email: "test@example.com",
+      email,
       password: "password1234"
     });
     expect(loginResponse.status).toBe(200);
 
     const playerResponse = await request(app).get("/player").set("Cookie", loginResponse.headers["set-cookie"] ?? []);
     expect(playerResponse.status).toBe(200);
+  });
+
+  it("updates username for registered users", async () => {
+    const app = createApp(pool, config);
+    const email = uniqueEmail();
+    const registerResponse = await request(app).post("/auth/register").send({
+      name: "Registered User",
+      email,
+      password: "password1234"
+    });
+    expect(registerResponse.status).toBe(200);
+
+    const cookies = registerResponse.headers["set-cookie"] ?? [];
+    const updateResponse = await request(app).post("/account/username").set("Cookie", cookies).send({
+      username: "NewUsername123"
+    });
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.body.username).toBe("NewUsername123");
+
+    const accountResponse = await request(app).get("/account").set("Cookie", cookies);
+    expect(accountResponse.status).toBe(200);
+    expect(accountResponse.body.username).toBe("NewUsername123");
+  });
+
+  it("rejects username updates for anonymous users", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+
+    const updateResponse = await request(app).post("/account/username").set("Authorization", `Bearer ${token}`).send({
+      username: "CantChangeMe"
+    });
+
+    expect(updateResponse.status).toBe(400);
+  });
+
+  it("returns conflict when username is already taken", async () => {
+    const app = createApp(pool, config);
+    const firstRegister = await request(app).post("/auth/register").send({
+      name: "First User",
+      email: uniqueEmail(),
+      password: "password1234"
+    });
+    const secondRegister = await request(app).post("/auth/register").send({
+      name: "Second User",
+      email: uniqueEmail(),
+      password: "password1234"
+    });
+    expect(firstRegister.status).toBe(200);
+    expect(secondRegister.status).toBe(200);
+
+    const firstCookies = firstRegister.headers["set-cookie"] ?? [];
+    const secondCookies = secondRegister.headers["set-cookie"] ?? [];
+
+    const firstUpdate = await request(app).post("/account/username").set("Cookie", firstCookies).send({
+      username: "SharedUsername"
+    });
+    expect(firstUpdate.status).toBe(200);
+
+    const secondUpdate = await request(app).post("/account/username").set("Cookie", secondCookies).send({
+      username: "sharedusername"
+    });
+    expect(secondUpdate.status).toBe(409);
+    expect(secondUpdate.body.code).toBe("USERNAME_TAKEN");
   });
 });

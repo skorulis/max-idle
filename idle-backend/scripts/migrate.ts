@@ -13,9 +13,11 @@ async function run(): Promise<void> {
   try {
     const baseSql = await readFile(resolve(process.cwd(), "sql/001_init.sql"), "utf-8");
     const authIdentitySql = await readFile(resolve(process.cwd(), "sql/002_auth_identity.sql"), "utf-8");
+    const usernameSql = await readFile(resolve(process.cwd(), "sql/003_username.sql"), "utf-8");
     await pool.query(baseSql);
     await pool.query(authIdentitySql);
-    console.log("Migration completed: 001_init.sql + 002_auth_identity.sql");
+    await pool.query(usernameSql);
+    console.log("Migration completed: 001_init.sql + 002_auth_identity.sql + 003_username.sql");
 
     const auth = createBetterAuth(pool, config);
     const migrations = await getMigrations(auth.options);

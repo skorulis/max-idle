@@ -18,7 +18,7 @@ type PlayerResponse = {
 type AccountResponse = {
   isAnonymous: boolean;
   email: string | null;
-  name: string | null;
+  username: string | null;
   gameUserId: string | null;
   canUpgrade?: boolean;
   socialProviders: {
@@ -150,6 +150,35 @@ async function upgradeAnonymous(token: string, name: string, email: string, pass
   });
 }
 
+async function updateUsername(token: string | null, username: string): Promise<{ username: string }> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json"
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/account/username`, {
+    method: "POST",
+    credentials: "include",
+    headers,
+    body: JSON.stringify({ username })
+  });
+
+  const payload = (await response.json().catch(() => null)) as { error?: string; code?: string } | null;
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error("UNAUTHORIZED");
+    }
+    if (response.status === 409 && payload?.code === "USERNAME_TAKEN") {
+      throw new Error("USERNAME_TAKEN");
+    }
+    throw new Error(payload?.error ?? "Failed to update username");
+  }
+
+  return (payload ?? { username }) as { username: string };
+}
+
 async function logoutSession(): Promise<void> {
   await apiRequest("/auth/logout", { method: "POST" });
 }
@@ -185,6 +214,10 @@ function App() {
   const [starting, setStarting] = useState(false);
   const [collecting, setCollecting] = useState(false);
   const [authPending, setAuthPending] = useState(false);
+  const [usernamePending, setUsernamePending] = useState(false);
+  const [usernameDraft, setUsernameDraft] = useState("");
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [usernameSuccess, setUsernameSuccess] = useState<string | null>(null);
   const [tickMs, setTickMs] = useState(Date.now());
   const [loginForm, setLoginForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const [signupForm, setSignupForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
@@ -199,6 +232,12 @@ function App() {
       window.clearInterval(timer);
     };
   }, []);
+
+  useEffect(() => {
+    setUsernameDraft(account?.username ?? "");
+    setUsernameError(null);
+    setUsernameSuccess(null);
+  }, [account?.username, account?.isAnonymous]);
 
   useEffect(() => {
     const onPopState = () => {
@@ -420,6 +459,42 @@ function App() {
     }
   };
 
+  const onUsernameChange = (value: string) => {
+    setUsernameDraft(value);
+    setUsernameError(null);
+    setUsernameSuccess(null);
+  };
+
+  const onSaveUsername = async () => {
+    if (!account || account.isAnonymous) {
+      return;
+    }
+
+    const nextUsername = usernameDraft.trim();
+    if (!nextUsername || nextUsername === account.username) {
+      return;
+    }
+
+    setUsernamePending(true);
+    setUsernameError(null);
+    setUsernameSuccess(null);
+
+    try {
+      await updateUsername(token, nextUsername);
+      await refreshAccount(token);
+      setUsernameSuccess("Username updated successfully.");
+      setStatus("Username updated.");
+    } catch (usernameUpdateError) {
+      if (usernameUpdateError instanceof Error && usernameUpdateError.message === "USERNAME_TAKEN") {
+        setUsernameError("That username is already taken.");
+      } else {
+        setUsernameError(usernameUpdateError instanceof Error ? usernameUpdateError.message : "Could not update username.");
+      }
+    } finally {
+      setUsernamePending(false);
+    }
+  };
+
   const renderAuthButtons = () => (
     <div className="social">
       <button type="button" className="secondary" disabled>
@@ -558,8 +633,31 @@ function App() {
                   <span>Email:</span> {account.email ?? "Not set"}
                 </p>
                 <p>
-                  <span>Name:</span> {account.name ?? "Not set"}
+                  <span>Username:</span> {account.username ?? "Not set"}
                 </p>
+                <h3>Username</h3>
+                <input
+                  type="text"
+                  placeholder="Username"
+                  value={usernameDraft}
+                  onChange={(event) => onUsernameChange(event.target.value)}
+                  disabled={account.isAnonymous || usernamePending}
+                />
+                {account.isAnonymous ? (
+                  <p className="subtle">Anonymous users cannot change username.</p>
+                ) : (
+                  <button
+                    className="collect"
+                    onClick={onSaveUsername}
+                    disabled={
+                      usernamePending || authPending || usernameDraft.trim().length === 0 || usernameDraft.trim() === account.username
+                    }
+                  >
+                    {usernamePending ? "Saving..." : "Save username"}
+                  </button>
+                )}
+                {usernameError ? <p className="error">{usernameError}</p> : null}
+                {usernameSuccess ? <p className="success">{usernameSuccess}</p> : null}
                 {account.isAnonymous ? (
                   <>
                     <h3>Upgrade to registered account</h3>
