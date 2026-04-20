@@ -199,3 +199,29 @@ input {
   color: #15803d;
   font-size: 14px;
 }
+
+.leaderboard-list {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: 70px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.leaderboard-row p {
+  margin: 0;
+}
+
+.leaderboard-row-current {
+  border-color: #2563eb;
+  background: #eff6ff;
+}

@@ -424,6 +424,98 @@ export function createApp(pool: Pool, config: AppConfig) {
     }
   });
 
+  app.get("/leaderboard", async (req, res, next) => {
+    try {
+      let identity: { claims: AuthClaims; session: BetterAuthSession };
+      try {
+        identity = await resolveIdentity(auth, pool, config.jwtSecret, req);
+      } catch (error) {
+        if (error instanceof Error && error.message === "MISSING_IDENTITY") {
+          res.status(401).json({ error: "Authentication required" });
+          return;
+        }
+        throw error;
+      }
+
+      const leaderboardResult = await pool.query<{
+        user_id: string;
+        username: string;
+        total_idle_seconds: string;
+      }>(
+        `
+        SELECT
+          ps.user_id,
+          u.username,
+          ps.total_idle_seconds
+        FROM player_states ps
+        INNER JOIN users u ON u.id = ps.user_id
+        ORDER BY ps.total_idle_seconds DESC
+        LIMIT 200
+        `
+      );
+
+      const currentPlayerResult = await pool.query<{
+        user_id: string;
+        total_idle_seconds: string;
+      }>(
+        `
+        SELECT
+          ps.user_id,
+          ps.total_idle_seconds
+        FROM player_states ps
+        WHERE ps.user_id = $1
+        `,
+        [identity.claims.sub]
+      );
+
+      const currentPlayerRow = currentPlayerResult.rows[0];
+      if (!currentPlayerRow) {
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+
+      const higherRankCountResult = await pool.query<{ higher_count: string }>(
+        `SELECT COUNT(*) AS higher_count FROM player_states WHERE total_idle_seconds > $1`,
+        [currentPlayerRow.total_idle_seconds]
+      );
+      const currentPlayerRank = toNumber(higherRankCountResult.rows[0]?.higher_count ?? 0) + 1;
+
+      let previousTotalIdleSeconds: number | null = null;
+      let previousRank = 0;
+      const entries = leaderboardResult.rows.map((row) => ({
+        userId: row.user_id,
+        username: row.username,
+        totalIdleSeconds: toNumber(row.total_idle_seconds)
+      }));
+
+      const rankedEntries = entries.map((entry, index) => {
+        const rank =
+          previousTotalIdleSeconds !== null && entry.totalIdleSeconds === previousTotalIdleSeconds
+            ? previousRank
+            : index + 1;
+        previousTotalIdleSeconds = entry.totalIdleSeconds;
+        previousRank = rank;
+        return {
+          ...entry,
+          rank,
+          isCurrentPlayer: entry.userId === identity.claims.sub
+        };
+      });
+
+      res.json({
+        entries: rankedEntries,
+        currentPlayer: {
+          userId: currentPlayerRow.user_id,
+          rank: currentPlayerRank,
+          totalIdleSeconds: toNumber(currentPlayerRow.total_idle_seconds),
+          inTop: rankedEntries.some((entry) => entry.isCurrentPlayer)
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.get("/player", async (req, res, next) => {
     try {
       const identity = await resolveIdentity(auth, pool, config.jwtSecret, req);

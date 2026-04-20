@@ -15,6 +15,24 @@ type PlayerResponse = {
   serverTime: string;
 };
 
+type LeaderboardEntry = {
+  rank: number;
+  userId: string;
+  username: string;
+  totalIdleSeconds: number;
+  isCurrentPlayer: boolean;
+};
+
+type LeaderboardResponse = {
+  entries: LeaderboardEntry[];
+  currentPlayer: {
+    userId: string;
+    rank: number;
+    totalIdleSeconds: number;
+    inTop: boolean;
+  };
+};
+
 type AccountResponse = {
   isAnonymous: boolean;
   email: string | null;
@@ -35,7 +53,7 @@ type SyncedPlayerState = {
   syncedAtClientMs: number;
 };
 
-type RoutePath = "/" | "/login" | "/account";
+type RoutePath = "/" | "/login" | "/account" | "/leaderboard";
 
 type AuthFormState = {
   email: string;
@@ -123,6 +141,26 @@ async function getAccount(token: string | null): Promise<AccountResponse> {
   return (await response.json()) as AccountResponse;
 }
 
+async function getLeaderboard(token: string | null): Promise<LeaderboardResponse> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/leaderboard`, {
+    credentials: "include",
+    headers
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    throw new Error("Failed to load leaderboard");
+  }
+  return (await response.json()) as LeaderboardResponse;
+}
+
 async function loginWithEmail(email: string, password: string): Promise<void> {
   await apiRequest("/auth/login", {
     method: "POST",
@@ -200,6 +238,9 @@ function readRoute(): RoutePath {
   if (window.location.pathname === "/account") {
     return "/account";
   }
+  if (window.location.pathname === "/leaderboard") {
+    return "/leaderboard";
+  }
   return "/";
 }
 
@@ -208,6 +249,8 @@ function App() {
   const [token, setToken] = useState<string | null>(null);
   const [playerState, setPlayerState] = useState<SyncedPlayerState | null>(null);
   const [account, setAccount] = useState<AccountResponse | null>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardResponse | null>(null);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [status, setStatus] = useState("Press start when you are ready to do nothing.");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -238,6 +281,43 @@ function App() {
     setUsernameError(null);
     setUsernameSuccess(null);
   }, [account?.username, account?.isAnonymous]);
+
+  useEffect(() => {
+    if (route !== "/leaderboard") {
+      return;
+    }
+
+    let cancelled = false;
+    const loadLeaderboard = async () => {
+      setLeaderboardLoading(true);
+      setError(null);
+      try {
+        const nextLeaderboard = await getLeaderboard(token);
+        if (!cancelled) {
+          setLeaderboard(nextLeaderboard);
+        }
+      } catch (leaderboardError) {
+        if (cancelled) {
+          return;
+        }
+        setLeaderboard(null);
+        if (leaderboardError instanceof Error && leaderboardError.message === "UNAUTHORIZED") {
+          setError("Login or start idling to view the leaderboard.");
+          return;
+        }
+        setError(leaderboardError instanceof Error ? leaderboardError.message : "Failed to load leaderboard.");
+      } finally {
+        if (!cancelled) {
+          setLeaderboardLoading(false);
+        }
+      }
+    };
+
+    void loadLeaderboard();
+    return () => {
+      cancelled = true;
+    };
+  }, [route, token, account?.gameUserId]);
 
   useEffect(() => {
     const onPopState = () => {
@@ -453,6 +533,7 @@ function App() {
       setToken(null);
       setPlayerState(null);
       setAccount(null);
+      setLeaderboard(null);
       setStatus("Press start when you are ready to do nothing.");
       setAuthPending(false);
       navigate("/");
@@ -517,6 +598,7 @@ function App() {
   const showGame = route === "/";
   const showLogin = route === "/login";
   const showAccount = route === "/account";
+  const showLeaderboard = route === "/leaderboard";
 
   return (
     <main className="app">
@@ -529,6 +611,9 @@ function App() {
             </button>
             <button type="button" className="link" onClick={() => navigate("/account")}>
               Account
+            </button>
+            <button type="button" className="link" onClick={() => navigate("/leaderboard")}>
+              Leaderboard
             </button>
             {account?.isAnonymous === false || playerState ? (
               <button type="button" className="link" onClick={onLogout} disabled={authPending}>
@@ -690,6 +775,36 @@ function App() {
                 </button>
               </>
             )}
+          </div>
+        ) : null}
+
+        {showLeaderboard ? (
+          <div className="panel">
+            <h2>Leaderboard</h2>
+            {leaderboardLoading ? <p>Loading leaderboard...</p> : null}
+            {!leaderboardLoading && leaderboard ? (
+              <>
+                <div className="leaderboard-list">
+                  {leaderboard.entries.map((entry) => (
+                    <div
+                      key={entry.userId}
+                      className={`leaderboard-row${entry.isCurrentPlayer ? " leaderboard-row-current" : ""}`}
+                    >
+                      <p>#{entry.rank}</p>
+                      <p>{entry.username}</p>
+                      <p>{entry.totalIdleSeconds.toLocaleString()}s</p>
+                    </div>
+                  ))}
+                </div>
+                {!leaderboard.currentPlayer.inTop ? (
+                  <p className="subtle">
+                    Your rank is #{leaderboard.currentPlayer.rank} with{" "}
+                    {leaderboard.currentPlayer.totalIdleSeconds.toLocaleString()}s.
+                  </p>
+                ) : null}
+              </>
+            ) : null}
+            {!leaderboardLoading && !leaderboard && !error ? <p>No leaderboard data available.</p> : null}
           </div>
         ) : null}
 

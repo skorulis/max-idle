@@ -25,6 +25,14 @@ describe("auth + player lifecycle", () => {
     return `${randomUUID()}@example.com`;
   }
 
+  async function insertLeaderboardPlayer(totalIdleSeconds: number): Promise<string> {
+    const userId = randomUUID();
+    const username = `lb_${randomUUID().replace(/-/g, "").slice(0, 12)}`;
+    await pool.query(`INSERT INTO users (id, is_anonymous, username) VALUES ($1, TRUE, $2)`, [userId, username]);
+    await pool.query(`INSERT INTO player_states (user_id, total_idle_seconds) VALUES ($1, $2)`, [userId, totalIdleSeconds]);
+    return userId;
+  }
+
   beforeAll(async () => {
     pool = await createTestPool();
   });
@@ -172,5 +180,53 @@ describe("auth + player lifecycle", () => {
     });
     expect(secondUpdate.status).toBe(409);
     expect(secondUpdate.body.code).toBe("USERNAME_TAKEN");
+  });
+
+  it("returns top 200 ordered by total idle and highlights current player when in top", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(`UPDATE player_states SET total_idle_seconds = $2 WHERE user_id = $1`, [userId, 10000]);
+    for (let i = 0; i < 220; i += 1) {
+      await insertLeaderboardPlayer(9000 - i);
+    }
+
+    const leaderboardResponse = await request(app).get("/leaderboard").set("Authorization", `Bearer ${token}`);
+    expect(leaderboardResponse.status).toBe(200);
+    expect(leaderboardResponse.body.entries).toHaveLength(200);
+    expect(leaderboardResponse.body.currentPlayer.inTop).toBe(true);
+    expect(leaderboardResponse.body.currentPlayer.userId).toBe(userId);
+
+    const currentEntry = leaderboardResponse.body.entries.find((entry: { isCurrentPlayer: boolean }) => entry.isCurrentPlayer);
+    expect(currentEntry).toBeDefined();
+    expect(currentEntry.rank).toBe(1);
+
+    for (let i = 1; i < leaderboardResponse.body.entries.length; i += 1) {
+      expect(leaderboardResponse.body.entries[i - 1].totalIdleSeconds).toBeGreaterThanOrEqual(
+        leaderboardResponse.body.entries[i].totalIdleSeconds
+      );
+    }
+  });
+
+  it("returns current player rank when outside top 200", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(`UPDATE player_states SET total_idle_seconds = $2 WHERE user_id = $1`, [userId, -100]);
+    for (let i = 0; i < 210; i += 1) {
+      await insertLeaderboardPlayer(50000 - i);
+    }
+
+    const leaderboardResponse = await request(app).get("/leaderboard").set("Authorization", `Bearer ${token}`);
+    expect(leaderboardResponse.status).toBe(200);
+    expect(leaderboardResponse.body.entries).toHaveLength(200);
+    expect(leaderboardResponse.body.entries.some((entry: { userId: string }) => entry.userId === userId)).toBe(false);
+    expect(leaderboardResponse.body.currentPlayer.userId).toBe(userId);
+    expect(leaderboardResponse.body.currentPlayer.inTop).toBe(false);
+    expect(leaderboardResponse.body.currentPlayer.rank).toBeGreaterThan(200);
   });
 });
