@@ -5,7 +5,7 @@ import { createPool } from "./db";
 async function main(): Promise<void> {
   const config = loadConfig();
   const pool = createPool(config.databaseUrl);
-  const app = createApp(pool, config.jwtSecret);
+  const app = createApp(pool, config.jwtSecret, config.corsOrigin);
 
   const server = app.listen(config.port, () => {
     console.log(`idle-backend listening on port ${config.port}`);

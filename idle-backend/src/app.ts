@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import cors from "cors";
 import express from "express";
 import type { Pool } from "pg";
 import { signAnonymousToken } from "./auth";
@@ -18,8 +19,13 @@ function toNumber(value: unknown): number {
   throw new Error("Unexpected numeric value");
 }
 
-export function createApp(pool: Pool, jwtSecret: string) {
+export function createApp(pool: Pool, jwtSecret: string, corsOrigin: string) {
   const app = express();
+  app.use(
+    cors({
+      origin: corsOrigin
+    })
+  );
   app.use(express.json());
 
   app.get("/health", (_req, res) => {

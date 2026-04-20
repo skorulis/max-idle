@@ -7,4 +7,5 @@ export type AppConfig = {
   port: number;
   databaseUrl: string;
   jwtSecret: string;
+  corsOrigin: string;
 };

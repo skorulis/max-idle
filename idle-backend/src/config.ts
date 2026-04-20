@@ -18,6 +18,7 @@ export function loadConfig(): AppConfig {
   return {
     port,
     databaseUrl: requiredEnv("DATABASE_URL"),
-    jwtSecret: requiredEnv("JWT_SECRET")
+    jwtSecret: requiredEnv("JWT_SECRET"),
+    corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:5173"
   };
 }

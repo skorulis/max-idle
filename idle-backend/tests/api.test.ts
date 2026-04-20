@@ -17,7 +17,7 @@ describe("auth + player lifecycle", () => {
   });
 
   it("creates anonymous user and returns player state", async () => {
-    const app = createApp(pool, jwtSecret);
+    const app = createApp(pool, jwtSecret, "http://localhost:5173");
     const authResponse = await request(app).post("/auth/anonymous");
 
     expect(authResponse.status).toBe(201);
@@ -36,7 +36,7 @@ describe("auth + player lifecycle", () => {
   });
 
   it("collects elapsed idle time and resets timer", async () => {
-    const app = createApp(pool, jwtSecret);
+    const app = createApp(pool, jwtSecret, "http://localhost:5173");
     const authResponse = await request(app).post("/auth/anonymous");
     const { token, userId } = authResponse.body as { token: string; userId: string };
 
