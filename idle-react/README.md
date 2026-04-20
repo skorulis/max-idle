@@ -4,10 +4,16 @@ Minimal React UI for Max Idle.
 
 ## Features
 
-- Creates/uses an anonymous session token from the backend.
-- Fetches player state and renders a live idle timer between syncs.
-- Calls collect endpoint and refreshes player state.
-- Stores token in local storage for persistence across refreshes.
+- Landing page supports:
+  - `Start idling` (anonymous user creation)
+  - `Login` option
+- Email/password login + registration flow.
+- Account page at `/account`:
+  - Shows user/account info
+  - Allows anonymous users to upgrade to a registered account
+- Google/Apple buttons are shown as "coming soon" placeholders.
+- Fetches player state and renders a live idle timer between server syncs.
+- Supports both anonymous bearer token flow and cookie-based authenticated flow.
 
 ## Setup
 

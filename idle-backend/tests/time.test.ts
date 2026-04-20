@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateElapsedSeconds } from "../src/time";
+import { calculateElapsedSeconds } from "../src/time.js";
 
 describe("calculateElapsedSeconds", () => {
   it("returns floored elapsed seconds", () => {

@@ -2,6 +2,7 @@
   "name": "idle-backend",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "MVP backend for Max Idle",
   "main": "dist/server.js",
   "scripts": {
@@ -15,6 +16,8 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
+    "@opentelemetry/api": "^1.9.1",
+    "better-auth": "^1.6.5",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",

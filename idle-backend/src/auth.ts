@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import type { AuthClaims } from "./types";
+import type { AuthClaims } from "./types.js";
 
 const TOKEN_TTL = "365d";
 

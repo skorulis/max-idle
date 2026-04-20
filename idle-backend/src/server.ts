@@ -1,11 +1,11 @@
-import { createApp } from "./app";
-import { loadConfig } from "./config";
-import { createPool } from "./db";
+import { createApp } from "./app.js";
+import { loadConfig } from "./config.js";
+import { createPool } from "./db.js";
 
 async function main(): Promise<void> {
   const config = loadConfig();
   const pool = createPool(config.databaseUrl);
-  const app = createApp(pool, config.jwtSecret, config.corsOrigin);
+  const app = createApp(pool, config);
 
   const server = app.listen(config.port, () => {
     console.log(`idle-backend listening on port ${config.port}`);

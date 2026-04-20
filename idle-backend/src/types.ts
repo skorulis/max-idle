@@ -1,6 +1,7 @@
 export type AuthClaims = {
   sub: string;
   isAnonymous: boolean;
+  authUserId?: string;
 };
 
 export type AppConfig = {
@@ -8,4 +9,10 @@ export type AppConfig = {
   databaseUrl: string;
   jwtSecret: string;
   corsOrigin: string;
+  betterAuthSecret: string;
+  betterAuthUrl: string;
+  googleClientId?: string;
+  googleClientSecret?: string;
+  appleClientId?: string;
+  appleClientSecret?: string;
 };

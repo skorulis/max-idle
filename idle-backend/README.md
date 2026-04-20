@@ -5,10 +5,37 @@ Node.js + PostgreSQL backend for the Max Idle MVP.
 ## What is implemented
 
 - `POST /auth/anonymous` creates an anonymous user and returns a JWT.
+- `POST /auth/register` registers with email/password and creates a cookie session.
+- `POST /auth/login` signs in with email/password and creates a cookie session.
+- `POST /auth/logout` clears active auth session cookie.
 - `GET /player` returns current persisted player state with `serverTime`.
 - `POST /player/collect` computes elapsed time using server/database timestamps, adds it to balances, and resets the idle timer.
+- `GET /account` returns account details for session or anonymous bearer users.
+- `POST /account/upgrade` upgrades an anonymous user into a registered account.
+- Better Auth mounted at `/api/auth/*` for framework-auth routes.
 - PostgreSQL schema for `users` and `player_states`.
+- Better Auth schema and game identity linkage table via migration.
 - Unit and integration tests for time and auth/player lifecycle.
+
+## Environment variables
+
+Required:
+
+- `PORT`
+- `DATABASE_URL`
+- `JWT_SECRET` (anonymous flow token)
+- `BETTER_AUTH_SECRET`
+- `BETTER_AUTH_URL`
+
+Optional:
+
+- `CORS_ORIGIN` (default: `http://localhost:5173`)
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `APPLE_CLIENT_ID`
+- `APPLE_CLIENT_SECRET`
+
+Google/Apple values are optional for now; UI buttons are present as placeholders for future OAuth enablement.
 
 ## Setup
 
