@@ -77,9 +77,10 @@ function toSyncedState(data: PlayerResponse): SyncedPlayerState {
 function App() {
   const [token, setToken] = useState<string | null>(null);
   const [playerState, setPlayerState] = useState<SyncedPlayerState | null>(null);
-  const [status, setStatus] = useState("You are doing nothing. Excellent.");
+  const [status, setStatus] = useState("Press start when you are ready to do nothing.");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [starting, setStarting] = useState(false);
   const [collecting, setCollecting] = useState(false);
   const [tickMs, setTickMs] = useState(Date.now());
 
@@ -99,17 +100,24 @@ function App() {
       setError(null);
 
       try {
-        let localToken = localStorage.getItem(TOKEN_KEY);
+        const localToken = localStorage.getItem(TOKEN_KEY);
         if (!localToken) {
-          const auth = await createAnonymousSession();
-          localToken = auth.token;
-          localStorage.setItem(TOKEN_KEY, auth.token);
+          setStatus("Press start when you are ready to do nothing.");
+          return;
         }
 
         const player = await getPlayer(localToken);
         setToken(localToken);
         setPlayerState(toSyncedState(player));
+        setStatus("You are doing nothing. Excellent.");
       } catch (bootstrapError) {
+        if (bootstrapError instanceof Error && bootstrapError.message === "UNAUTHORIZED") {
+          localStorage.removeItem(TOKEN_KEY);
+          setToken(null);
+          setPlayerState(null);
+          setStatus("Press start when you are ready to do nothing.");
+          return;
+        }
         setError(bootstrapError instanceof Error ? bootstrapError.message : "Failed to load game");
       } finally {
         setLoading(false);
@@ -128,13 +136,6 @@ function App() {
     const elapsed = Math.floor((estimatedServerNowMs - playerState.lastCollectedAtMs) / 1000);
     return Math.max(0, elapsed);
   }, [playerState, tickMs]);
-
-  const liveIdleSeconds = useMemo(() => {
-    if (!playerState) {
-      return 0;
-    }
-    return playerState.totalIdleSeconds + uncollectedIdleSeconds;
-  }, [playerState, uncollectedIdleSeconds]);
 
   const refreshPlayer = async (currentToken: string) => {
     const player = await getPlayer(currentToken);
@@ -166,6 +167,25 @@ function App() {
     }
   };
 
+  const onStartIdling = async () => {
+    setStarting(true);
+    setError(null);
+    setStatus("Creating your anonymous idle identity...");
+
+    try {
+      const auth = await createAnonymousSession();
+      localStorage.setItem(TOKEN_KEY, auth.token);
+      setToken(auth.token);
+      await refreshPlayer(auth.token);
+      setStatus("You are doing nothing. Excellent.");
+    } catch (startError) {
+      setError(startError instanceof Error ? startError.message : "Failed to start idling");
+      setStatus("Unable to begin idling right now.");
+    } finally {
+      setStarting(false);
+    }
+  };
+
   if (loading) {
     return (
       <main className="app">
@@ -180,21 +200,29 @@ function App() {
         <h1>Max Idle</h1>
         <p className="status">{status}</p>
 
-        <p className="label">Current idle time</p>
-        <p className="counter">{uncollectedIdleSeconds.toLocaleString()}s</p>
+        {!token ? (
+          <button className="collect" onClick={onStartIdling} disabled={starting}>
+            {starting ? "Starting..." : "Start idling"}
+          </button>
+        ) : (
+          <>
+            <p className="label">Current idle time</p>
+            <p className="counter">{uncollectedIdleSeconds.toLocaleString()}s</p>
 
-        <div className="stats">
-          <p>
-            <span>Total collected:</span> {playerState?.totalIdleSeconds.toLocaleString() ?? 0}s
-          </p>
-          <p>
-            <span>Spendable:</span> {playerState?.collectedIdleSeconds.toLocaleString() ?? 0}s
-          </p>
-        </div>
+            <div className="stats">
+              <p>
+                <span>Total collected:</span> {playerState?.totalIdleSeconds.toLocaleString() ?? 0}s
+              </p>
+              <p>
+                <span>Spendable:</span> {playerState?.collectedIdleSeconds.toLocaleString() ?? 0}s
+              </p>
+            </div>
 
-        <button className="collect" onClick={onCollect} disabled={!token || collecting}>
-          {collecting ? "Collecting..." : "Collect"}
-        </button>
+            <button className="collect" onClick={onCollect} disabled={collecting}>
+              {collecting ? "Collecting..." : "Collect"}
+            </button>
+          </>
+        )}
 
         {error ? <p className="error">{error}</p> : null}
       </section>
