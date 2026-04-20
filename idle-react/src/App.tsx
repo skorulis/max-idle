@@ -131,11 +131,11 @@ async function loginWithEmail(email: string, password: string): Promise<void> {
   });
 }
 
-async function registerWithEmail(name: string, email: string, password: string): Promise<void> {
+async function registerWithEmail(email: string, password: string): Promise<void> {
   await apiRequest("/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, email, password })
+    body: JSON.stringify({ email, password })
   });
 }
 
@@ -403,7 +403,7 @@ function App() {
     setError(null);
     setStatus("Creating account...");
     try {
-      await registerWithEmail(signupForm.name, signupForm.email, signupForm.password);
+      await registerWithEmail(signupForm.email, signupForm.password);
       localStorage.removeItem(TOKEN_KEY);
       setToken(null);
       await refreshPlayer(null);
@@ -597,12 +597,6 @@ function App() {
             <div className="panel">
               <h2>Create account</h2>
               <input
-                type="text"
-                placeholder="Name"
-                value={signupForm.name}
-                onChange={(event) => setSignupForm((prev) => ({ ...prev, name: event.target.value }))}
-              />
-              <input
                 type="email"
                 placeholder="Email"
                 value={signupForm.email}
@@ -631,9 +625,6 @@ function App() {
                 </p>
                 <p>
                   <span>Email:</span> {account.email ?? "Not set"}
-                </p>
-                <p>
-                  <span>Username:</span> {account.username ?? "Not set"}
                 </p>
                 <h3>Username</h3>
                 <input
