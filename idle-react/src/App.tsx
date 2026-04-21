@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { calculateIdleSecondsGain, getIdleSecondsRate } from "./idleRate";
 
 const TOKEN_KEY = "max-idle-token";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
@@ -11,6 +12,9 @@ type AuthResponse = {
 type PlayerResponse = {
   totalIdleSeconds: number;
   collectedIdleSeconds: number;
+  currentSeconds: number;
+  idleSecondsRate: number;
+  currentSecondsLastUpdated: string;
   lastCollectedAt: string;
   serverTime: string;
 };
@@ -410,7 +414,16 @@ function App() {
 
     const estimatedServerNowMs = playerState.serverTimeMs + (tickMs - playerState.syncedAtClientMs);
     const elapsed = Math.floor((estimatedServerNowMs - playerState.lastCollectedAtMs) / 1000);
-    return Math.max(0, elapsed);
+    return calculateIdleSecondsGain(Math.max(0, elapsed));
+  }, [playerState, tickMs]);
+
+  const idleSecondsRate = useMemo(() => {
+    if (!playerState) {
+      return 1;
+    }
+    const estimatedServerNowMs = playerState.serverTimeMs + (tickMs - playerState.syncedAtClientMs);
+    const elapsed = Math.floor((estimatedServerNowMs - playerState.lastCollectedAtMs) / 1000);
+    return getIdleSecondsRate({ secondsSinceLastCollection: Math.max(0, elapsed) });
   }, [playerState, tickMs]);
 
   const onCollect = async () => {
@@ -644,6 +657,7 @@ function App() {
             <>
             <p className="label">Current idle time</p>
             <p className="counter">{uncollectedIdleSeconds.toLocaleString()}s</p>
+            <p className="subtle">Current rate: {idleSecondsRate.toFixed(2)}x</p>
 
             <div className="stats">
               <p>

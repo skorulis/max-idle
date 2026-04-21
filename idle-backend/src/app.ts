@@ -11,6 +11,7 @@ import {
   type BetterAuthInstance
 } from "./betterAuth.js";
 import { calculateElapsedSeconds } from "./time.js";
+import { calculateIdleSecondsGain, getIdleSecondsRate } from "./idleRate.js";
 import type { AppConfig, AuthClaims } from "./types.js";
 import { generateAnonymousUsername, isUsernameTakenError, isValidUsername } from "./username.js";
 
@@ -563,6 +564,7 @@ export function createApp(pool: Pool, config: AppConfig) {
       }
 
       const currentSeconds = calculateElapsedSeconds(row.last_collected_at, row.server_time);
+      const currentIdleSeconds = calculateIdleSecondsGain(currentSeconds);
       await pool.query(
         `
         UPDATE player_states
@@ -571,13 +573,15 @@ export function createApp(pool: Pool, config: AppConfig) {
           current_seconds_last_updated = $3
         WHERE user_id = $1
         `,
-        [userId, currentSeconds, row.server_time]
+        [userId, currentIdleSeconds, row.server_time]
       );
+      const idleSecondsRate = getIdleSecondsRate({ secondsSinceLastCollection: currentSeconds });
 
       res.json({
         totalIdleSeconds: toNumber(row.total_seconds_collected),
         collectedIdleSeconds: toNumber(row.spendable_idle_seconds),
-        currentSeconds,
+        currentSeconds: currentIdleSeconds,
+        idleSecondsRate,
         currentSecondsLastUpdated: row.server_time.toISOString(),
         lastCollectedAt: row.last_collected_at.toISOString(),
         serverTime: row.server_time.toISOString()
@@ -618,6 +622,7 @@ export function createApp(pool: Pool, config: AppConfig) {
 
       const collectedAt = new Date();
       const elapsedSeconds = calculateElapsedSeconds(lockedRow.last_collected_at, collectedAt);
+      const collectedSeconds = calculateIdleSecondsGain(elapsedSeconds);
       const updateResult = await client.query<{
         total_seconds_collected: number | string;
         spendable_idle_seconds: number | string;
@@ -637,7 +642,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         WHERE user_id = $1
         RETURNING total_seconds_collected, spendable_idle_seconds, last_collected_at, current_seconds, current_seconds_last_updated
         `,
-        [userId, elapsedSeconds, collectedAt]
+        [userId, collectedSeconds, collectedAt]
       );
 
       const row = updateResult.rows[0];
@@ -649,10 +654,11 @@ export function createApp(pool: Pool, config: AppConfig) {
 
       await client.query("COMMIT");
       res.json({
-        collectedSeconds: elapsedSeconds,
+        collectedSeconds,
         totalIdleSeconds: toNumber(row.total_seconds_collected),
         collectedIdleSeconds: toNumber(row.spendable_idle_seconds),
         currentSeconds: toNumber(row.current_seconds),
+        idleSecondsRate: 1,
         currentSecondsLastUpdated: row.current_seconds_last_updated.toISOString(),
         lastCollectedAt: row.last_collected_at.toISOString()
       });
