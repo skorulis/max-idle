@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { calculateIdleSecondsGain, getIdleSecondsRate } from "./idleRate";
+import { formatSeconds } from "./formatSeconds";
 
 const TOKEN_KEY = "max-idle-token";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
@@ -417,6 +418,16 @@ function App() {
     return calculateIdleSecondsGain(Math.max(0, elapsed));
   }, [playerState, tickMs]);
 
+  const realtimeElapsedSeconds = useMemo(() => {
+    if (!playerState) {
+      return 0;
+    }
+
+    const estimatedServerNowMs = playerState.serverTimeMs + (tickMs - playerState.syncedAtClientMs);
+    const elapsed = Math.floor((estimatedServerNowMs - playerState.lastCollectedAtMs) / 1000);
+    return Math.max(0, elapsed);
+  }, [playerState, tickMs]);
+
   const idleSecondsRate = useMemo(() => {
     if (!playerState) {
       return 1;
@@ -656,15 +667,16 @@ function App() {
           ) : (
             <>
             <p className="label">Current idle time</p>
-            <p className="counter">{uncollectedIdleSeconds.toLocaleString()}s</p>
+            <p className="counter">{formatSeconds(uncollectedIdleSeconds)}</p>
+            <p className="subtle">Realtime: {formatSeconds(realtimeElapsedSeconds)}</p>
             <p className="subtle">Current rate: {idleSecondsRate.toFixed(2)}x</p>
 
             <div className="stats">
               <p>
-                <span>Total collected:</span> {playerState?.totalIdleSeconds.toLocaleString() ?? 0}s
+                <span>Total collected:</span> {formatSeconds(playerState?.totalIdleSeconds ?? 0)}
               </p>
               <p>
-                <span>Spendable:</span> {playerState?.collectedIdleSeconds.toLocaleString() ?? 0}s
+                <span>Spendable:</span> {formatSeconds(playerState?.collectedIdleSeconds ?? 0)}
               </p>
             </div>
 
@@ -836,14 +848,14 @@ function App() {
                     >
                       <p>#{entry.rank}</p>
                       <p>{entry.username}</p>
-                      <p>{entry.totalIdleSeconds.toLocaleString()}s</p>
+                      <p>{formatSeconds(entry.totalIdleSeconds)}</p>
                     </div>
                   ))}
                 </div>
                 {!leaderboard.currentPlayer.inTop ? (
                   <p className="subtle">
                     Your rank is #{leaderboard.currentPlayer.rank} with{" "}
-                    {leaderboard.currentPlayer.totalIdleSeconds.toLocaleString()}s.
+                    {formatSeconds(leaderboard.currentPlayer.totalIdleSeconds)}.
                   </p>
                 ) : null}
               </>
