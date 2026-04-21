@@ -85,6 +85,66 @@ function getAchievementBonusMultiplier(achievementCount: number): number {
 
 type Queryable = Pick<Pool, "query">;
 
+type PlayerCurrentSecondsSyncRow = {
+  user_id: string;
+  current_seconds: number | string;
+  current_seconds_last_updated: Date;
+  achievement_count: number | string;
+  seconds_multiplier: number | string;
+  server_time: Date;
+};
+
+export async function syncStalePlayerCurrentSeconds(pool: Pool, limit = 100): Promise<number> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const stalePlayersResult = await client.query<PlayerCurrentSecondsSyncRow>(
+      `
+      SELECT
+        user_id,
+        current_seconds,
+        current_seconds_last_updated,
+        achievement_count,
+        seconds_multiplier,
+        NOW() AS server_time
+      FROM player_states
+      ORDER BY current_seconds_last_updated ASC
+      LIMIT $1
+      FOR UPDATE
+      `,
+      [limit]
+    );
+
+    for (const row of stalePlayersResult.rows) {
+      const elapsedSinceCurrentUpdate = calculateElapsedSeconds(row.current_seconds_last_updated, row.server_time);
+      const secondsMultiplier = Number(row.seconds_multiplier);
+      const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
+      const incrementalBaseGain = calculateIdleSecondsGain(elapsedSinceCurrentUpdate);
+      const incrementalBoostedGain = Math.floor(incrementalBaseGain * secondsMultiplier * achievementBonusMultiplier);
+      const nextCurrentSeconds = toNumber(row.current_seconds) + incrementalBoostedGain;
+
+      await client.query(
+        `
+        UPDATE player_states
+        SET
+          current_seconds = $2,
+          current_seconds_last_updated = $3
+        WHERE user_id = $1
+        `,
+        [row.user_id, nextCurrentSeconds, row.server_time]
+      );
+    }
+
+    await client.query("COMMIT");
+    return stalePlayersResult.rowCount ?? stalePlayersResult.rows.length;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function grantAchievement(db: Queryable, userId: string, achievementId: AchievementId): Promise<void> {
   const playerStateResult = await db.query<{ completed_achievements: unknown }>(
     `SELECT completed_achievements FROM player_states WHERE user_id = $1 FOR UPDATE`,

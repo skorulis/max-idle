@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Pool } from "pg";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createApp } from "../src/app.js";
+import { createApp, syncStalePlayerCurrentSeconds } from "../src/app.js";
 import { calculateIdleSecondsGain } from "../src/idleRate.js";
 import type { AppConfig } from "../src/types.js";
 import { createTestPool } from "./testDb.js";
@@ -518,5 +518,58 @@ describe("auth + player lifecycle", () => {
 
     expect(purchaseResponse.status).toBe(400);
     expect(purchaseResponse.body.code).toBe("INSUFFICIENT_FUNDS");
+  });
+
+  it("syncs only the stalest players up to the batch size", async () => {
+    const baselineCurrentSeconds = 10;
+    const totalPlayers = 105;
+    const ageByUserId = new Map<string, number>();
+    const now = new Date();
+
+    for (let i = 0; i < totalPlayers; i += 1) {
+      const userId = await insertLeaderboardPlayer(0, baselineCurrentSeconds);
+      const ageSeconds = i + 1;
+      ageByUserId.set(userId, ageSeconds);
+      await pool.query(
+        `
+        UPDATE player_states
+        SET
+          achievement_count = 0,
+          seconds_multiplier = 1,
+          current_seconds_last_updated = $2
+        WHERE user_id = $1
+        `,
+        [userId, new Date(now.getTime() - ageSeconds * 1000)]
+      );
+    }
+
+    const updatedCount = await syncStalePlayerCurrentSeconds(pool, 100);
+    expect(updatedCount).toBe(100);
+
+    const syncedRows = await pool.query<{
+      user_id: string;
+      current_seconds: string;
+      current_seconds_last_updated: Date;
+    }>(
+      `
+      SELECT
+        user_id,
+        current_seconds,
+        current_seconds_last_updated
+      FROM player_states
+      WHERE user_id = ANY($1)
+      `,
+      [[...ageByUserId.keys()]]
+    );
+
+    for (const row of syncedRows.rows) {
+      const ageSeconds = ageByUserId.get(row.user_id);
+      expect(ageSeconds).toBeDefined();
+      if ((ageSeconds ?? 0) >= 6) {
+        expect(Number(row.current_seconds)).toBeGreaterThan(baselineCurrentSeconds);
+      } else {
+        expect(Number(row.current_seconds)).toBe(baselineCurrentSeconds);
+      }
+    }
   });
 });
