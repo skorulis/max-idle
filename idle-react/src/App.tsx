@@ -1092,13 +1092,10 @@ function App() {
 
         {showPlayer ? (
           <div className="panel">
-            <h2>Player</h2>
+            <h2>{publicPlayerProfile.username}</h2>
             {publicPlayerLoading ? <p>Loading player profile...</p> : null}
             {!publicPlayerLoading && publicPlayerProfile ? (
               <>
-                <p>
-                  <span>Username:</span> {publicPlayerProfile.username}
-                </p>
                 <p>
                   <span>Account age:</span> {formatSeconds(publicPlayerProfile.accountAgeSeconds)}
                 </p>
