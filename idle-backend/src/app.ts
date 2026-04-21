@@ -12,7 +12,7 @@ import {
 } from "./betterAuth.js";
 import { calculateElapsedSeconds } from "./time.js";
 import { calculateIdleSecondsGain, getIdleSecondsRate } from "./idleRate.js";
-import { ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION, ACHIEVEMENTS } from "@maxidle/shared/achievements";
+import { ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION, ACHIEVEMENT_IDS, ACHIEVEMENTS } from "@maxidle/shared/achievements";
 import {
   getSecondsMultiplierPurchaseCost,
   levelToMultiplier,
@@ -55,8 +55,7 @@ function parseCompletedAchievementIds(value: unknown): string[] {
   return [];
 }
 
-const KNOWN_ACHIEVEMENT_IDS = new Set(ACHIEVEMENTS.map((achievement) => achievement.id));
-const USERNAME_SELECTED_ACHIEVEMENT_ID = "username_selected";
+const KNOWN_ACHIEVEMENT_IDS: ReadonlySet<string> = new Set(ACHIEVEMENTS.map((achievement) => achievement.id));
 
 function normalizeCompletedAchievementIds(currentValue: unknown, idsToAdd: string[] = []): string[] {
   const ordered: string[] = [];
@@ -481,7 +480,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         }
 
         const completedAchievementIds = normalizeCompletedAchievementIds(playerStateRow.completed_achievements, [
-          USERNAME_SELECTED_ACHIEVEMENT_ID
+          ACHIEVEMENT_IDS.USERNAME_SELECTED
         ]);
         await client.query(
           `
