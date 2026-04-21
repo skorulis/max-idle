@@ -1,7 +1,8 @@
 export const ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION = 0.25;
 export const ACHIEVEMENT_IDS = {
   ACCOUNT_CREATION: "account_creation",
-  USERNAME_SELECTED: "username_selected"
+  USERNAME_SELECTED: "username_selected",
+  BEGINNER_SHOPPER: "beginner_shopper"
 };
 
 export const ACHIEVEMENTS = [
@@ -16,5 +17,11 @@ export const ACHIEVEMENTS = [
     name: "Username selected",
     description: "Update your username.",
     icon: "badge-check"
+  },
+  {
+    id: ACHIEVEMENT_IDS.BEGINNER_SHOPPER,
+    name: "Beginner shopper",
+    description: "Purchase 4 upgrades from the shop.",
+    icon: "shopping-cart"
   }
 ];

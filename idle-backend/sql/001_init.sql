@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS player_states (
   last_collected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   total_seconds_collected BIGINT NOT NULL DEFAULT 0,
   spendable_idle_seconds BIGINT NOT NULL DEFAULT 0,
+  upgrades_purchased BIGINT NOT NULL DEFAULT 0,
   achievement_count BIGINT NOT NULL DEFAULT 0,
   completed_achievements JSONB NOT NULL DEFAULT '[]'::jsonb,
   seconds_multiplier DOUBLE PRECISION NOT NULL DEFAULT 1,
@@ -22,6 +23,9 @@ CREATE TABLE IF NOT EXISTS player_states (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE player_states
+ADD COLUMN IF NOT EXISTS upgrades_purchased BIGINT NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS auth_identities (
   auth_user_id TEXT PRIMARY KEY,

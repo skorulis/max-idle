@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CircleUserRound, House, Medal, ShoppingCart, Trophy } from "lucide-react";
+import { CircleUserRound, House, Medal, ShoppingCart, Star } from "lucide-react";
 import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "react-router-dom";
 import GameIcon from "../GameIcon";
 import { calculateIdleSecondsGain, getIdleSecondsRate } from "../idleRate";
@@ -575,7 +575,7 @@ export function AppShell() {
               <GameIcon icon={ShoppingCart} />
             </button>
             <button type="button" className="link" onClick={() => navigate("/achievements")}>
-              <GameIcon icon={Trophy} />
+              <GameIcon icon={Star} />
             </button>
             <button type="button" className="link" onClick={() => navigate("/account")}>
               <GameIcon icon={CircleUserRound} />

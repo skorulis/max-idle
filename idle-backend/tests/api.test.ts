@@ -255,11 +255,12 @@ describe("auth + player lifecycle", () => {
     const response = await request(app).get("/achievements").set("Authorization", `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(response.body.completedCount).toBe(0);
-    expect(response.body.totalCount).toBe(2);
+    expect(response.body.totalCount).toBe(3);
     expect(response.body.earningsBonusMultiplier).toBe(1);
-    expect(response.body.achievements).toHaveLength(2);
+    expect(response.body.achievements).toHaveLength(3);
     expect(response.body.achievements[0].id).toBe("account_creation");
     expect(response.body.achievements[1].id).toBe("username_selected");
+    expect(response.body.achievements[2].id).toBe("beginner_shopper");
   });
 
   it("marks completed achievements from stored jsonb ids", async () => {
@@ -502,6 +503,16 @@ describe("auth + player lifecycle", () => {
     expect(purchaseResponse.body.purchase.totalCost).toBe(49);
     expect(purchaseResponse.body.collectedIdleSeconds).toBe(51);
     expect(purchaseResponse.body.secondsMultiplier).toBe(1.5);
+    expect(purchaseResponse.body.achievementBonusMultiplier).toBe(1.25);
+
+    const achievementState = await pool.query<{
+      upgrades_purchased: string;
+      achievement_count: string;
+      completed_achievements: unknown;
+    }>(`SELECT upgrades_purchased, achievement_count, completed_achievements FROM player_states WHERE user_id = $1`, [userId]);
+    expect(Number(achievementState.rows[0]?.upgrades_purchased)).toBe(5);
+    expect(Number(achievementState.rows[0]?.achievement_count)).toBe(1);
+    expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toEqual(["beginner_shopper"]);
   });
 
   it("rejects shop purchases when funds are insufficient", async () => {
