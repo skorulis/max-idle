@@ -37,14 +37,6 @@ export function LeaderboardPage({
         >
           Collected
         </button>
-        <button
-          type="button"
-          className={`secondary${leaderboardType === "total" ? " leaderboard-type-active" : ""}`}
-          onClick={() => onTypeChange("total")}
-          disabled={leaderboardLoading}
-        >
-          Total
-        </button>
       </div>
       {leaderboardLoading ? <p>Loading leaderboard...</p> : null}
       {!leaderboardLoading && leaderboard ? (

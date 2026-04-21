@@ -46,7 +46,7 @@ const HUMOROUS_MESSAGES = [
   "If you stare at the counter it will stare back.",
   "Make sure to keep hydrated. Time will continue to pass while you are away.",
   "Doing nothing remains unexpectedly effective.",
-  "Who has time? But then if we do not ever take time, how can we ever have time? - Merovingian "
+  "Who has time? But then if we do not ever take time, how can we ever have time? -Merovingian "
 ];
 
 function getRandomMessageIndex(excludeIndex?: number): number {

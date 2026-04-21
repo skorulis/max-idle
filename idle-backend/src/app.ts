@@ -602,7 +602,7 @@ export function createApp(pool: Pool, config: AppConfig) {
     try {
       const requestedType = String(req.query.type ?? "current").toLowerCase();
       const leaderboardType =
-        requestedType === "collected" || requestedType === "total" || requestedType === "current" ? requestedType : null;
+        requestedType === "collected" || requestedType === "current" ? requestedType : null;
       if (!leaderboardType) {
         res.status(400).json({ error: "Invalid leaderboard type" });
         return;
@@ -611,9 +611,7 @@ export function createApp(pool: Pool, config: AppConfig) {
       const metricExpression =
         leaderboardType === "collected"
           ? "ps.total_seconds_collected"
-          : leaderboardType === "total"
-            ? "(ps.current_seconds + ps.total_seconds_collected)"
-            : "ps.current_seconds";
+          : "ps.current_seconds";
 
       let identity: { claims: AuthClaims; session: BetterAuthSession };
       try {
