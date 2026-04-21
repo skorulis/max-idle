@@ -93,6 +93,7 @@ export function AppShell() {
   const [loginForm, setLoginForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const [signupForm, setSignupForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const [upgradeForm, setUpgradeForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
+  const isAuthenticated = Boolean(playerState);
 
   const routePlayerId = useMemo(() => {
     const rawPlayerId = playerRouteMatch?.params.playerId;
@@ -562,23 +563,25 @@ export function AppShell() {
     <main className="app">
       <header className="page-nav">
         <p className="page-title">{getCurrentPageTitle(location.pathname)}</p>
-        <div className="actions">
-          <button type="button" className="link" onClick={() => navigate("/")}>
-            <GameIcon icon={House} />
-          </button>
-          <button type="button" className="link" onClick={() => navigate("/leaderboard")}>
-            <GameIcon icon={Medal} />
-          </button>
-          <button type="button" className="link" onClick={() => navigate("/shop")}>
-            <GameIcon icon={ShoppingCart} />
-          </button>
-          <button type="button" className="link" onClick={() => navigate("/achievements")}>
-            <GameIcon icon={Trophy} />
-          </button>
-          <button type="button" className="link" onClick={() => navigate("/account")}>
-            <GameIcon icon={CircleUserRound} />
-          </button>
-        </div>
+        {isAuthenticated ? (
+          <div className="actions">
+            <button type="button" className="link" onClick={() => navigate("/")}>
+              <GameIcon icon={House} />
+            </button>
+            <button type="button" className="link" onClick={() => navigate("/leaderboard")}>
+              <GameIcon icon={Medal} />
+            </button>
+            <button type="button" className="link" onClick={() => navigate("/shop")}>
+              <GameIcon icon={ShoppingCart} />
+            </button>
+            <button type="button" className="link" onClick={() => navigate("/achievements")}>
+              <GameIcon icon={Trophy} />
+            </button>
+            <button type="button" className="link" onClick={() => navigate("/account")}>
+              <GameIcon icon={CircleUserRound} />
+            </button>
+          </div>
+        ) : null}
       </header>
 
       <section className="card">

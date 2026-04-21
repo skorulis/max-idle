@@ -27,6 +27,8 @@ export function HomePage({
   if (!playerState) {
     return (
       <>
+        <h1>Max Idle</h1>
+        <p className="subtle">A game about doing nothing</p>
         <button className="collect" onClick={() => void onStartIdling()} disabled={starting}>
           {starting ? "Starting..." : "Start idling"}
         </button>
