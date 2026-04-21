@@ -1,3 +1,5 @@
+export const ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION = 0.25;
+
 export const ACHIEVEMENTS = [
   {
     id: "account_creation",

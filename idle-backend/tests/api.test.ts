@@ -152,6 +152,17 @@ describe("auth + player lifecycle", () => {
     const accountResponse = await request(app).get("/account").set("Cookie", cookies);
     expect(accountResponse.status).toBe(200);
     expect(accountResponse.body.username).toBe("NewUsername123");
+
+    const achievementState = await pool.query<{
+      achievement_count: string | number;
+      completed_achievements: unknown;
+    }>(`SELECT achievement_count, completed_achievements FROM player_states WHERE user_id = $1`, [accountResponse.body.gameUserId]);
+    const completedAchievements =
+      typeof achievementState.rows[0]?.completed_achievements === "string"
+        ? (JSON.parse(achievementState.rows[0]?.completed_achievements as string) as string[])
+        : (achievementState.rows[0]?.completed_achievements as string[]);
+    expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);
+    expect(completedAchievements).toEqual(["username_selected"]);
   });
 
   it("rejects username updates for anonymous users", async () => {
@@ -212,6 +223,7 @@ describe("auth + player lifecycle", () => {
     expect(response.status).toBe(200);
     expect(response.body.completedCount).toBe(0);
     expect(response.body.totalCount).toBe(2);
+    expect(response.body.earningsBonusMultiplier).toBe(1);
     expect(response.body.achievements).toHaveLength(2);
     expect(response.body.achievements[0].id).toBe("account_creation");
     expect(response.body.achievements[1].id).toBe("username_selected");
@@ -237,6 +249,7 @@ describe("auth + player lifecycle", () => {
     const response = await request(app).get("/achievements").set("Authorization", `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(response.body.completedCount).toBe(1);
+    expect(response.body.earningsBonusMultiplier).toBe(1.25);
     const accountCreation = response.body.achievements.find((achievement: { id: string }) => achievement.id === "account_creation");
     const usernameSelected = response.body.achievements.find((achievement: { id: string }) => achievement.id === "username_selected");
     expect(accountCreation?.completed).toBe(true);
@@ -409,6 +422,33 @@ describe("auth + player lifecycle", () => {
     const expectedCurrent = calculateIdleSecondsGain(120) * 2;
     expect(playerResponse.body.currentSeconds).toBe(expectedCurrent);
     expect(playerResponse.body.secondsMultiplier).toBe(2);
+    expect(playerResponse.body.achievementBonusMultiplier).toBe(1);
+  });
+
+  it("applies achievement multiplier to generated idle gain", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(
+      `
+      UPDATE player_states
+      SET
+        achievement_count = 2,
+        current_seconds = 0,
+        current_seconds_last_updated = NOW() - INTERVAL '120 seconds',
+        last_collected_at = NOW() - INTERVAL '120 seconds'
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+
+    const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
+    expect(playerResponse.status).toBe(200);
+    const expectedCurrent = Math.floor(calculateIdleSecondsGain(120) * 1.5);
+    expect(playerResponse.body.currentSeconds).toBe(expectedCurrent);
+    expect(playerResponse.body.achievementBonusMultiplier).toBe(1.5);
   });
 
   it("allows purchasing seconds multiplier upgrades", async () => {

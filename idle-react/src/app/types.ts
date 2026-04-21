@@ -9,6 +9,7 @@ export type PlayerResponse = {
   currentSeconds: number;
   idleSecondsRate: number;
   secondsMultiplier: number;
+  achievementBonusMultiplier: number;
   currentSecondsLastUpdated: string;
   lastCollectedAt: string;
   serverTime: string;
@@ -46,6 +47,7 @@ export type Achievement = {
 export type AchievementsResponse = {
   completedCount: number;
   totalCount: number;
+  earningsBonusMultiplier: number;
   achievements: Achievement[];
 };
 
@@ -67,6 +69,7 @@ export type SyncedPlayerState = {
   currentSeconds: number;
   currentSecondsLastUpdatedMs: number;
   secondsMultiplier: number;
+  achievementBonusMultiplier: number;
   lastCollectedAtMs: number;
   serverTimeMs: number;
   syncedAtClientMs: number;

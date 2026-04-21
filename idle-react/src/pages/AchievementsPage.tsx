@@ -29,6 +29,7 @@ export function AchievementsPage({ achievements, achievementsLoading, hasError }
           <p className="subtle">
             Completed {achievements.completedCount} of {achievements.totalCount}
           </p>
+          <p className="subtle">Earnings bonus multiplier: x{achievements.earningsBonusMultiplier.toFixed(2)}</p>
           <div className="achievements-list">
             {achievements.achievements.map((achievement) => (
               <div

@@ -301,7 +301,11 @@ export function AppShell() {
 
     const estimatedServerNowMs = playerState.serverTimeMs + (tickMs - playerState.syncedAtClientMs);
     const elapsedSinceCurrentUpdate = Math.floor((estimatedServerNowMs - playerState.currentSecondsLastUpdatedMs) / 1000);
-    const incremental = Math.floor(calculateIdleSecondsGain(Math.max(0, elapsedSinceCurrentUpdate)) * playerState.secondsMultiplier);
+    const incremental = Math.floor(
+      calculateIdleSecondsGain(Math.max(0, elapsedSinceCurrentUpdate)) *
+        playerState.secondsMultiplier *
+        playerState.achievementBonusMultiplier
+    );
     return playerState.currentSeconds + incremental;
   }, [playerState, tickMs]);
 
@@ -328,7 +332,7 @@ export function AppShell() {
     if (!playerState) {
       return 1;
     }
-    return idleSecondsRate * playerState.secondsMultiplier;
+    return idleSecondsRate * playerState.secondsMultiplier * playerState.achievementBonusMultiplier;
   }, [idleSecondsRate, playerState]);
 
   const secondsMultiplierLevel = useMemo(() => {
