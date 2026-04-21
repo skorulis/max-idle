@@ -349,7 +349,7 @@ function App() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardResponse | null>(null);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardType, setLeaderboardType] = useState<LeaderboardType>("current");
-  const [status, setStatus] = useState("Press start when you are ready to do nothing.");
+  const [, setStatus] = useState("Press start when you are ready to do nothing.");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
@@ -832,8 +832,6 @@ function App() {
         </div>
       </header>
       <section className="card">
-        <h1>Max Idle</h1>
-        <p className="status">{status}</p>
 
         {showGame ? (
           !playerState ? (
@@ -861,39 +859,37 @@ function App() {
             <button className="collect" onClick={onCollect} disabled={collecting}>
               {collecting ? "Collecting..." : "Collect"}
             </button>
-            <div className="panel">
-              <h2>Shop</h2>
-              <p>
-                <span>Spendable:</span> {formatSeconds(playerState?.collectedIdleSeconds ?? 0)}
-              </p>
-              <p className="subtle">Upgrade: seconds multiplier (+0.1x per purchase)</p>
-              <p className="subtle">Current multiplier: {playerState.secondsMultiplier.toFixed(1)}x</p>
-              <div className="shop-actions">
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() => onPurchaseUpgrade(1)}
-                  disabled={shopPendingQuantity !== null || playerState.collectedIdleSeconds < shopCosts[1]}
-                >
-                  {shopPendingQuantity === 1 ? "Purchasing..." : `Buy x1 (${formatSeconds(shopCosts[1])})`}
-                </button>
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() => onPurchaseUpgrade(5)}
-                  disabled={shopPendingQuantity !== null || playerState.collectedIdleSeconds < shopCosts[5]}
-                >
-                  {shopPendingQuantity === 5 ? "Purchasing..." : `Buy x5 (${formatSeconds(shopCosts[5])})`}
-                </button>
-                <button
-                  type="button"
-                  className="secondary"
-                  onClick={() => onPurchaseUpgrade(10)}
-                  disabled={shopPendingQuantity !== null || playerState.collectedIdleSeconds < shopCosts[10]}
-                >
-                  {shopPendingQuantity === 10 ? "Purchasing..." : `Buy x10 (${formatSeconds(shopCosts[10])})`}
-                </button>
-              </div>
+            <h2>Shop</h2>
+            <p>
+              <span>Spendable:</span> {formatSeconds(playerState?.collectedIdleSeconds ?? 0)}
+            </p>
+            <p className="subtle">Upgrade: seconds multiplier (+0.1x per purchase)</p>
+            <p className="subtle">Current multiplier: {playerState.secondsMultiplier.toFixed(1)}x</p>
+            <div className="shop-actions">
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => onPurchaseUpgrade(1)}
+                disabled={shopPendingQuantity !== null || playerState.collectedIdleSeconds < shopCosts[1]}
+              >
+                {shopPendingQuantity === 1 ? "Purchasing..." : `Buy x1 (${formatSeconds(shopCosts[1])})`}
+              </button>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => onPurchaseUpgrade(5)}
+                disabled={shopPendingQuantity !== null || playerState.collectedIdleSeconds < shopCosts[5]}
+              >
+                {shopPendingQuantity === 5 ? "Purchasing..." : `Buy x5 (${formatSeconds(shopCosts[5])})`}
+              </button>
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => onPurchaseUpgrade(10)}
+                disabled={shopPendingQuantity !== null || playerState.collectedIdleSeconds < shopCosts[10]}
+              >
+                {shopPendingQuantity === 10 ? "Purchasing..." : `Buy x10 (${formatSeconds(shopCosts[10])})`}
+              </button>
             </div>
           </>
           )
@@ -901,7 +897,7 @@ function App() {
 
         {showLogin ? (
           <div className="auth-grid">
-            <div className="panel">
+            <div>
               <h2>Login</h2>
               <input
                 type="email"
@@ -921,7 +917,7 @@ function App() {
               {renderAuthButtons()}
             </div>
 
-            <div className="panel">
+            <div>
               <h2>Create account</h2>
               <input
                 type="email"
@@ -943,7 +939,7 @@ function App() {
         ) : null}
 
         {showAccount ? (
-          <div className="panel">
+          <>
             <h2>Account</h2>
             {account ? (
               <>
@@ -1020,11 +1016,11 @@ function App() {
                 </button>
               </>
             )}
-          </div>
+          </>
         ) : null}
 
         {showLeaderboard ? (
-          <div className="panel">
+          <>
             <h2>Leaderboard</h2>
             <div className="leaderboard-type-toggle">
               <button
@@ -1087,12 +1083,12 @@ function App() {
               </>
             ) : null}
             {!leaderboardLoading && !leaderboard && !error ? <p>No leaderboard data available.</p> : null}
-          </div>
+          </>
         ) : null}
 
         {showPlayer ? (
-          <div className="panel">
-            <h2>{publicPlayerProfile.username}</h2>
+          <>
+            <h2>{publicPlayerProfile?.username ?? "Player"}</h2>
             {publicPlayerLoading ? <p>Loading player profile...</p> : null}
             {!publicPlayerLoading && publicPlayerProfile ? (
               <>
@@ -1108,7 +1104,7 @@ function App() {
               </>
             ) : null}
             {!publicPlayerLoading && !publicPlayerProfile && !error ? <p>Player not found.</p> : null}
-          </div>
+          </>
         ) : null}
 
         {error ? <p className="error">{error}</p> : null}
