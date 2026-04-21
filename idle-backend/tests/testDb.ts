@@ -14,6 +14,7 @@ export async function createTestPool(): Promise<Pool> {
   const schemaSql = readFileSync(resolve(process.cwd(), "sql/001_init.sql"), "utf-8");
   const authIdentitySql = readFileSync(resolve(process.cwd(), "sql/002_auth_identity.sql"), "utf-8");
   const usernameSql = readFileSync(resolve(process.cwd(), "sql/003_username.sql"), "utf-8");
+  const playerStateFieldsSql = readFileSync(resolve(process.cwd(), "sql/004_player_state_fields.sql"), "utf-8");
   const betterAuthSql = `
     CREATE TABLE IF NOT EXISTS "user" (
       id TEXT PRIMARY KEY,
@@ -65,6 +66,19 @@ export async function createTestPool(): Promise<Pool> {
   await pool.query(schemaSql);
   await pool.query(authIdentitySql);
   await pool.query(usernameSql);
+  const legacyColumnResult = await pool.query<{ exists: boolean }>(
+    `
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_name = 'player_states'
+        AND column_name = 'total_idle_seconds'
+    ) AS exists
+    `
+  );
+  if (legacyColumnResult.rows[0]?.exists) {
+    await pool.query(playerStateFieldsSql);
+  }
   await pool.query(betterAuthSql);
   return pool;
 }

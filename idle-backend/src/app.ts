@@ -440,28 +440,28 @@ export function createApp(pool: Pool, config: AppConfig) {
       const leaderboardResult = await pool.query<{
         user_id: string;
         username: string;
-        total_idle_seconds: string;
+        total_seconds_collected: string;
       }>(
         `
         SELECT
           ps.user_id,
           u.username,
-          ps.total_idle_seconds
+          ps.total_seconds_collected
         FROM player_states ps
         INNER JOIN users u ON u.id = ps.user_id
-        ORDER BY ps.total_idle_seconds DESC
+        ORDER BY ps.total_seconds_collected DESC
         LIMIT 200
         `
       );
 
       const currentPlayerResult = await pool.query<{
         user_id: string;
-        total_idle_seconds: string;
+        total_seconds_collected: string;
       }>(
         `
         SELECT
           ps.user_id,
-          ps.total_idle_seconds
+          ps.total_seconds_collected
         FROM player_states ps
         WHERE ps.user_id = $1
         `,
@@ -475,8 +475,8 @@ export function createApp(pool: Pool, config: AppConfig) {
       }
 
       const higherRankCountResult = await pool.query<{ higher_count: string }>(
-        `SELECT COUNT(*) AS higher_count FROM player_states WHERE total_idle_seconds > $1`,
-        [currentPlayerRow.total_idle_seconds]
+        `SELECT COUNT(*) AS higher_count FROM player_states WHERE total_seconds_collected > $1`,
+        [currentPlayerRow.total_seconds_collected]
       );
       const currentPlayerRank = toNumber(higherRankCountResult.rows[0]?.higher_count ?? 0) + 1;
 
@@ -485,7 +485,7 @@ export function createApp(pool: Pool, config: AppConfig) {
       const entries = leaderboardResult.rows.map((row) => ({
         userId: row.user_id,
         username: row.username,
-        totalIdleSeconds: toNumber(row.total_idle_seconds)
+        totalIdleSeconds: toNumber(row.total_seconds_collected)
       }));
 
       const rankedEntries = entries.map((entry, index) => {
@@ -507,7 +507,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         currentPlayer: {
           userId: currentPlayerRow.user_id,
           rank: currentPlayerRank,
-          totalIdleSeconds: toNumber(currentPlayerRow.total_idle_seconds),
+          totalIdleSeconds: toNumber(currentPlayerRow.total_seconds_collected),
           inTop: rankedEntries.some((entry) => entry.isCurrentPlayer)
         }
       });
@@ -523,14 +523,14 @@ export function createApp(pool: Pool, config: AppConfig) {
 
       const userId = identity.claims.sub;
       const result = await pool.query<{
-        total_idle_seconds: string;
+        total_seconds_collected: string;
         spendable_idle_seconds: string;
         last_collected_at: Date;
         server_time: Date;
       }>(
         `
         SELECT
-          total_idle_seconds,
+          total_seconds_collected,
           spendable_idle_seconds,
           last_collected_at,
           NOW() AS server_time
@@ -546,9 +546,23 @@ export function createApp(pool: Pool, config: AppConfig) {
         return;
       }
 
+      const currentSeconds = calculateElapsedSeconds(row.last_collected_at, row.server_time);
+      await pool.query(
+        `
+        UPDATE player_states
+        SET
+          current_seconds = $2,
+          current_seconds_last_updated = $3
+        WHERE user_id = $1
+        `,
+        [userId, currentSeconds, row.server_time]
+      );
+
       res.json({
-        totalIdleSeconds: toNumber(row.total_idle_seconds),
+        totalIdleSeconds: toNumber(row.total_seconds_collected),
         collectedIdleSeconds: toNumber(row.spendable_idle_seconds),
+        currentSeconds,
+        currentSecondsLastUpdated: row.server_time.toISOString(),
         lastCollectedAt: row.last_collected_at.toISOString(),
         serverTime: row.server_time.toISOString()
       });
@@ -565,13 +579,13 @@ export function createApp(pool: Pool, config: AppConfig) {
       const userId = identity.claims.sub;
       await client.query("BEGIN");
       const result = await client.query<{
-        total_idle_seconds: number | string;
+        total_seconds_collected: number | string;
         spendable_idle_seconds: number | string;
         last_collected_at: Date;
         updated_at: Date;
       }>(
         `
-        SELECT total_idle_seconds, spendable_idle_seconds, last_collected_at
+        SELECT total_seconds_collected, spendable_idle_seconds, last_collected_at
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -589,19 +603,23 @@ export function createApp(pool: Pool, config: AppConfig) {
       const collectedAt = new Date();
       const elapsedSeconds = calculateElapsedSeconds(lockedRow.last_collected_at, collectedAt);
       const updateResult = await client.query<{
-        total_idle_seconds: number | string;
+        total_seconds_collected: number | string;
         spendable_idle_seconds: number | string;
         last_collected_at: Date;
+        current_seconds: number | string;
+        current_seconds_last_updated: Date;
       }>(
         `
         UPDATE player_states
         SET
-          total_idle_seconds = total_idle_seconds + $2::BIGINT,
+          total_seconds_collected = total_seconds_collected + $2::BIGINT,
           spendable_idle_seconds = spendable_idle_seconds + $2::BIGINT,
+          current_seconds = 0,
+          current_seconds_last_updated = $3,
           last_collected_at = $3,
           updated_at = $3
         WHERE user_id = $1
-        RETURNING total_idle_seconds, spendable_idle_seconds, last_collected_at
+        RETURNING total_seconds_collected, spendable_idle_seconds, last_collected_at, current_seconds, current_seconds_last_updated
         `,
         [userId, elapsedSeconds, collectedAt]
       );
@@ -616,8 +634,10 @@ export function createApp(pool: Pool, config: AppConfig) {
       await client.query("COMMIT");
       res.json({
         collectedSeconds: elapsedSeconds,
-        totalIdleSeconds: toNumber(row.total_idle_seconds),
+        totalIdleSeconds: toNumber(row.total_seconds_collected),
         collectedIdleSeconds: toNumber(row.spendable_idle_seconds),
+        currentSeconds: toNumber(row.current_seconds),
+        currentSecondsLastUpdated: row.current_seconds_last_updated.toISOString(),
         lastCollectedAt: row.last_collected_at.toISOString()
       });
     } catch (error) {

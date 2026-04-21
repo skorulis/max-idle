@@ -29,7 +29,7 @@ describe("auth + player lifecycle", () => {
     const userId = randomUUID();
     const username = `lb_${randomUUID().replace(/-/g, "").slice(0, 12)}`;
     await pool.query(`INSERT INTO users (id, is_anonymous, username) VALUES ($1, TRUE, $2)`, [userId, username]);
-    await pool.query(`INSERT INTO player_states (user_id, total_idle_seconds) VALUES ($1, $2)`, [userId, totalIdleSeconds]);
+    await pool.query(`INSERT INTO player_states (user_id, total_seconds_collected) VALUES ($1, $2)`, [userId, totalIdleSeconds]);
     return userId;
   }
 
@@ -56,6 +56,8 @@ describe("auth + player lifecycle", () => {
     expect(playerResponse.status).toBe(200);
     expect(playerResponse.body.totalIdleSeconds).toBe(0);
     expect(playerResponse.body.collectedIdleSeconds).toBe(0);
+    expect(playerResponse.body.currentSeconds).toBeGreaterThanOrEqual(0);
+    expect(playerResponse.body.currentSecondsLastUpdated).toBeTypeOf("string");
     expect(playerResponse.body.lastCollectedAt).toBeTypeOf("string");
     expect(playerResponse.body.serverTime).toBeTypeOf("string");
   });
@@ -188,7 +190,7 @@ describe("auth + player lifecycle", () => {
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
 
-    await pool.query(`UPDATE player_states SET total_idle_seconds = $2 WHERE user_id = $1`, [userId, 10000]);
+    await pool.query(`UPDATE player_states SET total_seconds_collected = $2 WHERE user_id = $1`, [userId, 10000]);
     for (let i = 0; i < 220; i += 1) {
       await insertLeaderboardPlayer(9000 - i);
     }
@@ -216,7 +218,7 @@ describe("auth + player lifecycle", () => {
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
 
-    await pool.query(`UPDATE player_states SET total_idle_seconds = $2 WHERE user_id = $1`, [userId, -100]);
+    await pool.query(`UPDATE player_states SET total_seconds_collected = $2 WHERE user_id = $1`, [userId, -100]);
     for (let i = 0; i < 210; i += 1) {
       await insertLeaderboardPlayer(50000 - i);
     }
