@@ -225,3 +225,19 @@ input {
   border-color: #2563eb;
   background: #eff6ff;
 }
+
+.leaderboard-type-toggle {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.leaderboard-type-toggle .secondary {
+  margin-top: 0;
+}
+
+.leaderboard-type-active {
+  border-color: #2563eb;
+  background: #eff6ff;
+}

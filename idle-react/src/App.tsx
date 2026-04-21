@@ -23,7 +23,10 @@ type LeaderboardEntry = {
   isCurrentPlayer: boolean;
 };
 
+type LeaderboardType = "current" | "collected" | "total";
+
 type LeaderboardResponse = {
+  type: LeaderboardType;
   entries: LeaderboardEntry[];
   currentPlayer: {
     userId: string;
@@ -141,13 +144,13 @@ async function getAccount(token: string | null): Promise<AccountResponse> {
   return (await response.json()) as AccountResponse;
 }
 
-async function getLeaderboard(token: string | null): Promise<LeaderboardResponse> {
+async function getLeaderboard(token: string | null, type: LeaderboardType): Promise<LeaderboardResponse> {
   const headers: Record<string, string> = {};
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}/leaderboard`, {
+  const response = await fetch(`${API_BASE_URL}/leaderboard?type=${encodeURIComponent(type)}`, {
     credentials: "include",
     headers
   });
@@ -251,6 +254,7 @@ function App() {
   const [account, setAccount] = useState<AccountResponse | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardResponse | null>(null);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [leaderboardType, setLeaderboardType] = useState<LeaderboardType>("current");
   const [status, setStatus] = useState("Press start when you are ready to do nothing.");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -292,7 +296,7 @@ function App() {
       setLeaderboardLoading(true);
       setError(null);
       try {
-        const nextLeaderboard = await getLeaderboard(token);
+        const nextLeaderboard = await getLeaderboard(token, leaderboardType);
         if (!cancelled) {
           setLeaderboard(nextLeaderboard);
         }
@@ -317,7 +321,7 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, [route, token, account?.gameUserId]);
+  }, [route, token, account?.gameUserId, leaderboardType]);
 
   useEffect(() => {
     const onPopState = () => {
@@ -781,6 +785,32 @@ function App() {
         {showLeaderboard ? (
           <div className="panel">
             <h2>Leaderboard</h2>
+            <div className="leaderboard-type-toggle">
+              <button
+                type="button"
+                className={`secondary${leaderboardType === "current" ? " leaderboard-type-active" : ""}`}
+                onClick={() => setLeaderboardType("current")}
+                disabled={leaderboardLoading}
+              >
+                Current idle
+              </button>
+              <button
+                type="button"
+                className={`secondary${leaderboardType === "collected" ? " leaderboard-type-active" : ""}`}
+                onClick={() => setLeaderboardType("collected")}
+                disabled={leaderboardLoading}
+              >
+                Collected
+              </button>
+              <button
+                type="button"
+                className={`secondary${leaderboardType === "total" ? " leaderboard-type-active" : ""}`}
+                onClick={() => setLeaderboardType("total")}
+                disabled={leaderboardLoading}
+              >
+                Total
+              </button>
+            </div>
             {leaderboardLoading ? <p>Loading leaderboard...</p> : null}
             {!leaderboardLoading && leaderboard ? (
               <>

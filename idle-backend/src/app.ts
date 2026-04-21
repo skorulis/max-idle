@@ -426,6 +426,21 @@ export function createApp(pool: Pool, config: AppConfig) {
 
   app.get("/leaderboard", async (req, res, next) => {
     try {
+      const requestedType = String(req.query.type ?? "current").toLowerCase();
+      const leaderboardType =
+        requestedType === "collected" || requestedType === "total" || requestedType === "current" ? requestedType : null;
+      if (!leaderboardType) {
+        res.status(400).json({ error: "Invalid leaderboard type" });
+        return;
+      }
+
+      const metricExpression =
+        leaderboardType === "collected"
+          ? "ps.total_seconds_collected"
+          : leaderboardType === "total"
+            ? "(ps.current_seconds + ps.total_seconds_collected)"
+            : "ps.current_seconds";
+
       let identity: { claims: AuthClaims; session: BetterAuthSession };
       try {
         identity = await resolveIdentity(auth, pool, config.jwtSecret, req);
@@ -440,28 +455,28 @@ export function createApp(pool: Pool, config: AppConfig) {
       const leaderboardResult = await pool.query<{
         user_id: string;
         username: string;
-        total_seconds_collected: string;
+        leaderboard_seconds: string;
       }>(
         `
         SELECT
           ps.user_id,
           u.username,
-          ps.total_seconds_collected
+          ${metricExpression} AS leaderboard_seconds
         FROM player_states ps
         INNER JOIN users u ON u.id = ps.user_id
-        ORDER BY ps.total_seconds_collected DESC
+        ORDER BY ${metricExpression} DESC
         LIMIT 200
         `
       );
 
       const currentPlayerResult = await pool.query<{
         user_id: string;
-        total_seconds_collected: string;
+        leaderboard_seconds: string;
       }>(
         `
         SELECT
           ps.user_id,
-          ps.total_seconds_collected
+          ${metricExpression} AS leaderboard_seconds
         FROM player_states ps
         WHERE ps.user_id = $1
         `,
@@ -475,8 +490,8 @@ export function createApp(pool: Pool, config: AppConfig) {
       }
 
       const higherRankCountResult = await pool.query<{ higher_count: string }>(
-        `SELECT COUNT(*) AS higher_count FROM player_states WHERE total_seconds_collected > $1`,
-        [currentPlayerRow.total_seconds_collected]
+        `SELECT COUNT(*) AS higher_count FROM player_states ps WHERE ${metricExpression} > $1`,
+        [currentPlayerRow.leaderboard_seconds]
       );
       const currentPlayerRank = toNumber(higherRankCountResult.rows[0]?.higher_count ?? 0) + 1;
 
@@ -485,7 +500,7 @@ export function createApp(pool: Pool, config: AppConfig) {
       const entries = leaderboardResult.rows.map((row) => ({
         userId: row.user_id,
         username: row.username,
-        totalIdleSeconds: toNumber(row.total_seconds_collected)
+        totalIdleSeconds: toNumber(row.leaderboard_seconds)
       }));
 
       const rankedEntries = entries.map((entry, index) => {
@@ -503,11 +518,12 @@ export function createApp(pool: Pool, config: AppConfig) {
       });
 
       res.json({
+        type: leaderboardType,
         entries: rankedEntries,
         currentPlayer: {
           userId: currentPlayerRow.user_id,
           rank: currentPlayerRank,
-          totalIdleSeconds: toNumber(currentPlayerRow.total_seconds_collected),
+          totalIdleSeconds: toNumber(currentPlayerRow.leaderboard_seconds),
           inTop: rankedEntries.some((entry) => entry.isCurrentPlayer)
         }
       });
