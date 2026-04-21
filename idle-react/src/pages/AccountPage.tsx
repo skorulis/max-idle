@@ -51,12 +51,11 @@ export function AccountPage({
   return (
     <>
       <h2>Account</h2>
-      <p>
-        <span>Status:</span> {account.isAnonymous ? "Anonymous" : "Registered"}
-      </p>
-      <p>
-        <span>Email:</span> {account.email ?? "Not set"}
-      </p>
+      {account.email ? (
+        <p>
+          <span>Email:</span> {account.email}
+        </p>
+      ) : null}
       <h3>Username</h3>
       <input
         type="text"
@@ -80,13 +79,7 @@ export function AccountPage({
       {usernameSuccess ? <p className="success">{usernameSuccess}</p> : null}
       {account.isAnonymous ? (
         <>
-          <h3>Upgrade to registered account</h3>
-          <input
-            type="text"
-            placeholder="Name"
-            value={upgradeForm.name}
-            onChange={(event) => onUpgradeFormChange("name", event.target.value)}
-          />
+          <h3>Upgrade to a registered account</h3>
           <input
             type="email"
             placeholder="Email"
@@ -110,6 +103,11 @@ export function AccountPage({
           {renderAuthButtons()}
         </>
       )}
+      {account.isAnonymous ? (
+        <p className="warning-alert">
+          Warning: logging out of an anonymous account permanently loses progress and cannot be recovered.
+        </p>
+      ) : null}
       <button type="button" className="secondary" onClick={() => void onLogout()} disabled={authPending}>
         {authPending ? "Logging out..." : "Logout"}
       </button>

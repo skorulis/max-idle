@@ -219,6 +219,16 @@ input {
   font-size: 14px;
 }
 
+.warning-alert {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 14px;
+}
+
 .leaderboard-list {
   display: grid;
   gap: 6px;
