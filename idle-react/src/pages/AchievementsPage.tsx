@@ -1,10 +1,23 @@
+import { BadgeCheck, CircleHelp, UserPlus, type LucideIcon } from "lucide-react";
 import type { AchievementsResponse } from "../app/types";
+import GameIcon from "../GameIcon";
 
 type AchievementsPageProps = {
   achievements: AchievementsResponse | null;
   achievementsLoading: boolean;
   hasError: boolean;
 };
+
+function getAchievementIcon(iconName: string): LucideIcon {
+  switch (iconName) {
+    case "user-plus":
+      return UserPlus;
+    case "badge-check":
+      return BadgeCheck;
+    default:
+      return CircleHelp;
+  }
+}
 
 export function AchievementsPage({ achievements, achievementsLoading, hasError }: AchievementsPageProps) {
   return (
@@ -22,9 +35,7 @@ export function AchievementsPage({ achievements, achievementsLoading, hasError }
                 key={achievement.id}
                 className={`achievement-row${achievement.completed ? " achievement-row-completed" : ""}`}
               >
-                <p className="achievement-icon" aria-hidden>
-                  {achievement.icon}
-                </p>
+                <GameIcon icon={getAchievementIcon(achievement.icon)} className="achievement-icon" />
                 <div className="achievement-copy">
                   <p className="achievement-name">{achievement.name}</p>
                   <p className="achievement-description">{achievement.description}</p>

@@ -306,10 +306,18 @@ input {
 }
 
 .achievement-icon {
-  margin: 0;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 12px;
   color: #6b7280;
+  align-self: center;
+  justify-self: center;
+}
+
+.achievement-row-completed .achievement-icon {
+  color: #15803d;
+}
+
+.achievement-row .achievement-icon {
+  width: 18px;
+  height: 18px;
 }
 
 .achievement-copy p {
