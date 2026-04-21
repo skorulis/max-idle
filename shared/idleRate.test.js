@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateIdleSecondsGain, getIdleSecondsRate } from "./idleRate";
+import { calculateIdleSecondsGain, getIdleSecondsRate } from "./idleRate.js";
 
 describe("getIdleSecondsRate", () => {
   it("matches all configured step values", () => {
@@ -23,7 +23,10 @@ describe("getIdleSecondsRate", () => {
 
 describe("calculateIdleSecondsGain", () => {
   it("integrates linearly changing rate", () => {
+    // 0 -> 60s ramps 1x -> 2x, average 1.5x => 90 gained seconds.
     expect(calculateIdleSecondsGain(60)).toBe(90);
+
+    // 60 -> 600s ramps 2x -> 4x, average 3x across 540s => +1620, total 1710.
     expect(calculateIdleSecondsGain(10 * 60)).toBe(1710);
   });
 });
