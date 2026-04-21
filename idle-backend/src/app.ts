@@ -768,6 +768,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         created_at: Date;
         current_seconds: string;
         total_seconds_collected: string;
+        upgrades_purchased: string;
         current_seconds_last_updated: Date;
         achievement_count: string;
         seconds_multiplier: number | string;
@@ -780,6 +781,7 @@ export function createApp(pool: Pool, config: AppConfig) {
           u.created_at,
           ps.current_seconds,
           ps.total_seconds_collected,
+          ps.upgrades_purchased,
           ps.current_seconds_last_updated,
           ps.achievement_count,
           ps.seconds_multiplier,
@@ -812,6 +814,7 @@ export function createApp(pool: Pool, config: AppConfig) {
           accountAgeSeconds,
           currentIdleSeconds,
           collectedIdleSeconds: toNumber(row.total_seconds_collected),
+          upgradesPurchased: toNumber(row.upgrades_purchased),
           achievementCount: toNumber(row.achievement_count)
         },
         meta: {
@@ -832,6 +835,7 @@ export function createApp(pool: Pool, config: AppConfig) {
       const result = await pool.query<{
         total_seconds_collected: string;
         spendable_idle_seconds: string;
+        upgrades_purchased: string;
         achievement_count: string;
         seconds_multiplier: number | string;
         last_collected_at: Date;
@@ -843,6 +847,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         SELECT
           total_seconds_collected,
           spendable_idle_seconds,
+          upgrades_purchased,
           achievement_count,
           seconds_multiplier,
           last_collected_at,
@@ -883,6 +888,7 @@ export function createApp(pool: Pool, config: AppConfig) {
       res.json({
         totalIdleSeconds: toNumber(row.total_seconds_collected),
         collectedIdleSeconds: toNumber(row.spendable_idle_seconds),
+        upgradesPurchased: toNumber(row.upgrades_purchased),
         currentSeconds: currentIdleSeconds,
         idleSecondsRate,
         secondsMultiplier,
@@ -906,6 +912,7 @@ export function createApp(pool: Pool, config: AppConfig) {
       const result = await client.query<{
         total_seconds_collected: number | string;
         spendable_idle_seconds: number | string;
+        upgrades_purchased: number | string;
         achievement_count: number | string;
         seconds_multiplier: number | string;
         last_collected_at: Date;
@@ -917,6 +924,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         SELECT
           total_seconds_collected,
           spendable_idle_seconds,
+          upgrades_purchased,
           achievement_count,
           seconds_multiplier,
           last_collected_at,
@@ -946,6 +954,7 @@ export function createApp(pool: Pool, config: AppConfig) {
       const updateResult = await client.query<{
         total_seconds_collected: number | string;
         spendable_idle_seconds: number | string;
+        upgrades_purchased: number | string;
         last_collected_at: Date;
         current_seconds: number | string;
         current_seconds_last_updated: Date;
@@ -961,7 +970,14 @@ export function createApp(pool: Pool, config: AppConfig) {
           last_collected_at = $3,
           updated_at = $3
         WHERE user_id = $1
-        RETURNING total_seconds_collected, spendable_idle_seconds, last_collected_at, current_seconds, current_seconds_last_updated, seconds_multiplier
+        RETURNING
+          total_seconds_collected,
+          spendable_idle_seconds,
+          upgrades_purchased,
+          last_collected_at,
+          current_seconds,
+          current_seconds_last_updated,
+          seconds_multiplier
         `,
         [userId, collectedSeconds, collectedAt]
       );
@@ -978,6 +994,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         collectedSeconds,
         totalIdleSeconds: toNumber(row.total_seconds_collected),
         collectedIdleSeconds: toNumber(row.spendable_idle_seconds),
+        upgradesPurchased: toNumber(row.upgrades_purchased),
         currentSeconds: toNumber(row.current_seconds),
         secondsMultiplier: toNumber(row.seconds_multiplier),
         achievementBonusMultiplier,

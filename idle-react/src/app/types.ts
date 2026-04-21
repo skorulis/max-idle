@@ -6,6 +6,7 @@ export type AuthResponse = {
 export type PlayerResponse = {
   totalIdleSeconds: number;
   collectedIdleSeconds: number;
+  upgradesPurchased: number;
   currentSeconds: number;
   idleSecondsRate: number;
   secondsMultiplier: number;
@@ -66,6 +67,7 @@ export type AccountResponse = {
 export type SyncedPlayerState = {
   totalIdleSeconds: number;
   collectedIdleSeconds: number;
+  upgradesPurchased: number;
   currentSeconds: number;
   currentSecondsLastUpdatedMs: number;
   secondsMultiplier: number;
@@ -82,6 +84,7 @@ export type PlayerProfileResponse = {
     accountAgeSeconds: number;
     currentIdleSeconds: number;
     collectedIdleSeconds: number;
+    upgradesPurchased: number;
     achievementCount: number;
   };
   meta: {

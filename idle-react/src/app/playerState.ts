@@ -4,6 +4,7 @@ export function toSyncedState(data: PlayerResponse): SyncedPlayerState {
   return {
     totalIdleSeconds: data.totalIdleSeconds,
     collectedIdleSeconds: data.collectedIdleSeconds,
+    upgradesPurchased: data.upgradesPurchased,
     currentSeconds: data.currentSeconds,
     currentSecondsLastUpdatedMs: Date.parse(data.currentSecondsLastUpdated),
     secondsMultiplier: data.secondsMultiplier,

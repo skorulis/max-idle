@@ -24,6 +24,9 @@ export function PlayerPage({ publicPlayerLoading, publicPlayerProfile, hasError 
             <span>Collected idle time:</span> {formatSeconds(publicPlayerProfile.collectedIdleSeconds)}
           </p>
           <p>
+            <span>Shop purchases:</span> {publicPlayerProfile.upgradesPurchased}
+          </p>
+          <p>
             <span>Achievements earned:</span> {publicPlayerProfile.achievementCount}
           </p>
         </>

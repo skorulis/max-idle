@@ -68,6 +68,7 @@ describe("auth + player lifecycle", () => {
     expect(playerResponse.status).toBe(200);
     expect(playerResponse.body.totalIdleSeconds).toBe(0);
     expect(playerResponse.body.collectedIdleSeconds).toBe(0);
+    expect(playerResponse.body.upgradesPurchased).toBe(0);
     expect(playerResponse.body.currentSeconds).toBeGreaterThanOrEqual(0);
     expect(playerResponse.body.currentSecondsLastUpdated).toBeTypeOf("string");
     expect(playerResponse.body.lastCollectedAt).toBeTypeOf("string");
@@ -94,6 +95,7 @@ describe("auth + player lifecycle", () => {
     expect(collectResponse.status).toBe(200);
     expect(collectResponse.body.collectedSeconds).toBeGreaterThanOrEqual(10);
     expect(collectResponse.body.totalIdleSeconds).toBeGreaterThanOrEqual(10);
+    expect(collectResponse.body.upgradesPurchased).toBe(0);
     expect(collectResponse.body.serverTime).toBeTypeOf("string");
 
     const secondCollect = await request(app).post("/player/collect").set("Authorization", `Bearer ${token}`);
@@ -399,6 +401,7 @@ describe("auth + player lifecycle", () => {
       UPDATE player_states
       SET
         total_seconds_collected = 1234,
+        upgrades_purchased = 7,
         current_seconds = 200,
         current_seconds_last_updated = NOW() - INTERVAL '30 seconds',
         seconds_multiplier = 1
@@ -415,6 +418,7 @@ describe("auth + player lifecycle", () => {
     expect(profileResponse.body.player.accountAgeSeconds).toBeGreaterThanOrEqual(0);
     expect(profileResponse.body.player.currentIdleSeconds).toBeGreaterThanOrEqual(230);
     expect(profileResponse.body.player.collectedIdleSeconds).toBe(1234);
+    expect(profileResponse.body.player.upgradesPurchased).toBe(7);
     expect(profileResponse.body.player.achievementCount).toBe(0);
     expect(profileResponse.body.meta.serverTime).toBeTypeOf("string");
   });
@@ -502,6 +506,7 @@ describe("auth + player lifecycle", () => {
     expect(purchaseResponse.status).toBe(200);
     expect(purchaseResponse.body.purchase.totalCost).toBe(49);
     expect(purchaseResponse.body.collectedIdleSeconds).toBe(51);
+    expect(purchaseResponse.body.upgradesPurchased).toBe(5);
     expect(purchaseResponse.body.secondsMultiplier).toBe(1.5);
     expect(purchaseResponse.body.achievementBonusMultiplier).toBe(1.25);
 

@@ -172,6 +172,7 @@ export function registerShopRoutes({
       res.json({
         totalIdleSeconds: toNumber(updated.total_seconds_collected),
         collectedIdleSeconds: toNumber(updated.spendable_idle_seconds),
+        upgradesPurchased: nextUpgradesPurchased,
         currentSeconds: toNumber(updated.current_seconds),
         secondsMultiplier: toNumber(updated.seconds_multiplier),
         achievementBonusMultiplier: nextAchievementBonusMultiplier,
