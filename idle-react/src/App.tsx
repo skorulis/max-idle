@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { calculateIdleSecondsGain, getIdleSecondsRate } from "./idleRate";
 import { formatSeconds } from "./formatSeconds";
+import { getSecondsMultiplierPurchaseCost, multiplierToLevel } from "./shop";
 
 const TOKEN_KEY = "max-idle-token";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
@@ -15,6 +16,7 @@ type PlayerResponse = {
   collectedIdleSeconds: number;
   currentSeconds: number;
   idleSecondsRate: number;
+  secondsMultiplier: number;
   currentSecondsLastUpdated: string;
   lastCollectedAt: string;
   serverTime: string;
@@ -56,6 +58,9 @@ type AccountResponse = {
 type SyncedPlayerState = {
   totalIdleSeconds: number;
   collectedIdleSeconds: number;
+  currentSeconds: number;
+  currentSecondsLastUpdatedMs: number;
+  secondsMultiplier: number;
   lastCollectedAtMs: number;
   serverTimeMs: number;
   syncedAtClientMs: number;
@@ -107,7 +112,7 @@ async function getPlayer(token: string | null): Promise<PlayerResponse> {
   return (await response.json()) as PlayerResponse;
 }
 
-async function collectIdleTime(token: string | null): Promise<void> {
+async function collectIdleTime(token: string | null): Promise<PlayerResponse> {
   const headers: Record<string, string> = {};
   if (token) {
     headers.Authorization = `Bearer ${token}`;
@@ -127,6 +132,7 @@ async function collectIdleTime(token: string | null): Promise<void> {
   if (!response.ok) {
     throw new Error("Failed to collect idle time");
   }
+  return (await response.json()) as PlayerResponse;
 }
 
 async function getAccount(token: string | null): Promise<AccountResponse> {
@@ -225,6 +231,38 @@ async function updateUsername(token: string | null, username: string): Promise<{
   return (payload ?? { username }) as { username: string };
 }
 
+async function purchaseSecondsMultiplier(token: string | null, quantity: 1 | 5 | 10): Promise<PlayerResponse> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json"
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/shop/purchase`, {
+    method: "POST",
+    credentials: "include",
+    headers,
+    body: JSON.stringify({
+      upgradeType: "seconds_multiplier",
+      quantity
+    })
+  });
+
+  const payload = (await response.json().catch(() => null)) as { error?: string; code?: string } | null;
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error("UNAUTHORIZED");
+    }
+    if (response.status === 400 && payload?.code === "INSUFFICIENT_FUNDS") {
+      throw new Error("INSUFFICIENT_FUNDS");
+    }
+    throw new Error(payload?.error ?? "Failed to purchase upgrade");
+  }
+
+  return payload as PlayerResponse;
+}
+
 async function logoutSession(): Promise<void> {
   await apiRequest("/auth/logout", { method: "POST" });
 }
@@ -233,6 +271,9 @@ function toSyncedState(data: PlayerResponse): SyncedPlayerState {
   return {
     totalIdleSeconds: data.totalIdleSeconds,
     collectedIdleSeconds: data.collectedIdleSeconds,
+    currentSeconds: data.currentSeconds,
+    currentSecondsLastUpdatedMs: Date.parse(data.currentSecondsLastUpdated),
+    secondsMultiplier: data.secondsMultiplier,
     lastCollectedAtMs: Date.parse(data.lastCollectedAt),
     serverTimeMs: Date.parse(data.serverTime),
     syncedAtClientMs: Date.now()
@@ -270,6 +311,7 @@ function App() {
   const [usernameDraft, setUsernameDraft] = useState("");
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [usernameSuccess, setUsernameSuccess] = useState<string | null>(null);
+  const [shopPendingQuantity, setShopPendingQuantity] = useState<1 | 5 | 10 | null>(null);
   const [tickMs, setTickMs] = useState(Date.now());
   const [loginForm, setLoginForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const [signupForm, setSignupForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
@@ -414,8 +456,9 @@ function App() {
     }
 
     const estimatedServerNowMs = playerState.serverTimeMs + (tickMs - playerState.syncedAtClientMs);
-    const elapsed = Math.floor((estimatedServerNowMs - playerState.lastCollectedAtMs) / 1000);
-    return calculateIdleSecondsGain(Math.max(0, elapsed));
+    const elapsedSinceCurrentUpdate = Math.floor((estimatedServerNowMs - playerState.currentSecondsLastUpdatedMs) / 1000);
+    const incremental = Math.floor(calculateIdleSecondsGain(Math.max(0, elapsedSinceCurrentUpdate)) * playerState.secondsMultiplier);
+    return playerState.currentSeconds + incremental;
   }, [playerState, tickMs]);
 
   const realtimeElapsedSeconds = useMemo(() => {
@@ -437,6 +480,18 @@ function App() {
     return getIdleSecondsRate({ secondsSinceLastCollection: Math.max(0, elapsed) });
   }, [playerState, tickMs]);
 
+  const secondsMultiplierLevel = useMemo(() => {
+    return playerState ? multiplierToLevel(playerState.secondsMultiplier) : 0;
+  }, [playerState]);
+
+  const shopCosts = useMemo(() => {
+    return {
+      1: getSecondsMultiplierPurchaseCost(secondsMultiplierLevel, 1),
+      5: getSecondsMultiplierPurchaseCost(secondsMultiplierLevel, 5),
+      10: getSecondsMultiplierPurchaseCost(secondsMultiplierLevel, 10)
+    };
+  }, [secondsMultiplierLevel]);
+
   const onCollect = async () => {
     if (!playerState) {
       return;
@@ -447,8 +502,8 @@ function App() {
     setStatus("Collecting your hard-earned inactivity...");
 
     try {
-      await collectIdleTime(token);
-      await refreshPlayer(token);
+      const nextPlayer = await collectIdleTime(token);
+      setPlayerState(toSyncedState(nextPlayer));
       await refreshAccount(token);
       setStatus("Collected. You may now continue doing nothing.");
     } catch (collectError) {
@@ -463,6 +518,30 @@ function App() {
       setStatus("Your inactivity transfer was interrupted.");
     } finally {
       setCollecting(false);
+    }
+  };
+
+  const onPurchaseUpgrade = async (quantity: 1 | 5 | 10) => {
+    if (!playerState) {
+      return;
+    }
+
+    setShopPendingQuantity(quantity);
+    setError(null);
+    setStatus(`Purchasing seconds multiplier x${quantity}...`);
+    try {
+      const updatedPlayer = await purchaseSecondsMultiplier(token, quantity);
+      setPlayerState(toSyncedState(updatedPlayer));
+      setStatus(`Seconds multiplier upgraded by ${quantity * 0.1}x.`);
+    } catch (purchaseError) {
+      if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
+        setError("Not enough spendable idle seconds for that purchase.");
+      } else {
+        setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
+      }
+      setStatus("Could not complete shop purchase.");
+    } finally {
+      setShopPendingQuantity(null);
     }
   };
 
@@ -678,11 +757,45 @@ function App() {
               <p>
                 <span>Spendable:</span> {formatSeconds(playerState?.collectedIdleSeconds ?? 0)}
               </p>
+              <p>
+                <span>Seconds multiplier:</span> {playerState?.secondsMultiplier.toFixed(1) ?? "1.0"}x
+              </p>
             </div>
 
             <button className="collect" onClick={onCollect} disabled={collecting}>
               {collecting ? "Collecting..." : "Collect"}
             </button>
+            <div className="panel">
+              <h2>Shop</h2>
+              <p className="subtle">Upgrade: seconds multiplier (+0.1x per purchase)</p>
+              <p className="subtle">Current multiplier: {playerState.secondsMultiplier.toFixed(1)}x</p>
+              <div className="shop-actions">
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => onPurchaseUpgrade(1)}
+                  disabled={shopPendingQuantity !== null || playerState.collectedIdleSeconds < shopCosts[1]}
+                >
+                  {shopPendingQuantity === 1 ? "Purchasing..." : `Buy x1 (${formatSeconds(shopCosts[1])})`}
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => onPurchaseUpgrade(5)}
+                  disabled={shopPendingQuantity !== null || playerState.collectedIdleSeconds < shopCosts[5]}
+                >
+                  {shopPendingQuantity === 5 ? "Purchasing..." : `Buy x5 (${formatSeconds(shopCosts[5])})`}
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => onPurchaseUpgrade(10)}
+                  disabled={shopPendingQuantity !== null || playerState.collectedIdleSeconds < shopCosts[10]}
+                >
+                  {shopPendingQuantity === 10 ? "Purchasing..." : `Buy x10 (${formatSeconds(shopCosts[10])})`}
+                </button>
+              </div>
+            </div>
           </>
           )
         ) : null}

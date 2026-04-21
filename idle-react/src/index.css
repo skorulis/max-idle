@@ -241,3 +241,9 @@ input {
   border-color: #2563eb;
   background: #eff6ff;
 }
+
+.shop-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}

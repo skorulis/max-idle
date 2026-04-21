@@ -12,6 +12,11 @@ import {
 } from "./betterAuth.js";
 import { calculateElapsedSeconds } from "./time.js";
 import { calculateIdleSecondsGain, getIdleSecondsRate } from "./idleRate.js";
+import {
+  getSecondsMultiplierPurchaseCost,
+  levelToMultiplier,
+  multiplierToLevel
+} from "./shop.js";
 import type { AppConfig, AuthClaims } from "./types.js";
 import { generateAnonymousUsername, isUsernameTakenError, isValidUsername } from "./username.js";
 
@@ -542,14 +547,20 @@ export function createApp(pool: Pool, config: AppConfig) {
       const result = await pool.query<{
         total_seconds_collected: string;
         spendable_idle_seconds: string;
+        seconds_multiplier: number | string;
         last_collected_at: Date;
+        current_seconds: string;
+        current_seconds_last_updated: Date;
         server_time: Date;
       }>(
         `
         SELECT
           total_seconds_collected,
           spendable_idle_seconds,
+          seconds_multiplier,
           last_collected_at,
+          current_seconds,
+          current_seconds_last_updated,
           NOW() AS server_time
         FROM player_states
         WHERE user_id = $1
@@ -563,8 +574,11 @@ export function createApp(pool: Pool, config: AppConfig) {
         return;
       }
 
-      const currentSeconds = calculateElapsedSeconds(row.last_collected_at, row.server_time);
-      const currentIdleSeconds = calculateIdleSecondsGain(currentSeconds);
+      const elapsedSinceCurrentUpdate = calculateElapsedSeconds(row.current_seconds_last_updated, row.server_time);
+      const secondsMultiplier = Number(row.seconds_multiplier);
+      const incrementalBaseGain = calculateIdleSecondsGain(elapsedSinceCurrentUpdate);
+      const incrementalBoostedGain = Math.floor(incrementalBaseGain * secondsMultiplier);
+      const currentIdleSeconds = toNumber(row.current_seconds) + incrementalBoostedGain;
       await pool.query(
         `
         UPDATE player_states
@@ -575,13 +589,15 @@ export function createApp(pool: Pool, config: AppConfig) {
         `,
         [userId, currentIdleSeconds, row.server_time]
       );
-      const idleSecondsRate = getIdleSecondsRate({ secondsSinceLastCollection: currentSeconds });
+      const elapsedSinceLastCollection = calculateElapsedSeconds(row.last_collected_at, row.server_time);
+      const idleSecondsRate = getIdleSecondsRate({ secondsSinceLastCollection: elapsedSinceLastCollection });
 
       res.json({
         totalIdleSeconds: toNumber(row.total_seconds_collected),
         collectedIdleSeconds: toNumber(row.spendable_idle_seconds),
         currentSeconds: currentIdleSeconds,
         idleSecondsRate,
+        secondsMultiplier,
         currentSecondsLastUpdated: row.server_time.toISOString(),
         lastCollectedAt: row.last_collected_at.toISOString(),
         serverTime: row.server_time.toISOString()
@@ -601,11 +617,20 @@ export function createApp(pool: Pool, config: AppConfig) {
       const result = await client.query<{
         total_seconds_collected: number | string;
         spendable_idle_seconds: number | string;
+        seconds_multiplier: number | string;
         last_collected_at: Date;
+        current_seconds: number | string;
+        current_seconds_last_updated: Date;
         updated_at: Date;
       }>(
         `
-        SELECT total_seconds_collected, spendable_idle_seconds, last_collected_at
+        SELECT
+          total_seconds_collected,
+          spendable_idle_seconds,
+          seconds_multiplier,
+          last_collected_at,
+          current_seconds,
+          current_seconds_last_updated
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -621,14 +646,18 @@ export function createApp(pool: Pool, config: AppConfig) {
       }
 
       const collectedAt = new Date();
-      const elapsedSeconds = calculateElapsedSeconds(lockedRow.last_collected_at, collectedAt);
-      const collectedSeconds = calculateIdleSecondsGain(elapsedSeconds);
+      const elapsedSinceCurrentUpdate = calculateElapsedSeconds(lockedRow.current_seconds_last_updated, collectedAt);
+      const secondsMultiplier = Number(lockedRow.seconds_multiplier);
+      const incrementalBaseGain = calculateIdleSecondsGain(elapsedSinceCurrentUpdate);
+      const incrementalBoostedGain = Math.floor(incrementalBaseGain * secondsMultiplier);
+      const collectedSeconds = toNumber(lockedRow.current_seconds) + incrementalBoostedGain;
       const updateResult = await client.query<{
         total_seconds_collected: number | string;
         spendable_idle_seconds: number | string;
         last_collected_at: Date;
         current_seconds: number | string;
         current_seconds_last_updated: Date;
+        seconds_multiplier: number | string;
       }>(
         `
         UPDATE player_states
@@ -640,7 +669,7 @@ export function createApp(pool: Pool, config: AppConfig) {
           last_collected_at = $3,
           updated_at = $3
         WHERE user_id = $1
-        RETURNING total_seconds_collected, spendable_idle_seconds, last_collected_at, current_seconds, current_seconds_last_updated
+        RETURNING total_seconds_collected, spendable_idle_seconds, last_collected_at, current_seconds, current_seconds_last_updated, seconds_multiplier
         `,
         [userId, collectedSeconds, collectedAt]
       );
@@ -658,9 +687,138 @@ export function createApp(pool: Pool, config: AppConfig) {
         totalIdleSeconds: toNumber(row.total_seconds_collected),
         collectedIdleSeconds: toNumber(row.spendable_idle_seconds),
         currentSeconds: toNumber(row.current_seconds),
+        secondsMultiplier: toNumber(row.seconds_multiplier),
         idleSecondsRate: 1,
         currentSecondsLastUpdated: row.current_seconds_last_updated.toISOString(),
         lastCollectedAt: row.last_collected_at.toISOString()
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      next(error);
+    } finally {
+      client.release();
+    }
+  });
+
+  app.post("/shop/purchase", async (req, res, next) => {
+    const client = await pool.connect();
+    try {
+      const identity = await resolveIdentity(auth, pool, config.jwtSecret, req);
+      req.auth = identity.claims;
+
+      const upgradeType = String(req.body?.upgradeType ?? "");
+      const quantity = Number(req.body?.quantity);
+      if (upgradeType !== "seconds_multiplier") {
+        res.status(400).json({ error: "Unsupported upgrade type" });
+        return;
+      }
+      if (![1, 5, 10].includes(quantity)) {
+        res.status(400).json({ error: "Invalid purchase quantity" });
+        return;
+      }
+
+      const userId = identity.claims.sub;
+      await client.query("BEGIN");
+      const rowResult = await client.query<{
+        total_seconds_collected: string;
+        spendable_idle_seconds: string;
+        current_seconds: string;
+        current_seconds_last_updated: Date;
+        last_collected_at: Date;
+        seconds_multiplier: number | string;
+      }>(
+        `
+        SELECT
+          total_seconds_collected,
+          spendable_idle_seconds,
+          current_seconds,
+          current_seconds_last_updated,
+          last_collected_at,
+          seconds_multiplier
+        FROM player_states
+        WHERE user_id = $1
+        FOR UPDATE
+        `,
+        [userId]
+      );
+
+      const row = rowResult.rows[0];
+      if (!row) {
+        await client.query("ROLLBACK");
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+
+      const now = new Date();
+      const secondsMultiplier = Number(row.seconds_multiplier);
+      const elapsedSinceCurrentUpdate = calculateElapsedSeconds(row.current_seconds_last_updated, now);
+      const incrementalBaseGain = calculateIdleSecondsGain(elapsedSinceCurrentUpdate);
+      const incrementalBoostedGain = Math.floor(incrementalBaseGain * secondsMultiplier);
+      const syncedCurrentSeconds = toNumber(row.current_seconds) + incrementalBoostedGain;
+
+      const currentLevel = multiplierToLevel(secondsMultiplier);
+      const totalCost = getSecondsMultiplierPurchaseCost(currentLevel, quantity);
+      const spendableIdleSeconds = toNumber(row.spendable_idle_seconds);
+      if (spendableIdleSeconds < totalCost) {
+        await client.query("ROLLBACK");
+        res.status(400).json({
+          error: "Not enough funds",
+          code: "INSUFFICIENT_FUNDS"
+        });
+        return;
+      }
+
+      const nextLevel = currentLevel + quantity;
+      const nextMultiplier = levelToMultiplier(nextLevel);
+      const updateResult = await client.query<{
+        total_seconds_collected: string;
+        spendable_idle_seconds: string;
+        current_seconds: string;
+        current_seconds_last_updated: Date;
+        last_collected_at: Date;
+        seconds_multiplier: number | string;
+      }>(
+        `
+        UPDATE player_states
+        SET
+          spendable_idle_seconds = $2,
+          current_seconds = $3,
+          current_seconds_last_updated = $4,
+          seconds_multiplier = $5
+        WHERE user_id = $1
+        RETURNING
+          total_seconds_collected,
+          spendable_idle_seconds,
+          current_seconds,
+          current_seconds_last_updated,
+          last_collected_at,
+          seconds_multiplier
+        `,
+        [userId, spendableIdleSeconds - totalCost, syncedCurrentSeconds, now, nextMultiplier]
+      );
+      const updated = updateResult.rows[0];
+      await client.query("COMMIT");
+
+      if (!updated) {
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+
+      const elapsedSinceLastCollection = calculateElapsedSeconds(updated.last_collected_at, now);
+      res.json({
+        totalIdleSeconds: toNumber(updated.total_seconds_collected),
+        collectedIdleSeconds: toNumber(updated.spendable_idle_seconds),
+        currentSeconds: toNumber(updated.current_seconds),
+        secondsMultiplier: toNumber(updated.seconds_multiplier),
+        idleSecondsRate: getIdleSecondsRate({ secondsSinceLastCollection: elapsedSinceLastCollection }),
+        currentSecondsLastUpdated: updated.current_seconds_last_updated.toISOString(),
+        lastCollectedAt: updated.last_collected_at.toISOString(),
+        serverTime: now.toISOString(),
+        purchase: {
+          upgradeType,
+          quantity,
+          totalCost
+        }
       });
     } catch (error) {
       await client.query("ROLLBACK");

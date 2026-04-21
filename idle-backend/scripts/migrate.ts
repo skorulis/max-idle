@@ -15,6 +15,7 @@ async function run(): Promise<void> {
     const authIdentitySql = await readFile(resolve(process.cwd(), "sql/002_auth_identity.sql"), "utf-8");
     const usernameSql = await readFile(resolve(process.cwd(), "sql/003_username.sql"), "utf-8");
     const playerStateFieldsSql = await readFile(resolve(process.cwd(), "sql/004_player_state_fields.sql"), "utf-8");
+    const secondsMultiplierSql = await readFile(resolve(process.cwd(), "sql/005_seconds_multiplier.sql"), "utf-8");
     await pool.query(baseSql);
     await pool.query(authIdentitySql);
     await pool.query(usernameSql);
@@ -31,7 +32,22 @@ async function run(): Promise<void> {
     if (legacyColumnResult.rows[0]?.exists) {
       await pool.query(playerStateFieldsSql);
     }
-    console.log("Migration completed: 001_init.sql + 002_auth_identity.sql + 003_username.sql + 004_player_state_fields.sql");
+    const hasSecondsMultiplierResult = await pool.query<{ exists: boolean }>(
+      `
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'player_states'
+          AND column_name = 'seconds_multiplier'
+      ) AS exists
+      `
+    );
+    if (!hasSecondsMultiplierResult.rows[0]?.exists) {
+      await pool.query(secondsMultiplierSql);
+    }
+    console.log(
+      "Migration completed: 001_init.sql + 002_auth_identity.sql + 003_username.sql + 004_player_state_fields.sql + 005_seconds_multiplier.sql"
+    );
 
     const auth = createBetterAuth(pool, config);
     const migrations = await getMigrations(auth.options);

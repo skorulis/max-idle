@@ -3,6 +3,7 @@ import type { Pool } from "pg";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../src/app.js";
+import { calculateIdleSecondsGain } from "../src/idleRate.js";
 import type { AppConfig } from "../src/types.js";
 import { createTestPool } from "./testDb.js";
 
@@ -72,7 +73,13 @@ describe("auth + player lifecycle", () => {
     const { token, userId } = authResponse.body as { token: string; userId: string };
 
     await pool.query(
-      `UPDATE player_states SET last_collected_at = NOW() - INTERVAL '10 seconds' WHERE user_id = $1`,
+      `
+      UPDATE player_states
+      SET
+        last_collected_at = NOW() - INTERVAL '10 seconds',
+        current_seconds_last_updated = NOW() - INTERVAL '10 seconds'
+      WHERE user_id = $1
+      `,
       [userId]
     );
 
@@ -285,5 +292,67 @@ describe("auth + player lifecycle", () => {
       )
     ).toBe(true);
     expect(leaderboardResponse.body.currentPlayer.totalIdleSeconds).toBe(800000);
+  });
+
+  it("applies seconds multiplier to generated idle gain", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(
+      `
+      UPDATE player_states
+      SET
+        seconds_multiplier = 2,
+        current_seconds = 0,
+        current_seconds_last_updated = NOW() - INTERVAL '120 seconds',
+        last_collected_at = NOW() - INTERVAL '120 seconds'
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+
+    const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
+    expect(playerResponse.status).toBe(200);
+    const expectedCurrent = calculateIdleSecondsGain(120) * 2;
+    expect(playerResponse.body.currentSeconds).toBe(expectedCurrent);
+    expect(playerResponse.body.secondsMultiplier).toBe(2);
+  });
+
+  it("allows purchasing seconds multiplier upgrades", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(`UPDATE player_states SET spendable_idle_seconds = 100 WHERE user_id = $1`, [userId]);
+
+    const purchaseResponse = await request(app)
+      .post("/shop/purchase")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ upgradeType: "seconds_multiplier", quantity: 5 });
+
+    expect(purchaseResponse.status).toBe(200);
+    expect(purchaseResponse.body.purchase.totalCost).toBe(49);
+    expect(purchaseResponse.body.collectedIdleSeconds).toBe(51);
+    expect(purchaseResponse.body.secondsMultiplier).toBe(1.5);
+  });
+
+  it("rejects shop purchases when funds are insufficient", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(`UPDATE player_states SET spendable_idle_seconds = 4 WHERE user_id = $1`, [userId]);
+
+    const purchaseResponse = await request(app)
+      .post("/shop/purchase")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ upgradeType: "seconds_multiplier", quantity: 1 });
+
+    expect(purchaseResponse.status).toBe(400);
+    expect(purchaseResponse.body.code).toBe("INSUFFICIENT_FUNDS");
   });
 });
