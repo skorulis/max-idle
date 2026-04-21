@@ -480,6 +480,13 @@ function App() {
     return getIdleSecondsRate({ secondsSinceLastCollection: Math.max(0, elapsed) });
   }, [playerState, tickMs]);
 
+  const effectiveIdleSecondsRate = useMemo(() => {
+    if (!playerState) {
+      return 1;
+    }
+    return idleSecondsRate * playerState.secondsMultiplier;
+  }, [idleSecondsRate, playerState]);
+
   const secondsMultiplierLevel = useMemo(() => {
     return playerState ? multiplierToLevel(playerState.secondsMultiplier) : 0;
   }, [playerState]);
@@ -748,7 +755,7 @@ function App() {
             <p className="label">Current idle time</p>
             <p className="counter">{formatSeconds(uncollectedIdleSeconds)}</p>
             <p className="subtle">Realtime: {formatSeconds(realtimeElapsedSeconds)}</p>
-            <p className="subtle">Current rate: {idleSecondsRate.toFixed(2)}x</p>
+            <p className="subtle">Current rate: {effectiveIdleSecondsRate.toFixed(2)}x</p>
 
             <div className="stats">
               <p>

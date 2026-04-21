@@ -87,6 +87,7 @@ describe("auth + player lifecycle", () => {
     expect(collectResponse.status).toBe(200);
     expect(collectResponse.body.collectedSeconds).toBeGreaterThanOrEqual(10);
     expect(collectResponse.body.totalIdleSeconds).toBeGreaterThanOrEqual(10);
+    expect(collectResponse.body.serverTime).toBeTypeOf("string");
 
     const secondCollect = await request(app).post("/player/collect").set("Authorization", `Bearer ${token}`);
     expect(secondCollect.status).toBe(200);

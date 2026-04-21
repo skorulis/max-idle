@@ -690,7 +690,8 @@ export function createApp(pool: Pool, config: AppConfig) {
         secondsMultiplier: toNumber(row.seconds_multiplier),
         idleSecondsRate: 1,
         currentSecondsLastUpdated: row.current_seconds_last_updated.toISOString(),
-        lastCollectedAt: row.last_collected_at.toISOString()
+        lastCollectedAt: row.last_collected_at.toISOString(),
+        serverTime: row.last_collected_at.toISOString()
       });
     } catch (error) {
       await client.query("ROLLBACK");
