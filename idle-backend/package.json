@@ -16,6 +16,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
+    "@maxidle/shared": "file:../shared",
     "@opentelemetry/api": "^1.9.1",
     "better-auth": "^1.6.5",
     "cors": "^2.8.6",

@@ -1,0 +1,16 @@
+{
+  "name": "@maxidle/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./idleRate": {
+      "types": "./idleRate.d.ts",
+      "default": "./idleRate.js"
+    },
+    "./shop": {
+      "types": "./shop.d.ts",
+      "default": "./shop.js"
+    }
+  }
+}
