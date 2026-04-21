@@ -713,30 +713,25 @@ function App() {
   const showLogin = route === "/login";
   const showAccount = route === "/account";
   const showLeaderboard = route === "/leaderboard";
+  const currentPageTitle = showGame ? "Home" : showLogin ? "Login" : showAccount ? "Account" : "Leaderboard";
 
   return (
     <main className="app">
-      <section className="card">
-        <div className="topbar">
-          <p className="brand">Max Idle</p>
-          <div className="actions">
-            <button type="button" className="link" onClick={() => navigate("/")}>
-              Home
-            </button>
-            <button type="button" className="link" onClick={() => navigate("/account")}>
-              Account
-            </button>
-            <button type="button" className="link" onClick={() => navigate("/leaderboard")}>
-              Leaderboard
-            </button>
-            {account?.isAnonymous === false || playerState ? (
-              <button type="button" className="link" onClick={onLogout} disabled={authPending}>
-                Logout
-              </button>
-            ) : null}
-          </div>
+      <header className="page-nav">
+        <p className="page-title">{currentPageTitle}</p>
+        <div className="actions">
+          <button type="button" className="link" onClick={() => navigate("/")}>
+            Home
+          </button>
+          <button type="button" className="link" onClick={() => navigate("/account")}>
+            Account
+          </button>
+          <button type="button" className="link" onClick={() => navigate("/leaderboard")}>
+            Leaderboard
+          </button>
         </div>
-
+      </header>
+      <section className="card">
         <h1>Max Idle</h1>
         <p className="status">{status}</p>
 
@@ -913,6 +908,9 @@ function App() {
                     {renderAuthButtons()}
                   </>
                 )}
+                <button type="button" className="secondary" onClick={onLogout} disabled={authPending}>
+                  {authPending ? "Logging out..." : "Logout"}
+                </button>
               </>
             ) : (
               <>
