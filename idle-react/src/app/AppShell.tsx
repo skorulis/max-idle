@@ -38,6 +38,34 @@ import type {
 } from "./types";
 
 const TOKEN_KEY = "max-idle-token";
+const FALLBACK_MESSAGE = "The message board is taking a snack break.";
+const HUMOROUS_MESSAGES = [
+  "Your productivity has entered low-power mode.",
+  "Another second has passed without incident",
+  "Your idle engine is purring like a very relaxed cat.",
+  "If you stare at the counter it will stare back.",
+  "Make sure to keep hydrated. Time will continue to pass while you are away.",
+  "Doing nothing remains unexpectedly effective.",
+  "Who has time? But then if we do not ever take time, how can we ever have time? - Merovingian "
+];
+
+function getRandomMessageIndex(excludeIndex?: number): number {
+  if (HUMOROUS_MESSAGES.length === 0) {
+    return -1;
+  }
+  if (HUMOROUS_MESSAGES.length === 1) {
+    return 0;
+  }
+  let nextIndex = Math.floor(Math.random() * HUMOROUS_MESSAGES.length);
+  while (nextIndex === excludeIndex) {
+    nextIndex = Math.floor(Math.random() * HUMOROUS_MESSAGES.length);
+  }
+  return nextIndex;
+}
+
+function getMessageFromIndex(index: number): string {
+  return HUMOROUS_MESSAGES[index] ?? FALLBACK_MESSAGE;
+}
 
 function getCurrentPageTitle(pathname: string): string {
   if (pathname === "/") {
@@ -90,6 +118,10 @@ export function AppShell() {
   const [usernameSuccess, setUsernameSuccess] = useState<string | null>(null);
   const [shopPendingQuantity, setShopPendingQuantity] = useState<1 | 5 | 10 | null>(null);
   const [tickMs, setTickMs] = useState(0);
+  const [messageCardState, setMessageCardState] = useState<{ override: string | null; randomIndex: number }>(() => ({
+    override: null,
+    randomIndex: getRandomMessageIndex()
+  }));
   const [loginForm, setLoginForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const [signupForm, setSignupForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const [upgradeForm, setUpgradeForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
@@ -116,6 +148,28 @@ export function AppShell() {
       window.clearInterval(timer);
     };
   }, []);
+
+  useEffect(() => {
+    if (messageCardState.override) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setMessageCardState((previous) => {
+        if (previous.override) {
+          return previous;
+        }
+        return {
+          ...previous,
+          randomIndex: getRandomMessageIndex(previous.randomIndex)
+        };
+      });
+    }, 20_000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [messageCardState.override]);
 
   useEffect(() => {
     if (location.pathname !== "/leaderboard") {
@@ -348,6 +402,8 @@ export function AppShell() {
     };
   }, [secondsMultiplierLevel]);
 
+  const activeMessageCardText = messageCardState.override ?? getMessageFromIndex(messageCardState.randomIndex);
+
   const onCollect = async () => {
     if (!playerState) {
       return;
@@ -555,6 +611,10 @@ export function AppShell() {
     return (
       <main className="app">
         <p>Preparing your idle session...</p>
+        <section className="card message-card" aria-live="polite">
+          <p className="label">Idle bulletin</p>
+          <p className="message-copy">{activeMessageCardText}</p>
+        </section>
       </main>
     );
   }
@@ -686,6 +746,10 @@ export function AppShell() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         {error ? <p className="error">{error}</p> : null}
+      </section>
+      <section className="card message-card" aria-live="polite">
+        <p className="label">Idle bulletin</p>
+        <p className="message-copy">{activeMessageCardText}</p>
       </section>
     </main>
   );
