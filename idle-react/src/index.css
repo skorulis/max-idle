@@ -86,7 +86,15 @@ h3 {
   background: transparent;
   color: #374151;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 13px;
+}
+
+.link svg {
+  width: 14px;
+  height: 14px;
 }
 
 .status {

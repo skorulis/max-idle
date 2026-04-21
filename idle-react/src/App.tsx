@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { CircleUserRound, House, Medal } from "lucide-react";
 import { calculateIdleSecondsGain, getIdleSecondsRate } from "./idleRate";
 import { formatSeconds } from "./formatSeconds";
 import { getSecondsMultiplierPurchaseCost, multiplierToLevel } from "./shop";
@@ -721,13 +722,13 @@ function App() {
         <p className="page-title">{currentPageTitle}</p>
         <div className="actions">
           <button type="button" className="link" onClick={() => navigate("/")}>
-            Home
+            <House aria-hidden="true" />
           </button>
           <button type="button" className="link" onClick={() => navigate("/account")}>
-            Account
+            <CircleUserRound aria-hidden="true" />
           </button>
           <button type="button" className="link" onClick={() => navigate("/leaderboard")}>
-            Leaderboard
+            <Medal aria-hidden="true" />
           </button>
         </div>
       </header>
