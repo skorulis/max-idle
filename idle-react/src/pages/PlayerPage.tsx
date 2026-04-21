@@ -23,6 +23,9 @@ export function PlayerPage({ publicPlayerLoading, publicPlayerProfile, hasError 
           <p>
             <span>Collected idle time:</span> {formatSeconds(publicPlayerProfile.collectedIdleSeconds)}
           </p>
+          <p>
+            <span>Achievements earned:</span> {publicPlayerProfile.achievementCount}
+          </p>
         </>
       ) : null}
       {!publicPlayerLoading && !publicPlayerProfile && !hasError ? <p>Player not found.</p> : null}

@@ -82,6 +82,7 @@ export type PlayerProfileResponse = {
     accountAgeSeconds: number;
     currentIdleSeconds: number;
     collectedIdleSeconds: number;
+    achievementCount: number;
   };
   meta: {
     serverTime: string;

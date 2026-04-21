@@ -414,6 +414,7 @@ describe("auth + player lifecycle", () => {
     expect(profileResponse.body.player.accountAgeSeconds).toBeGreaterThanOrEqual(0);
     expect(profileResponse.body.player.currentIdleSeconds).toBeGreaterThanOrEqual(230);
     expect(profileResponse.body.player.collectedIdleSeconds).toBe(1234);
+    expect(profileResponse.body.player.achievementCount).toBe(0);
     expect(profileResponse.body.meta.serverTime).toBeTypeOf("string");
   });
 

@@ -815,7 +815,8 @@ export function createApp(pool: Pool, config: AppConfig) {
           username: row.username,
           accountAgeSeconds,
           currentIdleSeconds,
-          collectedIdleSeconds: toNumber(row.total_seconds_collected)
+          collectedIdleSeconds: toNumber(row.total_seconds_collected),
+          achievementCount: toNumber(row.achievement_count)
         },
         meta: {
           serverTime: row.server_time.toISOString()
