@@ -13,6 +13,7 @@ import {
 import { calculateElapsedSeconds } from "./time.js";
 import { calculateIdleSecondsGain, getIdleSecondsRate } from "./idleRate.js";
 import { ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION, ACHIEVEMENT_IDS, ACHIEVEMENTS } from "@maxidle/shared/achievements";
+import type { AchievementId } from "@maxidle/shared/achievements";
 import {
   getSecondsMultiplierPurchaseCost,
   levelToMultiplier,
@@ -80,6 +81,31 @@ function normalizeCompletedAchievementIds(currentValue: unknown, idsToAdd: strin
 
 function getAchievementBonusMultiplier(achievementCount: number): number {
   return 1 + Math.max(0, achievementCount) * ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION;
+}
+
+type Queryable = Pick<Pool, "query">;
+
+async function grantAchievement(db: Queryable, userId: string, achievementId: AchievementId): Promise<void> {
+  const playerStateResult = await db.query<{ completed_achievements: unknown }>(
+    `SELECT completed_achievements FROM player_states WHERE user_id = $1 FOR UPDATE`,
+    [userId]
+  );
+  const playerStateRow = playerStateResult.rows[0];
+  if (!playerStateRow) {
+    throw new Error("PLAYER_STATE_NOT_FOUND");
+  }
+
+  const completedAchievementIds = normalizeCompletedAchievementIds(playerStateRow.completed_achievements, [achievementId]);
+  await db.query(
+    `
+    UPDATE player_states
+    SET
+      completed_achievements = $2::jsonb,
+      achievement_count = $3
+    WHERE user_id = $1
+    `,
+    [userId, JSON.stringify(completedAchievementIds), completedAchievementIds.length]
+  );
 }
 
 type BetterAuthSession = {
@@ -265,7 +291,8 @@ export function createApp(pool: Pool, config: AppConfig) {
       const payload = (await authResponse.clone().json()) as { user: { id: string; email: string } };
       const client = await pool.connect();
       try {
-        await ensureGameIdentityForAuthUser(client, payload.user.id, payload.user.email);
+        const gameUserId = await ensureGameIdentityForAuthUser(client, payload.user.id, payload.user.email);
+        await grantAchievement(client, gameUserId, ACHIEVEMENT_IDS.ACCOUNT_CREATION);
       } finally {
         client.release();
       }
@@ -424,6 +451,7 @@ export function createApp(pool: Pool, config: AppConfig) {
           [payload.user.id, anonymousClaims.sub]
         );
         await client.query(`UPDATE users SET is_anonymous = FALSE, email = $2 WHERE id = $1`, [anonymousClaims.sub, email]);
+        await grantAchievement(client, anonymousClaims.sub, ACHIEVEMENT_IDS.ACCOUNT_CREATION);
         await client.query("COMMIT");
       } catch (error) {
         await client.query("ROLLBACK");

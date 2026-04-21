@@ -26,6 +26,13 @@ describe("auth + player lifecycle", () => {
     return `${randomUUID()}@example.com`;
   }
 
+  function parseAchievementIds(value: unknown): string[] {
+    if (typeof value === "string") {
+      return JSON.parse(value) as string[];
+    }
+    return Array.isArray(value) ? (value as string[]) : [];
+  }
+
   async function insertLeaderboardPlayer(totalSecondsCollected: number, currentSeconds = 0): Promise<string> {
     const userId = randomUUID();
     const username = `lb_${randomUUID().replace(/-/g, "").slice(0, 12)}`;
@@ -121,6 +128,12 @@ describe("auth + player lifecycle", () => {
     expect(accountResponse.body.isAnonymous).toBe(false);
     expect(accountResponse.body.email).toBe(email);
     expect(accountResponse.body.username).toMatch(/^anonymous/);
+    const achievementState = await pool.query<{
+      achievement_count: string | number;
+      completed_achievements: unknown;
+    }>(`SELECT achievement_count, completed_achievements FROM player_states WHERE user_id = $1`, [accountResponse.body.gameUserId]);
+    expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);
+    expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toEqual(["account_creation"]);
 
     const loginResponse = await request(app).post("/auth/login").send({
       email,
@@ -130,6 +143,27 @@ describe("auth + player lifecycle", () => {
 
     const playerResponse = await request(app).get("/player").set("Cookie", loginResponse.headers["set-cookie"] ?? []);
     expect(playerResponse.status).toBe(200);
+  });
+
+  it("awards account creation achievement on anonymous upgrade", async () => {
+    const app = createApp(pool, config);
+    const anonymousAuth = await request(app).post("/auth/anonymous");
+    const token = anonymousAuth.body.token as string;
+    const userId = anonymousAuth.body.userId as string;
+
+    const upgradeResponse = await request(app).post("/account/upgrade").set("Authorization", `Bearer ${token}`).send({
+      name: "Upgraded User",
+      email: uniqueEmail(),
+      password: "password1234"
+    });
+    expect(upgradeResponse.status).toBe(200);
+
+    const achievementState = await pool.query<{
+      achievement_count: string | number;
+      completed_achievements: unknown;
+    }>(`SELECT achievement_count, completed_achievements FROM player_states WHERE user_id = $1`, [userId]);
+    expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);
+    expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toEqual(["account_creation"]);
   });
 
   it("updates username for registered users", async () => {
@@ -157,12 +191,11 @@ describe("auth + player lifecycle", () => {
       achievement_count: string | number;
       completed_achievements: unknown;
     }>(`SELECT achievement_count, completed_achievements FROM player_states WHERE user_id = $1`, [accountResponse.body.gameUserId]);
-    const completedAchievements =
-      typeof achievementState.rows[0]?.completed_achievements === "string"
-        ? (JSON.parse(achievementState.rows[0]?.completed_achievements as string) as string[])
-        : (achievementState.rows[0]?.completed_achievements as string[]);
-    expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);
-    expect(completedAchievements).toEqual(["username_selected"]);
+    expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(2);
+    expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toEqual([
+      "account_creation",
+      "username_selected"
+    ]);
   });
 
   it("rejects username updates for anonymous users", async () => {
