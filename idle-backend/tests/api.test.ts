@@ -295,6 +295,49 @@ describe("auth + player lifecycle", () => {
     expect(leaderboardResponse.body.currentPlayer.totalIdleSeconds).toBe(800000);
   });
 
+  it("returns public player profile by id", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(
+      `
+      UPDATE player_states
+      SET
+        total_seconds_collected = 1234,
+        current_seconds = 200,
+        current_seconds_last_updated = NOW() - INTERVAL '30 seconds',
+        seconds_multiplier = 1
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+
+    const profileResponse = await request(app).get(`/players/${userId}`);
+    expect(profileResponse.status).toBe(200);
+    expect(profileResponse.body.player.id).toBe(userId);
+    expect(profileResponse.body.player.username).toMatch(/^anonymous/);
+    expect(profileResponse.body.player.accountAgeSeconds).toBeTypeOf("number");
+    expect(profileResponse.body.player.accountAgeSeconds).toBeGreaterThanOrEqual(0);
+    expect(profileResponse.body.player.currentIdleSeconds).toBeGreaterThanOrEqual(230);
+    expect(profileResponse.body.player.collectedIdleSeconds).toBe(1234);
+    expect(profileResponse.body.meta.serverTime).toBeTypeOf("string");
+  });
+
+  it("returns 400 for invalid public player profile id", async () => {
+    const app = createApp(pool, config);
+
+    const profileResponse = await request(app).get("/players/not-a-uuid");
+    expect(profileResponse.status).toBe(400);
+  });
+
+  it("returns 404 when public player profile does not exist", async () => {
+    const app = createApp(pool, config);
+
+    const profileResponse = await request(app).get(`/players/${randomUUID()}`);
+    expect(profileResponse.status).toBe(404);
+  });
+
   it("applies seconds multiplier to generated idle gain", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");

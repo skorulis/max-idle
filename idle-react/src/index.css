@@ -240,6 +240,22 @@ input {
   margin: 0;
 }
 
+.leaderboard-player-link {
+  color: #1d4ed8;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.leaderboard-player-link:hover {
+  text-decoration: underline;
+}
+
+.leaderboard-player-link:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .leaderboard-row-current {
   border-color: #2563eb;
   background: #eff6ff;

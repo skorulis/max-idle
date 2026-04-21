@@ -68,7 +68,21 @@ type SyncedPlayerState = {
   syncedAtClientMs: number;
 };
 
-type RoutePath = "/" | "/login" | "/account" | "/leaderboard";
+type RoutePath = "/" | "/login" | "/account" | "/leaderboard" | "/player";
+type NavigationRoutePath = "/" | "/login" | "/account" | "/leaderboard";
+
+type PlayerProfileResponse = {
+  player: {
+    id: string;
+    username: string;
+    accountAgeSeconds: number;
+    currentIdleSeconds: number;
+    collectedIdleSeconds: number;
+  };
+  meta: {
+    serverTime: string;
+  };
+};
 
 type AuthFormState = {
   email: string;
@@ -177,6 +191,20 @@ async function getLeaderboard(token: string | null, type: LeaderboardType): Prom
   return (await response.json()) as LeaderboardResponse;
 }
 
+async function getPublicPlayerProfile(playerId: string): Promise<PlayerProfileResponse> {
+  const response = await fetch(`${API_BASE_URL}/players/${encodeURIComponent(playerId)}`, {
+    credentials: "include"
+  });
+
+  if (response.status === 404) {
+    throw new Error("PLAYER_NOT_FOUND");
+  }
+  if (!response.ok) {
+    throw new Error("Failed to load player profile");
+  }
+  return (await response.json()) as PlayerProfileResponse;
+}
+
 async function loginWithEmail(email: string, password: string): Promise<void> {
   await apiRequest("/auth/login", {
     method: "POST",
@@ -282,23 +310,41 @@ function toSyncedState(data: PlayerResponse): SyncedPlayerState {
   };
 }
 
-function readRoute(): RoutePath {
-  if (window.location.pathname === "/login") {
-    return "/login";
+function readRoute(): { path: RoutePath; playerId: string | null } {
+  const pathname = window.location.pathname;
+  const playerMatch = pathname.match(/^\/player\/([^/]+)$/);
+  if (playerMatch?.[1]) {
+    let playerId = playerMatch[1];
+    try {
+      playerId = decodeURIComponent(playerMatch[1]);
+    } catch {
+      // Keep original segment if decode fails.
+    }
+    return {
+      path: "/player",
+      playerId
+    };
   }
-  if (window.location.pathname === "/account") {
-    return "/account";
+  if (pathname === "/login") {
+    return { path: "/login", playerId: null };
   }
-  if (window.location.pathname === "/leaderboard") {
-    return "/leaderboard";
+  if (pathname === "/account") {
+    return { path: "/account", playerId: null };
   }
-  return "/";
+  if (pathname === "/leaderboard") {
+    return { path: "/leaderboard", playerId: null };
+  }
+  return { path: "/", playerId: null };
 }
 
 function App() {
-  const [route, setRoute] = useState<RoutePath>(() => readRoute());
+  const initialRoute = readRoute();
+  const [route, setRoute] = useState<RoutePath>(initialRoute.path);
+  const [routePlayerId, setRoutePlayerId] = useState<string | null>(initialRoute.playerId);
   const [token, setToken] = useState<string | null>(null);
   const [playerState, setPlayerState] = useState<SyncedPlayerState | null>(null);
+  const [publicPlayerProfile, setPublicPlayerProfile] = useState<PlayerProfileResponse["player"] | null>(null);
+  const [publicPlayerLoading, setPublicPlayerLoading] = useState(false);
   const [account, setAccount] = useState<AccountResponse | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardResponse | null>(null);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
@@ -373,18 +419,68 @@ function App() {
   }, [route, token, account?.gameUserId, leaderboardType]);
 
   useEffect(() => {
+    if (route !== "/player" || !routePlayerId) {
+      setPublicPlayerLoading(false);
+      setPublicPlayerProfile(null);
+      return;
+    }
+
+    let cancelled = false;
+    const loadPlayerProfile = async () => {
+      setPublicPlayerLoading(true);
+      setError(null);
+      try {
+        const profileResponse = await getPublicPlayerProfile(routePlayerId);
+        if (!cancelled) {
+          setPublicPlayerProfile(profileResponse.player);
+        }
+      } catch (profileError) {
+        if (cancelled) {
+          return;
+        }
+        setPublicPlayerProfile(null);
+        if (profileError instanceof Error && profileError.message === "PLAYER_NOT_FOUND") {
+          return;
+        }
+        setError(profileError instanceof Error ? profileError.message : "Failed to load player profile.");
+      } finally {
+        if (!cancelled) {
+          setPublicPlayerLoading(false);
+        }
+      }
+    };
+
+    void loadPlayerProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, [route, routePlayerId]);
+
+  useEffect(() => {
     const onPopState = () => {
-      setRoute(readRoute());
+      const nextRoute = readRoute();
+      setRoute(nextRoute.path);
+      setRoutePlayerId(nextRoute.playerId);
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  const navigate = (path: RoutePath) => {
+  const navigate = (path: NavigationRoutePath) => {
     if (window.location.pathname !== path) {
       window.history.pushState({}, "", path);
     }
     setRoute(path);
+    setRoutePlayerId(null);
+  };
+
+  const navigateToPlayer = (playerId: string) => {
+    const playerPath = `/player/${encodeURIComponent(playerId)}`;
+    if (window.location.pathname !== playerPath) {
+      window.history.pushState({}, "", playerPath);
+    }
+    setRoute("/player");
+    setRoutePlayerId(playerId);
   };
 
   const refreshAccount = async (currentToken: string | null) => {
@@ -715,7 +811,8 @@ function App() {
   const showLogin = route === "/login";
   const showAccount = route === "/account";
   const showLeaderboard = route === "/leaderboard";
-  const currentPageTitle = showGame ? "Home" : showLogin ? "Login" : showAccount ? "Account" : "Leaderboard";
+  const showPlayer = route === "/player";
+  const currentPageTitle = showGame ? "Home" : showLogin ? "Login" : showAccount ? "Account" : showPlayer ? "Player" : "Leaderboard";
 
   return (
     <main className="app">
@@ -965,7 +1062,18 @@ function App() {
                       className={`leaderboard-row${entry.isCurrentPlayer ? " leaderboard-row-current" : ""}`}
                     >
                       <p>#{entry.rank}</p>
-                      <p>{entry.username}</p>
+                      <p>
+                        <a
+                          href={`/player/${encodeURIComponent(entry.userId)}`}
+                          className="leaderboard-player-link"
+                          onClick={(event) => {
+                            event.preventDefault();
+                            navigateToPlayer(entry.userId);
+                          }}
+                        >
+                          {entry.username}
+                        </a>
+                      </p>
                       <p>{formatSeconds(entry.totalIdleSeconds)}</p>
                     </div>
                   ))}
@@ -979,6 +1087,30 @@ function App() {
               </>
             ) : null}
             {!leaderboardLoading && !leaderboard && !error ? <p>No leaderboard data available.</p> : null}
+          </div>
+        ) : null}
+
+        {showPlayer ? (
+          <div className="panel">
+            <h2>Player</h2>
+            {publicPlayerLoading ? <p>Loading player profile...</p> : null}
+            {!publicPlayerLoading && publicPlayerProfile ? (
+              <>
+                <p>
+                  <span>Username:</span> {publicPlayerProfile.username}
+                </p>
+                <p>
+                  <span>Account age:</span> {formatSeconds(publicPlayerProfile.accountAgeSeconds)}
+                </p>
+                <p>
+                  <span>Current idle time:</span> {formatSeconds(publicPlayerProfile.currentIdleSeconds)}
+                </p>
+                <p>
+                  <span>Collected idle time:</span> {formatSeconds(publicPlayerProfile.collectedIdleSeconds)}
+                </p>
+              </>
+            ) : null}
+            {!publicPlayerLoading && !publicPlayerProfile && !error ? <p>Player not found.</p> : null}
           </div>
         ) : null}
 

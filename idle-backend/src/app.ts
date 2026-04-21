@@ -33,6 +33,10 @@ function toNumber(value: unknown): number {
   throw new Error("Unexpected numeric value");
 }
 
+function isValidUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 type BetterAuthSession = {
   session: {
     id: string;
@@ -531,6 +535,71 @@ export function createApp(pool: Pool, config: AppConfig) {
           rank: currentPlayerRank,
           totalIdleSeconds: toNumber(currentPlayerRow.leaderboard_seconds),
           inTop: rankedEntries.some((entry) => entry.isCurrentPlayer)
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/players/:id", async (req, res, next) => {
+    try {
+      const playerId = String(req.params.id ?? "").trim();
+      if (!isValidUuid(playerId)) {
+        res.status(400).json({ error: "Invalid player id" });
+        return;
+      }
+
+      const result = await pool.query<{
+        user_id: string;
+        username: string;
+        created_at: Date;
+        current_seconds: string;
+        total_seconds_collected: string;
+        current_seconds_last_updated: Date;
+        seconds_multiplier: number | string;
+        server_time: Date;
+      }>(
+        `
+        SELECT
+          u.id AS user_id,
+          u.username,
+          u.created_at,
+          ps.current_seconds,
+          ps.total_seconds_collected,
+          ps.current_seconds_last_updated,
+          ps.seconds_multiplier,
+          NOW() AS server_time
+        FROM users u
+        INNER JOIN player_states ps ON ps.user_id = u.id
+        WHERE u.id = $1
+        `,
+        [playerId]
+      );
+
+      const row = result.rows[0];
+      if (!row) {
+        res.status(404).json({ error: "Player not found" });
+        return;
+      }
+
+      const elapsedSinceCurrentUpdate = calculateElapsedSeconds(row.current_seconds_last_updated, row.server_time);
+      const accountAgeSeconds = calculateElapsedSeconds(row.created_at, row.server_time);
+      const secondsMultiplier = Number(row.seconds_multiplier);
+      const incrementalBaseGain = calculateIdleSecondsGain(elapsedSinceCurrentUpdate);
+      const incrementalBoostedGain = Math.floor(incrementalBaseGain * secondsMultiplier);
+      const currentIdleSeconds = toNumber(row.current_seconds) + incrementalBoostedGain;
+
+      res.json({
+        player: {
+          id: row.user_id,
+          username: row.username,
+          accountAgeSeconds,
+          currentIdleSeconds,
+          collectedIdleSeconds: toNumber(row.total_seconds_collected)
+        },
+        meta: {
+          serverTime: row.server_time.toISOString()
         }
       });
     } catch (error) {
