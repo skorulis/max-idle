@@ -15,6 +15,7 @@ import { calculateIdleSecondsGain, getIdleSecondsRate } from "./idleRate.js";
 import { ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION, ACHIEVEMENT_IDS, ACHIEVEMENTS } from "@maxidle/shared/achievements";
 import type { AchievementId } from "@maxidle/shared/achievements";
 import { registerShopRoutes } from "./shop.js";
+import { registerLeaderboardRoutes } from "./leaderboard.js";
 import type { AppConfig, AuthClaims } from "./types.js";
 import { generateAnonymousUsername, isUsernameTakenError, isValidUsername } from "./username.js";
 
@@ -598,112 +599,6 @@ export function createApp(pool: Pool, config: AppConfig) {
     }
   });
 
-  app.get("/leaderboard", async (req, res, next) => {
-    try {
-      const requestedType = String(req.query.type ?? "current").toLowerCase();
-      const leaderboardType =
-        requestedType === "collected" || requestedType === "current" ? requestedType : null;
-      if (!leaderboardType) {
-        res.status(400).json({ error: "Invalid leaderboard type" });
-        return;
-      }
-
-      const metricExpression =
-        leaderboardType === "collected"
-          ? "ps.total_seconds_collected"
-          : "ps.current_seconds";
-
-      let identity: { claims: AuthClaims; session: BetterAuthSession };
-      try {
-        identity = await resolveIdentity(auth, pool, config.jwtSecret, req);
-      } catch (error) {
-        if (error instanceof Error && error.message === "MISSING_IDENTITY") {
-          res.status(401).json({ error: "Authentication required" });
-          return;
-        }
-        throw error;
-      }
-
-      const leaderboardResult = await pool.query<{
-        user_id: string;
-        username: string;
-        leaderboard_seconds: string;
-      }>(
-        `
-        SELECT
-          ps.user_id,
-          u.username,
-          ${metricExpression} AS leaderboard_seconds
-        FROM player_states ps
-        INNER JOIN users u ON u.id = ps.user_id
-        ORDER BY ${metricExpression} DESC
-        LIMIT 200
-        `
-      );
-
-      const currentPlayerResult = await pool.query<{
-        user_id: string;
-        leaderboard_seconds: string;
-      }>(
-        `
-        SELECT
-          ps.user_id,
-          ${metricExpression} AS leaderboard_seconds
-        FROM player_states ps
-        WHERE ps.user_id = $1
-        `,
-        [identity.claims.sub]
-      );
-
-      const currentPlayerRow = currentPlayerResult.rows[0];
-      if (!currentPlayerRow) {
-        res.status(404).json({ error: "Player state not found" });
-        return;
-      }
-
-      const higherRankCountResult = await pool.query<{ higher_count: string }>(
-        `SELECT COUNT(*) AS higher_count FROM player_states ps WHERE ${metricExpression} > $1`,
-        [currentPlayerRow.leaderboard_seconds]
-      );
-      const currentPlayerRank = toNumber(higherRankCountResult.rows[0]?.higher_count ?? 0) + 1;
-
-      let previousTotalIdleSeconds: number | null = null;
-      let previousRank = 0;
-      const entries = leaderboardResult.rows.map((row) => ({
-        userId: row.user_id,
-        username: row.username,
-        totalIdleSeconds: toNumber(row.leaderboard_seconds)
-      }));
-
-      const rankedEntries = entries.map((entry, index) => {
-        const rank =
-          previousTotalIdleSeconds !== null && entry.totalIdleSeconds === previousTotalIdleSeconds
-            ? previousRank
-            : index + 1;
-        previousTotalIdleSeconds = entry.totalIdleSeconds;
-        previousRank = rank;
-        return {
-          ...entry,
-          rank,
-          isCurrentPlayer: entry.userId === identity.claims.sub
-        };
-      });
-
-      res.json({
-        type: leaderboardType,
-        entries: rankedEntries,
-        currentPlayer: {
-          userId: currentPlayerRow.user_id,
-          rank: currentPlayerRank,
-          totalIdleSeconds: toNumber(currentPlayerRow.leaderboard_seconds),
-          inTop: rankedEntries.some((entry) => entry.isCurrentPlayer)
-        }
-      });
-    } catch (error) {
-      next(error);
-    }
-  });
-
   app.get("/achievements", async (req, res, next) => {
     try {
       let identity: { claims: AuthClaims; session: BetterAuthSession };
@@ -1020,6 +915,17 @@ export function createApp(pool: Pool, config: AppConfig) {
     toNumber,
     getAchievementBonusMultiplier,
     normalizeCompletedAchievementIds
+  });
+
+  registerLeaderboardRoutes({
+    app,
+    pool,
+    resolveIdentity: async (req) => {
+      const identity = await resolveIdentity(auth, pool, config.jwtSecret, req);
+      req.auth = identity.claims;
+      return identity;
+    },
+    toNumber
   });
 
   app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
