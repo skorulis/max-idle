@@ -761,12 +761,6 @@ function App() {
               <p>
                 <span>Total collected:</span> {formatSeconds(playerState?.totalIdleSeconds ?? 0)}
               </p>
-              <p>
-                <span>Spendable:</span> {formatSeconds(playerState?.collectedIdleSeconds ?? 0)}
-              </p>
-              <p>
-                <span>Seconds multiplier:</span> {playerState?.secondsMultiplier.toFixed(1) ?? "1.0"}x
-              </p>
             </div>
 
             <button className="collect" onClick={onCollect} disabled={collecting}>
@@ -774,6 +768,9 @@ function App() {
             </button>
             <div className="panel">
               <h2>Shop</h2>
+              <p>
+                <span>Spendable:</span> {formatSeconds(playerState?.collectedIdleSeconds ?? 0)}
+              </p>
               <p className="subtle">Upgrade: seconds multiplier (+0.1x per purchase)</p>
               <p className="subtle">Current multiplier: {playerState.secondsMultiplier.toFixed(1)}x</p>
               <div className="shop-actions">

@@ -1,5 +1,0 @@
-CREATE TABLE IF NOT EXISTS auth_identities (
-  auth_user_id TEXT PRIMARY KEY,
-  game_user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
