@@ -1,13 +1,13 @@
 const IDLE_RATE_STEPS = [
   { seconds: 0, rate: 1 },
   { seconds: 60, rate: 2 },
-  { seconds: 10 * 60, rate: 4 },
-  { seconds: 60 * 60, rate: 6 },
+  { seconds: 10 * 60, rate: 3 },
+  { seconds: 60 * 60, rate: 5 },
   { seconds: 6 * 60 * 60, rate: 8 },
-  { seconds: 24 * 60 * 60, rate: 16 },
-  { seconds: 7 * 24 * 60 * 60, rate: 32 },
-  { seconds: 4 * 7 * 24 * 60 * 60, rate: 64 },
-  { seconds: 365 * 24 * 60 * 60, rate: 128 }
+  { seconds: 24 * 60 * 60, rate: 12 },
+  { seconds: 7 * 24 * 60 * 60, rate: 15 },
+  { seconds: 4 * 7 * 24 * 60 * 60, rate: 20 },
+  { seconds: 365 * 24 * 60 * 60, rate: 30 }
 ];
 
 function clampElapsedSeconds(value) {
