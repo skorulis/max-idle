@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { CircleUserRound, House, Medal } from "lucide-react";
+import GameIcon from "./GameIcon";
 import { calculateIdleSecondsGain, getIdleSecondsRate } from "./idleRate";
 import { formatSeconds } from "./formatSeconds";
 import { getSecondsMultiplierPurchaseCost, multiplierToLevel } from "./shop";
@@ -722,14 +723,15 @@ function App() {
         <p className="page-title">{currentPageTitle}</p>
         <div className="actions">
           <button type="button" className="link" onClick={() => navigate("/")}>
-            <House aria-hidden="true" />
-          </button>
-          <button type="button" className="link" onClick={() => navigate("/account")}>
-            <CircleUserRound aria-hidden="true" />
+            <GameIcon icon={House} />
           </button>
           <button type="button" className="link" onClick={() => navigate("/leaderboard")}>
-            <Medal aria-hidden="true" />
+            <GameIcon icon={Medal} />
           </button>
+          <button type="button" className="link" onClick={() => navigate("/account")}>
+            <GameIcon icon={CircleUserRound} />
+          </button>
+          
         </div>
       </header>
       <section className="card">
