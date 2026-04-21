@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CircleUserRound, House, Medal } from "lucide-react";
+import { CircleUserRound, House, Medal, ShoppingCart } from "lucide-react";
 import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "react-router-dom";
 import GameIcon from "../GameIcon";
 import { calculateIdleSecondsGain, getIdleSecondsRate } from "../idleRate";
@@ -9,6 +9,7 @@ import { HomePage } from "../pages/HomePage";
 import { LeaderboardPage } from "../pages/LeaderboardPage";
 import { LoginPage } from "../pages/LoginPage";
 import { PlayerPage } from "../pages/PlayerPage";
+import { ShopPage } from "../pages/ShopPage";
 import {
   collectIdleTime,
   createAnonymousSession,
@@ -47,6 +48,9 @@ function getCurrentPageTitle(pathname: string): string {
   }
   if (pathname === "/leaderboard") {
     return "Leaderboard";
+  }
+  if (pathname === "/shop") {
+    return "Shop";
   }
   if (pathname.startsWith("/player/")) {
     return "Player";
@@ -515,6 +519,9 @@ export function AppShell() {
           <button type="button" className="link" onClick={() => navigate("/leaderboard")}>
             <GameIcon icon={Medal} />
           </button>
+          <button type="button" className="link" onClick={() => navigate("/shop")}>
+            <GameIcon icon={ShoppingCart} />
+          </button>
           <button type="button" className="link" onClick={() => navigate("/account")}>
             <GameIcon icon={CircleUserRound} />
           </button>
@@ -530,15 +537,24 @@ export function AppShell() {
                 playerState={playerState}
                 starting={starting}
                 collecting={collecting}
-                shopPendingQuantity={shopPendingQuantity}
                 uncollectedIdleSeconds={uncollectedIdleSeconds}
                 realtimeElapsedSeconds={realtimeElapsedSeconds}
                 effectiveIdleSecondsRate={effectiveIdleSecondsRate}
-                shopCosts={shopCosts}
                 onStartIdling={onStartIdling}
                 onCollect={onCollect}
-                onPurchaseUpgrade={onPurchaseUpgrade}
                 onNavigateLogin={() => navigate("/login")}
+              />
+            }
+          />
+          <Route
+            path="/shop"
+            element={
+              <ShopPage
+                playerState={playerState}
+                shopPendingQuantity={shopPendingQuantity}
+                shopCosts={shopCosts}
+                onPurchaseUpgrade={onPurchaseUpgrade}
+                onNavigateHome={() => navigate("/")}
               />
             }
           />
