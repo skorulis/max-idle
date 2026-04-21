@@ -39,6 +39,7 @@ import type {
 
 const TOKEN_KEY = "max-idle-token";
 const FALLBACK_MESSAGE = "The message board is taking a snack break.";
+const WELCOME_MESSAGE = "Welcome to the worlds easiest game.";
 const HUMOROUS_MESSAGES = [
   "Your productivity has entered low-power mode.",
   "Another second has passed without incident",
@@ -46,7 +47,8 @@ const HUMOROUS_MESSAGES = [
   "If you stare at the counter it will stare back.",
   "Make sure to keep hydrated. Time will continue to pass while you are away.",
   "Doing nothing remains unexpectedly effective.",
-  "Who has time? But then if we do not ever take time, how can we ever have time? -Merovingian "
+  "Competitive idling isnt' for the faint of heart.",
+  "Who has time? But then if we do not ever take time, how can we ever have time? -Merovingian",
 ];
 
 function getRandomMessageIndex(excludeIndex?: number): number {
@@ -119,7 +121,7 @@ export function AppShell() {
   const [shopPendingQuantity, setShopPendingQuantity] = useState<1 | 5 | 10 | null>(null);
   const [tickMs, setTickMs] = useState(0);
   const [messageCardState, setMessageCardState] = useState<{ override: string | null; randomIndex: number }>(() => ({
-    override: null,
+    override: WELCOME_MESSAGE,
     randomIndex: getRandomMessageIndex()
   }));
   const [loginForm, setLoginForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
@@ -170,6 +172,19 @@ export function AppShell() {
       window.clearInterval(timer);
     };
   }, [messageCardState.override]);
+
+  useEffect(() => {
+    setMessageCardState((previous) => {
+      const nextOverride = isAuthenticated ? null : WELCOME_MESSAGE;
+      if (previous.override === nextOverride) {
+        return previous;
+      }
+      return {
+        ...previous,
+        override: nextOverride
+      };
+    });
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (location.pathname !== "/leaderboard") {
