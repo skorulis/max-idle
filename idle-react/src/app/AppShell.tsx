@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { CircleUserRound, House, Medal, ShoppingCart } from "lucide-react";
+import { CircleUserRound, House, Medal, ShoppingCart, Trophy } from "lucide-react";
 import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "react-router-dom";
 import GameIcon from "../GameIcon";
 import { calculateIdleSecondsGain, getIdleSecondsRate } from "../idleRate";
 import { getSecondsMultiplierPurchaseCost, multiplierToLevel } from "../shop";
 import { AccountPage } from "../pages/AccountPage";
+import { AchievementsPage } from "../pages/AchievementsPage";
 import { HomePage } from "../pages/HomePage";
 import { LeaderboardPage } from "../pages/LeaderboardPage";
 import { LoginPage } from "../pages/LoginPage";
@@ -14,6 +15,7 @@ import {
   collectIdleTime,
   createAnonymousSession,
   getAccount,
+  getAchievements,
   getLeaderboard,
   getPlayer,
   getPublicPlayerProfile,
@@ -27,6 +29,7 @@ import {
 import { toSyncedState } from "./playerState";
 import type {
   AccountResponse,
+  AchievementsResponse,
   AuthFormState,
   LeaderboardResponse,
   LeaderboardType,
@@ -49,6 +52,9 @@ function getCurrentPageTitle(pathname: string): string {
   if (pathname === "/leaderboard") {
     return "Leaderboard";
   }
+  if (pathname === "/achievements") {
+    return "Achievements";
+  }
   if (pathname === "/shop") {
     return "Shop";
   }
@@ -70,6 +76,8 @@ export function AppShell() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardResponse | null>(null);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardType, setLeaderboardType] = useState<LeaderboardType>("current");
+  const [achievements, setAchievements] = useState<AchievementsResponse | null>(null);
+  const [achievementsLoading, setAchievementsLoading] = useState(false);
   const [, setStatus] = useState("Press start when you are ready to do nothing.");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -144,6 +152,43 @@ export function AppShell() {
       cancelled = true;
     };
   }, [location.pathname, token, account?.gameUserId, leaderboardType]);
+
+  useEffect(() => {
+    if (location.pathname !== "/achievements") {
+      return;
+    }
+
+    let cancelled = false;
+    const loadAchievements = async () => {
+      setAchievementsLoading(true);
+      setError(null);
+      try {
+        const nextAchievements = await getAchievements(token);
+        if (!cancelled) {
+          setAchievements(nextAchievements);
+        }
+      } catch (achievementsError) {
+        if (cancelled) {
+          return;
+        }
+        setAchievements(null);
+        if (achievementsError instanceof Error && achievementsError.message === "UNAUTHORIZED") {
+          setError("Login or start idling to view achievements.");
+          return;
+        }
+        setError(achievementsError instanceof Error ? achievementsError.message : "Failed to load achievements.");
+      } finally {
+        if (!cancelled) {
+          setAchievementsLoading(false);
+        }
+      }
+    };
+
+    void loadAchievements();
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname, token, account?.gameUserId]);
 
   useEffect(() => {
     if (!routePlayerId) {
@@ -447,6 +492,7 @@ export function AppShell() {
       setPlayerState(null);
       setAccount(null);
       setLeaderboard(null);
+      setAchievements(null);
       setStatus("Press start when you are ready to do nothing.");
       setAuthPending(false);
       navigate("/");
@@ -521,6 +567,9 @@ export function AppShell() {
           </button>
           <button type="button" className="link" onClick={() => navigate("/shop")}>
             <GameIcon icon={ShoppingCart} />
+          </button>
+          <button type="button" className="link" onClick={() => navigate("/achievements")}>
+            <GameIcon icon={Trophy} />
           </button>
           <button type="button" className="link" onClick={() => navigate("/account")}>
             <GameIcon icon={CircleUserRound} />
@@ -604,6 +653,16 @@ export function AppShell() {
                 leaderboard={leaderboard}
                 hasError={Boolean(error)}
                 onTypeChange={setLeaderboardType}
+              />
+            }
+          />
+          <Route
+            path="/achievements"
+            element={
+              <AchievementsPage
+                achievements={achievements}
+                achievementsLoading={achievementsLoading}
+                hasError={Boolean(error)}
               />
             }
           />

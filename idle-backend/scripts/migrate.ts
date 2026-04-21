@@ -14,6 +14,15 @@ async function run(): Promise<void> {
     const schemaSql = await readFile(resolve(process.cwd(), "sql/001_init.sql"), "utf-8");
     await pool.query(schemaSql);
     console.log("Migration completed: 001_init.sql");
+    await pool.query(`
+      ALTER TABLE player_states
+      ADD COLUMN IF NOT EXISTS achievement_count BIGINT NOT NULL DEFAULT 0
+    `);
+    await pool.query(`
+      ALTER TABLE player_states
+      ADD COLUMN IF NOT EXISTS completed_achievements JSONB NOT NULL DEFAULT '[]'::jsonb
+    `);
+    console.log("Migration completed: achievements columns");
 
     const auth = createBetterAuth(pool, config);
     const migrations = await getMigrations(auth.options);

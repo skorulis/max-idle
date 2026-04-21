@@ -35,6 +35,20 @@ export type LeaderboardResponse = {
   };
 };
 
+export type Achievement = {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  completed: boolean;
+};
+
+export type AchievementsResponse = {
+  completedCount: number;
+  totalCount: number;
+  achievements: Achievement[];
+};
+
 export type AccountResponse = {
   isAnonymous: boolean;
   email: string | null;

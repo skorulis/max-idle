@@ -282,3 +282,55 @@ input {
   gap: 8px;
   margin-top: 8px;
 }
+
+.achievements-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.achievement-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.achievement-row-completed {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.achievement-icon {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.achievement-copy p {
+  margin: 0;
+}
+
+.achievement-name {
+  font-weight: 600;
+}
+
+.achievement-description {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.achievement-status {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #374151;
+}

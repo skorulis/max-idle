@@ -68,7 +68,10 @@ export async function ensureGameIdentityForAuthUser(
         generatedUsername,
         userEmail
       ]);
-      await db.query(`INSERT INTO player_states (user_id) VALUES ($1)`, [gameUserId]);
+      await db.query(
+        `INSERT INTO player_states (user_id, achievement_count, completed_achievements) VALUES ($1, 0, '[]'::jsonb)`,
+        [gameUserId]
+      );
       await db.query(`INSERT INTO auth_identities (auth_user_id, game_user_id) VALUES ($1, $2)`, [authUserId, gameUserId]);
       await db.query("COMMIT");
       return gameUserId;

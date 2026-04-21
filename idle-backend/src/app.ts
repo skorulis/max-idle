@@ -12,6 +12,7 @@ import {
 } from "./betterAuth.js";
 import { calculateElapsedSeconds } from "./time.js";
 import { calculateIdleSecondsGain, getIdleSecondsRate } from "./idleRate.js";
+import { ACHIEVEMENTS } from "@maxidle/shared/achievements";
 import {
   getSecondsMultiplierPurchaseCost,
   levelToMultiplier,
@@ -35,6 +36,23 @@ function toNumber(value: unknown): number {
 
 function isValidUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function parseCompletedAchievementIds(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string");
+  }
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item): item is string => typeof item === "string");
+      }
+    } catch {
+      return [];
+    }
+  }
+  return [];
 }
 
 type BetterAuthSession = {
@@ -165,7 +183,10 @@ export function createApp(pool: Pool, config: AppConfig) {
             userId,
             generatedUsername
           ]);
-          await client.query(`INSERT INTO player_states (user_id) VALUES ($1)`, [userId]);
+          await client.query(
+            `INSERT INTO player_states (user_id, achievement_count, completed_achievements) VALUES ($1, 0, '[]'::jsonb)`,
+            [userId]
+          );
           await client.query("COMMIT");
           created = true;
           break;
@@ -536,6 +557,52 @@ export function createApp(pool: Pool, config: AppConfig) {
           totalIdleSeconds: toNumber(currentPlayerRow.leaderboard_seconds),
           inTop: rankedEntries.some((entry) => entry.isCurrentPlayer)
         }
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/achievements", async (req, res, next) => {
+    try {
+      let identity: { claims: AuthClaims; session: BetterAuthSession };
+      try {
+        identity = await resolveIdentity(auth, pool, config.jwtSecret, req);
+      } catch (error) {
+        if (error instanceof Error && error.message === "MISSING_IDENTITY") {
+          res.status(401).json({ error: "Authentication required" });
+          return;
+        }
+        throw error;
+      }
+
+      const playerStateResult = await pool.query<{
+        achievement_count: number | string;
+        completed_achievements: unknown;
+      }>(
+        `
+        SELECT
+          achievement_count,
+          completed_achievements
+        FROM player_states
+        WHERE user_id = $1
+        `,
+        [identity.claims.sub]
+      );
+      const playerStateRow = playerStateResult.rows[0];
+      if (!playerStateRow) {
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+
+      const completedAchievementIds = new Set(parseCompletedAchievementIds(playerStateRow.completed_achievements));
+      res.json({
+        completedCount: toNumber(playerStateRow.achievement_count),
+        totalCount: ACHIEVEMENTS.length,
+        achievements: ACHIEVEMENTS.map((achievement) => ({
+          ...achievement,
+          completed: completedAchievementIds.has(achievement.id)
+        }))
       });
     } catch (error) {
       next(error);

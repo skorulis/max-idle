@@ -196,6 +196,53 @@ describe("auth + player lifecycle", () => {
     expect(secondUpdate.body.code).toBe("USERNAME_TAKEN");
   });
 
+  it("requires authentication for achievements", async () => {
+    const app = createApp(pool, config);
+    const response = await request(app).get("/achievements");
+
+    expect(response.status).toBe(401);
+  });
+
+  it("returns achievements scaffold payload", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+
+    const response = await request(app).get("/achievements").set("Authorization", `Bearer ${token}`);
+    expect(response.status).toBe(200);
+    expect(response.body.completedCount).toBe(0);
+    expect(response.body.totalCount).toBe(2);
+    expect(response.body.achievements).toHaveLength(2);
+    expect(response.body.achievements[0].id).toBe("account_creation");
+    expect(response.body.achievements[1].id).toBe("username_selected");
+  });
+
+  it("marks completed achievements from stored jsonb ids", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(
+      `
+      UPDATE player_states
+      SET
+        achievement_count = 1,
+        completed_achievements = $2::jsonb
+      WHERE user_id = $1
+      `,
+      [userId, JSON.stringify(["account_creation"])]
+    );
+
+    const response = await request(app).get("/achievements").set("Authorization", `Bearer ${token}`);
+    expect(response.status).toBe(200);
+    expect(response.body.completedCount).toBe(1);
+    const accountCreation = response.body.achievements.find((achievement: { id: string }) => achievement.id === "account_creation");
+    const usernameSelected = response.body.achievements.find((achievement: { id: string }) => achievement.id === "username_selected");
+    expect(accountCreation?.completed).toBe(true);
+    expect(usernameSelected?.completed).toBe(false);
+  });
+
   it("returns top 200 ordered by total seconds collected and highlights current player when in top", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");

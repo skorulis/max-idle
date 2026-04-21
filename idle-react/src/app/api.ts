@@ -1,5 +1,6 @@
 import type {
   AccountResponse,
+  AchievementsResponse,
   AuthResponse,
   LeaderboardResponse,
   LeaderboardType,
@@ -108,6 +109,26 @@ export async function getLeaderboard(token: string | null, type: LeaderboardType
     throw new Error("Failed to load leaderboard");
   }
   return (await response.json()) as LeaderboardResponse;
+}
+
+export async function getAchievements(token: string | null): Promise<AchievementsResponse> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/achievements`, {
+    credentials: "include",
+    headers
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    throw new Error("Failed to load achievements");
+  }
+  return (await response.json()) as AchievementsResponse;
 }
 
 export async function getPublicPlayerProfile(playerId: string): Promise<PlayerProfileResponse> {
