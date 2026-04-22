@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 
 let clientNowMs = Date.now();
 const listeners = new Set<() => void>();
-let intervalId: ReturnType<typeof window.setInterval> | undefined;
+let intervalId: number | undefined;
 
 function emit() {
   for (const listener of listeners) {
