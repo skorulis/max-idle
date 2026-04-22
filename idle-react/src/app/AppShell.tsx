@@ -26,6 +26,7 @@ import {
   updateUsername,
   upgradeAnonymous
 } from "./api";
+import { authClient } from "./authClient.ts";
 import { alignClientClock, useClientNowMs } from "./clientClock";
 import { toSyncedState } from "./playerState";
 import type {
@@ -558,6 +559,24 @@ export function AppShell() {
     }
   };
 
+  const onGoogleLogin = async () => {
+    setAuthPending(true);
+    setError(null);
+    setStatus("Redirecting to Google...");
+    try {
+      const frontendOrigin = window.location.origin;
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: `${frontendOrigin}/`,
+        errorCallbackURL: `${frontendOrigin}/login`
+      });
+    } catch (socialLoginError) {
+      setError(socialLoginError instanceof Error ? socialLoginError.message : "Google sign-in failed");
+      setStatus("Could not start Google sign-in.");
+      setAuthPending(false);
+    }
+  };
+
   const onUpgrade = async () => {
     if (!token) {
       return;
@@ -639,8 +658,8 @@ export function AppShell() {
 
   const renderAuthButtons = () => (
     <div className="social">
-      <button type="button" className="secondary" disabled>
-        Continue with Google (coming soon)
+      <button type="button" className="secondary" onClick={() => void onGoogleLogin()} disabled={authPending}>
+        Continue with Google
       </button>
       <button type="button" className="secondary" disabled>
         Continue with Apple (coming soon)
