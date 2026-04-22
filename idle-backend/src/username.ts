@@ -110,7 +110,7 @@ export function generateAnonymousUsername(): string {
   const adjective = ADJECTIVES[randomInt(ADJECTIVES.length)];
   const noun = NOUNS[randomInt(NOUNS.length)];
   const suffix = randomInt(1000).toString().padStart(3, "0");
-  return `${adjective}-${noun}-${suffix}`;
+  return `${adjective}_${noun}_${suffix}`;
 }
 
 export function isUsernameTakenError(error: unknown): boolean {

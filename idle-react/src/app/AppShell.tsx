@@ -608,7 +608,7 @@ export function AppShell() {
   };
 
   const onSaveUsername = async () => {
-    if (!account || account.isAnonymous) {
+    if (!account) {
       return;
     }
 

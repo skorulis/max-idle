@@ -527,10 +527,6 @@ export function createApp(pool: Pool, config: AppConfig) {
     const client = await pool.connect();
     try {
       const identity = await resolveIdentity(auth, pool, config.jwtSecret, req);
-      if (identity.claims.isAnonymous) {
-        res.status(400).json({ error: "Anonymous usernames cannot be changed" });
-        return;
-      }
 
       const username = String(req.body?.username ?? "").trim();
       if (!isValidUsername(username)) {

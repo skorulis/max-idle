@@ -64,19 +64,15 @@ export function AccountPage({
         placeholder="Username"
         value={usernameDraft}
         onChange={(event) => onUsernameChange(event.target.value)}
-        disabled={account.isAnonymous || usernamePending}
+        disabled={usernamePending}
       />
-      {account.isAnonymous ? (
-        <p className="subtle">Anonymous users cannot change username.</p>
-      ) : (
-        <button
-          className="collect"
-          onClick={() => void onSaveUsername()}
-          disabled={usernamePending || authPending || usernameDraft.trim().length === 0 || usernameDraft.trim() === account.username}
-        >
-          {usernamePending ? "Saving..." : "Save username"}
-        </button>
-      )}
+      <button
+        className="collect"
+        onClick={() => void onSaveUsername()}
+        disabled={usernamePending || authPending || usernameDraft.trim().length === 0 || usernameDraft.trim() === account.username}
+      >
+        {usernamePending ? "Saving..." : "Save username"}
+      </button>
       {usernameError ? <p className="error">{usernameError}</p> : null}
       {usernameSuccess ? <p className="success">{usernameSuccess}</p> : null}
       {account.isAnonymous ? (
