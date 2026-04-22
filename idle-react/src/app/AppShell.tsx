@@ -49,6 +49,8 @@ const HUMOROUS_MESSAGES = [
   "Doing nothing remains unexpectedly effective.",
   "Competitive idling isnt' for the faint of heart.",
   "What will you do with all of that time?",
+  "Your goal is simple.  Be idle for longer than anyone else.",
+  "To catch up, try doing nothing faster.",
   "Who has time? But then if we do not ever take time, how can we ever have time? -Merovingian",
 ];
 
