@@ -227,6 +227,21 @@ input {
   margin-top: 8px;
 }
 
+.social .secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.social-button-icon {
+  flex-shrink: 0;
+  display: block;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
 .subtle {
   color: #6b7280;
   font-size: 14px;

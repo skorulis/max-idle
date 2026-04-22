@@ -101,14 +101,14 @@ export function AccountPage({
           {renderAuthButtons()}
         </>
       )}
+      <button type="button" className="secondary" onClick={() => void onLogout()} disabled={authPending}>
+        {authPending ? "Logging out..." : "Logout"}
+      </button>
       {account.isAnonymous ? (
         <p className="warning-alert">
           Warning: logging out of an anonymous account permanently loses progress and cannot be recovered.
         </p>
       ) : null}
-      <button type="button" className="secondary" onClick={() => void onLogout()} disabled={authPending}>
-        {authPending ? "Logging out..." : "Logout"}
-      </button>
       <p className="subtle">Version {APP_VERSION}</p>
     </>
   );
