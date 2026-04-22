@@ -1,6 +1,10 @@
-{$APP_DOMAIN} {
+max-idle.com {
   encode zstd gzip
   reverse_proxy frontend:80
+}
+
+www.max-idle.com {
+  redir https://max-idle.com{uri} permanent
 }
 
 {$API_DOMAIN} {
