@@ -48,6 +48,7 @@ const HUMOROUS_MESSAGES = [
   "Make sure to keep hydrated. Time will continue to pass while you are away.",
   "Doing nothing remains unexpectedly effective.",
   "Competitive idling isnt' for the faint of heart.",
+  "What will you do with all of that time?",
   "Who has time? But then if we do not ever take time, how can we ever have time? -Merovingian",
 ];
 
@@ -124,6 +125,9 @@ export function AppShell() {
     override: WELCOME_MESSAGE,
     randomIndex: getRandomMessageIndex()
   }));
+  const [displayedMessage, setDisplayedMessage] = useState(WELCOME_MESSAGE);
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [messageFadeStage, setMessageFadeStage] = useState<"idle" | "fading-out" | "fading-in">("idle");
   const [loginForm, setLoginForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const [signupForm, setSignupForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const [upgradeForm, setUpgradeForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
@@ -418,6 +422,42 @@ export function AppShell() {
   }, [secondsMultiplierLevel]);
 
   const activeMessageCardText = messageCardState.override ?? getMessageFromIndex(messageCardState.randomIndex);
+  const isFadingOutMessage = messageFadeStage === "fading-out";
+  const isFadingInMessage = messageFadeStage === "fading-in";
+
+  useEffect(() => {
+    if (activeMessageCardText === displayedMessage || activeMessageCardText === pendingMessage) {
+      return;
+    }
+    setPendingMessage(activeMessageCardText);
+    setMessageFadeStage("fading-out");
+  }, [activeMessageCardText, displayedMessage, pendingMessage]);
+
+  useEffect(() => {
+    if (messageFadeStage !== "fading-out") {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setDisplayedMessage(pendingMessage ?? activeMessageCardText);
+      setMessageFadeStage("fading-in");
+    }, 220);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [messageFadeStage, pendingMessage, activeMessageCardText]);
+
+  useEffect(() => {
+    if (messageFadeStage !== "fading-in") {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setPendingMessage(null);
+      setMessageFadeStage("idle");
+    }, 220);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [messageFadeStage]);
 
   const onCollect = async () => {
     if (!playerState) {
@@ -628,7 +668,9 @@ export function AppShell() {
         <p>Preparing your idle session...</p>
         <section className="card message-card" aria-live="polite">
           <p className="label">Idle bulletin</p>
-          <p className="message-copy">{activeMessageCardText}</p>
+          <p className={`message-copy message-fade${isFadingOutMessage ? " is-fading-out" : ""}${isFadingInMessage ? " is-fading-in" : ""}`}>
+            {displayedMessage}
+          </p>
         </section>
       </main>
     );
@@ -764,7 +806,9 @@ export function AppShell() {
       </section>
       <section className="card message-card" aria-live="polite">
         <p className="label">Idle bulletin</p>
-        <p className="message-copy">{activeMessageCardText}</p>
+        <p className={`message-copy message-fade${isFadingOutMessage ? " is-fading-out" : ""}${isFadingInMessage ? " is-fading-in" : ""}`}>
+          {displayedMessage}
+        </p>
       </section>
     </main>
   );

@@ -51,6 +51,19 @@ body {
   line-height: 1.5;
 }
 
+.message-fade {
+  transition: opacity 220ms ease;
+  opacity: 1;
+}
+
+.message-fade.is-fading-out {
+  opacity: 0;
+}
+
+.message-fade.is-fading-in {
+  opacity: 1;
+}
+
 h1 {
   margin: 0 0 8px;
   font-size: 32px;
