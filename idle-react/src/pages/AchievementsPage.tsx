@@ -1,4 +1,4 @@
-import { BadgeCheck, CircleHelp, UserPlus, type LucideIcon } from "lucide-react";
+import { BadgeCheck, Check, CircleHelp, Lock, UserPlus, type LucideIcon } from "lucide-react";
 import type { AchievementsResponse } from "../app/types";
 import GameIcon from "../GameIcon";
 
@@ -41,7 +41,12 @@ export function AchievementsPage({ achievements, achievementsLoading, hasError }
                   <p className="achievement-name">{achievement.name}</p>
                   <p className="achievement-description">{achievement.description}</p>
                 </div>
-                <p className="achievement-status">{achievement.completed ? "Complete" : "Locked"}</p>
+                <span
+                  className="achievement-status"
+                  aria-label={achievement.completed ? "Complete" : "Locked"}
+                >
+                  <GameIcon icon={achievement.completed ? Check : Lock} />
+                </span>
               </div>
             ))}
           </div>
