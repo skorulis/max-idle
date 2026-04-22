@@ -7,6 +7,7 @@ Minimal web idle game where players are rewarded for inactivity.
 - Product requirements: [`docs/max-idle-prd.md`](docs/max-idle-prd.md)
 - Backend implementation: [`idle-backend/README.md`](idle-backend/README.md)
 - Frontend implementation: [`idle-react/README.md`](idle-react/README.md)
+- Production deployment: [`docs/deployment/README.md`](docs/deployment/README.md)
 
 ## Implemented Parts (MVP)
 
