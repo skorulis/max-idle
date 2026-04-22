@@ -374,8 +374,8 @@ describe("auth + player lifecycle", () => {
       SET
         total_seconds_collected = 1234,
         upgrades_purchased = 7,
-        current_seconds = 200,
-        current_seconds_last_updated = NOW() - INTERVAL '30 seconds',
+        current_seconds = 0,
+        last_collected_at = NOW() - INTERVAL '35 seconds',
         seconds_multiplier = 1
       WHERE user_id = $1
       `,
@@ -388,7 +388,8 @@ describe("auth + player lifecycle", () => {
     expect(profileResponse.body.player.username).toMatch(/^anonymous/);
     expect(profileResponse.body.player.accountAgeSeconds).toBeTypeOf("number");
     expect(profileResponse.body.player.accountAgeSeconds).toBeGreaterThanOrEqual(0);
-    expect(profileResponse.body.player.currentIdleSeconds).toBeGreaterThanOrEqual(230);
+    expect(profileResponse.body.player.currentIdleSeconds).toBeGreaterThanOrEqual(calculateIdleSecondsGain(25));
+    expect(profileResponse.body.player.currentIdleSeconds).toBeLessThanOrEqual(calculateIdleSecondsGain(50));
     expect(profileResponse.body.player.collectedIdleSeconds).toBe(1234);
     expect(profileResponse.body.player.upgradesPurchased).toBe(7);
     expect(profileResponse.body.player.achievementCount).toBe(0);
@@ -430,7 +431,7 @@ describe("auth + player lifecycle", () => {
 
     const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
     expect(playerResponse.status).toBe(200);
-    const expectedCurrent = calculateIdleSecondsGain(120) * 2;
+    const expectedCurrent = Math.floor(calculateIdleSecondsGain(120) * 2);
     expect(playerResponse.body.currentSeconds).toBe(expectedCurrent);
     expect(playerResponse.body.secondsMultiplier).toBe(2);
     expect(playerResponse.body.achievementBonusMultiplier).toBe(1);
@@ -525,7 +526,8 @@ describe("auth + player lifecycle", () => {
         SET
           achievement_count = 0,
           seconds_multiplier = 1,
-          current_seconds_last_updated = $2
+          current_seconds_last_updated = $2,
+          last_collected_at = $2
         WHERE user_id = $1
         `,
         [userId, new Date(now.getTime() - ageSeconds * 1000)]
@@ -554,10 +556,12 @@ describe("auth + player lifecycle", () => {
     for (const row of syncedRows.rows) {
       const ageSeconds = ageByUserId.get(row.user_id);
       expect(ageSeconds).toBeDefined();
-      if ((ageSeconds ?? 0) >= 6) {
-        expect(Number(row.current_seconds)).toBeGreaterThan(baselineCurrentSeconds);
+      const synced = Number(row.current_seconds);
+      if ((ageSeconds ?? 0) <= 5) {
+        expect(synced).toBe(baselineCurrentSeconds);
       } else {
-        expect(Number(row.current_seconds)).toBe(baselineCurrentSeconds);
+        expect(synced).toBeGreaterThanOrEqual(calculateIdleSecondsGain(ageSeconds ?? 0));
+        expect(synced).toBeLessThanOrEqual(calculateIdleSecondsGain((ageSeconds ?? 0) + 20));
       }
     }
   });

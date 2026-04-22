@@ -10,8 +10,9 @@ import {
   getRequestHeaders,
   type BetterAuthInstance
 } from "./betterAuth.js";
+import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 import { calculateElapsedSeconds } from "./time.js";
-import { calculateIdleSecondsGain, getIdleSecondsRate } from "./idleRate.js";
+import { getIdleSecondsRate } from "./idleRate.js";
 import { ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION, ACHIEVEMENT_IDS, ACHIEVEMENTS } from "@maxidle/shared/achievements";
 import type { AchievementId } from "@maxidle/shared/achievements";
 import { registerShopRoutes } from "./shop.js";
@@ -86,6 +87,7 @@ type PlayerCurrentSecondsSyncRow = {
   user_id: string;
   current_seconds: number | string;
   current_seconds_last_updated: Date;
+  last_collected_at: Date;
   achievement_count: number | string;
   seconds_multiplier: number | string;
   server_time: Date;
@@ -101,6 +103,7 @@ export async function syncStalePlayerCurrentSeconds(pool: Pool, limit = 100): Pr
         user_id,
         current_seconds,
         current_seconds_last_updated,
+        last_collected_at,
         achievement_count,
         seconds_multiplier,
         NOW() AS server_time
@@ -113,12 +116,14 @@ export async function syncStalePlayerCurrentSeconds(pool: Pool, limit = 100): Pr
     );
 
     for (const row of stalePlayersResult.rows) {
-      const elapsedSinceCurrentUpdate = calculateElapsedSeconds(row.current_seconds_last_updated, row.server_time);
       const secondsMultiplier = Number(row.seconds_multiplier);
       const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
-      const incrementalBaseGain = calculateIdleSecondsGain(elapsedSinceCurrentUpdate);
-      const incrementalBoostedGain = Math.floor(incrementalBaseGain * secondsMultiplier * achievementBonusMultiplier);
-      const nextCurrentSeconds = toNumber(row.current_seconds) + incrementalBoostedGain;
+      const nextCurrentSeconds = boostedUncollectedIdleSeconds(
+        row.last_collected_at,
+        row.server_time,
+        secondsMultiplier,
+        achievementBonusMultiplier
+      );
 
       await client.query(
         `
@@ -659,6 +664,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         total_seconds_collected: string;
         upgrades_purchased: string;
         current_seconds_last_updated: Date;
+        last_collected_at: Date;
         achievement_count: string;
         seconds_multiplier: number | string;
         server_time: Date;
@@ -672,9 +678,10 @@ export function createApp(pool: Pool, config: AppConfig) {
           ps.total_seconds_collected,
           ps.upgrades_purchased,
           ps.current_seconds_last_updated,
+          ps.last_collected_at,
           ps.achievement_count,
           ps.seconds_multiplier,
-          NOW() AS server_time
+        NOW() AS server_time
         FROM users u
         INNER JOIN player_states ps ON ps.user_id = u.id
         WHERE u.id = $1
@@ -688,13 +695,15 @@ export function createApp(pool: Pool, config: AppConfig) {
         return;
       }
 
-      const elapsedSinceCurrentUpdate = calculateElapsedSeconds(row.current_seconds_last_updated, row.server_time);
       const accountAgeSeconds = calculateElapsedSeconds(row.created_at, row.server_time);
       const secondsMultiplier = Number(row.seconds_multiplier);
       const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
-      const incrementalBaseGain = calculateIdleSecondsGain(elapsedSinceCurrentUpdate);
-      const incrementalBoostedGain = Math.floor(incrementalBaseGain * secondsMultiplier * achievementBonusMultiplier);
-      const currentIdleSeconds = toNumber(row.current_seconds) + incrementalBoostedGain;
+      const currentIdleSeconds = boostedUncollectedIdleSeconds(
+        row.last_collected_at,
+        row.server_time,
+        secondsMultiplier,
+        achievementBonusMultiplier
+      );
 
       res.json({
         player: {
@@ -755,12 +764,14 @@ export function createApp(pool: Pool, config: AppConfig) {
         return;
       }
 
-      const elapsedSinceCurrentUpdate = calculateElapsedSeconds(row.current_seconds_last_updated, row.server_time);
       const secondsMultiplier = Number(row.seconds_multiplier);
       const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
-      const incrementalBaseGain = calculateIdleSecondsGain(elapsedSinceCurrentUpdate);
-      const incrementalBoostedGain = Math.floor(incrementalBaseGain * secondsMultiplier * achievementBonusMultiplier);
-      const currentIdleSeconds = toNumber(row.current_seconds) + incrementalBoostedGain;
+      const currentIdleSeconds = boostedUncollectedIdleSeconds(
+        row.last_collected_at,
+        row.server_time,
+        secondsMultiplier,
+        achievementBonusMultiplier
+      );
       await pool.query(
         `
         UPDATE player_states
@@ -834,12 +845,14 @@ export function createApp(pool: Pool, config: AppConfig) {
       }
 
       const collectedAt = new Date();
-      const elapsedSinceCurrentUpdate = calculateElapsedSeconds(lockedRow.current_seconds_last_updated, collectedAt);
       const secondsMultiplier = Number(lockedRow.seconds_multiplier);
       const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(lockedRow.achievement_count));
-      const incrementalBaseGain = calculateIdleSecondsGain(elapsedSinceCurrentUpdate);
-      const incrementalBoostedGain = Math.floor(incrementalBaseGain * secondsMultiplier * achievementBonusMultiplier);
-      const collectedSeconds = toNumber(lockedRow.current_seconds) + incrementalBoostedGain;
+      const collectedSeconds = boostedUncollectedIdleSeconds(
+        lockedRow.last_collected_at,
+        collectedAt,
+        secondsMultiplier,
+        achievementBonusMultiplier
+      );
       const updateResult = await client.query<{
         total_seconds_collected: number | string;
         spendable_idle_seconds: number | string;

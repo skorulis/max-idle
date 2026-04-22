@@ -7,8 +7,9 @@ import {
   levelToMultiplier,
   multiplierToLevel
 } from "@maxidle/shared/shop";
+import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 import { calculateElapsedSeconds } from "./time.js";
-import { calculateIdleSecondsGain, getIdleSecondsRate } from "./idleRate.js";
+import { getIdleSecondsRate } from "./idleRate.js";
 import type { AuthClaims } from "./types.js";
 
 export {
@@ -95,11 +96,6 @@ export function registerShopRoutes({
 
       const now = new Date();
       const secondsMultiplier = Number(row.seconds_multiplier);
-      const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
-      const elapsedSinceCurrentUpdate = calculateElapsedSeconds(row.current_seconds_last_updated, now);
-      const incrementalBaseGain = calculateIdleSecondsGain(elapsedSinceCurrentUpdate);
-      const incrementalBoostedGain = Math.floor(incrementalBaseGain * secondsMultiplier * achievementBonusMultiplier);
-      const syncedCurrentSeconds = toNumber(row.current_seconds) + incrementalBoostedGain;
 
       const currentLevel = multiplierToLevel(secondsMultiplier);
       const totalCost = getSecondsMultiplierPurchaseCost(currentLevel, quantity);
@@ -122,6 +118,12 @@ export function registerShopRoutes({
           : normalizeCompletedAchievementIds(row.completed_achievements);
       const nextAchievementCount = nextCompletedAchievementIds.length;
       const nextAchievementBonusMultiplier = getAchievementBonusMultiplier(nextAchievementCount);
+      const syncedCurrentSeconds = boostedUncollectedIdleSeconds(
+        row.last_collected_at,
+        now,
+        nextMultiplier,
+        nextAchievementBonusMultiplier
+      );
       const updateResult = await client.query<{
         total_seconds_collected: string;
         spendable_idle_seconds: string;

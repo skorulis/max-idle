@@ -352,13 +352,12 @@ export function AppShell() {
       return 0;
     }
 
-    const elapsedSinceCurrentUpdate = Math.floor((estimatedServerNowMs - playerState.currentSecondsLastUpdatedMs) / 1000);
-    const incremental = Math.floor(
-      calculateIdleSecondsGain(Math.max(0, elapsedSinceCurrentUpdate)) *
+    const elapsedSinceLastCollection = Math.floor((estimatedServerNowMs - playerState.lastCollectedAtMs) / 1000);
+    return Math.floor(
+      calculateIdleSecondsGain(Math.max(0, elapsedSinceLastCollection)) *
         playerState.secondsMultiplier *
         playerState.achievementBonusMultiplier
     );
-    return playerState.currentSeconds + incremental;
   }, [estimatedServerNowMs, playerState]);
 
   const realtimeElapsedSeconds = useMemo(() => {
