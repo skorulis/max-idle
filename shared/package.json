@@ -21,6 +21,10 @@
     "./shop": {
       "types": "./shop.d.ts",
       "default": "./shop.js"
+    },
+    "./appVersion": {
+      "types": "./appVersion.d.ts",
+      "default": "./appVersion.js"
     }
   }
 }

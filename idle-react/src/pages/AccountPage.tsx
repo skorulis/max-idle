@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { APP_VERSION } from "@maxidle/shared/appVersion";
 import type { AccountResponse, AuthFormState } from "../app/types";
 
 type AccountPageProps = {
@@ -44,6 +45,7 @@ export function AccountPage({
         <button className="secondary" onClick={onNavigateLogin}>
           Go to login
         </button>
+        <p className="subtle">Version {APP_VERSION}</p>
       </>
     );
   }
@@ -111,6 +113,7 @@ export function AccountPage({
       <button type="button" className="secondary" onClick={() => void onLogout()} disabled={authPending}>
         {authPending ? "Logging out..." : "Logout"}
       </button>
+      <p className="subtle">Version {APP_VERSION}</p>
     </>
   );
 }
