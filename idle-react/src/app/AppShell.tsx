@@ -121,10 +121,7 @@ export function AppShell() {
   const [usernameSuccess, setUsernameSuccess] = useState<string | null>(null);
   const [shopPendingQuantity, setShopPendingQuantity] = useState<1 | 5 | 10 | null>(null);
   const [tickMs, setTickMs] = useState(0);
-  const [messageCardState, setMessageCardState] = useState<{ override: string | null; randomIndex: number }>(() => ({
-    override: WELCOME_MESSAGE,
-    randomIndex: getRandomMessageIndex()
-  }));
+  const [messageCardRandomIndex, setMessageCardRandomIndex] = useState(() => getRandomMessageIndex());
   const [displayedMessage, setDisplayedMessage] = useState(WELCOME_MESSAGE);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [messageFadeStage, setMessageFadeStage] = useState<"idle" | "fading-out" | "fading-in">("idle");
@@ -156,38 +153,17 @@ export function AppShell() {
   }, []);
 
   useEffect(() => {
-    if (messageCardState.override) {
+    if (!isAuthenticated) {
       return;
     }
 
     const timer = window.setInterval(() => {
-      setMessageCardState((previous) => {
-        if (previous.override) {
-          return previous;
-        }
-        return {
-          ...previous,
-          randomIndex: getRandomMessageIndex(previous.randomIndex)
-        };
-      });
+      setMessageCardRandomIndex((previousIndex) => getRandomMessageIndex(previousIndex));
     }, 20_000);
 
     return () => {
       window.clearInterval(timer);
     };
-  }, [messageCardState.override]);
-
-  useEffect(() => {
-    setMessageCardState((previous) => {
-      const nextOverride = isAuthenticated ? null : WELCOME_MESSAGE;
-      if (previous.override === nextOverride) {
-        return previous;
-      }
-      return {
-        ...previous,
-        override: nextOverride
-      };
-    });
   }, [isAuthenticated]);
 
   useEffect(() => {
@@ -421,7 +397,9 @@ export function AppShell() {
     };
   }, [secondsMultiplierLevel]);
 
-  const activeMessageCardText = messageCardState.override ?? getMessageFromIndex(messageCardState.randomIndex);
+  const activeMessageCardText = isAuthenticated
+    ? getMessageFromIndex(messageCardRandomIndex)
+    : WELCOME_MESSAGE;
   const isFadingOutMessage = messageFadeStage === "fading-out";
   const isFadingInMessage = messageFadeStage === "fading-in";
 
@@ -429,8 +407,13 @@ export function AppShell() {
     if (activeMessageCardText === displayedMessage || activeMessageCardText === pendingMessage) {
       return;
     }
-    setPendingMessage(activeMessageCardText);
-    setMessageFadeStage("fading-out");
+    const timer = window.setTimeout(() => {
+      setPendingMessage(activeMessageCardText);
+      setMessageFadeStage("fading-out");
+    }, 0);
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [activeMessageCardText, displayedMessage, pendingMessage]);
 
   useEffect(() => {
