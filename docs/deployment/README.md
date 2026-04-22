@@ -43,16 +43,16 @@ Run from VPS:
 
 ```bash
 cd /opt/maxidle/deploy
-IMAGE_TAG=v0.1.0 docker compose --env-file .env.production -f compose.production.yml pull
-IMAGE_TAG=v0.1.0 docker compose --env-file .env.production -f compose.production.yml run --rm migrate
-IMAGE_TAG=v0.1.0 docker compose --env-file .env.production -f compose.production.yml up -d --remove-orphans
+IMAGE_TAG=release-0.1.0 docker compose --env-file .env.production -f compose.production.yml pull
+IMAGE_TAG=release-0.1.0 docker compose --env-file .env.production -f compose.production.yml run --rm migrate
+IMAGE_TAG=release-0.1.0 docker compose --env-file .env.production -f compose.production.yml up -d --remove-orphans
 ```
 
 ## 4) Future deploys (tag-based)
 
-1. Push a release tag (example: `v0.2.0`).
+1. Push a release tag (example: `release/0.2.0`).
 2. GitHub Actions builds/pushes images to GHCR.
-3. GitHub Actions SSHes to VPS and runs deploy using the same tag.
+3. GitHub Actions SSHes to VPS and runs deploy using a Docker-safe image tag derived from the git tag (for example, `release/0.2.0` becomes `release-0.2.0`).
 
 ## 5) Verify
 

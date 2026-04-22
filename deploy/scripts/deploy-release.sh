@@ -6,7 +6,7 @@ ENV_FILE="${ENV_FILE:-${DEPLOY_DIR}/.env.production}"
 COMPOSE_FILE="${COMPOSE_FILE:-${DEPLOY_DIR}/compose.production.yml}"
 
 if [[ -z "${IMAGE_TAG:-}" ]]; then
-  echo "IMAGE_TAG is required (example: v0.2.0)"
+  echo "IMAGE_TAG is required (example: release-0.2.0; must match the pushed image tag)"
   exit 1
 fi
 

@@ -5,8 +5,8 @@
 1. Create and push a tag (example):
 
 ```bash
-git tag v0.2.0
-git push origin v0.2.0
+git tag release/0.2.0
+git push origin release/0.2.0
 ```
 
 2. Wait for GitHub Action `Deploy production` to finish.
@@ -20,7 +20,7 @@ git push origin v0.2.0
 1. SSH to VPS and run:
 
 ```bash
-export IMAGE_TAG=v0.1.0
+export IMAGE_TAG=release-0.1.0
 export BACKEND_IMAGE_REPO=ghcr.io/your-org/maxidle-backend
 export FRONTEND_IMAGE_REPO=ghcr.io/your-org/maxidle-frontend
 /opt/maxidle/deploy/scripts/deploy-release.sh
