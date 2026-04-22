@@ -47,7 +47,7 @@ const HUMOROUS_MESSAGES = [
   "If you stare at the counter it will stare back.",
   "Make sure to keep hydrated. Time will continue to pass while you are away.",
   "Doing nothing remains unexpectedly effective.",
-  "Competitive idling isnt' for the faint of heart.",
+  "Competitive idling isn't for the faint of heart.",
   "What will you do with all of that time?",
   "Your goal is simple.  Be idle for longer than anyone else.",
   "To catch up, try doing nothing faster.",
@@ -122,7 +122,7 @@ export function AppShell() {
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [usernameSuccess, setUsernameSuccess] = useState<string | null>(null);
   const [shopPendingQuantity, setShopPendingQuantity] = useState<1 | 5 | 10 | null>(null);
-  const [tickMs, setTickMs] = useState(0);
+  const [tickMs, setTickMs] = useState(() => Date.now());
   const [messageCardRandomIndex, setMessageCardRandomIndex] = useState(() => getRandomMessageIndex());
   const [displayedMessage, setDisplayedMessage] = useState(WELCOME_MESSAGE);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
@@ -145,6 +145,11 @@ export function AppShell() {
   }, [playerRouteMatch?.params.playerId]);
 
   useEffect(() => {
+    setTickMs(Date.now());
+  }, [playerState]);
+
+  useEffect(() => {
+    setTickMs(Date.now());
     const timer = window.setInterval(() => {
       setTickMs(Date.now());
     }, 1000);
