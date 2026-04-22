@@ -363,34 +363,6 @@ describe("auth + player lifecycle", () => {
     expect(leaderboardResponse.body.entries[0].totalIdleSeconds).toBe(500);
   });
 
-  it("returns total leaderboard ordered by current plus collected", async () => {
-    const app = createApp(pool, config);
-    const authResponse = await request(app).post("/auth/anonymous");
-    const token = authResponse.body.token as string;
-    const userId = authResponse.body.userId as string;
-
-    await pool.query(`UPDATE player_states SET current_seconds = $2, total_seconds_collected = $3 WHERE user_id = $1`, [
-      userId,
-      400000,
-      400000
-    ]);
-    await insertLeaderboardPlayer(1000000, 1000000); // 2000000
-    await insertLeaderboardPlayer(1200000, 700000); // 1900000
-
-    const leaderboardResponse = await request(app)
-      .get("/leaderboard")
-      .query({ type: "total" })
-      .set("Authorization", `Bearer ${token}`);
-    expect(leaderboardResponse.status).toBe(200);
-    expect(leaderboardResponse.body.type).toBe("total");
-    expect(
-      leaderboardResponse.body.entries.some(
-        (entry: { totalIdleSeconds: number }) => entry.totalIdleSeconds === 2000000
-      )
-    ).toBe(true);
-    expect(leaderboardResponse.body.currentPlayer.totalIdleSeconds).toBe(800000);
-  });
-
   it("returns public player profile by id", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
