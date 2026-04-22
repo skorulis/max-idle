@@ -26,6 +26,7 @@ import {
   updateUsername,
   upgradeAnonymous
 } from "./api";
+import { alignClientClock, useClientNowMs } from "./clientClock";
 import { toSyncedState } from "./playerState";
 import type {
   AccountResponse,
@@ -122,7 +123,6 @@ export function AppShell() {
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [usernameSuccess, setUsernameSuccess] = useState<string | null>(null);
   const [shopPendingQuantity, setShopPendingQuantity] = useState<1 | 5 | 10 | null>(null);
-  const [tickMs, setTickMs] = useState(() => Date.now());
   const [messageCardRandomIndex, setMessageCardRandomIndex] = useState(() => getRandomMessageIndex());
   const [displayedMessage, setDisplayedMessage] = useState(WELCOME_MESSAGE);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
@@ -131,6 +131,7 @@ export function AppShell() {
   const [signupForm, setSignupForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const [upgradeForm, setUpgradeForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const isAuthenticated = Boolean(playerState);
+  const clientNowMs = useClientNowMs();
 
   const routePlayerId = useMemo(() => {
     const rawPlayerId = playerRouteMatch?.params.playerId;
@@ -143,21 +144,6 @@ export function AppShell() {
       return rawPlayerId;
     }
   }, [playerRouteMatch?.params.playerId]);
-
-  useEffect(() => {
-    setTickMs(Date.now());
-  }, [playerState]);
-
-  useEffect(() => {
-    setTickMs(Date.now());
-    const timer = window.setInterval(() => {
-      setTickMs(Date.now());
-    }, 1000);
-
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -304,7 +290,9 @@ export function AppShell() {
 
   const refreshPlayer = async (currentToken: string | null) => {
     const player = await getPlayer(currentToken);
-    setPlayerState(toSyncedState(player));
+    const synced = toSyncedState(player);
+    alignClientClock();
+    setPlayerState(synced);
   };
 
   useEffect(() => {
@@ -351,12 +339,18 @@ export function AppShell() {
     void bootstrap();
   }, []);
 
+  const estimatedServerNowMs = useMemo(() => {
+    if (!playerState) {
+      return 0;
+    }
+    return playerState.serverTimeMs + (clientNowMs - playerState.syncedAtClientMs);
+  }, [playerState, clientNowMs]);
+
   const uncollectedIdleSeconds = useMemo(() => {
     if (!playerState) {
       return 0;
     }
 
-    const estimatedServerNowMs = playerState.serverTimeMs + (tickMs - playerState.syncedAtClientMs);
     const elapsedSinceCurrentUpdate = Math.floor((estimatedServerNowMs - playerState.currentSecondsLastUpdatedMs) / 1000);
     const incremental = Math.floor(
       calculateIdleSecondsGain(Math.max(0, elapsedSinceCurrentUpdate)) *
@@ -364,26 +358,24 @@ export function AppShell() {
         playerState.achievementBonusMultiplier
     );
     return playerState.currentSeconds + incremental;
-  }, [playerState, tickMs]);
+  }, [estimatedServerNowMs, playerState]);
 
   const realtimeElapsedSeconds = useMemo(() => {
     if (!playerState) {
       return 0;
     }
 
-    const estimatedServerNowMs = playerState.serverTimeMs + (tickMs - playerState.syncedAtClientMs);
     const elapsed = Math.floor((estimatedServerNowMs - playerState.lastCollectedAtMs) / 1000);
     return Math.max(0, elapsed);
-  }, [playerState, tickMs]);
+  }, [estimatedServerNowMs, playerState]);
 
   const idleSecondsRate = useMemo(() => {
     if (!playerState) {
       return 1;
     }
-    const estimatedServerNowMs = playerState.serverTimeMs + (tickMs - playerState.syncedAtClientMs);
     const elapsed = Math.floor((estimatedServerNowMs - playerState.lastCollectedAtMs) / 1000);
     return getIdleSecondsRate({ secondsSinceLastCollection: Math.max(0, elapsed) });
-  }, [playerState, tickMs]);
+  }, [estimatedServerNowMs, playerState]);
 
   const effectiveIdleSecondsRate = useMemo(() => {
     if (!playerState) {
@@ -460,7 +452,9 @@ export function AppShell() {
 
     try {
       const nextPlayer = await collectIdleTime(token);
-      setPlayerState(toSyncedState(nextPlayer));
+      const synced = toSyncedState(nextPlayer);
+      alignClientClock();
+      setPlayerState(synced);
       await refreshAccount(token);
       setStatus("Collected. You may now continue doing nothing.");
     } catch (collectError) {
@@ -488,7 +482,9 @@ export function AppShell() {
     setStatus(`Purchasing seconds multiplier x${quantity}...`);
     try {
       const updatedPlayer = await purchaseSecondsMultiplier(token, quantity);
-      setPlayerState(toSyncedState(updatedPlayer));
+      const synced = toSyncedState(updatedPlayer);
+      alignClientClock();
+      setPlayerState(synced);
       setStatus(`Seconds multiplier upgraded by ${quantity * 0.1}x.`);
     } catch (purchaseError) {
       if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
