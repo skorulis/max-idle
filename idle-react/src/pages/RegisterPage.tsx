@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { isValidEmail, isValidPassword } from "@maxidle/shared/authValidation";
 import type { AuthFormState } from "../app/types";
 import { SharedAuthPage } from "./LoginPage";
 
@@ -19,6 +20,8 @@ export function RegisterPage({
   onNavigateLogin,
   renderAuthButtons
 }: RegisterPageProps) {
+  const isRegisterSubmitDisabled = !isValidEmail(registerForm.email) || !isValidPassword(registerForm.password);
+
   return (
     <SharedAuthPage
       authPending={authPending}
@@ -31,6 +34,7 @@ export function RegisterPage({
       onFormChange={onRegisterFormChange}
       onSubmit={onRegister}
       onAlternateAction={onNavigateLogin}
+      isSubmitDisabled={isRegisterSubmitDisabled}
       renderAuthButtons={renderAuthButtons}
     />
   );

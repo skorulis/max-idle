@@ -20,6 +20,7 @@ import {
   updateCompletedAchievements
 } from "./achievementUpdates.js";
 import { ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION, ACHIEVEMENT_IDS, ACHIEVEMENTS } from "@maxidle/shared/achievements";
+import { validateEmailPasswordInput } from "@maxidle/shared/authValidation";
 import { registerShopRoutes } from "./shop.js";
 import { registerLeaderboardRoutes } from "./leaderboard.js";
 import { registerApiDocumentation } from "./apiContract.js";
@@ -288,8 +289,15 @@ export function createApp(pool: Pool, config: AppConfig) {
 
   app.post("/auth/register", async (req, res, next) => {
     try {
-      const email = String(req.body?.email ?? "").trim();
+      const rawEmail = String(req.body?.email ?? "");
       const password = String(req.body?.password ?? "");
+      const authInput = validateEmailPasswordInput(rawEmail, password);
+      if (!authInput.isValid) {
+        res.status(400).json({ error: authInput.error });
+        return;
+      }
+
+      const email = authInput.email;
       const providedName = String(req.body?.name ?? "").trim();
       const name = providedName.length > 0 ? providedName : email.split("@")[0] ?? "Player";
 
@@ -325,8 +333,15 @@ export function createApp(pool: Pool, config: AppConfig) {
 
   app.post("/auth/login", async (req, res, next) => {
     try {
-      const email = String(req.body?.email ?? "").trim();
+      const rawEmail = String(req.body?.email ?? "");
       const password = String(req.body?.password ?? "");
+      const authInput = validateEmailPasswordInput(rawEmail, password);
+      if (!authInput.isValid) {
+        res.status(400).json({ error: authInput.error });
+        return;
+      }
+
+      const email = authInput.email;
       const authResponse = await auth.api.signInEmail({
         body: {
           email,
@@ -437,8 +452,15 @@ export function createApp(pool: Pool, config: AppConfig) {
         return;
       }
 
-      const email = String(req.body?.email ?? "").trim();
+      const rawEmail = String(req.body?.email ?? "");
       const password = String(req.body?.password ?? "");
+      const authInput = validateEmailPasswordInput(rawEmail, password);
+      if (!authInput.isValid) {
+        res.status(400).json({ error: authInput.error });
+        return;
+      }
+
+      const email = authInput.email;
       const providedName = String(req.body?.name ?? "").trim();
       const name = providedName.length > 0 ? providedName : email.split("@")[0] ?? "Player";
 

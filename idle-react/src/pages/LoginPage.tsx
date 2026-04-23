@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { isValidEmail, isValidPassword } from "@maxidle/shared/authValidation";
 import type { AuthFormState } from "../app/types";
 
 type SharedAuthPageProps = {
@@ -12,6 +13,7 @@ type SharedAuthPageProps = {
   onFormChange: (field: "email" | "password", value: string) => void;
   onSubmit: () => Promise<void>;
   onAlternateAction: () => void;
+  isSubmitDisabled: boolean;
   renderAuthButtons: () => ReactNode;
 };
 
@@ -26,6 +28,7 @@ export function SharedAuthPage({
   onFormChange,
   onSubmit,
   onAlternateAction,
+  isSubmitDisabled,
   renderAuthButtons
 }: SharedAuthPageProps) {
   return (
@@ -51,7 +54,7 @@ export function SharedAuthPage({
           value={form.password}
           onChange={(event) => onFormChange("password", event.target.value)}
         />
-        <button className="collect" onClick={() => void onSubmit()} disabled={authPending}>
+        <button className="collect" onClick={() => void onSubmit()} disabled={authPending || isSubmitDisabled}>
           {authPending ? "Loading..." : submitLabel}
         </button>
         <p className="subtle" style={{ marginTop: "0.75rem", marginBottom: "0.5rem" }}>
@@ -88,6 +91,8 @@ export function LoginPage({
   onNavigateRegister,
   renderAuthButtons
 }: LoginPageProps) {
+  const isLoginSubmitDisabled = !isValidEmail(loginForm.email) || !isValidPassword(loginForm.password);
+
   return (
     <SharedAuthPage
       authPending={authPending}
@@ -100,6 +105,7 @@ export function LoginPage({
       onFormChange={onLoginFormChange}
       onSubmit={onLogin}
       onAlternateAction={onNavigateRegister}
+      isSubmitDisabled={isLoginSubmitDisabled}
       renderAuthButtons={renderAuthButtons}
     />
   );

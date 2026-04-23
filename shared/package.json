@@ -25,6 +25,10 @@
     "./appVersion": {
       "types": "./appVersion.d.ts",
       "default": "./appVersion.js"
+    },
+    "./authValidation": {
+      "types": "./authValidation.d.ts",
+      "default": "./authValidation.js"
     }
   }
 }
