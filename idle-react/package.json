@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "test": "vitest run",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "api:types:generate": "openapi-ts -i ../idle-backend/openapi/openapi.json -o src/app/generated/api-types.ts",
+    "api:types:check": "npm run api:types:generate && git diff --exit-code -- src/app/generated/api-types.ts"
   },
   "dependencies": {
     "@maxidle/shared": "file:../shared",
@@ -23,6 +25,7 @@
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@hey-api/openapi-ts": "^0.96.1",
     "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.1.1",

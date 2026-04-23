@@ -1,0 +1,1262 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Max Idle API",
+    "version": "1.0.0",
+    "description": "Generated API contract for Max Idle backend."
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "better-auth.session_token"
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "token": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "token"
+        ]
+      },
+      "TimeCurrencyBalances": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "available": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "total",
+          "available"
+        ]
+      },
+      "PlayerState": {
+        "type": "object",
+        "properties": {
+          "idleTime": {
+            "$ref": "#/components/schemas/TimeCurrencyBalances"
+          },
+          "realTime": {
+            "$ref": "#/components/schemas/TimeCurrencyBalances"
+          },
+          "timeGems": {
+            "$ref": "#/components/schemas/TimeCurrencyBalances"
+          },
+          "upgradesPurchased": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "currentSeconds": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "idleSecondsRate": {
+            "type": "number",
+            "minimum": 0
+          },
+          "secondsMultiplier": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "achievementBonusMultiplier": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "hasUnseenAchievements": {
+            "type": "boolean"
+          },
+          "currentSecondsLastUpdated": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastCollectedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastDailyRewardCollectedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "idleTime",
+          "realTime",
+          "timeGems",
+          "upgradesPurchased",
+          "currentSeconds",
+          "idleSecondsRate",
+          "secondsMultiplier",
+          "achievementBonusMultiplier",
+          "hasUnseenAchievements",
+          "currentSecondsLastUpdated",
+          "lastCollectedAt",
+          "lastDailyRewardCollectedAt",
+          "serverTime"
+        ]
+      },
+      "AccountResponse": {
+        "type": "object",
+        "properties": {
+          "isAnonymous": {
+            "type": "boolean"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true,
+            "format": "email"
+          },
+          "username": {
+            "type": "string",
+            "nullable": true
+          },
+          "gameUserId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "canUpgrade": {
+            "type": "boolean"
+          },
+          "socialProviders": {
+            "type": "object",
+            "properties": {
+              "googleEnabled": {
+                "type": "boolean"
+              },
+              "appleEnabled": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "googleEnabled",
+              "appleEnabled"
+            ]
+          }
+        },
+        "required": [
+          "isAnonymous",
+          "email",
+          "username",
+          "gameUserId",
+          "socialProviders"
+        ]
+      },
+      "Achievement": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "icon",
+          "completed"
+        ]
+      },
+      "AchievementsResponse": {
+        "type": "object",
+        "properties": {
+          "completedCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "earningsBonusMultiplier": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "achievements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Achievement"
+            }
+          }
+        },
+        "required": [
+          "completedCount",
+          "totalCount",
+          "earningsBonusMultiplier",
+          "achievements"
+        ]
+      },
+      "PlayerProfileResponse": {
+        "type": "object",
+        "properties": {
+          "player": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "username": {
+                "type": "string"
+              },
+              "accountAgeSeconds": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "currentIdleSeconds": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "idleTime": {
+                "$ref": "#/components/schemas/TimeCurrencyBalances"
+              },
+              "realTime": {
+                "$ref": "#/components/schemas/TimeCurrencyBalances"
+              },
+              "timeGems": {
+                "$ref": "#/components/schemas/TimeCurrencyBalances"
+              },
+              "upgradesPurchased": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "achievementCount": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "id",
+              "username",
+              "accountAgeSeconds",
+              "currentIdleSeconds",
+              "idleTime",
+              "realTime",
+              "timeGems",
+              "upgradesPurchased",
+              "achievementCount"
+            ]
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "serverTime": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "serverTime"
+            ]
+          }
+        },
+        "required": [
+          "player",
+          "meta"
+        ]
+      },
+      "LeaderboardEntry": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "totalIdleSeconds": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "isCurrentPlayer": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "rank",
+          "userId",
+          "username",
+          "totalIdleSeconds",
+          "isCurrentPlayer"
+        ]
+      },
+      "LeaderboardResponse": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "current",
+              "collected"
+            ]
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeaderboardEntry"
+            }
+          },
+          "currentPlayer": {
+            "type": "object",
+            "properties": {
+              "userId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "rank": {
+                "type": "integer",
+                "minimum": 0,
+                "exclusiveMinimum": true
+              },
+              "totalIdleSeconds": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "inTop": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "userId",
+              "rank",
+              "totalIdleSeconds",
+              "inTop"
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "entries",
+          "currentPlayer"
+        ]
+      },
+      "ShopPurchaseRequest": {
+        "type": "object",
+        "properties": {
+          "upgradeType": {
+            "type": "string",
+            "enum": [
+              "seconds_multiplier"
+            ]
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  1
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  5
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  10
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "upgradeType",
+          "quantity"
+        ]
+      },
+      "ShopPurchaseResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PlayerState"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "purchase": {
+                "type": "object",
+                "properties": {
+                  "upgradeType": {
+                    "type": "string",
+                    "enum": [
+                      "seconds_multiplier"
+                    ]
+                  },
+                  "quantity": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "exclusiveMinimum": true
+                  },
+                  "totalCost": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "upgradeType",
+                  "quantity",
+                  "totalCost"
+                ]
+              }
+            },
+            "required": [
+              "purchase"
+            ]
+          }
+        ]
+      },
+      "PlayerCollectResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PlayerState"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "collectedSeconds": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "realSecondsCollected": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "collectedSeconds",
+              "realSecondsCollected"
+            ]
+          }
+        ]
+      },
+      "EmailAuthRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "BetterAuthPassthrough": {
+        "type": "object",
+        "additionalProperties": {
+          "nullable": true
+        }
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Service healthcheck",
+        "responses": {
+          "200": {
+            "description": "Health response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "enum": [
+                        true
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/anonymous": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Create an anonymous account",
+        "responses": {
+          "201": {
+            "description": "Anonymous credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Register with email and password",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailAuthRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Better Auth response payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BetterAuthPassthrough"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid registration payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login with email and password",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "email",
+                  "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Better Auth response payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BetterAuthPassthrough"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid login payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Logout current session",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Better Auth response payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BetterAuthPassthrough"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "Logged out successfully"
+          }
+        }
+      }
+    },
+    "/account": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Get current account details",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/upgrade": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Upgrade anonymous account to registered account",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailAuthRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Better Auth response payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BetterAuthPassthrough"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot upgrade request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/username": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Set account username",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 32
+                  }
+                },
+                "required": [
+                  "username"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated username",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "username": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "username"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Username already taken",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/player": {
+      "get": {
+        "tags": [
+          "Player"
+        ],
+        "summary": "Get current player state",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current player state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerState"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Player not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/player/collect": {
+      "post": {
+        "tags": [
+          "Player"
+        ],
+        "summary": "Collect accumulated idle time",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Collected player state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerCollectResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/player/daily-reward/collect": {
+      "post": {
+        "tags": [
+          "Player"
+        ],
+        "summary": "Collect daily reward",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated player state after reward",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Reward unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/players/{id}": {
+      "get": {
+        "tags": [
+          "Player"
+        ],
+        "summary": "Get public player profile",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Player profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerProfileResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid player id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Player not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/achievements": {
+      "get": {
+        "tags": [
+          "Achievements"
+        ],
+        "summary": "List achievements and completion state",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Achievements",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AchievementsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/achievements/seen": {
+      "post": {
+        "tags": [
+          "Achievements"
+        ],
+        "summary": "Mark unseen achievements as seen",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Marked as seen"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/leaderboard": {
+      "get": {
+        "tags": [
+          "Leaderboard"
+        ],
+        "summary": "Get leaderboard data",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "current",
+                "collected"
+              ]
+            },
+            "required": false,
+            "name": "type",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Leaderboard",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaderboardResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shop/purchase": {
+      "post": {
+        "tags": [
+          "Shop"
+        ],
+        "summary": "Purchase seconds multiplier upgrade",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopPurchaseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated player state after purchase",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopPurchaseResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or insufficient funds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

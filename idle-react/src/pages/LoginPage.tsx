@@ -26,6 +26,13 @@ export function LoginPage({
     <div className="auth-grid">
       <div>
         <h2>Login</h2>
+
+        {renderAuthButtons()}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", margin: "1rem 0" }}>
+          <hr style={{ flex: 1, border: 0, borderTop: "1px solid #e5e7eb" }} />
+          <span style={{ fontSize: "0.75rem", color: "#6b7280" }}>OR</span>
+          <hr style={{ flex: 1, border: 0, borderTop: "1px solid #e5e7eb" }} />
+        </div>
         <input
           type="email"
           placeholder="Email"
@@ -41,7 +48,7 @@ export function LoginPage({
         <button className="collect" onClick={() => void onLogin()} disabled={authPending}>
           {authPending ? "Loading..." : "Login"}
         </button>
-        {renderAuthButtons()}
+        
       </div>
 
       <div>

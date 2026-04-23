@@ -22,6 +22,7 @@ import {
 import { ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION, ACHIEVEMENT_IDS, ACHIEVEMENTS } from "@maxidle/shared/achievements";
 import { registerShopRoutes } from "./shop.js";
 import { registerLeaderboardRoutes } from "./leaderboard.js";
+import { registerApiDocumentation } from "./apiContract.js";
 import type { AppConfig, AuthClaims } from "./types.js";
 import { generateAnonymousUsername, isUsernameTakenError, isValidUsername } from "./username.js";
 
@@ -240,6 +241,7 @@ export function createApp(pool: Pool, config: AppConfig) {
   app.get("/health", (_req, res) => {
     res.json({ ok: true });
   });
+  registerApiDocumentation(app);
 
   app.post("/auth/anonymous", async (_req, res, next) => {
     const client = await pool.connect();

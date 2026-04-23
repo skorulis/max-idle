@@ -13,6 +13,7 @@ Node.js + PostgreSQL backend for the Max Idle MVP.
 - `GET /account` returns account details for session or anonymous bearer users.
 - `POST /account/upgrade` upgrades an anonymous user into a registered account.
 - Better Auth mounted at `/api/auth/*` for framework-auth routes.
+- OpenAPI contract exposed at `GET /openapi.json` and Swagger UI at `GET /docs`.
 - PostgreSQL schema for `users` and `player_states`.
 - Better Auth schema and game identity linkage table via migration.
 - Unit and integration tests for time and auth/player lifecycle.
@@ -75,6 +76,20 @@ Google/Apple values are optional for now; UI buttons are present as placeholders
 
 ```bash
 npm test
+```
+
+## API contract + docs
+
+Generate the OpenAPI document file:
+
+```bash
+npm run openapi:generate
+```
+
+Check for contract drift (fails if `openapi/openapi.json` is outdated):
+
+```bash
+npm run openapi:check
 ```
 
 ## Stop database container

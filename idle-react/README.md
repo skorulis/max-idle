@@ -35,3 +35,17 @@ Minimal React UI for Max Idle.
    ```
 
 By default the frontend calls `http://localhost:3000`.
+
+## API types
+
+Generate frontend API types from the backend OpenAPI spec:
+
+```bash
+npm run api:types:generate
+```
+
+Check for drift (fails if generated types are outdated):
+
+```bash
+npm run api:types:check
+```
