@@ -231,6 +231,15 @@ export async function upgradeAnonymous(token: string, name: string, email: strin
   });
 }
 
+export async function completeSocialUpgrade(token: string): Promise<void> {
+  await apiRequest("/account/upgrade/social/complete", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+}
+
 export async function updateUsername(token: string | null, username: string): Promise<{ username: string }> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json"

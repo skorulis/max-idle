@@ -237,6 +237,19 @@ async function ensureEmailPasswordAuthAllowed(pool: Pool, email: string, res: ex
   return true;
 }
 
+async function findGameUserIdByEmail(pool: Pool, email: string): Promise<string | null> {
+  const result = await pool.query<{ id: string }>(
+    `
+    SELECT id
+    FROM users
+    WHERE LOWER(email) = LOWER($1)
+    LIMIT 1
+    `,
+    [email]
+  );
+  return result.rows[0]?.id ?? null;
+}
+
 export function createApp(pool: Pool, config: AppConfig) {
   const auth = createBetterAuth(pool, config);
   const socialConfig = ensureSocialConfig(config);
@@ -306,6 +319,14 @@ export function createApp(pool: Pool, config: AppConfig) {
       const authInput = validateEmailPasswordInput(rawEmail, password);
       if (!authInput.isValid) {
         res.status(400).json({ error: authInput.error });
+        return;
+      }
+      const existingGameUserId = await findGameUserIdByEmail(pool, authInput.email);
+      if (existingGameUserId) {
+        res.status(409).json({
+          error: "This email is already linked to an existing player.",
+          code: "EMAIL_ALREADY_IN_USE"
+        });
         return;
       }
       if (!(await ensureEmailPasswordAuthAllowed(pool, authInput.email, res))) {
@@ -477,6 +498,14 @@ export function createApp(pool: Pool, config: AppConfig) {
         res.status(400).json({ error: authInput.error });
         return;
       }
+      const existingGameUserId = await findGameUserIdByEmail(pool, authInput.email);
+      if (existingGameUserId && existingGameUserId !== anonymousClaims.sub) {
+        res.status(409).json({
+          error: "This email is already linked to another player account.",
+          code: "EMAIL_ALREADY_IN_USE"
+        });
+        return;
+      }
       if (!(await ensureEmailPasswordAuthAllowed(pool, authInput.email, res))) {
         return;
       }
@@ -526,6 +555,105 @@ export function createApp(pool: Pool, config: AppConfig) {
       await relayAuthResponse(authResponse, res);
     } catch (error) {
       next(error);
+    }
+  });
+
+  app.post("/account/upgrade/social/complete", async (req, res, next) => {
+    const client = await pool.connect();
+    try {
+      const session = await getSession(auth, req);
+      if (!session?.user.id) {
+        res.status(401).json({ error: "Social account session required" });
+        return;
+      }
+
+      const token = readBearerToken(req);
+      if (!token) {
+        res.status(401).json({ error: "Anonymous bearer token required" });
+        return;
+      }
+
+      const anonymousClaims = verifyToken(token, config.jwtSecret);
+      if (!anonymousClaims.isAnonymous) {
+        res.status(400).json({ error: "Only anonymous users can upgrade" });
+        return;
+      }
+
+      const socialEmail = String(session.user.email ?? "").trim();
+      if (!socialEmail) {
+        res.status(400).json({ error: "Social account email is required for upgrade" });
+        return;
+      }
+
+      await client.query("BEGIN");
+
+      const existingIdentity = await client.query<{ game_user_id: string }>(
+        `
+        SELECT game_user_id
+        FROM auth_identities
+        WHERE auth_user_id = $1
+        LIMIT 1
+        `,
+        [session.user.id]
+      );
+      const existingSocialGameUserId = existingIdentity.rows[0]?.game_user_id ?? null;
+      if (existingSocialGameUserId && existingSocialGameUserId !== anonymousClaims.sub) {
+        await client.query("ROLLBACK");
+        const signOutResponse = await auth.api.signOut({
+          headers: getRequestHeaders(req),
+          asResponse: true
+        });
+        applySetCookieHeaders(res, signOutResponse);
+        res.status(409).json({
+          error: "This Google account is already linked to another player.",
+          code: "SOCIAL_ACCOUNT_ALREADY_LINKED"
+        });
+        return;
+      }
+
+      const existingByEmail = await client.query<{ id: string }>(
+        `
+        SELECT id
+        FROM users
+        WHERE LOWER(email) = LOWER($1)
+        LIMIT 1
+        `,
+        [socialEmail]
+      );
+      const existingEmailGameUserId = existingByEmail.rows[0]?.id ?? null;
+      if (existingEmailGameUserId && existingEmailGameUserId !== anonymousClaims.sub) {
+        await client.query("ROLLBACK");
+        const signOutResponse = await auth.api.signOut({
+          headers: getRequestHeaders(req),
+          asResponse: true
+        });
+        applySetCookieHeaders(res, signOutResponse);
+        res.status(409).json({
+          error: "This email is already linked to another player account.",
+          code: "EMAIL_ALREADY_IN_USE"
+        });
+        return;
+      }
+
+      await client.query(
+        `
+        INSERT INTO auth_identities (auth_user_id, game_user_id)
+        VALUES ($1, $2)
+        ON CONFLICT (auth_user_id)
+        DO UPDATE SET game_user_id = EXCLUDED.game_user_id
+        `,
+        [session.user.id, anonymousClaims.sub]
+      );
+      await client.query(`UPDATE users SET is_anonymous = FALSE, email = $2 WHERE id = $1`, [anonymousClaims.sub, socialEmail]);
+      await grantAchievement(client, anonymousClaims.sub, ACHIEVEMENT_IDS.ACCOUNT_CREATION);
+      await client.query("COMMIT");
+
+      res.status(200).json({ ok: true });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      next(error);
+    } finally {
+      client.release();
     }
   });
 

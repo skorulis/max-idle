@@ -20,6 +20,9 @@ async function run(): Promise<void> {
     const authIdentityLinkSql = await readFile(resolve(process.cwd(), "sql/003_auth_identities_multi_link.sql"), "utf-8");
     await pool.query(authIdentityLinkSql);
     console.log("Migration completed: 003_auth_identities_multi_link.sql");
+    const usersEmailUniqueSql = await readFile(resolve(process.cwd(), "sql/004_users_email_unique.sql"), "utf-8");
+    await pool.query(usersEmailUniqueSql);
+    console.log("Migration completed: 004_users_email_unique.sql");
     await pool.query(`
       ALTER TABLE player_states
       ADD COLUMN IF NOT EXISTS achievement_count BIGINT NOT NULL DEFAULT 0

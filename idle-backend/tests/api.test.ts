@@ -280,6 +280,87 @@ describe("auth + player lifecycle", () => {
     expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toEqual(["account_creation"]);
   });
 
+  it("blocks anonymous upgrade when email belongs to another player", async () => {
+    const app = createApp(pool, config);
+
+    const existingEmail = uniqueEmail();
+    const existingRegisterResponse = await request(app).post("/auth/register").send({
+      name: "Existing Email Owner",
+      email: existingEmail,
+      password: "password1234"
+    });
+    expect(existingRegisterResponse.status).toBe(200);
+
+    const anonymousAuth = await request(app).post("/auth/anonymous");
+    const token = anonymousAuth.body.token as string;
+    const anonymousUserId = anonymousAuth.body.userId as string;
+
+    const upgradeResponse = await request(app).post("/account/upgrade").set("Authorization", `Bearer ${token}`).send({
+      name: "Anonymous Upgrade Attempt",
+      email: existingEmail,
+      password: "password1234"
+    });
+    expect(upgradeResponse.status).toBe(409);
+    expect(upgradeResponse.body.code).toBe("EMAIL_ALREADY_IN_USE");
+
+    const anonymousUserEmail = await pool.query<{ email: string | null }>(`SELECT email FROM users WHERE id = $1`, [anonymousUserId]);
+    expect(anonymousUserEmail.rows[0]?.email).toBeNull();
+  });
+
+  it("hard-fails Google upgrade when social account is already linked to another player", async () => {
+    const app = createApp(pool, config);
+    const firstAnonymous = await request(app).post("/auth/anonymous");
+    const secondAnonymous = await request(app).post("/auth/anonymous");
+
+    const upgradeToken = firstAnonymous.body.token as string;
+    const upgradeUserId = firstAnonymous.body.userId as string;
+    const linkedUserId = secondAnonymous.body.userId as string;
+
+    const socialEmail = uniqueEmail();
+    const socialRegisterResponse = await request(app).post("/auth/register").send({
+      name: "Existing Google User",
+      email: socialEmail,
+      password: "password1234"
+    });
+    expect(socialRegisterResponse.status).toBe(200);
+
+    const socialAuthUserResult = await pool.query<{ id: string }>(
+      `
+      SELECT id
+      FROM "user"
+      WHERE LOWER(email) = LOWER($1)
+      LIMIT 1
+      `,
+      [socialEmail]
+    );
+    const socialAuthUserId = socialAuthUserResult.rows[0]?.id;
+    expect(socialAuthUserId).toBeTruthy();
+    await pool.query(
+      `
+      INSERT INTO auth_identities (auth_user_id, game_user_id)
+      VALUES ($1, $2)
+      ON CONFLICT (auth_user_id)
+      DO UPDATE SET game_user_id = EXCLUDED.game_user_id
+      `,
+      [socialAuthUserId, linkedUserId]
+    );
+
+    const response = await request(app)
+      .post("/account/upgrade/social/complete")
+      .set("Authorization", `Bearer ${upgradeToken}`)
+      .set("Cookie", socialRegisterResponse.headers["set-cookie"] ?? []);
+
+    expect(response.status).toBe(409);
+    expect(response.body.code).toBe("SOCIAL_ACCOUNT_ALREADY_LINKED");
+
+    const untouchedAnonymous = await pool.query<{ is_anonymous: boolean; email: string | null }>(
+      `SELECT is_anonymous, email FROM users WHERE id = $1`,
+      [upgradeUserId]
+    );
+    expect(untouchedAnonymous.rows[0]?.is_anonymous).toBe(true);
+    expect(untouchedAnonymous.rows[0]?.email).toBeNull();
+  });
+
   it("updates username for registered users", async () => {
     const app = createApp(pool, config);
     const email = uniqueEmail();

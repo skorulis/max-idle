@@ -16,6 +16,7 @@ import {
   collectDailyReward,
   collectIdleTime,
   createAnonymousSession,
+  completeSocialUpgrade,
   getAccount,
   getAchievements,
   getLeaderboard,
@@ -43,6 +44,7 @@ import type {
 } from "./types";
 
 const TOKEN_KEY = "max-idle-token";
+const UPGRADE_SOCIAL_INTENT_KEY = "max-idle-upgrade-social-intent";
 const FALLBACK_MESSAGE = "The message board is taking a snack break.";
 const WELCOME_MESSAGE = "Welcome to the worlds easiest game.";
 const HUMOROUS_MESSAGES = [
@@ -384,6 +386,85 @@ export function AppShell() {
     void bootstrap();
   }, []);
 
+  useEffect(() => {
+    if (location.pathname !== "/account") {
+      return;
+    }
+
+    const params = new URLSearchParams(location.search);
+    const upgradeSocial = params.get("upgradeSocial");
+    if (!upgradeSocial) {
+      return;
+    }
+
+    const clearUpgradeQuery = () => {
+      navigate("/account", { replace: true });
+    };
+
+    if (upgradeSocial === "error") {
+      sessionStorage.removeItem(UPGRADE_SOCIAL_INTENT_KEY);
+      setError("Could not complete Google account upgrade.");
+      setStatus("Could not upgrade account.");
+      clearUpgradeQuery();
+      return;
+    }
+
+    if (upgradeSocial !== "google") {
+      clearUpgradeQuery();
+      return;
+    }
+
+    const pendingIntent = sessionStorage.getItem(UPGRADE_SOCIAL_INTENT_KEY);
+    const anonymousToken = localStorage.getItem(TOKEN_KEY);
+    if (pendingIntent !== "google" || !anonymousToken) {
+      clearUpgradeQuery();
+      return;
+    }
+
+    let cancelled = false;
+    const finalizeSocialUpgrade = async () => {
+      setAuthPending(true);
+      setError(null);
+      setStatus("Finalizing Google account upgrade...");
+      try {
+        await completeSocialUpgrade(anonymousToken);
+        if (cancelled) {
+          return;
+        }
+        sessionStorage.removeItem(UPGRADE_SOCIAL_INTENT_KEY);
+        localStorage.removeItem(TOKEN_KEY);
+        setToken(null);
+        await refreshPlayer(null);
+        await refreshAccount(null);
+        setStatus("Anonymous account upgraded.");
+      } catch (upgradeError) {
+        if (cancelled) {
+          return;
+        }
+        sessionStorage.removeItem(UPGRADE_SOCIAL_INTENT_KEY);
+        setError(upgradeError instanceof Error ? upgradeError.message : "Upgrade failed");
+        setStatus("Could not upgrade account.");
+        setToken(anonymousToken);
+        try {
+          await refreshPlayer(anonymousToken);
+          await refreshAccount(anonymousToken);
+        } catch {
+          // Keep existing state if refresh fails.
+        }
+      } finally {
+        if (!cancelled) {
+          setAuthPending(false);
+          clearUpgradeQuery();
+        }
+      }
+    };
+
+    void finalizeSocialUpgrade();
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname, location.search]);
+
   const estimatedServerNowMs = useMemo(() => {
     if (!playerState) {
       return 0;
@@ -672,6 +753,30 @@ export function AppShell() {
     }
   };
 
+  const onGoogleUpgrade = async () => {
+    if (!token) {
+      return;
+    }
+
+    setAuthPending(true);
+    setError(null);
+    setStatus("Redirecting to Google...");
+    try {
+      const frontendOrigin = window.location.origin;
+      sessionStorage.setItem(UPGRADE_SOCIAL_INTENT_KEY, "google");
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: `${frontendOrigin}/account?upgradeSocial=google`,
+        errorCallbackURL: `${frontendOrigin}/account?upgradeSocial=error`
+      });
+    } catch (socialLoginError) {
+      sessionStorage.removeItem(UPGRADE_SOCIAL_INTENT_KEY);
+      setError(socialLoginError instanceof Error ? socialLoginError.message : "Google sign-in failed");
+      setStatus("Could not start Google sign-in.");
+      setAuthPending(false);
+    }
+  };
+
   const onUpgrade = async () => {
     if (!token) {
       return;
@@ -754,6 +859,15 @@ export function AppShell() {
   const renderAuthButtons = () => (
     <div className="social">
       <button type="button" className="secondary" onClick={() => void onGoogleLogin()} disabled={authPending}>
+        <img src="/google-logo.svg" alt="" width={20} height={20} className="social-button-icon" />
+        Continue with Google
+      </button>
+    </div>
+  );
+
+  const renderUpgradeAuthButtons = () => (
+    <div className="social">
+      <button type="button" className="secondary" onClick={() => void onGoogleUpgrade()} disabled={authPending}>
         <img src="/google-logo.svg" alt="" width={20} height={20} className="social-button-icon" />
         Continue with Google
       </button>
@@ -884,7 +998,7 @@ export function AppShell() {
                 onUpgrade={onUpgrade}
                 onLogout={onLogout}
                 onNavigateLogin={() => navigate("/login")}
-                renderAuthButtons={renderAuthButtons}
+                renderAuthButtons={renderUpgradeAuthButtons}
               />
             }
           />
