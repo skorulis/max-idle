@@ -778,30 +778,32 @@ export function AppShell() {
     <main className="app">
       <header className="page-nav">
         <p className="page-title">{getCurrentPageTitle(location.pathname)}</p>
-        {isAuthenticated ? (
-          <div className="actions">
-            <button type="button" className="link" onClick={() => navigate("/")}>
-              <GameIcon icon={House} />
-            </button>
-            <button type="button" className="link" onClick={() => navigate("/leaderboard")}>
-              <GameIcon icon={Medal} />
-            </button>
-            <button type="button" className="link" onClick={() => navigate("/shop")}>
-              <GameIcon icon={ShoppingCart} />
-            </button>
-            <button type="button" className="link" onClick={() => navigate("/achievements")}>
-              <span className="nav-icon-with-dot">
-                <GameIcon icon={Star} />
-                {playerState?.hasUnseenAchievements ? (
-                  <span className="nav-icon-dot" aria-label="New achievement unlocked" role="status" />
-                ) : null}
-              </span>
-            </button>
-            <button type="button" className="link" onClick={() => navigate("/account")}>
-              <GameIcon icon={CircleUserRound} />
-            </button>
-          </div>
-        ) : null}
+        <div className="actions">
+          <button type="button" className="link" onClick={() => navigate("/")}>
+            <GameIcon icon={House} />
+          </button>
+          {isAuthenticated ? (
+            <>
+              <button type="button" className="link" onClick={() => navigate("/leaderboard")}>
+                <GameIcon icon={Medal} />
+              </button>
+              <button type="button" className="link" onClick={() => navigate("/shop")}>
+                <GameIcon icon={ShoppingCart} />
+              </button>
+              <button type="button" className="link" onClick={() => navigate("/achievements")}>
+                <span className="nav-icon-with-dot">
+                  <GameIcon icon={Star} />
+                  {playerState?.hasUnseenAchievements ? (
+                    <span className="nav-icon-dot" aria-label="New achievement unlocked" role="status" />
+                  ) : null}
+                </span>
+              </button>
+              <button type="button" className="link" onClick={() => navigate("/account")}>
+                <GameIcon icon={CircleUserRound} />
+              </button>
+            </>
+          ) : null}
+        </div>
       </header>
 
       <section className="card">
