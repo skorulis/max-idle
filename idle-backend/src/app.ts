@@ -13,8 +13,13 @@ import {
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 import { calculateElapsedSeconds } from "./time.js";
 import { getIdleSecondsRate } from "./idleRate.js";
+import {
+  grantAchievement,
+  normalizeCompletedAchievementIds,
+  parseCompletedAchievementIds,
+  updateCompletedAchievements
+} from "./achievementUpdates.js";
 import { ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION, ACHIEVEMENT_IDS, ACHIEVEMENTS } from "@maxidle/shared/achievements";
-import type { AchievementId } from "@maxidle/shared/achievements";
 import { registerShopRoutes } from "./shop.js";
 import { registerLeaderboardRoutes } from "./leaderboard.js";
 import type { AppConfig, AuthClaims } from "./types.js";
@@ -37,52 +42,11 @@ function isValidUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
-function parseCompletedAchievementIds(value: unknown): string[] {
-  if (Array.isArray(value)) {
-    return value.filter((item): item is string => typeof item === "string");
-  }
-  if (typeof value === "string") {
-    try {
-      const parsed = JSON.parse(value) as unknown;
-      if (Array.isArray(parsed)) {
-        return parsed.filter((item): item is string => typeof item === "string");
-      }
-    } catch {
-      return [];
-    }
-  }
-  return [];
-}
-
-const KNOWN_ACHIEVEMENT_IDS: ReadonlySet<string> = new Set(ACHIEVEMENTS.map((achievement) => achievement.id));
 const REAL_TIME_COLLECT_65_MINUTES_SECONDS = 65 * 60;
-
-function normalizeCompletedAchievementIds(currentValue: unknown, idsToAdd: string[] = []): string[] {
-  const ordered: string[] = [];
-  const seen = new Set<string>();
-  const addIfKnown = (id: string) => {
-    if (!KNOWN_ACHIEVEMENT_IDS.has(id) || seen.has(id)) {
-      return;
-    }
-    seen.add(id);
-    ordered.push(id);
-  };
-
-  for (const existingId of parseCompletedAchievementIds(currentValue)) {
-    addIfKnown(existingId);
-  }
-  for (const idToAdd of idsToAdd) {
-    addIfKnown(idToAdd);
-  }
-
-  return ordered;
-}
 
 function getAchievementBonusMultiplier(achievementCount: number): number {
   return 1 + Math.max(0, achievementCount) * ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION;
 }
-
-type Queryable = Pick<Pool, "query">;
 
 type PlayerCurrentSecondsSyncRow = {
   user_id: string;
@@ -146,29 +110,6 @@ export async function syncStalePlayerCurrentSeconds(pool: Pool, limit = 100): Pr
   } finally {
     client.release();
   }
-}
-
-async function grantAchievement(db: Queryable, userId: string, achievementId: AchievementId): Promise<void> {
-  const playerStateResult = await db.query<{ completed_achievements: unknown }>(
-    `SELECT completed_achievements FROM player_states WHERE user_id = $1 FOR UPDATE`,
-    [userId]
-  );
-  const playerStateRow = playerStateResult.rows[0];
-  if (!playerStateRow) {
-    throw new Error("PLAYER_STATE_NOT_FOUND");
-  }
-
-  const completedAchievementIds = normalizeCompletedAchievementIds(playerStateRow.completed_achievements, [achievementId]);
-  await db.query(
-    `
-    UPDATE player_states
-    SET
-      completed_achievements = $2::jsonb,
-      achievement_count = $3
-    WHERE user_id = $1
-    `,
-    [userId, JSON.stringify(completedAchievementIds), completedAchievementIds.length]
-  );
 }
 
 type BetterAuthSession = {
@@ -555,30 +496,7 @@ export function createApp(pool: Pool, config: AppConfig) {
           return;
         }
 
-        const playerStateResult = await client.query<{ completed_achievements: unknown }>(
-          `SELECT completed_achievements FROM player_states WHERE user_id = $1 FOR UPDATE`,
-          [identity.claims.sub]
-        );
-        const playerStateRow = playerStateResult.rows[0];
-        if (!playerStateRow) {
-          await client.query("ROLLBACK");
-          res.status(404).json({ error: "Player state not found" });
-          return;
-        }
-
-        const completedAchievementIds = normalizeCompletedAchievementIds(playerStateRow.completed_achievements, [
-          ACHIEVEMENT_IDS.USERNAME_SELECTED
-        ]);
-        await client.query(
-          `
-          UPDATE player_states
-          SET
-            completed_achievements = $2::jsonb,
-            achievement_count = $3
-          WHERE user_id = $1
-          `,
-          [identity.claims.sub, JSON.stringify(completedAchievementIds), completedAchievementIds.length]
-        );
+        await grantAchievement(client, identity.claims.sub, ACHIEVEMENT_IDS.USERNAME_SELECTED);
 
         await client.query("COMMIT");
         res.json({ username: updatedUser.username });
@@ -945,16 +863,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         !completedAchievementIds.includes(ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES)
       ) {
         completedAchievementIds.push(ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES);
-        await client.query(
-          `
-          UPDATE player_states
-          SET
-            completed_achievements = $2::jsonb,
-            achievement_count = $3
-          WHERE user_id = $1
-          `,
-          [userId, JSON.stringify(completedAchievementIds), completedAchievementIds.length]
-        );
+        await updateCompletedAchievements(client, userId, completedAchievementIds);
       }
 
       const achievementBonusMultiplier = getAchievementBonusMultiplier(completedAchievementIds.length);
@@ -1000,8 +909,7 @@ export function createApp(pool: Pool, config: AppConfig) {
       return identity;
     },
     toNumber,
-    getAchievementBonusMultiplier,
-    normalizeCompletedAchievementIds
+    getAchievementBonusMultiplier
   });
 
   registerLeaderboardRoutes({

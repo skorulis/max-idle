@@ -8,6 +8,7 @@ import {
   multiplierToLevel
 } from "@maxidle/shared/shop";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
+import { normalizeCompletedAchievementIds } from "./achievementUpdates.js";
 import { calculateElapsedSeconds } from "./time.js";
 import { getIdleSecondsRate } from "./idleRate.js";
 import type { AuthClaims } from "./types.js";
@@ -29,7 +30,6 @@ type RegisterShopRoutesOptions = {
   resolveIdentity: (req: express.Request) => Promise<ShopRouteIdentity>;
   toNumber: (value: unknown) => number;
   getAchievementBonusMultiplier: (achievementCount: number) => number;
-  normalizeCompletedAchievementIds: (currentValue: unknown, idsToAdd?: string[]) => string[];
 };
 
 export function registerShopRoutes({
@@ -37,8 +37,7 @@ export function registerShopRoutes({
   pool,
   resolveIdentity,
   toNumber,
-  getAchievementBonusMultiplier,
-  normalizeCompletedAchievementIds
+  getAchievementBonusMultiplier
 }: RegisterShopRoutesOptions): void {
   app.post("/shop/purchase", async (req, res, next) => {
     const client = await pool.connect();
