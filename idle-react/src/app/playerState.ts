@@ -2,8 +2,9 @@ import type { PlayerResponse, SyncedPlayerState } from "./types";
 
 export function toSyncedState(data: PlayerResponse): SyncedPlayerState {
   return {
-    totalIdleSeconds: data.totalIdleSeconds,
-    collectedIdleSeconds: data.collectedIdleSeconds,
+    idleTime: data.idleTime,
+    realTime: data.realTime,
+    timeGems: data.timeGems,
     upgradesPurchased: data.upgradesPurchased,
     currentSeconds: data.currentSeconds,
     currentSecondsLastUpdatedMs: Date.parse(data.currentSecondsLastUpdated),

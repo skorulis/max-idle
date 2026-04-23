@@ -28,7 +28,7 @@ export function registerLeaderboardRoutes({
         return;
       }
 
-      const metricExpression = leaderboardType === "collected" ? "ps.total_seconds_collected" : "ps.current_seconds";
+      const metricExpression = leaderboardType === "collected" ? "ps.idle_time_total" : "ps.current_seconds";
 
       let identity: LeaderboardRouteIdentity;
       try {

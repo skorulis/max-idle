@@ -14,6 +14,9 @@ async function run(): Promise<void> {
     const schemaSql = await readFile(resolve(process.cwd(), "sql/001_init.sql"), "utf-8");
     await pool.query(schemaSql);
     console.log("Migration completed: 001_init.sql");
+    const currencySql = await readFile(resolve(process.cwd(), "sql/002_player_time_currencies.sql"), "utf-8");
+    await pool.query(currencySql);
+    console.log("Migration completed: 002_player_time_currencies.sql");
     await pool.query(`
       ALTER TABLE player_states
       ADD COLUMN IF NOT EXISTS achievement_count BIGINT NOT NULL DEFAULT 0

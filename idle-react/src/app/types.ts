@@ -3,9 +3,17 @@ export type AuthResponse = {
   token: string;
 };
 
+export type TimeCurrencyBalances = {
+  total: number;
+  available: number;
+};
+
 export type PlayerResponse = {
-  totalIdleSeconds: number;
-  collectedIdleSeconds: number;
+  idleTime: TimeCurrencyBalances;
+  realTime: TimeCurrencyBalances;
+  timeGems: TimeCurrencyBalances;
+  collectedSeconds?: number;
+  realSecondsCollected?: number;
   upgradesPurchased: number;
   currentSeconds: number;
   idleSecondsRate: number;
@@ -65,8 +73,9 @@ export type AccountResponse = {
 };
 
 export type SyncedPlayerState = {
-  totalIdleSeconds: number;
-  collectedIdleSeconds: number;
+  idleTime: TimeCurrencyBalances;
+  realTime: TimeCurrencyBalances;
+  timeGems: TimeCurrencyBalances;
   upgradesPurchased: number;
   currentSeconds: number;
   currentSecondsLastUpdatedMs: number;
@@ -83,7 +92,9 @@ export type PlayerProfileResponse = {
     username: string;
     accountAgeSeconds: number;
     currentIdleSeconds: number;
-    collectedIdleSeconds: number;
+    idleTime: TimeCurrencyBalances;
+    realTime: TimeCurrencyBalances;
+    timeGems: TimeCurrencyBalances;
     upgradesPurchased: number;
     achievementCount: number;
   };

@@ -37,7 +37,7 @@ describe("auth + player lifecycle", () => {
     const userId = randomUUID();
     const username = `lb_${randomUUID().replace(/-/g, "").slice(0, 12)}`;
     await pool.query(`INSERT INTO users (id, is_anonymous, username) VALUES ($1, TRUE, $2)`, [userId, username]);
-    await pool.query(`INSERT INTO player_states (user_id, total_seconds_collected, current_seconds) VALUES ($1, $2, $3)`, [
+    await pool.query(`INSERT INTO player_states (user_id, idle_time_total, current_seconds) VALUES ($1, $2, $3)`, [
       userId,
       totalSecondsCollected,
       currentSeconds
@@ -66,8 +66,12 @@ describe("auth + player lifecycle", () => {
       .set("Authorization", `Bearer ${authResponse.body.token}`);
 
     expect(playerResponse.status).toBe(200);
-    expect(playerResponse.body.totalIdleSeconds).toBe(0);
-    expect(playerResponse.body.collectedIdleSeconds).toBe(0);
+    expect(playerResponse.body.idleTime.total).toBe(0);
+    expect(playerResponse.body.idleTime.available).toBe(0);
+    expect(playerResponse.body.realTime.total).toBe(0);
+    expect(playerResponse.body.realTime.available).toBe(0);
+    expect(playerResponse.body.timeGems.total).toBe(0);
+    expect(playerResponse.body.timeGems.available).toBe(0);
     expect(playerResponse.body.upgradesPurchased).toBe(0);
     expect(playerResponse.body.currentSeconds).toBeGreaterThanOrEqual(0);
     expect(playerResponse.body.currentSecondsLastUpdated).toBeTypeOf("string");
@@ -94,7 +98,9 @@ describe("auth + player lifecycle", () => {
     const collectResponse = await request(app).post("/player/collect").set("Authorization", `Bearer ${token}`);
     expect(collectResponse.status).toBe(200);
     expect(collectResponse.body.collectedSeconds).toBeGreaterThanOrEqual(10);
-    expect(collectResponse.body.totalIdleSeconds).toBeGreaterThanOrEqual(10);
+    expect(collectResponse.body.idleTime.total).toBeGreaterThanOrEqual(10);
+    expect(collectResponse.body.realSecondsCollected).toBeGreaterThanOrEqual(10);
+    expect(collectResponse.body.realTime.total).toBeGreaterThanOrEqual(10);
     expect(collectResponse.body.upgradesPurchased).toBe(0);
     expect(collectResponse.body.serverTime).toBeTypeOf("string");
 
@@ -298,7 +304,7 @@ describe("auth + player lifecycle", () => {
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
 
-    await pool.query(`UPDATE player_states SET total_seconds_collected = $2 WHERE user_id = $1`, [userId, 10000]);
+    await pool.query(`UPDATE player_states SET idle_time_total = $2 WHERE user_id = $1`, [userId, 10000]);
     for (let i = 0; i < 220; i += 1) {
       await insertLeaderboardPlayer(9000 - i);
     }
@@ -329,7 +335,7 @@ describe("auth + player lifecycle", () => {
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
 
-    await pool.query(`UPDATE player_states SET total_seconds_collected = $2 WHERE user_id = $1`, [userId, -100]);
+    await pool.query(`UPDATE player_states SET idle_time_total = $2 WHERE user_id = $1`, [userId, -100]);
     for (let i = 0; i < 210; i += 1) {
       await insertLeaderboardPlayer(50000 - i);
     }
@@ -352,7 +358,7 @@ describe("auth + player lifecycle", () => {
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
 
-    await pool.query(`UPDATE player_states SET current_seconds = $2, total_seconds_collected = $3 WHERE user_id = $1`, [userId, 500, 0]);
+    await pool.query(`UPDATE player_states SET current_seconds = $2, idle_time_total = $3 WHERE user_id = $1`, [userId, 500, 0]);
     await insertLeaderboardPlayer(0, 490);
     await insertLeaderboardPlayer(5000, 10);
 
@@ -372,7 +378,7 @@ describe("auth + player lifecycle", () => {
       `
       UPDATE player_states
       SET
-        total_seconds_collected = 1234,
+        idle_time_total = 1234,
         upgrades_purchased = 7,
         current_seconds = 0,
         last_collected_at = NOW() - INTERVAL '35 seconds',
@@ -390,7 +396,7 @@ describe("auth + player lifecycle", () => {
     expect(profileResponse.body.player.accountAgeSeconds).toBeGreaterThanOrEqual(0);
     expect(profileResponse.body.player.currentIdleSeconds).toBeGreaterThanOrEqual(calculateIdleSecondsGain(25));
     expect(profileResponse.body.player.currentIdleSeconds).toBeLessThanOrEqual(calculateIdleSecondsGain(50));
-    expect(profileResponse.body.player.collectedIdleSeconds).toBe(1234);
+    expect(profileResponse.body.player.idleTime.total).toBe(1234);
     expect(profileResponse.body.player.upgradesPurchased).toBe(7);
     expect(profileResponse.body.player.achievementCount).toBe(0);
     expect(profileResponse.body.meta.serverTime).toBeTypeOf("string");
@@ -469,7 +475,7 @@ describe("auth + player lifecycle", () => {
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
 
-    await pool.query(`UPDATE player_states SET spendable_idle_seconds = 100 WHERE user_id = $1`, [userId]);
+    await pool.query(`UPDATE player_states SET idle_time_available = 100 WHERE user_id = $1`, [userId]);
 
     const purchaseResponse = await request(app)
       .post("/shop/purchase")
@@ -478,7 +484,7 @@ describe("auth + player lifecycle", () => {
 
     expect(purchaseResponse.status).toBe(200);
     expect(purchaseResponse.body.purchase.totalCost).toBe(49);
-    expect(purchaseResponse.body.collectedIdleSeconds).toBe(51);
+    expect(purchaseResponse.body.idleTime.available).toBe(51);
     expect(purchaseResponse.body.upgradesPurchased).toBe(5);
     expect(purchaseResponse.body.secondsMultiplier).toBe(1.5);
     expect(purchaseResponse.body.achievementBonusMultiplier).toBe(1.25);
@@ -499,7 +505,7 @@ describe("auth + player lifecycle", () => {
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
 
-    await pool.query(`UPDATE player_states SET spendable_idle_seconds = 4 WHERE user_id = $1`, [userId]);
+    await pool.query(`UPDATE player_states SET idle_time_available = 4 WHERE user_id = $1`, [userId]);
 
     const purchaseResponse = await request(app)
       .post("/shop/purchase")

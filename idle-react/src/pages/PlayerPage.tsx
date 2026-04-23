@@ -21,7 +21,7 @@ export function PlayerPage({ publicPlayerLoading, publicPlayerProfile, hasError 
             <span>Current idle time:</span> {formatSeconds(publicPlayerProfile.currentIdleSeconds)}
           </p>
           <p>
-            <span>Collected idle time:</span> {formatSeconds(publicPlayerProfile.collectedIdleSeconds)}
+            <span>Total idle time collected:</span> {formatSeconds(publicPlayerProfile.idleTime.total)}
           </p>
           <p>
             <span>Shop purchases:</span> {publicPlayerProfile.upgradesPurchased}

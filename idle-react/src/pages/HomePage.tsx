@@ -48,7 +48,7 @@ export function HomePage({
 
       <div className="stats">
         <p>
-          <span>Total collected:</span> {formatSeconds(playerState.totalIdleSeconds)}
+          <span>Total idle time collected:</span> {formatSeconds(playerState.idleTime.total)}
         </p>
       </div>
 

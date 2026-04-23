@@ -31,7 +31,7 @@ export function ShopPage({
     <>
       <h2>Shop</h2>
       <p>
-        <span>Spendable:</span> {formatSeconds(playerState.collectedIdleSeconds)}
+        <span>Spendable idle time:</span> {formatSeconds(playerState.idleTime.available)}
       </p>
       <p className="subtle">Upgrade: seconds multiplier (+0.1x per purchase)</p>
       <p className="subtle">Current multiplier: {playerState.secondsMultiplier.toFixed(1)}x</p>
@@ -40,7 +40,7 @@ export function ShopPage({
           type="button"
           className="secondary"
           onClick={() => void onPurchaseUpgrade(1)}
-          disabled={shopPendingQuantity !== null || playerState.collectedIdleSeconds < shopCosts[1]}
+          disabled={shopPendingQuantity !== null || playerState.idleTime.available < shopCosts[1]}
         >
           {shopPendingQuantity === 1 ? "Purchasing..." : `Buy x1 (${formatSeconds(shopCosts[1])})`}
         </button>
@@ -48,7 +48,7 @@ export function ShopPage({
           type="button"
           className="secondary"
           onClick={() => void onPurchaseUpgrade(5)}
-          disabled={shopPendingQuantity !== null || playerState.collectedIdleSeconds < shopCosts[5]}
+          disabled={shopPendingQuantity !== null || playerState.idleTime.available < shopCosts[5]}
         >
           {shopPendingQuantity === 5 ? "Purchasing..." : `Buy x5 (${formatSeconds(shopCosts[5])})`}
         </button>
@@ -56,7 +56,7 @@ export function ShopPage({
           type="button"
           className="secondary"
           onClick={() => void onPurchaseUpgrade(10)}
-          disabled={shopPendingQuantity !== null || playerState.collectedIdleSeconds < shopCosts[10]}
+          disabled={shopPendingQuantity !== null || playerState.idleTime.available < shopCosts[10]}
         >
           {shopPendingQuantity === 10 ? "Purchasing..." : `Buy x10 (${formatSeconds(shopCosts[10])})`}
         </button>

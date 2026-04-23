@@ -59,8 +59,12 @@ export function registerShopRoutes({
       const userId = identity.claims.sub;
       await client.query("BEGIN");
       const rowResult = await client.query<{
-        total_seconds_collected: string;
-        spendable_idle_seconds: string;
+        idle_time_total: string;
+        idle_time_available: string;
+        real_time_total: string;
+        real_time_available: string;
+        time_gems_total: string;
+        time_gems_available: string;
         achievement_count: string;
         completed_achievements: unknown;
         upgrades_purchased: number | string;
@@ -71,8 +75,12 @@ export function registerShopRoutes({
       }>(
         `
         SELECT
-          total_seconds_collected,
-          spendable_idle_seconds,
+          idle_time_total,
+          idle_time_available,
+          real_time_total,
+          real_time_available,
+          time_gems_total,
+          time_gems_available,
           achievement_count,
           completed_achievements,
           upgrades_purchased,
@@ -99,8 +107,8 @@ export function registerShopRoutes({
 
       const currentLevel = multiplierToLevel(secondsMultiplier);
       const totalCost = getSecondsMultiplierPurchaseCost(currentLevel, quantity);
-      const spendableIdleSeconds = toNumber(row.spendable_idle_seconds);
-      if (spendableIdleSeconds < totalCost) {
+      const idleTimeAvailable = toNumber(row.idle_time_available);
+      if (idleTimeAvailable < totalCost) {
         await client.query("ROLLBACK");
         res.status(400).json({
           error: "Not enough funds",
@@ -125,8 +133,8 @@ export function registerShopRoutes({
         nextAchievementBonusMultiplier
       );
       const updateResult = await client.query<{
-        total_seconds_collected: string;
-        spendable_idle_seconds: string;
+        idle_time_total: string;
+        idle_time_available: string;
         current_seconds: string;
         current_seconds_last_updated: Date;
         last_collected_at: Date;
@@ -135,7 +143,7 @@ export function registerShopRoutes({
         `
         UPDATE player_states
         SET
-          spendable_idle_seconds = $2,
+          idle_time_available = $2,
           current_seconds = $3,
           current_seconds_last_updated = $4,
           seconds_multiplier = $5,
@@ -144,8 +152,8 @@ export function registerShopRoutes({
           achievement_count = $8
         WHERE user_id = $1
         RETURNING
-          total_seconds_collected,
-          spendable_idle_seconds,
+          idle_time_total,
+          idle_time_available,
           current_seconds,
           current_seconds_last_updated,
           last_collected_at,
@@ -153,7 +161,7 @@ export function registerShopRoutes({
         `,
         [
           userId,
-          spendableIdleSeconds - totalCost,
+          idleTimeAvailable - totalCost,
           syncedCurrentSeconds,
           now,
           nextMultiplier,
@@ -172,8 +180,18 @@ export function registerShopRoutes({
 
       const elapsedSinceLastCollection = calculateElapsedSeconds(updated.last_collected_at, now);
       res.json({
-        totalIdleSeconds: toNumber(updated.total_seconds_collected),
-        collectedIdleSeconds: toNumber(updated.spendable_idle_seconds),
+        idleTime: {
+          total: toNumber(updated.idle_time_total),
+          available: toNumber(updated.idle_time_available)
+        },
+        realTime: {
+          total: toNumber(row.real_time_total),
+          available: toNumber(row.real_time_available)
+        },
+        timeGems: {
+          total: toNumber(row.time_gems_total),
+          available: toNumber(row.time_gems_available)
+        },
         upgradesPurchased: nextUpgradesPurchased,
         currentSeconds: toNumber(updated.current_seconds),
         secondsMultiplier: toNumber(updated.seconds_multiplier),

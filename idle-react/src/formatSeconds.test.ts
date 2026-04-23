@@ -13,6 +13,19 @@ describe("formatSeconds", () => {
     expect(formatSeconds(3661)).toBe("1h 1m 1s");
   });
 
+  it("truncates output to a maximum number of units", () => {
+    expect(formatSeconds(3661, 1)).toBe("1h");
+    expect(formatSeconds(3661, 2)).toBe("1h 1m");
+    expect(formatSeconds(3661, 10)).toBe("1h 1m 1s");
+  });
+
+  it("rounds the truncated remainder based on the selected mode", () => {
+    expect(formatSeconds(3599, 1, "floor")).toBe("59m");
+    expect(formatSeconds(3599, 1, "ceil")).toBe("1h");
+    expect(formatSeconds(3569, 1, "round")).toBe("59m");
+    expect(formatSeconds(3570, 1, "round")).toBe("1h");
+  });
+
   it("formats larger values across years to seconds", () => {
     const oneYearOneWeekOneDayOneHourOneMinuteOneSecond = 365 * 24 * 60 * 60 + 7 * 24 * 60 * 60 + 24 * 60 * 60 + 3600 + 60 + 1;
     expect(formatSeconds(oneYearOneWeekOneDayOneHourOneMinuteOneSecond)).toBe("1y 1w 1d 1h 1m 1s");
@@ -21,5 +34,12 @@ describe("formatSeconds", () => {
   it("omits zero-value higher units", () => {
     expect(formatSeconds(7 * 24 * 60 * 60)).toBe("1w");
     expect(formatSeconds(7 * 24 * 60 * 60 + 60)).toBe("1w 1m");
+  });
+
+  it("supports configurable rounding modes for fractional seconds", () => {
+    expect(formatSeconds(59.6)).toBe("59s");
+    expect(formatSeconds(59.6, undefined, "ceil")).toBe("1m");
+    expect(formatSeconds(59.6, undefined, "round")).toBe("1m");
+    expect(formatSeconds(59.6, undefined, "trunc")).toBe("59s");
   });
 });

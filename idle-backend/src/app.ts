@@ -661,7 +661,12 @@ export function createApp(pool: Pool, config: AppConfig) {
         username: string;
         created_at: Date;
         current_seconds: string;
-        total_seconds_collected: string;
+        idle_time_total: string;
+        idle_time_available: string;
+        real_time_total: string;
+        real_time_available: string;
+        time_gems_total: string;
+        time_gems_available: string;
         upgrades_purchased: string;
         current_seconds_last_updated: Date;
         last_collected_at: Date;
@@ -675,7 +680,12 @@ export function createApp(pool: Pool, config: AppConfig) {
           u.username,
           u.created_at,
           ps.current_seconds,
-          ps.total_seconds_collected,
+          ps.idle_time_total,
+          ps.idle_time_available,
+          ps.real_time_total,
+          ps.real_time_available,
+          ps.time_gems_total,
+          ps.time_gems_available,
           ps.upgrades_purchased,
           ps.current_seconds_last_updated,
           ps.last_collected_at,
@@ -711,7 +721,18 @@ export function createApp(pool: Pool, config: AppConfig) {
           username: row.username,
           accountAgeSeconds,
           currentIdleSeconds,
-          collectedIdleSeconds: toNumber(row.total_seconds_collected),
+          idleTime: {
+            total: toNumber(row.idle_time_total),
+            available: toNumber(row.idle_time_available)
+          },
+          realTime: {
+            total: toNumber(row.real_time_total),
+            available: toNumber(row.real_time_available)
+          },
+          timeGems: {
+            total: toNumber(row.time_gems_total),
+            available: toNumber(row.time_gems_available)
+          },
           upgradesPurchased: toNumber(row.upgrades_purchased),
           achievementCount: toNumber(row.achievement_count)
         },
@@ -731,8 +752,12 @@ export function createApp(pool: Pool, config: AppConfig) {
 
       const userId = identity.claims.sub;
       const result = await pool.query<{
-        total_seconds_collected: string;
-        spendable_idle_seconds: string;
+        idle_time_total: string;
+        idle_time_available: string;
+        real_time_total: string;
+        real_time_available: string;
+        time_gems_total: string;
+        time_gems_available: string;
         upgrades_purchased: string;
         achievement_count: string;
         seconds_multiplier: number | string;
@@ -743,8 +768,12 @@ export function createApp(pool: Pool, config: AppConfig) {
       }>(
         `
         SELECT
-          total_seconds_collected,
-          spendable_idle_seconds,
+          idle_time_total,
+          idle_time_available,
+          real_time_total,
+          real_time_available,
+          time_gems_total,
+          time_gems_available,
           upgrades_purchased,
           achievement_count,
           seconds_multiplier,
@@ -786,8 +815,18 @@ export function createApp(pool: Pool, config: AppConfig) {
       const idleSecondsRate = getIdleSecondsRate({ secondsSinceLastCollection: elapsedSinceLastCollection });
 
       res.json({
-        totalIdleSeconds: toNumber(row.total_seconds_collected),
-        collectedIdleSeconds: toNumber(row.spendable_idle_seconds),
+        idleTime: {
+          total: toNumber(row.idle_time_total),
+          available: toNumber(row.idle_time_available)
+        },
+        realTime: {
+          total: toNumber(row.real_time_total),
+          available: toNumber(row.real_time_available)
+        },
+        timeGems: {
+          total: toNumber(row.time_gems_total),
+          available: toNumber(row.time_gems_available)
+        },
         upgradesPurchased: toNumber(row.upgrades_purchased),
         currentSeconds: currentIdleSeconds,
         idleSecondsRate,
@@ -810,20 +849,15 @@ export function createApp(pool: Pool, config: AppConfig) {
       const userId = identity.claims.sub;
       await client.query("BEGIN");
       const result = await client.query<{
-        total_seconds_collected: number | string;
-        spendable_idle_seconds: number | string;
         upgrades_purchased: number | string;
         achievement_count: number | string;
         seconds_multiplier: number | string;
         last_collected_at: Date;
         current_seconds: number | string;
         current_seconds_last_updated: Date;
-        updated_at: Date;
       }>(
         `
         SELECT
-          total_seconds_collected,
-          spendable_idle_seconds,
           upgrades_purchased,
           achievement_count,
           seconds_multiplier,
@@ -853,9 +887,14 @@ export function createApp(pool: Pool, config: AppConfig) {
         secondsMultiplier,
         achievementBonusMultiplier
       );
+      const realSecondsCollected = calculateElapsedSeconds(lockedRow.last_collected_at, collectedAt);
       const updateResult = await client.query<{
-        total_seconds_collected: number | string;
-        spendable_idle_seconds: number | string;
+        idle_time_total: number | string;
+        idle_time_available: number | string;
+        real_time_total: number | string;
+        real_time_available: number | string;
+        time_gems_total: number | string;
+        time_gems_available: number | string;
         upgrades_purchased: number | string;
         last_collected_at: Date;
         current_seconds: number | string;
@@ -865,23 +904,29 @@ export function createApp(pool: Pool, config: AppConfig) {
         `
         UPDATE player_states
         SET
-          total_seconds_collected = total_seconds_collected + $2::BIGINT,
-          spendable_idle_seconds = spendable_idle_seconds + $2::BIGINT,
+          idle_time_total = idle_time_total + $2::BIGINT,
+          idle_time_available = idle_time_available + $2::BIGINT,
+          real_time_total = real_time_total + $3::BIGINT,
+          real_time_available = real_time_available + $3::BIGINT,
           current_seconds = 0,
-          current_seconds_last_updated = $3,
-          last_collected_at = $3,
-          updated_at = $3
+          current_seconds_last_updated = $4,
+          last_collected_at = $4,
+          updated_at = $4
         WHERE user_id = $1
         RETURNING
-          total_seconds_collected,
-          spendable_idle_seconds,
+          idle_time_total,
+          idle_time_available,
+          real_time_total,
+          real_time_available,
+          time_gems_total,
+          time_gems_available,
           upgrades_purchased,
           last_collected_at,
           current_seconds,
           current_seconds_last_updated,
           seconds_multiplier
         `,
-        [userId, collectedSeconds, collectedAt]
+        [userId, collectedSeconds, realSecondsCollected, collectedAt]
       );
 
       const row = updateResult.rows[0];
@@ -894,8 +939,19 @@ export function createApp(pool: Pool, config: AppConfig) {
       await client.query("COMMIT");
       res.json({
         collectedSeconds,
-        totalIdleSeconds: toNumber(row.total_seconds_collected),
-        collectedIdleSeconds: toNumber(row.spendable_idle_seconds),
+        realSecondsCollected,
+        idleTime: {
+          total: toNumber(row.idle_time_total),
+          available: toNumber(row.idle_time_available)
+        },
+        realTime: {
+          total: toNumber(row.real_time_total),
+          available: toNumber(row.real_time_available)
+        },
+        timeGems: {
+          total: toNumber(row.time_gems_total),
+          available: toNumber(row.time_gems_available)
+        },
         upgradesPurchased: toNumber(row.upgrades_purchased),
         currentSeconds: toNumber(row.current_seconds),
         secondsMultiplier: toNumber(row.seconds_multiplier),
