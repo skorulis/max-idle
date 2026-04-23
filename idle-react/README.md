@@ -11,7 +11,6 @@ Minimal React UI for Max Idle.
 - Account page at `/account`:
   - Shows user/account info
   - Allows anonymous users to upgrade to a registered account
-- Google/Apple buttons are shown as "coming soon" placeholders.
 - Fetches player state and renders a live idle timer between server syncs.
 - Supports both anonymous bearer token flow and cookie-based authenticated flow.
 

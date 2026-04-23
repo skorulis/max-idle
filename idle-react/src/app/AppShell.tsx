@@ -661,10 +661,6 @@ export function AppShell() {
         <img src="/google-logo.svg" alt="" width={20} height={20} className="social-button-icon" />
         Continue with Google
       </button>
-      <button type="button" className="secondary" disabled>
-        <img src="/apple-logo.svg" alt="" width={20} height={20} className="social-button-icon" />
-        Continue with Apple (coming soon)
-      </button>
     </div>
   );
 

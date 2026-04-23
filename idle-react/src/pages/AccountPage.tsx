@@ -96,8 +96,6 @@ export function AccountPage({
         </>
       ) : (
         <>
-          <p className="subtle">Google configured: {account.socialProviders.googleEnabled ? "Yes" : "No"}</p>
-          <p className="subtle">Apple configured: {account.socialProviders.appleEnabled ? "Yes" : "No"}</p>
           {renderAuthButtons()}
         </>
       )}
