@@ -11,6 +11,7 @@ export function toSyncedState(data: PlayerResponse): SyncedPlayerState {
     secondsMultiplier: data.secondsMultiplier,
     achievementBonusMultiplier: data.achievementBonusMultiplier,
     lastCollectedAtMs: Date.parse(data.lastCollectedAt),
+    lastDailyRewardCollectedAtMs: data.lastDailyRewardCollectedAt ? Date.parse(data.lastDailyRewardCollectedAt) : null,
     serverTimeMs: Date.parse(data.serverTime),
     syncedAtClientMs: Date.now()
   };

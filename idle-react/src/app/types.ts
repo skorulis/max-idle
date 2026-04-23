@@ -21,6 +21,7 @@ export type PlayerResponse = {
   achievementBonusMultiplier: number;
   currentSecondsLastUpdated: string;
   lastCollectedAt: string;
+  lastDailyRewardCollectedAt: string | null;
   serverTime: string;
 };
 
@@ -82,6 +83,7 @@ export type SyncedPlayerState = {
   secondsMultiplier: number;
   achievementBonusMultiplier: number;
   lastCollectedAtMs: number;
+  lastDailyRewardCollectedAtMs: number | null;
   serverTimeMs: number;
   syncedAtClientMs: number;
 };

@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS player_states (
   seconds_multiplier DOUBLE PRECISION NOT NULL DEFAULT 1,
   current_seconds BIGINT NOT NULL DEFAULT 0,
   current_seconds_last_updated TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_daily_reward_collected_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

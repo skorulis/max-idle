@@ -12,6 +12,7 @@ import { LoginPage } from "../pages/LoginPage";
 import { PlayerPage } from "../pages/PlayerPage";
 import { ShopPage } from "../pages/ShopPage";
 import {
+  collectDailyReward,
   collectIdleTime,
   createAnonymousSession,
   getAccount,
@@ -118,6 +119,7 @@ export function AppShell() {
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [collecting, setCollecting] = useState(false);
+  const [collectingDailyReward, setCollectingDailyReward] = useState(false);
   const [authPending, setAuthPending] = useState(false);
   const [usernamePending, setUsernamePending] = useState(false);
   const [usernameDraft, setUsernameDraft] = useState("");
@@ -384,6 +386,28 @@ export function AppShell() {
     return idleSecondsRate * playerState.secondsMultiplier * playerState.achievementBonusMultiplier;
   }, [idleSecondsRate, playerState]);
 
+  const dailyRewardAvailable = useMemo(() => {
+    if (!playerState) {
+      return false;
+    }
+    const now = new Date(estimatedServerNowMs);
+    const currentUtcDayStartMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    const lastCollectedMs = playerState.lastDailyRewardCollectedAtMs;
+    if (lastCollectedMs === null) {
+      return true;
+    }
+    return lastCollectedMs < currentUtcDayStartMs;
+  }, [estimatedServerNowMs, playerState]);
+
+  const dailyRewardSecondsUntilAvailable = useMemo(() => {
+    if (!playerState || dailyRewardAvailable) {
+      return 0;
+    }
+    const now = new Date(estimatedServerNowMs);
+    const nextUtcDayStartMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+    return Math.max(0, Math.ceil((nextUtcDayStartMs - estimatedServerNowMs) / 1000));
+  }, [dailyRewardAvailable, estimatedServerNowMs, playerState]);
+
   const secondsMultiplierLevel = useMemo(() => {
     return playerState ? multiplierToLevel(playerState.secondsMultiplier) : 0;
   }, [playerState]);
@@ -495,6 +519,36 @@ export function AppShell() {
       setStatus("Could not complete shop purchase.");
     } finally {
       setShopPendingQuantity(null);
+    }
+  };
+
+  const onCollectDailyReward = async () => {
+    if (!playerState) {
+      return;
+    }
+
+    setCollectingDailyReward(true);
+    setError(null);
+    try {
+      const nextPlayer = await collectDailyReward(token);
+      const synced = toSyncedState(nextPlayer);
+      alignClientClock();
+      setPlayerState(synced);
+      setStatus("Daily reward collected.");
+    } catch (dailyRewardError) {
+      if (dailyRewardError instanceof Error && dailyRewardError.message === "UNAUTHORIZED") {
+        localStorage.removeItem(TOKEN_KEY);
+        setToken(null);
+        setPlayerState(null);
+        setAccount(null);
+        setStatus("Press start when you are ready to do nothing.");
+      } else if (dailyRewardError instanceof Error && dailyRewardError.message === "DAILY_REWARD_NOT_AVAILABLE") {
+        setError("Daily reward already collected today. Next reset is 00:00:00 UTC.");
+      } else {
+        setError(dailyRewardError instanceof Error ? dailyRewardError.message : "Daily reward collection failed");
+      }
+    } finally {
+      setCollectingDailyReward(false);
     }
   };
 
@@ -715,8 +769,12 @@ export function AppShell() {
                 uncollectedIdleSeconds={uncollectedIdleSeconds}
                 realtimeElapsedSeconds={realtimeElapsedSeconds}
                 effectiveIdleSecondsRate={effectiveIdleSecondsRate}
+                collectingDailyReward={collectingDailyReward}
+                dailyRewardAvailable={dailyRewardAvailable}
+                dailyRewardSecondsUntilAvailable={dailyRewardSecondsUntilAvailable}
                 onStartIdling={onStartIdling}
                 onCollect={onCollect}
+                onCollectDailyReward={onCollectDailyReward}
                 onNavigateLogin={() => navigate("/login")}
               />
             }

@@ -71,6 +71,35 @@ export async function collectIdleTime(token: string | null): Promise<PlayerRespo
   return (await response.json()) as PlayerResponse;
 }
 
+export async function collectDailyReward(token: string | null): Promise<PlayerResponse> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/player/daily-reward/collect`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      ...headers
+    }
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (response.status === 400) {
+    const payload = (await response.json().catch(() => null)) as { code?: string } | null;
+    if (payload?.code === "DAILY_REWARD_NOT_AVAILABLE") {
+      throw new Error("DAILY_REWARD_NOT_AVAILABLE");
+    }
+  }
+  if (!response.ok) {
+    throw new Error("Failed to collect daily reward");
+  }
+  return (await response.json()) as PlayerResponse;
+}
+
 export async function getAccount(token: string | null): Promise<AccountResponse> {
   const headers: Record<string, string> = {};
   if (token) {

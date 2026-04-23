@@ -25,6 +25,10 @@ async function run(): Promise<void> {
       ALTER TABLE player_states
       ADD COLUMN IF NOT EXISTS completed_achievements JSONB NOT NULL DEFAULT '[]'::jsonb
     `);
+    await pool.query(`
+      ALTER TABLE player_states
+      ADD COLUMN IF NOT EXISTS last_daily_reward_collected_at TIMESTAMPTZ
+    `);
     console.log("Migration completed: achievements columns");
 
     const auth = createBetterAuth(pool, config);

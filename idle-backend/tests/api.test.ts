@@ -76,6 +76,7 @@ describe("auth + player lifecycle", () => {
     expect(playerResponse.body.currentSeconds).toBeGreaterThanOrEqual(0);
     expect(playerResponse.body.currentSecondsLastUpdated).toBeTypeOf("string");
     expect(playerResponse.body.lastCollectedAt).toBeTypeOf("string");
+    expect(playerResponse.body.lastDailyRewardCollectedAt).toBeNull();
     expect(playerResponse.body.serverTime).toBeTypeOf("string");
   });
 
@@ -107,6 +108,35 @@ describe("auth + player lifecycle", () => {
     const secondCollect = await request(app).post("/player/collect").set("Authorization", `Bearer ${token}`);
     expect(secondCollect.status).toBe(200);
     expect(secondCollect.body.collectedSeconds).toBe(0);
+  });
+
+  it("collects a daily reward once per UTC day", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    const firstCollect = await request(app).post("/player/daily-reward/collect").set("Authorization", `Bearer ${token}`);
+    expect(firstCollect.status).toBe(200);
+    expect(firstCollect.body.timeGems.total).toBe(1);
+    expect(firstCollect.body.timeGems.available).toBe(1);
+    expect(firstCollect.body.lastDailyRewardCollectedAt).toBeTypeOf("string");
+
+    const secondCollect = await request(app).post("/player/daily-reward/collect").set("Authorization", `Bearer ${token}`);
+    expect(secondCollect.status).toBe(400);
+    expect(secondCollect.body.code).toBe("DAILY_REWARD_NOT_AVAILABLE");
+
+    const state = await pool.query<{ time_gems_total: string; time_gems_available: string; last_daily_reward_collected_at: Date | null }>(
+      `
+      SELECT time_gems_total, time_gems_available, last_daily_reward_collected_at
+      FROM player_states
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+    expect(Number(state.rows[0]?.time_gems_total ?? 0)).toBe(1);
+    expect(Number(state.rows[0]?.time_gems_available ?? 0)).toBe(1);
+    expect(state.rows[0]?.last_daily_reward_collected_at).toBeTruthy();
   });
 
   it("returns anonymous account info for bearer users", async () => {

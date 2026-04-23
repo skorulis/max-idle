@@ -1,16 +1,20 @@
 import { formatSeconds } from "../formatSeconds";
-import { Atom, Clock3, Gem } from "lucide-react";
+import { Atom, Clock3, Gem, Gift } from "lucide-react";
 import type { SyncedPlayerState } from "../app/types";
 
 type HomePageProps = {
   playerState: SyncedPlayerState | null;
   starting: boolean;
   collecting: boolean;
+  collectingDailyReward: boolean;
   uncollectedIdleSeconds: number;
   realtimeElapsedSeconds: number;
   effectiveIdleSecondsRate: number;
+  dailyRewardAvailable: boolean;
+  dailyRewardSecondsUntilAvailable: number;
   onStartIdling: () => Promise<void>;
   onCollect: () => Promise<void>;
+  onCollectDailyReward: () => Promise<void>;
   onNavigateLogin: () => void;
 };
 
@@ -18,11 +22,15 @@ export function HomePage({
   playerState,
   starting,
   collecting,
+  collectingDailyReward,
   uncollectedIdleSeconds,
   realtimeElapsedSeconds,
   effectiveIdleSecondsRate,
+  dailyRewardAvailable,
+  dailyRewardSecondsUntilAvailable,
   onStartIdling,
   onCollect,
+  onCollectDailyReward,
   onNavigateLogin
 }: HomePageProps) {
   if (!playerState) {
@@ -47,6 +55,10 @@ export function HomePage({
       <p className="subtle">Realtime: {formatSeconds(realtimeElapsedSeconds)}</p>
       <p className="subtle">Current rate: {effectiveIdleSecondsRate.toFixed(2)}x</p>
 
+      <button className="collect" onClick={() => void onCollect()} disabled={collecting}>
+        {collecting ? "Collecting..." : "Collect"}
+      </button>
+
       <p className="subtle">Totals</p>
       <div className="shop-currencies">
         <div className="shop-currency-card">
@@ -68,13 +80,31 @@ export function HomePage({
             <Gem size={16} aria-hidden="true" />
             Time Gems
           </p>
-          <p className="shop-currency-value">{formatSeconds(playerState.timeGems.total, 2, "floor")}</p>
+          <p className="shop-currency-value">{playerState.timeGems.total}</p>
         </div>
       </div>
 
-      <button className="collect" onClick={() => void onCollect()} disabled={collecting}>
-        {collecting ? "Collecting..." : "Collect"}
-      </button>
+      
+
+      <div className="panel">
+        <p className="shop-currency-title">
+          <Gift size={16} aria-hidden="true" />
+          Daily Reward
+        </p>
+        {dailyRewardAvailable ? (
+          <>
+            <p className="shop-currency-value">Ready to collect (+1 Time Gem)</p>
+            <button className="collect" onClick={() => void onCollectDailyReward()} disabled={collectingDailyReward}>
+              {collectingDailyReward ? "Collecting daily reward..." : "Collect daily reward"}
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="shop-currency-value">+1 Time Gem</p>
+            <p className="subtle">Resets in {formatSeconds(dailyRewardSecondsUntilAvailable)}</p>
+          </>
+        )}
+      </div>
     </>
   );
 }

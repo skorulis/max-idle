@@ -49,6 +49,17 @@ function getAchievementBonusMultiplier(achievementCount: number): number {
   return 1 + Math.max(0, achievementCount) * ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION;
 }
 
+function getUtcDayStartMs(date: Date): number {
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+}
+
+function canCollectDailyReward(lastCollectedAt: Date | null, now: Date): boolean {
+  if (!lastCollectedAt) {
+    return true;
+  }
+  return lastCollectedAt.getTime() < getUtcDayStartMs(now);
+}
+
 type PlayerCurrentSecondsSyncRow = {
   user_id: string;
   current_seconds: number | string;
@@ -684,6 +695,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         last_collected_at: Date;
         current_seconds: string;
         current_seconds_last_updated: Date;
+        last_daily_reward_collected_at: Date | null;
         server_time: Date;
       }>(
         `
@@ -700,6 +712,7 @@ export function createApp(pool: Pool, config: AppConfig) {
           last_collected_at,
           current_seconds,
           current_seconds_last_updated,
+          last_daily_reward_collected_at,
           NOW() AS server_time
         FROM player_states
         WHERE user_id = $1
@@ -754,6 +767,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         achievementBonusMultiplier,
         currentSecondsLastUpdated: row.server_time.toISOString(),
         lastCollectedAt: row.last_collected_at.toISOString(),
+        lastDailyRewardCollectedAt: row.last_daily_reward_collected_at?.toISOString() ?? null,
         serverTime: row.server_time.toISOString()
       });
     } catch (error) {
@@ -776,6 +790,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         last_collected_at: Date;
         current_seconds: number | string;
         current_seconds_last_updated: Date;
+        last_daily_reward_collected_at: Date | null;
       }>(
         `
         SELECT
@@ -785,7 +800,8 @@ export function createApp(pool: Pool, config: AppConfig) {
           seconds_multiplier,
           last_collected_at,
           current_seconds,
-          current_seconds_last_updated
+          current_seconds_last_updated,
+          last_daily_reward_collected_at
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -822,6 +838,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         current_seconds: number | string;
         current_seconds_last_updated: Date;
         seconds_multiplier: number | string;
+        last_daily_reward_collected_at: Date | null;
       }>(
         `
         UPDATE player_states
@@ -846,7 +863,8 @@ export function createApp(pool: Pool, config: AppConfig) {
           last_collected_at,
           current_seconds,
           current_seconds_last_updated,
-          seconds_multiplier
+          seconds_multiplier,
+          last_daily_reward_collected_at
         `,
         [userId, collectedSeconds, realSecondsCollected, collectedAt]
       );
@@ -899,7 +917,151 @@ export function createApp(pool: Pool, config: AppConfig) {
         idleSecondsRate: 1,
         currentSecondsLastUpdated: row.current_seconds_last_updated.toISOString(),
         lastCollectedAt: row.last_collected_at.toISOString(),
+        lastDailyRewardCollectedAt: row.last_daily_reward_collected_at?.toISOString() ?? null,
         serverTime: row.last_collected_at.toISOString()
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      next(error);
+    } finally {
+      client.release();
+    }
+  });
+
+  app.post("/player/daily-reward/collect", async (req, res, next) => {
+    const client = await pool.connect();
+    try {
+      const identity = await resolveIdentity(auth, pool, config.jwtSecret, req);
+      req.auth = identity.claims;
+      const userId = identity.claims.sub;
+      await client.query("BEGIN");
+      const playerResult = await client.query<{
+        idle_time_total: number | string;
+        idle_time_available: number | string;
+        real_time_total: number | string;
+        real_time_available: number | string;
+        time_gems_total: number | string;
+        time_gems_available: number | string;
+        upgrades_purchased: number | string;
+        current_seconds: number | string;
+        current_seconds_last_updated: Date;
+        seconds_multiplier: number | string;
+        achievement_count: number | string;
+        last_collected_at: Date;
+        last_daily_reward_collected_at: Date | null;
+      }>(
+        `
+        SELECT
+          idle_time_total,
+          idle_time_available,
+          real_time_total,
+          real_time_available,
+          time_gems_total,
+          time_gems_available,
+          upgrades_purchased,
+          current_seconds,
+          current_seconds_last_updated,
+          seconds_multiplier,
+          achievement_count,
+          last_collected_at,
+          last_daily_reward_collected_at
+        FROM player_states
+        WHERE user_id = $1
+        FOR UPDATE
+        `,
+        [userId]
+      );
+      const player = playerResult.rows[0];
+      if (!player) {
+        await client.query("ROLLBACK");
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+
+      const now = new Date();
+      if (!canCollectDailyReward(player.last_daily_reward_collected_at, now)) {
+        await client.query("ROLLBACK");
+        res.status(400).json({
+          error: "Daily reward already collected today",
+          code: "DAILY_REWARD_NOT_AVAILABLE"
+        });
+        return;
+      }
+
+      const updateResult = await client.query<{
+        idle_time_total: number | string;
+        idle_time_available: number | string;
+        real_time_total: number | string;
+        real_time_available: number | string;
+        time_gems_total: number | string;
+        time_gems_available: number | string;
+        upgrades_purchased: number | string;
+        current_seconds: number | string;
+        current_seconds_last_updated: Date;
+        seconds_multiplier: number | string;
+        achievement_count: number | string;
+        last_collected_at: Date;
+        last_daily_reward_collected_at: Date | null;
+      }>(
+        `
+        UPDATE player_states
+        SET
+          time_gems_total = time_gems_total + 1,
+          time_gems_available = time_gems_available + 1,
+          last_daily_reward_collected_at = $2,
+          updated_at = $2
+        WHERE user_id = $1
+        RETURNING
+          idle_time_total,
+          idle_time_available,
+          real_time_total,
+          real_time_available,
+          time_gems_total,
+          time_gems_available,
+          upgrades_purchased,
+          current_seconds,
+          current_seconds_last_updated,
+          seconds_multiplier,
+          achievement_count,
+          last_collected_at,
+          last_daily_reward_collected_at
+        `,
+        [userId, now]
+      );
+      const updatedPlayer = updateResult.rows[0];
+      if (!updatedPlayer) {
+        await client.query("ROLLBACK");
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+
+      const elapsedSinceLastCollection = calculateElapsedSeconds(updatedPlayer.last_collected_at, now);
+      const idleSecondsRate = getIdleSecondsRate({ secondsSinceLastCollection: elapsedSinceLastCollection });
+      const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(updatedPlayer.achievement_count));
+      await client.query("COMMIT");
+
+      res.json({
+        idleTime: {
+          total: toNumber(updatedPlayer.idle_time_total),
+          available: toNumber(updatedPlayer.idle_time_available)
+        },
+        realTime: {
+          total: toNumber(updatedPlayer.real_time_total),
+          available: toNumber(updatedPlayer.real_time_available)
+        },
+        timeGems: {
+          total: toNumber(updatedPlayer.time_gems_total),
+          available: toNumber(updatedPlayer.time_gems_available)
+        },
+        upgradesPurchased: toNumber(updatedPlayer.upgrades_purchased),
+        currentSeconds: toNumber(updatedPlayer.current_seconds),
+        secondsMultiplier: toNumber(updatedPlayer.seconds_multiplier),
+        achievementBonusMultiplier,
+        idleSecondsRate,
+        currentSecondsLastUpdated: updatedPlayer.current_seconds_last_updated.toISOString(),
+        lastCollectedAt: updatedPlayer.last_collected_at.toISOString(),
+        lastDailyRewardCollectedAt: updatedPlayer.last_daily_reward_collected_at?.toISOString() ?? null,
+        serverTime: now.toISOString()
       });
     } catch (error) {
       await client.query("ROLLBACK");

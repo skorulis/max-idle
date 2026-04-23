@@ -51,7 +51,7 @@ export function ShopPage({
             <Gem size={16} aria-hidden="true" />
             Time Gems
           </p>
-          <p className="shop-currency-value">{formatSeconds(playerState.timeGems.available, 2, "floor")}</p>
+          <p className="shop-currency-value">{playerState.timeGems.available}</p>
         </div>
       </div>
       <p className="subtle">Upgrade: seconds multiplier (+0.1x per purchase)</p>

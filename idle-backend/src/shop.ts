@@ -71,6 +71,7 @@ export function registerShopRoutes({
         current_seconds_last_updated: Date;
         last_collected_at: Date;
         seconds_multiplier: number | string;
+        last_daily_reward_collected_at: Date | null;
       }>(
         `
         SELECT
@@ -86,7 +87,8 @@ export function registerShopRoutes({
           current_seconds,
           current_seconds_last_updated,
           last_collected_at,
-          seconds_multiplier
+          seconds_multiplier,
+          last_daily_reward_collected_at
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -138,6 +140,7 @@ export function registerShopRoutes({
         current_seconds_last_updated: Date;
         last_collected_at: Date;
         seconds_multiplier: number | string;
+        last_daily_reward_collected_at: Date | null;
       }>(
         `
         UPDATE player_states
@@ -156,7 +159,8 @@ export function registerShopRoutes({
           current_seconds,
           current_seconds_last_updated,
           last_collected_at,
-          seconds_multiplier
+          seconds_multiplier,
+          last_daily_reward_collected_at
         `,
         [
           userId,
@@ -198,6 +202,7 @@ export function registerShopRoutes({
         idleSecondsRate: getIdleSecondsRate({ secondsSinceLastCollection: elapsedSinceLastCollection }),
         currentSecondsLastUpdated: updated.current_seconds_last_updated.toISOString(),
         lastCollectedAt: updated.last_collected_at.toISOString(),
+        lastDailyRewardCollectedAt: updated.last_daily_reward_collected_at?.toISOString() ?? null,
         serverTime: now.toISOString(),
         purchase: {
           upgradeType,
