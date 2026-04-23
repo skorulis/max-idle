@@ -325,6 +325,42 @@ describe("auth + player lifecycle", () => {
     expect(updateResponse.body.username).toBe("CantChangeMe");
   });
 
+  it("rejects profane usernames", async () => {
+    const app = createApp(pool, config);
+    const registerResponse = await request(app).post("/auth/register").send({
+      name: "Filter Test User",
+      email: uniqueEmail(),
+      password: "password1234"
+    });
+    expect(registerResponse.status).toBe(200);
+
+    const cookies = registerResponse.headers["set-cookie"] ?? [];
+    const updateResponse = await request(app).post("/account/username").set("Cookie", cookies).send({
+      username: "f_u_c_k_123"
+    });
+
+    expect(updateResponse.status).toBe(400);
+    expect(updateResponse.body.error).toBe("Username cannot contain profanity");
+  });
+
+  it("allows usernames in the profanity allowlist", async () => {
+    const app = createApp(pool, config);
+    const registerResponse = await request(app).post("/auth/register").send({
+      name: "Allowlist Test User",
+      email: uniqueEmail(),
+      password: "password1234"
+    });
+    expect(registerResponse.status).toBe(200);
+
+    const cookies = registerResponse.headers["set-cookie"] ?? [];
+    const updateResponse = await request(app).post("/account/username").set("Cookie", cookies).send({
+      username: "sexy_knob"
+    });
+
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.body.username).toBe("sexy_knob");
+  });
+
   it("returns conflict when username is already taken", async () => {
     const app = createApp(pool, config);
     const firstRegister = await request(app).post("/auth/register").send({

@@ -26,7 +26,7 @@ import { registerShopRoutes } from "./shop.js";
 import { registerLeaderboardRoutes } from "./leaderboard.js";
 import { registerApiDocumentation } from "./apiContract.js";
 import type { AppConfig, AuthClaims } from "./types.js";
-import { generateAnonymousUsername, isUsernameTakenError, isValidUsername } from "./username.js";
+import { containsProfanity, generateAnonymousUsername, isUsernameTakenError, isValidUsername } from "./username.js";
 
 function toNumber(value: unknown): number {
   if (typeof value === "number") {
@@ -538,6 +538,12 @@ export function createApp(pool: Pool, config: AppConfig) {
       if (!isValidUsername(username)) {
         res.status(400).json({
           error: "Username must be 3-32 chars using letters, numbers, or underscores"
+        });
+        return;
+      }
+      if (containsProfanity(username)) {
+        res.status(400).json({
+          error: "Username cannot contain profanity"
         });
         return;
       }

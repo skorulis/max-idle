@@ -1,6 +1,29 @@
 import { randomInt } from "node:crypto";
+import { Filter } from "bad-words";
 
 const USERNAME_PATTERN = /^[a-zA-Z0-9_]+$/;
+const profanityFilter = new Filter();
+const PROFANITY_ALLOWLIST = [
+  "hells",
+  "knob",
+  "knobs",
+  "knobz",
+  "orgasm",
+  "orgasim",
+  "oriface",
+  "rectum",
+  "sadist",
+  "sex",
+  "sexy",
+  "tit",
+  "turd",
+  "smut",
+  "teets",
+  "tits",
+  "testicle"
+] as const;
+
+profanityFilter.removeWords(...PROFANITY_ALLOWLIST);
 
 const ADJECTIVES = [
   "agile",
@@ -127,4 +150,17 @@ export function isValidUsername(username: string): boolean {
     return false;
   }
   return USERNAME_PATTERN.test(username);
+}
+
+export function containsProfanity(username: string): boolean {
+  if (profanityFilter.isProfane(username.replace(/_/g, " "))) {
+    return true;
+  }
+
+  const tokenizedUsername = username
+    .toLowerCase()
+    .split(/[_\d]+/)
+    .filter((token) => token.length > 0);
+
+  return tokenizedUsername.some((token) => profanityFilter.isProfane(token));
 }

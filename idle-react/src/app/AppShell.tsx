@@ -882,6 +882,7 @@ export function AppShell() {
                 onUpgrade={onUpgrade}
                 onLogout={onLogout}
                 onNavigateLogin={() => navigate("/login")}
+                renderAuthButtons={renderAuthButtons}
               />
             }
           />
