@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { APP_VERSION } from "@maxidle/shared/appVersion";
+import { isValidEmail, isValidPassword } from "@maxidle/shared/authValidation";
 import type { AccountResponse, AuthFormState } from "../app/types";
+import { SharedAuthPage } from "./LoginPage";
 
 type AccountPageProps = {
   account: AccountResponse | null;
@@ -37,6 +39,8 @@ export function AccountPage({
   onNavigateLogin,
   renderAuthButtons
 }: AccountPageProps) {
+  const isUpgradeSubmitDisabled = !token || !isValidEmail(upgradeForm.email) || !isValidPassword(upgradeForm.password);
+
   if (!account) {
     return (
       <>
@@ -77,22 +81,19 @@ export function AccountPage({
       {usernameSuccess ? <p className="success">{usernameSuccess}</p> : null}
       {account.isAnonymous ? (
         <>
-          <h3>Upgrade to a registered account</h3>
-          <input
-            type="email"
-            placeholder="Email"
-            value={upgradeForm.email}
-            onChange={(event) => onUpgradeFormChange("email", event.target.value)}
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={upgradeForm.password}
-            onChange={(event) => onUpgradeFormChange("password", event.target.value)}
-          />
-          <button className="collect" onClick={() => void onUpgrade()} disabled={authPending || !token}>
-            {authPending ? "Upgrading..." : "Create account"}
-          </button>
+          <div className="panel" style={{ marginTop: "0.75rem" }}>
+            <SharedAuthPage
+              authPending={authPending}
+              form={upgradeForm}
+              heading="Upgrade to a registered account"
+              headingTag="h3"
+              submitLabel="Create account"
+              onFormChange={(field, value) => onUpgradeFormChange(field, value)}
+              onSubmit={onUpgrade}
+              isSubmitDisabled={isUpgradeSubmitDisabled}
+              renderAuthButtons={renderAuthButtons}
+            />
+          </div>
         </>
       ) : (
         <>

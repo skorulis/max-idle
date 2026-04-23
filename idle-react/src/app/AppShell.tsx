@@ -50,7 +50,7 @@ const HUMOROUS_MESSAGES = [
   "Another second has passed without incident",
   "Your idle engine is purring like a very relaxed cat.",
   "If you stare at the counter it will stare back.",
-  "Make sure to keep hydrated. Time will continue to pass while you are away.",
+  "Make sure to keep hydrated, you could be waiting a while.",
   "Doing nothing remains unexpectedly effective.",
   "Competitive idling isn't for the faint of heart.",
   "What will you do with all of that time?",

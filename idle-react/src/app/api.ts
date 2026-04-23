@@ -10,13 +10,24 @@ import type {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
 
+async function getErrorMessage(response: Response): Promise<string> {
+  const payload = (await response.json().catch(() => null)) as { message?: string; error?: string } | null;
+  if (payload?.message) {
+    return payload.message;
+  }
+  if (payload?.error) {
+    return payload.error;
+  }
+  return await response.text();
+}
+
 async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     credentials: "include",
     ...options
   });
   if (!response.ok) {
-    throw new Error(await response.text());
+    throw new Error(await getErrorMessage(response));
   }
   return (await response.json()) as T;
 }

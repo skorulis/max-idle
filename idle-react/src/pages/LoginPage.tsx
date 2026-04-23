@@ -6,13 +6,14 @@ type SharedAuthPageProps = {
   authPending: boolean;
   form: AuthFormState;
   heading: string;
+  headingTag?: "h2" | "h3";
   submitLabel: string;
-  alternateActionCopy: string;
-  alternateActionLabel: string;
-  alternateActionClassName: "secondary" | "link";
+  alternateActionCopy?: string;
+  alternateActionLabel?: string;
+  alternateActionClassName?: "secondary" | "link";
   onFormChange: (field: "email" | "password", value: string) => void;
   onSubmit: () => Promise<void>;
-  onAlternateAction: () => void;
+  onAlternateAction?: () => void;
   isSubmitDisabled: boolean;
   renderAuthButtons: () => ReactNode;
 };
@@ -21,6 +22,7 @@ export function SharedAuthPage({
   authPending,
   form,
   heading,
+  headingTag = "h2",
   submitLabel,
   alternateActionCopy,
   alternateActionLabel,
@@ -31,10 +33,13 @@ export function SharedAuthPage({
   isSubmitDisabled,
   renderAuthButtons
 }: SharedAuthPageProps) {
+  const HeadingTag = headingTag;
+  const showAlternateAction = Boolean(alternateActionCopy && alternateActionLabel && alternateActionClassName && onAlternateAction);
+
   return (
     <div className="auth-grid">
       <div>
-        <h2>{heading}</h2>
+        <HeadingTag>{heading}</HeadingTag>
 
         {renderAuthButtons()}
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", margin: "1rem 0" }}>
@@ -57,18 +62,22 @@ export function SharedAuthPage({
         <button className="collect" onClick={() => void onSubmit()} disabled={authPending || isSubmitDisabled}>
           {authPending ? "Loading..." : submitLabel}
         </button>
-        <p className="subtle" style={{ marginTop: "0.75rem", marginBottom: "0.5rem" }}>
-          {alternateActionCopy}
-        </p>
-        <button
-          type="button"
-          className={alternateActionClassName}
-          onClick={onAlternateAction}
-          disabled={authPending}
-          style={alternateActionClassName === "link" ? { width: "auto", padding: 0 } : undefined}
-        >
-          {alternateActionLabel}
-        </button>
+        {showAlternateAction ? (
+          <>
+            <p className="subtle" style={{ marginTop: "0.75rem", marginBottom: "0.5rem" }}>
+              {alternateActionCopy}
+            </p>
+            <button
+              type="button"
+              className={alternateActionClassName}
+              onClick={onAlternateAction}
+              disabled={authPending}
+              style={alternateActionClassName === "link" ? { width: "auto", padding: 0 } : undefined}
+            >
+              {alternateActionLabel}
+            </button>
+          </>
+        ) : null}
       </div>
     </div>
   );
