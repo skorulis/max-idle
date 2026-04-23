@@ -160,6 +160,25 @@ export async function getAchievements(token: string | null): Promise<Achievement
   return (await response.json()) as AchievementsResponse;
 }
 
+export async function markAchievementsSeen(token: string | null): Promise<void> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/achievements/seen`, {
+    method: "POST",
+    credentials: "include",
+    headers
+  });
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    throw new Error("Failed to mark achievements as seen");
+  }
+}
+
 export async function getPublicPlayerProfile(playerId: string): Promise<PlayerProfileResponse> {
   const response = await fetch(`${API_BASE_URL}/players/${encodeURIComponent(playerId)}`, {
     credentials: "include"

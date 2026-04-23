@@ -26,4 +26,5 @@ ALTER TABLE player_states ADD COLUMN IF NOT EXISTS real_time_total BIGINT NOT NU
 ALTER TABLE player_states ADD COLUMN IF NOT EXISTS real_time_available BIGINT NOT NULL DEFAULT 0;
 ALTER TABLE player_states ADD COLUMN IF NOT EXISTS time_gems_total BIGINT NOT NULL DEFAULT 0;
 ALTER TABLE player_states ADD COLUMN IF NOT EXISTS time_gems_available BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE player_states ADD COLUMN IF NOT EXISTS has_unseen_achievements BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE player_states ADD COLUMN IF NOT EXISTS last_daily_reward_collected_at TIMESTAMPTZ;

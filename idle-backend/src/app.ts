@@ -581,6 +581,39 @@ export function createApp(pool: Pool, config: AppConfig) {
     }
   });
 
+  app.post("/achievements/seen", async (req, res, next) => {
+    try {
+      let identity: { claims: AuthClaims; session: BetterAuthSession };
+      try {
+        identity = await resolveIdentity(auth, pool, config.jwtSecret, req);
+      } catch (error) {
+        if (error instanceof Error && error.message === "MISSING_IDENTITY") {
+          res.status(401).json({ error: "Authentication required" });
+          return;
+        }
+        throw error;
+      }
+
+      const result = await pool.query<{ user_id: string }>(
+        `
+        UPDATE player_states
+        SET has_unseen_achievements = FALSE
+        WHERE user_id = $1
+        RETURNING user_id
+        `,
+        [identity.claims.sub]
+      );
+      if (!result.rows[0]) {
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.get("/players/:id", async (req, res, next) => {
     try {
       const playerId = String(req.params.id ?? "").trim();
@@ -693,6 +726,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         time_gems_available: string;
         upgrades_purchased: string;
         achievement_count: string;
+        has_unseen_achievements: boolean;
         seconds_multiplier: number | string;
         last_collected_at: Date;
         current_seconds: string;
@@ -710,6 +744,7 @@ export function createApp(pool: Pool, config: AppConfig) {
           time_gems_available,
           upgrades_purchased,
           achievement_count,
+          has_unseen_achievements,
           seconds_multiplier,
           last_collected_at,
           current_seconds,
@@ -767,6 +802,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         idleSecondsRate,
         secondsMultiplier,
         achievementBonusMultiplier,
+        hasUnseenAchievements: row.has_unseen_achievements,
         currentSecondsLastUpdated: row.server_time.toISOString(),
         lastCollectedAt: row.last_collected_at.toISOString(),
         lastDailyRewardCollectedAt: row.last_daily_reward_collected_at?.toISOString() ?? null,
@@ -788,6 +824,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         upgrades_purchased: number | string;
         achievement_count: number | string;
         completed_achievements: unknown;
+        has_unseen_achievements: boolean;
         seconds_multiplier: number | string;
         last_collected_at: Date;
         current_seconds: number | string;
@@ -799,6 +836,7 @@ export function createApp(pool: Pool, config: AppConfig) {
           upgrades_purchased,
           achievement_count,
           completed_achievements,
+          has_unseen_achievements,
           seconds_multiplier,
           last_collected_at,
           current_seconds,
@@ -906,6 +944,8 @@ export function createApp(pool: Pool, config: AppConfig) {
       if (completedAchievementIds.length !== toNumber(lockedRow.achievement_count)) {
         await updateCompletedAchievements(client, userId, completedAchievementIds);
       }
+      const hasUnseenAchievements =
+        lockedRow.has_unseen_achievements || completedAchievementIds.length !== toNumber(lockedRow.achievement_count);
 
       const achievementBonusMultiplier = getAchievementBonusMultiplier(completedAchievementIds.length);
       await client.query("COMMIT");
@@ -928,6 +968,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         currentSeconds: toNumber(row.current_seconds),
         secondsMultiplier: toNumber(row.seconds_multiplier),
         achievementBonusMultiplier,
+        hasUnseenAchievements,
         idleSecondsRate: 1,
         currentSecondsLastUpdated: row.current_seconds_last_updated.toISOString(),
         lastCollectedAt: row.last_collected_at.toISOString(),
@@ -961,6 +1002,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         current_seconds_last_updated: Date;
         seconds_multiplier: number | string;
         achievement_count: number | string;
+        has_unseen_achievements: boolean;
         last_collected_at: Date;
         last_daily_reward_collected_at: Date | null;
       }>(
@@ -977,6 +1019,7 @@ export function createApp(pool: Pool, config: AppConfig) {
           current_seconds_last_updated,
           seconds_multiplier,
           achievement_count,
+          has_unseen_achievements,
           last_collected_at,
           last_daily_reward_collected_at
         FROM player_states
@@ -1014,6 +1057,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         current_seconds_last_updated: Date;
         seconds_multiplier: number | string;
         achievement_count: number | string;
+        has_unseen_achievements: boolean;
         last_collected_at: Date;
         last_daily_reward_collected_at: Date | null;
       }>(
@@ -1037,6 +1081,7 @@ export function createApp(pool: Pool, config: AppConfig) {
           current_seconds_last_updated,
           seconds_multiplier,
           achievement_count,
+          has_unseen_achievements,
           last_collected_at,
           last_daily_reward_collected_at
         `,
@@ -1071,6 +1116,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         currentSeconds: toNumber(updatedPlayer.current_seconds),
         secondsMultiplier: toNumber(updatedPlayer.seconds_multiplier),
         achievementBonusMultiplier,
+        hasUnseenAchievements: updatedPlayer.has_unseen_achievements,
         idleSecondsRate,
         currentSecondsLastUpdated: updatedPlayer.current_seconds_last_updated.toISOString(),
         lastCollectedAt: updatedPlayer.last_collected_at.toISOString(),

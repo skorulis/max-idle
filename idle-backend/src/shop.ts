@@ -65,6 +65,7 @@ export function registerShopRoutes({
         time_gems_total: string;
         time_gems_available: string;
         achievement_count: string;
+        has_unseen_achievements: boolean;
         completed_achievements: unknown;
         upgrades_purchased: number | string;
         current_seconds: string;
@@ -82,6 +83,7 @@ export function registerShopRoutes({
           time_gems_total,
           time_gems_available,
           achievement_count,
+          has_unseen_achievements,
           completed_achievements,
           upgrades_purchased,
           current_seconds,
@@ -125,6 +127,7 @@ export function registerShopRoutes({
         nextUpgradesPurchased >= 4
           ? normalizeCompletedAchievementIds(row.completed_achievements, [ACHIEVEMENT_IDS.BEGINNER_SHOPPER])
           : normalizeCompletedAchievementIds(row.completed_achievements);
+      const hasNewAchievement = nextCompletedAchievementIds.length > toNumber(row.achievement_count);
       const nextAchievementCount = nextCompletedAchievementIds.length;
       const nextAchievementBonusMultiplier = getAchievementBonusMultiplier(nextAchievementCount);
       const syncedCurrentSeconds = boostedUncollectedIdleSeconds(
@@ -136,6 +139,7 @@ export function registerShopRoutes({
       const updateResult = await client.query<{
         idle_time_total: string;
         idle_time_available: string;
+        has_unseen_achievements: boolean;
         current_seconds: string;
         current_seconds_last_updated: Date;
         last_collected_at: Date;
@@ -151,11 +155,13 @@ export function registerShopRoutes({
           seconds_multiplier = $5,
           upgrades_purchased = $6,
           completed_achievements = $7::jsonb,
-          achievement_count = $8
+          achievement_count = $8,
+          has_unseen_achievements = has_unseen_achievements OR $9::boolean
         WHERE user_id = $1
         RETURNING
           idle_time_total,
           idle_time_available,
+          has_unseen_achievements,
           current_seconds,
           current_seconds_last_updated,
           last_collected_at,
@@ -170,7 +176,8 @@ export function registerShopRoutes({
           nextMultiplier,
           nextUpgradesPurchased,
           JSON.stringify(nextCompletedAchievementIds),
-          nextAchievementCount
+          nextAchievementCount,
+          hasNewAchievement
         ]
       );
       const updated = updateResult.rows[0];
@@ -199,6 +206,7 @@ export function registerShopRoutes({
         currentSeconds: toNumber(updated.current_seconds),
         secondsMultiplier: toNumber(updated.seconds_multiplier),
         achievementBonusMultiplier: nextAchievementBonusMultiplier,
+        hasUnseenAchievements: updated.has_unseen_achievements,
         idleSecondsRate: getIdleSecondsRate({ secondsSinceLastCollection: elapsedSinceLastCollection }),
         currentSecondsLastUpdated: updated.current_seconds_last_updated.toISOString(),
         lastCollectedAt: updated.last_collected_at.toISOString(),

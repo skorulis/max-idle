@@ -77,6 +77,7 @@ describe("auth + player lifecycle", () => {
     expect(playerResponse.body.currentSecondsLastUpdated).toBeTypeOf("string");
     expect(playerResponse.body.lastCollectedAt).toBeTypeOf("string");
     expect(playerResponse.body.lastDailyRewardCollectedAt).toBeNull();
+    expect(playerResponse.body.hasUnseenAchievements).toBe(false);
     expect(playerResponse.body.serverTime).toBeTypeOf("string");
   });
 
@@ -308,6 +309,28 @@ describe("auth + player lifecycle", () => {
     expect(response.body.achievements[6].id).toBe("real_time_streak_2d_14h");
   });
 
+  it("clears unseen achievements when achievements are marked seen", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(`UPDATE player_states SET has_unseen_achievements = TRUE WHERE user_id = $1`, [userId]);
+
+    const markSeenResponse = await request(app).post("/achievements/seen").set("Authorization", `Bearer ${token}`);
+    expect(markSeenResponse.status).toBe(204);
+
+    const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
+    expect(playerResponse.status).toBe(200);
+    expect(playerResponse.body.hasUnseenAchievements).toBe(false);
+
+    const achievementState = await pool.query<{ has_unseen_achievements: boolean }>(
+      `SELECT has_unseen_achievements FROM player_states WHERE user_id = $1`,
+      [userId]
+    );
+    expect(achievementState.rows[0]?.has_unseen_achievements).toBe(false);
+  });
+
   it("awards real-time achievement after collecting 65 minutes", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
@@ -337,6 +360,7 @@ describe("auth + player lifecycle", () => {
     expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toEqual([
       "real_time_collector_65_minutes"
     ]);
+    expect(collectResponse.body.hasUnseenAchievements).toBe(true);
   });
 
   it("awards idle-time achievement after collecting 3 hours and 7 minutes", async () => {

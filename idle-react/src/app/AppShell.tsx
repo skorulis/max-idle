@@ -21,6 +21,7 @@ import {
   getPlayer,
   getPublicPlayerProfile,
   loginWithEmail,
+  markAchievementsSeen,
   logoutSession,
   purchaseSecondsMultiplier,
   registerWithEmail,
@@ -235,6 +236,43 @@ export function AppShell() {
       cancelled = true;
     };
   }, [location.pathname, token, account?.gameUserId]);
+
+  useEffect(() => {
+    if (location.pathname !== "/achievements" || !playerState?.hasUnseenAchievements) {
+      return;
+    }
+
+    let cancelled = false;
+    const clearUnseenAchievements = async () => {
+      try {
+        await markAchievementsSeen(token);
+        if (!cancelled) {
+          setPlayerState((previousState) =>
+            previousState
+              ? {
+                  ...previousState,
+                  hasUnseenAchievements: false
+                }
+              : previousState
+          );
+        }
+      } catch (markSeenError) {
+        if (cancelled) {
+          return;
+        }
+        if (markSeenError instanceof Error && markSeenError.message === "UNAUTHORIZED") {
+          setError("Login or start idling to view achievements.");
+          return;
+        }
+        setError(markSeenError instanceof Error ? markSeenError.message : "Failed to clear achievement badge.");
+      }
+    };
+
+    void clearUnseenAchievements();
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname, token, playerState?.hasUnseenAchievements]);
 
   useEffect(() => {
     if (!routePlayerId) {
@@ -748,7 +786,12 @@ export function AppShell() {
               <GameIcon icon={ShoppingCart} />
             </button>
             <button type="button" className="link" onClick={() => navigate("/achievements")}>
-              <GameIcon icon={Star} />
+              <span className="nav-icon-with-dot">
+                <GameIcon icon={Star} />
+                {playerState?.hasUnseenAchievements ? (
+                  <span className="nav-icon-dot" aria-label="New achievement unlocked" role="status" />
+                ) : null}
+              </span>
             </button>
             <button type="button" className="link" onClick={() => navigate("/account")}>
               <GameIcon icon={CircleUserRound} />

@@ -49,7 +49,8 @@ export async function updateCompletedAchievements(db: Queryable, userId: string,
     UPDATE player_states
     SET
       completed_achievements = $2::jsonb,
-      achievement_count = $3
+      achievement_count = $3,
+      has_unseen_achievements = TRUE
     WHERE user_id = $1
     `,
     [userId, JSON.stringify(completedAchievementIds), completedAchievementIds.length]

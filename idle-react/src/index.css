@@ -117,6 +117,24 @@ h3 {
   font-size: 13px;
 }
 
+.nav-icon-with-dot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-icon-dot {
+  position: absolute;
+  top: -2px;
+  right: -3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #dc2626;
+  box-shadow: 0 0 0 1px #ffffff;
+}
+
 .game-icon {
   flex-shrink: 0;
 }

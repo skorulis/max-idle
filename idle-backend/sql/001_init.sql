@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS player_states (
   time_gems_available BIGINT NOT NULL DEFAULT 0,
   upgrades_purchased BIGINT NOT NULL DEFAULT 0,
   achievement_count BIGINT NOT NULL DEFAULT 0,
+  has_unseen_achievements BOOLEAN NOT NULL DEFAULT FALSE,
   completed_achievements JSONB NOT NULL DEFAULT '[]'::jsonb,
   seconds_multiplier DOUBLE PRECISION NOT NULL DEFAULT 1,
   current_seconds BIGINT NOT NULL DEFAULT 0,
