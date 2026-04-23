@@ -3,7 +3,8 @@ export const ACHIEVEMENT_IDS = {
   ACCOUNT_CREATION: "account_creation",
   USERNAME_SELECTED: "username_selected",
   BEGINNER_SHOPPER: "beginner_shopper",
-  REAL_TIME_COLLECTOR_65_MINUTES: "real_time_collector_65_minutes"
+  REAL_TIME_COLLECTOR_65_MINUTES: "real_time_collector_65_minutes",
+  IDLE_TIME_COLLECTOR_3H_7M: "idle_time_collector_3h_7m"
 };
 
 export const ACHIEVEMENTS = [
@@ -29,6 +30,12 @@ export const ACHIEVEMENTS = [
     id: ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES,
     name: "Timekeeper",
     description: "Collect 1 hour and 5 minutes of real time.",
+    icon: "badge-check"
+  },
+  {
+    id: ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR_3H_7M,
+    name: "Just a little idling",
+    description: "Collect 3 hours and 7 minutes of idle time.",
     icon: "badge-check"
   }
 ];

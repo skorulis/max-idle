@@ -3,6 +3,7 @@ export const ACHIEVEMENT_IDS: {
   readonly USERNAME_SELECTED: "username_selected";
   readonly BEGINNER_SHOPPER: "beginner_shopper";
   readonly REAL_TIME_COLLECTOR_65_MINUTES: "real_time_collector_65_minutes";
+  readonly IDLE_TIME_COLLECTOR_3H_7M: "idle_time_collector_3h_7m";
 };
 
 export type AchievementId = (typeof ACHIEVEMENT_IDS)[keyof typeof ACHIEVEMENT_IDS];
