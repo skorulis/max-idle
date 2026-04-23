@@ -55,6 +55,7 @@ function parseCompletedAchievementIds(value: unknown): string[] {
 }
 
 const KNOWN_ACHIEVEMENT_IDS: ReadonlySet<string> = new Set(ACHIEVEMENTS.map((achievement) => achievement.id));
+const REAL_TIME_COLLECT_65_MINUTES_SECONDS = 65 * 60;
 
 function normalizeCompletedAchievementIds(currentValue: unknown, idsToAdd: string[] = []): string[] {
   const ordered: string[] = [];
@@ -851,6 +852,7 @@ export function createApp(pool: Pool, config: AppConfig) {
       const result = await client.query<{
         upgrades_purchased: number | string;
         achievement_count: number | string;
+        completed_achievements: unknown;
         seconds_multiplier: number | string;
         last_collected_at: Date;
         current_seconds: number | string;
@@ -860,6 +862,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         SELECT
           upgrades_purchased,
           achievement_count,
+          completed_achievements,
           seconds_multiplier,
           last_collected_at,
           current_seconds,
@@ -880,12 +883,12 @@ export function createApp(pool: Pool, config: AppConfig) {
 
       const collectedAt = new Date();
       const secondsMultiplier = Number(lockedRow.seconds_multiplier);
-      const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(lockedRow.achievement_count));
+      const collectionAchievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(lockedRow.achievement_count));
       const collectedSeconds = boostedUncollectedIdleSeconds(
         lockedRow.last_collected_at,
         collectedAt,
         secondsMultiplier,
-        achievementBonusMultiplier
+        collectionAchievementBonusMultiplier
       );
       const realSecondsCollected = calculateElapsedSeconds(lockedRow.last_collected_at, collectedAt);
       const updateResult = await client.query<{
@@ -936,6 +939,25 @@ export function createApp(pool: Pool, config: AppConfig) {
         return;
       }
 
+      const completedAchievementIds = normalizeCompletedAchievementIds(lockedRow.completed_achievements);
+      if (
+        toNumber(row.real_time_total) >= REAL_TIME_COLLECT_65_MINUTES_SECONDS &&
+        !completedAchievementIds.includes(ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES)
+      ) {
+        completedAchievementIds.push(ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES);
+        await client.query(
+          `
+          UPDATE player_states
+          SET
+            completed_achievements = $2::jsonb,
+            achievement_count = $3
+          WHERE user_id = $1
+          `,
+          [userId, JSON.stringify(completedAchievementIds), completedAchievementIds.length]
+        );
+      }
+
+      const achievementBonusMultiplier = getAchievementBonusMultiplier(completedAchievementIds.length);
       await client.query("COMMIT");
       res.json({
         collectedSeconds,

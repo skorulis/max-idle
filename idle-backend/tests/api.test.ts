@@ -263,12 +263,44 @@ describe("auth + player lifecycle", () => {
     const response = await request(app).get("/achievements").set("Authorization", `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(response.body.completedCount).toBe(0);
-    expect(response.body.totalCount).toBe(3);
+    expect(response.body.totalCount).toBe(4);
     expect(response.body.earningsBonusMultiplier).toBe(1);
-    expect(response.body.achievements).toHaveLength(3);
+    expect(response.body.achievements).toHaveLength(4);
     expect(response.body.achievements[0].id).toBe("account_creation");
     expect(response.body.achievements[1].id).toBe("username_selected");
     expect(response.body.achievements[2].id).toBe("beginner_shopper");
+    expect(response.body.achievements[3].id).toBe("real_time_collector_65_minutes");
+  });
+
+  it("awards real-time achievement after collecting 65 minutes", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(
+      `
+      UPDATE player_states
+      SET
+        real_time_total = 3899,
+        last_collected_at = NOW() - INTERVAL '1 second',
+        current_seconds_last_updated = NOW() - INTERVAL '1 second'
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+
+    const collectResponse = await request(app).post("/player/collect").set("Authorization", `Bearer ${token}`);
+    expect(collectResponse.status).toBe(200);
+
+    const achievementState = await pool.query<{
+      achievement_count: string | number;
+      completed_achievements: unknown;
+    }>(`SELECT achievement_count, completed_achievements FROM player_states WHERE user_id = $1`, [userId]);
+    expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);
+    expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toEqual([
+      "real_time_collector_65_minutes"
+    ]);
   });
 
   it("marks completed achievements from stored jsonb ids", async () => {

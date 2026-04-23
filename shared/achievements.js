@@ -2,7 +2,8 @@ export const ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION = 0.25;
 export const ACHIEVEMENT_IDS = {
   ACCOUNT_CREATION: "account_creation",
   USERNAME_SELECTED: "username_selected",
-  BEGINNER_SHOPPER: "beginner_shopper"
+  BEGINNER_SHOPPER: "beginner_shopper",
+  REAL_TIME_COLLECTOR_65_MINUTES: "real_time_collector_65_minutes"
 };
 
 export const ACHIEVEMENTS = [
@@ -23,5 +24,11 @@ export const ACHIEVEMENTS = [
     name: "Beginner shopper",
     description: "Purchase 4 upgrades from the shop.",
     icon: "shopping-cart"
+  },
+  {
+    id: ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES,
+    name: "Timekeeper",
+    description: "Collect 1 hour and 5 minutes of real time.",
+    icon: "badge-check"
   }
 ];
