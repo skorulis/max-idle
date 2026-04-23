@@ -10,6 +10,7 @@ import { HomePage } from "../pages/HomePage";
 import { LeaderboardPage } from "../pages/LeaderboardPage";
 import { LoginPage } from "../pages/LoginPage";
 import { PlayerPage } from "../pages/PlayerPage";
+import { RegisterPage } from "../pages/RegisterPage";
 import { ShopPage } from "../pages/ShopPage";
 import {
   collectDailyReward,
@@ -82,6 +83,9 @@ function getCurrentPageTitle(pathname: string): string {
   }
   if (pathname === "/login") {
     return "Login";
+  }
+  if (pathname === "/register") {
+    return "Create account";
   }
   if (pathname === "/account") {
     return "Account";
@@ -840,11 +844,22 @@ export function AppShell() {
               <LoginPage
                 authPending={authPending}
                 loginForm={loginForm}
-                signupForm={signupForm}
                 onLoginFormChange={(field, value) => setLoginForm((prev) => ({ ...prev, [field]: value }))}
-                onSignupFormChange={(field, value) => setSignupForm((prev) => ({ ...prev, [field]: value }))}
                 onLogin={onLogin}
+                onNavigateRegister={() => navigate("/register")}
+                renderAuthButtons={renderAuthButtons}
+              />
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <RegisterPage
+                authPending={authPending}
+                registerForm={signupForm}
+                onRegisterFormChange={(field, value) => setSignupForm((prev) => ({ ...prev, [field]: value }))}
                 onRegister={onRegister}
+                onNavigateLogin={() => navigate("/login")}
                 renderAuthButtons={renderAuthButtons}
               />
             }
