@@ -4,6 +4,8 @@ export const ACHIEVEMENT_IDS: {
   readonly BEGINNER_SHOPPER: "beginner_shopper";
   readonly REAL_TIME_COLLECTOR_65_MINUTES: "real_time_collector_65_minutes";
   readonly IDLE_TIME_COLLECTOR_3H_7M: "idle_time_collector_3h_7m";
+  readonly REAL_TIME_STREAK_59_MINUTES: "real_time_streak_59_minutes";
+  readonly REAL_TIME_STREAK_2D_14H: "real_time_streak_2d_14h";
 };
 
 export type AchievementId = (typeof ACHIEVEMENT_IDS)[keyof typeof ACHIEVEMENT_IDS];

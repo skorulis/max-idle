@@ -44,6 +44,8 @@ function isValidUuid(value: string): boolean {
 
 const REAL_TIME_COLLECT_65_MINUTES_SECONDS = 65 * 60;
 const IDLE_TIME_COLLECT_3H_7M_SECONDS = 3 * 60 * 60 + 7 * 60;
+const REAL_TIME_STREAK_59_MINUTES_SECONDS = 59 * 60;
+const REAL_TIME_STREAK_2D_14H_SECONDS = (2 * 24 + 14) * 60 * 60;
 
 function getAchievementBonusMultiplier(achievementCount: number): number {
   return 1 + Math.max(0, achievementCount) * ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION;
@@ -888,6 +890,18 @@ export function createApp(pool: Pool, config: AppConfig) {
         !completedAchievementIds.includes(ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR_3H_7M)
       ) {
         completedAchievementIds.push(ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR_3H_7M);
+      }
+      if (
+        realSecondsCollected >= REAL_TIME_STREAK_59_MINUTES_SECONDS &&
+        !completedAchievementIds.includes(ACHIEVEMENT_IDS.REAL_TIME_STREAK_59_MINUTES)
+      ) {
+        completedAchievementIds.push(ACHIEVEMENT_IDS.REAL_TIME_STREAK_59_MINUTES);
+      }
+      if (
+        realSecondsCollected >= REAL_TIME_STREAK_2D_14H_SECONDS &&
+        !completedAchievementIds.includes(ACHIEVEMENT_IDS.REAL_TIME_STREAK_2D_14H)
+      ) {
+        completedAchievementIds.push(ACHIEVEMENT_IDS.REAL_TIME_STREAK_2D_14H);
       }
       if (completedAchievementIds.length !== toNumber(lockedRow.achievement_count)) {
         await updateCompletedAchievements(client, userId, completedAchievementIds);

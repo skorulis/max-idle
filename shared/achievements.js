@@ -4,7 +4,9 @@ export const ACHIEVEMENT_IDS = {
   USERNAME_SELECTED: "username_selected",
   BEGINNER_SHOPPER: "beginner_shopper",
   REAL_TIME_COLLECTOR_65_MINUTES: "real_time_collector_65_minutes",
-  IDLE_TIME_COLLECTOR_3H_7M: "idle_time_collector_3h_7m"
+  IDLE_TIME_COLLECTOR_3H_7M: "idle_time_collector_3h_7m",
+  REAL_TIME_STREAK_59_MINUTES: "real_time_streak_59_minutes",
+  REAL_TIME_STREAK_2D_14H: "real_time_streak_2d_14h"
 };
 
 export const ACHIEVEMENTS = [
@@ -37,5 +39,17 @@ export const ACHIEVEMENTS = [
     name: "Just a little idling",
     description: "Collect 3 hours and 7 minutes of idle time.",
     icon: "badge-check"
+  },
+  {
+    id: ACHIEVEMENT_IDS.REAL_TIME_STREAK_59_MINUTES,
+    name: "Short collection",
+    description: "Wait at least 59 minutes before collecting.",
+    icon: "clock"
+  },
+  {
+    id: ACHIEVEMENT_IDS.REAL_TIME_STREAK_2D_14H,
+    name: "Hibernation",
+    description: "Wait at least 2 days and 14 hours before collecting.",
+    icon: "clock"
   }
 ];

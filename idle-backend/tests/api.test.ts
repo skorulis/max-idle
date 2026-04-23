@@ -296,14 +296,16 @@ describe("auth + player lifecycle", () => {
     const response = await request(app).get("/achievements").set("Authorization", `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(response.body.completedCount).toBe(0);
-    expect(response.body.totalCount).toBe(5);
+    expect(response.body.totalCount).toBe(7);
     expect(response.body.earningsBonusMultiplier).toBe(1);
-    expect(response.body.achievements).toHaveLength(5);
+    expect(response.body.achievements).toHaveLength(7);
     expect(response.body.achievements[0].id).toBe("account_creation");
     expect(response.body.achievements[1].id).toBe("username_selected");
     expect(response.body.achievements[2].id).toBe("beginner_shopper");
     expect(response.body.achievements[3].id).toBe("real_time_collector_65_minutes");
     expect(response.body.achievements[4].id).toBe("idle_time_collector_3h_7m");
+    expect(response.body.achievements[5].id).toBe("real_time_streak_59_minutes");
+    expect(response.body.achievements[6].id).toBe("real_time_streak_2d_14h");
   });
 
   it("awards real-time achievement after collecting 65 minutes", async () => {
@@ -364,6 +366,68 @@ describe("auth + player lifecycle", () => {
     }>(`SELECT achievement_count, completed_achievements FROM player_states WHERE user_id = $1`, [userId]);
     expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);
     expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toEqual(["idle_time_collector_3h_7m"]);
+
+    // Keep this test from affecting leaderboard ordering in later tests.
+    await pool.query(`UPDATE player_states SET idle_time_total = 0, idle_time_available = 0 WHERE user_id = $1`, [userId]);
+  });
+
+  it("awards 59-minute real-time streak achievement on collect", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(
+      `
+      UPDATE player_states
+      SET
+        last_collected_at = NOW() - INTERVAL '59 minutes',
+        current_seconds_last_updated = NOW() - INTERVAL '59 minutes'
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+
+    const collectResponse = await request(app).post("/player/collect").set("Authorization", `Bearer ${token}`);
+    expect(collectResponse.status).toBe(200);
+
+    const achievementState = await pool.query<{
+      achievement_count: string | number;
+      completed_achievements: unknown;
+    }>(`SELECT achievement_count, completed_achievements FROM player_states WHERE user_id = $1`, [userId]);
+    expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toContain("real_time_streak_59_minutes");
+
+    // Keep this test from affecting leaderboard ordering in later tests.
+    await pool.query(`UPDATE player_states SET idle_time_total = 0, idle_time_available = 0 WHERE user_id = $1`, [userId]);
+  });
+
+  it("awards 2d14h real-time streak achievement on collect", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(
+      `
+      UPDATE player_states
+      SET
+        last_collected_at = NOW() - INTERVAL '2 days 14 hours',
+        current_seconds_last_updated = NOW() - INTERVAL '2 days 14 hours'
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+
+    const collectResponse = await request(app).post("/player/collect").set("Authorization", `Bearer ${token}`);
+    expect(collectResponse.status).toBe(200);
+
+    const achievementState = await pool.query<{
+      achievement_count: string | number;
+      completed_achievements: unknown;
+    }>(`SELECT achievement_count, completed_achievements FROM player_states WHERE user_id = $1`, [userId]);
+    const completed = parseAchievementIds(achievementState.rows[0]?.completed_achievements);
+    expect(completed).toContain("real_time_streak_2d_14h");
+    expect(completed).toContain("real_time_streak_59_minutes");
 
     // Keep this test from affecting leaderboard ordering in later tests.
     await pool.query(`UPDATE player_states SET idle_time_total = 0, idle_time_available = 0 WHERE user_id = $1`, [userId]);
