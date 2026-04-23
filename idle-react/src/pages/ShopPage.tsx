@@ -1,4 +1,5 @@
 import { formatSeconds } from "../formatSeconds";
+import { Atom, Clock3, Gem } from "lucide-react";
 import type { SyncedPlayerState } from "../app/types";
 
 type ShopPageProps = {
@@ -30,9 +31,29 @@ export function ShopPage({
   return (
     <>
       <h2>Shop</h2>
-      <p>
-        <span>Spendable idle time:</span> {formatSeconds(playerState.idleTime.available)}
-      </p>
+      <div className="shop-currencies">
+        <div className="shop-currency-card">
+          <p className="shop-currency-title">
+            <Atom size={16} aria-hidden="true" />
+            Idle Time
+          </p>
+          <p className="shop-currency-value">{formatSeconds(playerState.idleTime.available, 2, "floor")}</p>
+        </div>
+        <div className="shop-currency-card">
+          <p className="shop-currency-title">
+            <Clock3 size={16} aria-hidden="true" />
+            Real Time
+          </p>
+          <p className="shop-currency-value">{formatSeconds(playerState.realTime.available, 2, "floor")}</p>
+        </div>
+        <div className="shop-currency-card">
+          <p className="shop-currency-title">
+            <Gem size={16} aria-hidden="true" />
+            Time Gems
+          </p>
+          <p className="shop-currency-value">{formatSeconds(playerState.timeGems.available, 2, "floor")}</p>
+        </div>
+      </div>
       <p className="subtle">Upgrade: seconds multiplier (+0.1x per purchase)</p>
       <p className="subtle">Current multiplier: {playerState.secondsMultiplier.toFixed(1)}x</p>
       <div className="shop-actions">
