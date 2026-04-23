@@ -19,7 +19,6 @@ type AccountPageProps = {
   onUpgrade: () => Promise<void>;
   onLogout: () => Promise<void>;
   onNavigateLogin: () => void;
-  renderAuthButtons: () => ReactNode;
 };
 
 export function AccountPage({
@@ -37,7 +36,6 @@ export function AccountPage({
   onUpgrade,
   onLogout,
   onNavigateLogin,
-  renderAuthButtons
 }: AccountPageProps) {
   const isUpgradeSubmitDisabled = !token || !isValidEmail(upgradeForm.email) || !isValidPassword(upgradeForm.password);
 
@@ -91,15 +89,10 @@ export function AccountPage({
               onFormChange={(field, value) => onUpgradeFormChange(field, value)}
               onSubmit={onUpgrade}
               isSubmitDisabled={isUpgradeSubmitDisabled}
-              renderAuthButtons={renderAuthButtons}
             />
           </div>
         </>
-      ) : (
-        <>
-          {renderAuthButtons()}
-        </>
-      )}
+      ) : null}
       <button type="button" className="secondary" onClick={() => void onLogout()} disabled={authPending}>
         {authPending ? "Logging out..." : "Logout"}
       </button>

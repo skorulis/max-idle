@@ -3,6 +3,7 @@ import type { Pool } from "pg";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp, syncStalePlayerCurrentSeconds } from "../src/app.js";
+import { ensureGameIdentityForAuthUser } from "../src/betterAuth.js";
 import { calculateIdleSecondsGain } from "../src/idleRate.js";
 import type { AppConfig } from "../src/types.js";
 import { createTestPool } from "./testDb.js";
@@ -184,6 +185,78 @@ describe("auth + player lifecycle", () => {
 
     const playerResponse = await request(app).get("/player").set("Cookie", loginResponse.headers["set-cookie"] ?? []);
     expect(playerResponse.status).toBe(200);
+  });
+
+  it("blocks email/password auth when email is social-login only", async () => {
+    const app = createApp(pool, config);
+    const socialEmail = uniqueEmail();
+    const socialAuthUserId = randomUUID();
+
+    await pool.query(
+      `
+      INSERT INTO "user" (id, name, email, "emailVerified")
+      VALUES ($1, $2, $3, TRUE)
+      `,
+      [socialAuthUserId, "Social User", socialEmail]
+    );
+    await pool.query(
+      `
+      INSERT INTO "account" (id, "userId", "accountId", "providerId")
+      VALUES ($1, $2, $3, 'google')
+      `,
+      [randomUUID(), socialAuthUserId, `google-${socialAuthUserId}`]
+    );
+
+    const loginResponse = await request(app).post("/auth/login").send({
+      email: socialEmail,
+      password: "password1234"
+    });
+    expect(loginResponse.status).toBe(400);
+    expect(loginResponse.body.error).toContain("social sign-in");
+
+    const registerResponse = await request(app).post("/auth/register").send({
+      name: "Trying Password Signup",
+      email: socialEmail,
+      password: "password1234"
+    });
+    expect(registerResponse.status).toBe(400);
+    expect(registerResponse.body.error).toContain("social sign-in");
+  });
+
+  it("links multiple auth identities to one game user by email", async () => {
+    const primaryAuthUserId = randomUUID();
+    const secondaryAuthUserId = randomUUID();
+    const canonicalEmail = uniqueEmail();
+    const alternateCaseEmail = canonicalEmail.toUpperCase();
+
+    await pool.query(
+      `
+      INSERT INTO "user" (id, name, email, "emailVerified")
+      VALUES ($1, $2, $3, TRUE), ($4, $5, $6, TRUE)
+      `,
+      [primaryAuthUserId, "Credential User", canonicalEmail, secondaryAuthUserId, "Google User", alternateCaseEmail]
+    );
+
+    const client = await pool.connect();
+    try {
+      const firstGameUserId = await ensureGameIdentityForAuthUser(client, primaryAuthUserId, canonicalEmail);
+      const secondGameUserId = await ensureGameIdentityForAuthUser(client, secondaryAuthUserId, alternateCaseEmail);
+      expect(secondGameUserId).toBe(firstGameUserId);
+    } finally {
+      client.release();
+    }
+
+    const identityRows = await pool.query<{ auth_user_id: string; game_user_id: string }>(
+      `
+      SELECT auth_user_id, game_user_id
+      FROM auth_identities
+      WHERE auth_user_id IN ($1, $2)
+      ORDER BY auth_user_id
+      `,
+      [primaryAuthUserId, secondaryAuthUserId]
+    );
+    expect(identityRows.rows).toHaveLength(2);
+    expect(identityRows.rows[0].game_user_id).toBe(identityRows.rows[1].game_user_id);
   });
 
   it("awards account creation achievement on anonymous upgrade", async () => {

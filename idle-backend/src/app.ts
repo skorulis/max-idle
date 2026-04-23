@@ -7,6 +7,7 @@ import { signAnonymousToken, verifyToken } from "./auth.js";
 import {
   createBetterAuth,
   ensureGameIdentityForAuthUser,
+  getEmailProviderSummary,
   getRequestHeaders,
   type BetterAuthInstance
 } from "./betterAuth.js";
@@ -225,6 +226,17 @@ function ensureSocialConfig(config: AppConfig): { googleEnabled: boolean; appleE
   };
 }
 
+async function ensureEmailPasswordAuthAllowed(pool: Pool, email: string, res: express.Response): Promise<boolean> {
+  const providerSummary = await getEmailProviderSummary(pool, email);
+  if (providerSummary.providerIds.length > 0 && !providerSummary.hasEmailPassword) {
+    res.status(400).json({
+      error: "This email is linked to social sign-in only. Continue with Google or Apple."
+    });
+    return false;
+  }
+  return true;
+}
+
 export function createApp(pool: Pool, config: AppConfig) {
   const auth = createBetterAuth(pool, config);
   const socialConfig = ensureSocialConfig(config);
@@ -296,6 +308,9 @@ export function createApp(pool: Pool, config: AppConfig) {
         res.status(400).json({ error: authInput.error });
         return;
       }
+      if (!(await ensureEmailPasswordAuthAllowed(pool, authInput.email, res))) {
+        return;
+      }
 
       const email = authInput.email;
       const providedName = String(req.body?.name ?? "").trim();
@@ -338,6 +353,9 @@ export function createApp(pool: Pool, config: AppConfig) {
       const authInput = validateEmailPasswordInput(rawEmail, password);
       if (!authInput.isValid) {
         res.status(400).json({ error: authInput.error });
+        return;
+      }
+      if (!(await ensureEmailPasswordAuthAllowed(pool, authInput.email, res))) {
         return;
       }
 
@@ -457,6 +475,9 @@ export function createApp(pool: Pool, config: AppConfig) {
       const authInput = validateEmailPasswordInput(rawEmail, password);
       if (!authInput.isValid) {
         res.status(400).json({ error: authInput.error });
+        return;
+      }
+      if (!(await ensureEmailPasswordAuthAllowed(pool, authInput.email, res))) {
         return;
       }
 

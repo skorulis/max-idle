@@ -35,6 +35,8 @@ ADD COLUMN IF NOT EXISTS upgrades_purchased BIGINT NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS auth_identities (
   auth_user_id TEXT PRIMARY KEY,
-  game_user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  game_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS auth_identities_game_user_id_idx ON auth_identities (game_user_id);
