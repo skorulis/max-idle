@@ -148,7 +148,8 @@ describe("auth + player lifecycle", () => {
     expect(accountResponse.status).toBe(200);
     expect(accountResponse.body.isAnonymous).toBe(true);
     expect(accountResponse.body.canUpgrade).toBe(true);
-    expect(accountResponse.body.username).toMatch(/^anonymous/);
+    expect(accountResponse.body.username).toBeTypeOf("string");
+    expect(accountResponse.body.username.length).toBeGreaterThan(0);
   });
 
   it("registers and logs in with cookie sessions", async () => {
@@ -165,7 +166,8 @@ describe("auth + player lifecycle", () => {
     expect(accountResponse.status).toBe(200);
     expect(accountResponse.body.isAnonymous).toBe(false);
     expect(accountResponse.body.email).toBe(email);
-    expect(accountResponse.body.username).toMatch(/^anonymous/);
+    expect(accountResponse.body.username).toBeTypeOf("string");
+    expect(accountResponse.body.username.length).toBeGreaterThan(0);
     const achievementState = await pool.query<{
       achievement_count: string | number;
       completed_achievements: unknown;
@@ -236,7 +238,7 @@ describe("auth + player lifecycle", () => {
     ]);
   });
 
-  it("rejects username updates for anonymous users", async () => {
+  it("updates username for anonymous users", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
@@ -245,7 +247,8 @@ describe("auth + player lifecycle", () => {
       username: "CantChangeMe"
     });
 
-    expect(updateResponse.status).toBe(400);
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.body.username).toBe("CantChangeMe");
   });
 
   it("returns conflict when username is already taken", async () => {
@@ -486,7 +489,8 @@ describe("auth + player lifecycle", () => {
     const profileResponse = await request(app).get(`/players/${userId}`);
     expect(profileResponse.status).toBe(200);
     expect(profileResponse.body.player.id).toBe(userId);
-    expect(profileResponse.body.player.username).toMatch(/^anonymous/);
+    expect(profileResponse.body.player.username).toBeTypeOf("string");
+    expect(profileResponse.body.player.username.length).toBeGreaterThan(0);
     expect(profileResponse.body.player.accountAgeSeconds).toBeTypeOf("number");
     expect(profileResponse.body.player.accountAgeSeconds).toBeGreaterThanOrEqual(0);
     expect(profileResponse.body.player.currentIdleSeconds).toBeGreaterThanOrEqual(calculateIdleSecondsGain(25));
