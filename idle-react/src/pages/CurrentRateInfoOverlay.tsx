@@ -1,8 +1,8 @@
 import { useEffect, useMemo } from "react";
 import { CircleX } from "lucide-react";
 import type { ShopState } from "../shop";
-import { getSecondsMultiplier } from "../shop";
-import { getIdleShopBonusMultiplier, getIdleSecondsRate } from "../idleRate";
+import { getRestraintBonusMultiplier, getSecondsMultiplier } from "../shop";
+import { getIdleSecondsRate } from "../idleRate";
 
 type CurrentRateInfoOverlayProps = {
   open: boolean;
@@ -21,6 +21,8 @@ export function CurrentRateInfoOverlay({
   shop,
   achievementBonusMultiplier
 }: CurrentRateInfoOverlayProps) {
+  const shouldShowFactor = (value: number): boolean => Math.abs(value - 1) > Number.EPSILON;
+
   useEffect(() => {
     if (!open) {
       return;
@@ -42,7 +44,7 @@ export function CurrentRateInfoOverlay({
       secondsSinceLastCollection: Math.max(0, secondsSinceLastCollection)
     });
     const secondsMultiplier = getSecondsMultiplier(shop);
-    const shopBonusMultiplier = getIdleShopBonusMultiplier(shop);
+    const shopBonusMultiplier = getRestraintBonusMultiplier(shop);
     const safeAchievementBonusMultiplier = Number.isFinite(achievementBonusMultiplier) ? achievementBonusMultiplier : 1;
 
     return {
@@ -75,21 +77,27 @@ export function CurrentRateInfoOverlay({
         </div>
         <p className="subtle">Your current rate is multiplied from these values:</p>
         <p className="rate-factor-row">
-          <span>Time bonus</span>
+          <span>Patience bonus</span>
           <span>{factors.baseRate.toFixed(2)}x</span>
         </p>
-        <p className="rate-factor-row">
-          <span>Seconds multiplier upgrade</span>
-          <span>{factors.secondsMultiplier.toFixed(2)}x</span>
-        </p>
-        <p className="rate-factor-row">
-          <span>Shop bonus multiplier</span>
-          <span>{factors.shopBonusMultiplier.toFixed(2)}x</span>
-        </p>
-        <p className="rate-factor-row">
-          <span>Achievements bonus</span>
-          <span>{factors.safeAchievementBonusMultiplier.toFixed(2)}x</span>
-        </p>
+        {shouldShowFactor(factors.secondsMultiplier) ? (
+          <p className="rate-factor-row">
+            <span>Seconds multiplier upgrade</span>
+            <span>{factors.secondsMultiplier.toFixed(2)}x</span>
+          </p>
+        ) : null}
+        {shouldShowFactor(factors.shopBonusMultiplier) ? (
+          <p className="rate-factor-row">
+            <span>Restraint multiplier</span>
+            <span>{factors.shopBonusMultiplier.toFixed(2)}x</span>
+          </p>
+        ) : null}
+        {shouldShowFactor(factors.safeAchievementBonusMultiplier) ? (
+          <p className="rate-factor-row">
+            <span>Achievements bonus</span>
+            <span>{factors.safeAchievementBonusMultiplier.toFixed(2)}x</span>
+          </p>
+        ) : null}
         <p className="rate-factor-total">
           <span>Total effective rate</span>
           <span>{effectiveIdleSecondsRate.toFixed(2)}x</span>

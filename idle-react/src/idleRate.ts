@@ -3,7 +3,6 @@ export {
   calculateBoostedIdleSecondsGain,
   calculateIdleSecondsGain,
   getEffectiveIdleSecondsRate,
-  getIdleShopBonusMultiplier,
   getIdleSecondsRate,
   isIdleCollectionBlockedByRestraint,
   shouldPreserveIdleTimerOnCollect

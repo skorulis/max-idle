@@ -4,6 +4,7 @@ export {
   getLuckLevel,
   getLuckMaxLevel,
   getLuckUpgradeCost,
+  getRestraintBonusMultiplier,
   getRestraintLevel,
   getRestraintMaxLevel,
   getRestraintUpgradeCost,

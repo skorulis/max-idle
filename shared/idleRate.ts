@@ -99,10 +99,6 @@ export function calculateIdleSecondsGain(secondsSinceLastCollection: number): nu
   return Math.floor(total);
 }
 
-export function getIdleShopBonusMultiplier(shop: ShopState): number {
-  return getRestraintEnabled(shop) ? getRestraintBonusMultiplier(shop) : 1;
-}
-
 export function isIdleCollectionBlockedByRestraint(player: {
   secondsSinceLastCollection: number;
   shop: ShopState;
@@ -116,7 +112,7 @@ export function calculateBoostedIdleSecondsGain(player: IdleCollectionPlayer): n
   const baseGain = calculateIdleSecondsGain(elapsedSeconds);
   const secondsMultiplier = getSecondsMultiplier(player.shop);
   const achievementBonusMultiplier = Number.isFinite(player.achievementBonusMultiplier) ? player.achievementBonusMultiplier : 1;
-  const shopBonusMultiplier = getIdleShopBonusMultiplier(player.shop);
+  const shopBonusMultiplier = getRestraintBonusMultiplier(player.shop);
   return Math.floor(baseGain * secondsMultiplier * shopBonusMultiplier * achievementBonusMultiplier);
 }
 
@@ -124,7 +120,7 @@ export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): numbe
   return (
     getIdleSecondsRate({ secondsSinceLastCollection: player.secondsSinceLastCollection }) *
     getSecondsMultiplier(player.shop) *
-    getIdleShopBonusMultiplier(player.shop) *
+    getRestraintBonusMultiplier(player.shop) *
     (Number.isFinite(player.achievementBonusMultiplier) ? player.achievementBonusMultiplier : 1)
   );
 }
