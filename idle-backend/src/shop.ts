@@ -3,8 +3,6 @@ import type { Pool } from "pg";
 import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import {
   getLuckEnabled,
-  getLuckUpgradeCost,
-  getRestraintUpgradeCost,
   getSecondsMultiplier,
   getSecondsMultiplierPurchaseCost,
   getSecondsMultiplierUpgradeCost,
@@ -15,6 +13,7 @@ import {
   withSecondsMultiplier
 } from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
+import { SHOP_UPGRADES_BY_ID } from "@maxidle/shared/shopUpgrades";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 import { normalizeCompletedAchievementIds } from "./achievementUpdates.js";
 import { calculateElapsedSeconds } from "./time.js";
@@ -130,9 +129,7 @@ export function registerShopRoutes({
       const totalCost =
         upgradeType === "seconds_multiplier"
           ? getSecondsMultiplierPurchaseCost(currentLevel, quantity)
-          : upgradeType === "restraint"
-            ? getRestraintUpgradeCost()
-            : getLuckUpgradeCost();
+          : SHOP_UPGRADES_BY_ID[upgradeType].cost;
       if (upgradeType === "restraint" && restraintEnabled) {
         await client.query("ROLLBACK");
         res.status(400).json({ error: "Upgrade already owned", code: "ALREADY_OWNED" });

@@ -1,8 +1,8 @@
+import { LUCK_SHOP_UPGRADE, RESTRAINT_SHOP_UPGRADE } from "./shopUpgrades.js";
+
 const BASE_SECONDS_MULTIPLIER_COST = 5;
 const SECONDS_MULTIPLIER_COST_GROWTH = 1.4;
 const DEFAULT_SECONDS_MULTIPLIER = 1;
-const RESTRAINT_UPGRADE_COST = 2 * 60 * 60;
-const LUCK_UPGRADE_COST = 7 * 24 * 60 * 60;
 
 export type ShopState = {
   seconds_multiplier: number;
@@ -38,7 +38,7 @@ export function withRestraint(shop: ShopState, enabled: boolean): ShopState {
 }
 
 export function getRestraintUpgradeCost(): number {
-  return RESTRAINT_UPGRADE_COST;
+  return RESTRAINT_SHOP_UPGRADE.cost;
 }
 
 export function getLuckEnabled(shop: ShopState): boolean {
@@ -53,7 +53,7 @@ export function withLuck(shop: ShopState, enabled: boolean): ShopState {
 }
 
 export function getLuckUpgradeCost(): number {
-  return LUCK_UPGRADE_COST;
+  return LUCK_SHOP_UPGRADE.cost;
 }
 
 export function multiplierToLevel(secondsMultiplier: number): number {
