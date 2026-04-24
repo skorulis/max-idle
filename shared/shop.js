@@ -1,5 +1,34 @@
 const BASE_SECONDS_MULTIPLIER_COST = 5;
 const SECONDS_MULTIPLIER_COST_GROWTH = 1.4;
+const DEFAULT_SECONDS_MULTIPLIER = 1;
+
+export function normalizeShopState(shop) {
+  const rawShop = shop && typeof shop === "object" && !Array.isArray(shop) ? shop : {};
+  const parsedSecondsMultiplier = Number(rawShop.seconds_multiplier);
+  const secondsMultiplier =
+    Number.isFinite(parsedSecondsMultiplier) && parsedSecondsMultiplier > 0
+      ? parsedSecondsMultiplier
+      : DEFAULT_SECONDS_MULTIPLIER;
+  return {
+    ...rawShop,
+    seconds_multiplier: secondsMultiplier
+  };
+}
+
+export function getSecondsMultiplier(shop) {
+  return normalizeShopState(shop).seconds_multiplier;
+}
+
+export function withSecondsMultiplier(shop, secondsMultiplier) {
+  const nextSecondsMultiplier =
+    Number.isFinite(secondsMultiplier) && secondsMultiplier > 0
+      ? secondsMultiplier
+      : DEFAULT_SECONDS_MULTIPLIER;
+  return {
+    ...normalizeShopState(shop),
+    seconds_multiplier: nextSecondsMultiplier
+  };
+}
 
 export function multiplierToLevel(secondsMultiplier) {
   if (!Number.isFinite(secondsMultiplier) || secondsMultiplier <= 1) {

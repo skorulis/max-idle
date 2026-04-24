@@ -46,7 +46,7 @@ import type {
 const TOKEN_KEY = "max-idle-token";
 const UPGRADE_SOCIAL_INTENT_KEY = "max-idle-upgrade-social-intent";
 const FALLBACK_MESSAGE = "The message board is taking a snack break.";
-const WELCOME_MESSAGE = "Welcome to the worlds easiest game.";
+const WELCOME_MESSAGE = "Welcome to the world of competitive waiting.";
 const HUMOROUS_MESSAGES = [
   "Your productivity has entered low-power mode.",
   "Another second has passed without incident",
@@ -58,6 +58,7 @@ const HUMOROUS_MESSAGES = [
   "What will you do with all of that time?",
   "Your goal is simple.  Be idle for longer than anyone else.",
   "To catch up, try doing nothing faster.",
+  "If you keep going, you’ll waste a full day by next week.",
   "Who has time? But then if we do not ever take time, how can we ever have time? -Merovingian",
 ];
 

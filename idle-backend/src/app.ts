@@ -22,6 +22,7 @@ import {
 } from "./achievementUpdates.js";
 import { ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION, ACHIEVEMENT_IDS, ACHIEVEMENTS } from "@maxidle/shared/achievements";
 import { validateEmailPasswordInput } from "@maxidle/shared/authValidation";
+import { getSecondsMultiplier } from "@maxidle/shared/shop";
 import { registerShopRoutes } from "./shop.js";
 import { registerLeaderboardRoutes } from "./leaderboard.js";
 import { registerApiDocumentation } from "./apiContract.js";
@@ -71,7 +72,7 @@ type PlayerCurrentSecondsSyncRow = {
   current_seconds_last_updated: Date;
   last_collected_at: Date;
   achievement_count: number | string;
-  seconds_multiplier: number | string;
+  shop: unknown;
   server_time: Date;
 };
 
@@ -87,7 +88,7 @@ export async function syncStalePlayerCurrentSeconds(pool: Pool, limit = 100): Pr
         current_seconds_last_updated,
         last_collected_at,
         achievement_count,
-        seconds_multiplier,
+        shop,
         NOW() AS server_time
       FROM player_states
       ORDER BY current_seconds_last_updated ASC
@@ -98,7 +99,7 @@ export async function syncStalePlayerCurrentSeconds(pool: Pool, limit = 100): Pr
     );
 
     for (const row of stalePlayersResult.rows) {
-      const secondsMultiplier = Number(row.seconds_multiplier);
+      const secondsMultiplier = getSecondsMultiplier(row.shop);
       const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
       const nextCurrentSeconds = boostedUncollectedIdleSeconds(
         row.last_collected_at,
@@ -816,7 +817,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         current_seconds_last_updated: Date;
         last_collected_at: Date;
         achievement_count: string;
-        seconds_multiplier: number | string;
+        shop: unknown;
         server_time: Date;
       }>(
         `
@@ -835,7 +836,7 @@ export function createApp(pool: Pool, config: AppConfig) {
           ps.current_seconds_last_updated,
           ps.last_collected_at,
           ps.achievement_count,
-          ps.seconds_multiplier,
+          ps.shop,
         NOW() AS server_time
         FROM users u
         INNER JOIN player_states ps ON ps.user_id = u.id
@@ -851,7 +852,7 @@ export function createApp(pool: Pool, config: AppConfig) {
       }
 
       const accountAgeSeconds = calculateElapsedSeconds(row.created_at, row.server_time);
-      const secondsMultiplier = Number(row.seconds_multiplier);
+      const secondsMultiplier = getSecondsMultiplier(row.shop);
       const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
       const currentIdleSeconds = boostedUncollectedIdleSeconds(
         row.last_collected_at,
@@ -906,7 +907,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         upgrades_purchased: string;
         achievement_count: string;
         has_unseen_achievements: boolean;
-        seconds_multiplier: number | string;
+        shop: unknown;
         last_collected_at: Date;
         current_seconds: string;
         current_seconds_last_updated: Date;
@@ -924,7 +925,7 @@ export function createApp(pool: Pool, config: AppConfig) {
           upgrades_purchased,
           achievement_count,
           has_unseen_achievements,
-          seconds_multiplier,
+          shop,
           last_collected_at,
           current_seconds,
           current_seconds_last_updated,
@@ -942,7 +943,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         return;
       }
 
-      const secondsMultiplier = Number(row.seconds_multiplier);
+      const secondsMultiplier = getSecondsMultiplier(row.shop);
       const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
       const currentIdleSeconds = boostedUncollectedIdleSeconds(
         row.last_collected_at,
@@ -1004,7 +1005,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         achievement_count: number | string;
         completed_achievements: unknown;
         has_unseen_achievements: boolean;
-        seconds_multiplier: number | string;
+        shop: unknown;
         last_collected_at: Date;
         current_seconds: number | string;
         current_seconds_last_updated: Date;
@@ -1016,7 +1017,7 @@ export function createApp(pool: Pool, config: AppConfig) {
           achievement_count,
           completed_achievements,
           has_unseen_achievements,
-          seconds_multiplier,
+          shop,
           last_collected_at,
           current_seconds,
           current_seconds_last_updated,
@@ -1036,7 +1037,7 @@ export function createApp(pool: Pool, config: AppConfig) {
       }
 
       const collectedAt = new Date();
-      const secondsMultiplier = Number(lockedRow.seconds_multiplier);
+      const secondsMultiplier = getSecondsMultiplier(lockedRow.shop);
       const collectionAchievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(lockedRow.achievement_count));
       const collectedSeconds = boostedUncollectedIdleSeconds(
         lockedRow.last_collected_at,
@@ -1056,7 +1057,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         last_collected_at: Date;
         current_seconds: number | string;
         current_seconds_last_updated: Date;
-        seconds_multiplier: number | string;
+        shop: unknown;
         last_daily_reward_collected_at: Date | null;
       }>(
         `
@@ -1082,7 +1083,7 @@ export function createApp(pool: Pool, config: AppConfig) {
           last_collected_at,
           current_seconds,
           current_seconds_last_updated,
-          seconds_multiplier,
+          shop,
           last_daily_reward_collected_at
         `,
         [userId, collectedSeconds, realSecondsCollected, collectedAt]
@@ -1145,7 +1146,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         },
         upgradesPurchased: toNumber(row.upgrades_purchased),
         currentSeconds: toNumber(row.current_seconds),
-        secondsMultiplier: toNumber(row.seconds_multiplier),
+        secondsMultiplier: getSecondsMultiplier(row.shop),
         achievementBonusMultiplier,
         hasUnseenAchievements,
         idleSecondsRate: 1,
@@ -1179,7 +1180,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         upgrades_purchased: number | string;
         current_seconds: number | string;
         current_seconds_last_updated: Date;
-        seconds_multiplier: number | string;
+        shop: unknown;
         achievement_count: number | string;
         has_unseen_achievements: boolean;
         last_collected_at: Date;
@@ -1196,7 +1197,7 @@ export function createApp(pool: Pool, config: AppConfig) {
           upgrades_purchased,
           current_seconds,
           current_seconds_last_updated,
-          seconds_multiplier,
+          shop,
           achievement_count,
           has_unseen_achievements,
           last_collected_at,
@@ -1234,7 +1235,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         upgrades_purchased: number | string;
         current_seconds: number | string;
         current_seconds_last_updated: Date;
-        seconds_multiplier: number | string;
+        shop: unknown;
         achievement_count: number | string;
         has_unseen_achievements: boolean;
         last_collected_at: Date;
@@ -1258,7 +1259,7 @@ export function createApp(pool: Pool, config: AppConfig) {
           upgrades_purchased,
           current_seconds,
           current_seconds_last_updated,
-          seconds_multiplier,
+          shop,
           achievement_count,
           has_unseen_achievements,
           last_collected_at,
@@ -1293,7 +1294,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         },
         upgradesPurchased: toNumber(updatedPlayer.upgrades_purchased),
         currentSeconds: toNumber(updatedPlayer.current_seconds),
-        secondsMultiplier: toNumber(updatedPlayer.seconds_multiplier),
+        secondsMultiplier: getSecondsMultiplier(updatedPlayer.shop),
         achievementBonusMultiplier,
         hasUnseenAchievements: updatedPlayer.has_unseen_achievements,
         idleSecondsRate,

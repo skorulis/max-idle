@@ -758,7 +758,7 @@ describe("auth + player lifecycle", () => {
         upgrades_purchased = 7,
         current_seconds = 0,
         last_collected_at = NOW() - INTERVAL '35 seconds',
-        seconds_multiplier = 1
+        shop = '{"seconds_multiplier": 1}'::jsonb
       WHERE user_id = $1
       `,
       [userId]
@@ -803,7 +803,7 @@ describe("auth + player lifecycle", () => {
       `
       UPDATE player_states
       SET
-        seconds_multiplier = 2,
+        shop = '{"seconds_multiplier": 2}'::jsonb,
         current_seconds = 0,
         current_seconds_last_updated = NOW() - INTERVAL '120 seconds',
         last_collected_at = NOW() - INTERVAL '120 seconds'
@@ -908,7 +908,7 @@ describe("auth + player lifecycle", () => {
         UPDATE player_states
         SET
           achievement_count = 0,
-          seconds_multiplier = 1,
+          shop = '{"seconds_multiplier": 1}'::jsonb,
           current_seconds_last_updated = $2,
           last_collected_at = $2
         WHERE user_id = $1

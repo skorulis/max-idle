@@ -2,10 +2,12 @@ import express from "express";
 import type { Pool } from "pg";
 import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import {
+  getSecondsMultiplier,
   getSecondsMultiplierPurchaseCost,
   getSecondsMultiplierUpgradeCost,
   levelToMultiplier,
-  multiplierToLevel
+  multiplierToLevel,
+  withSecondsMultiplier
 } from "@maxidle/shared/shop";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 import { normalizeCompletedAchievementIds } from "./achievementUpdates.js";
@@ -14,10 +16,12 @@ import { getIdleSecondsRate } from "./idleRate.js";
 import type { AuthClaims } from "./types.js";
 
 export {
+  getSecondsMultiplier,
   getSecondsMultiplierPurchaseCost,
   getSecondsMultiplierUpgradeCost,
   levelToMultiplier,
-  multiplierToLevel
+  multiplierToLevel,
+  withSecondsMultiplier
 } from "@maxidle/shared/shop";
 
 type ShopRouteIdentity = {
@@ -68,10 +72,10 @@ export function registerShopRoutes({
         has_unseen_achievements: boolean;
         completed_achievements: unknown;
         upgrades_purchased: number | string;
+        shop: unknown;
         current_seconds: string;
         current_seconds_last_updated: Date;
         last_collected_at: Date;
-        seconds_multiplier: number | string;
         last_daily_reward_collected_at: Date | null;
       }>(
         `
@@ -86,10 +90,10 @@ export function registerShopRoutes({
           has_unseen_achievements,
           completed_achievements,
           upgrades_purchased,
+          shop,
           current_seconds,
           current_seconds_last_updated,
           last_collected_at,
-          seconds_multiplier,
           last_daily_reward_collected_at
         FROM player_states
         WHERE user_id = $1
@@ -106,7 +110,7 @@ export function registerShopRoutes({
       }
 
       const now = new Date();
-      const secondsMultiplier = Number(row.seconds_multiplier);
+      const secondsMultiplier = getSecondsMultiplier(row.shop);
 
       const currentLevel = multiplierToLevel(secondsMultiplier);
       const totalCost = getSecondsMultiplierPurchaseCost(currentLevel, quantity);
@@ -122,6 +126,7 @@ export function registerShopRoutes({
 
       const nextLevel = currentLevel + quantity;
       const nextMultiplier = levelToMultiplier(nextLevel);
+      const nextShopState = withSecondsMultiplier(row.shop, nextMultiplier);
       const nextUpgradesPurchased = toNumber(row.upgrades_purchased) + quantity;
       const nextCompletedAchievementIds =
         nextUpgradesPurchased >= 4
@@ -143,7 +148,7 @@ export function registerShopRoutes({
         current_seconds: string;
         current_seconds_last_updated: Date;
         last_collected_at: Date;
-        seconds_multiplier: number | string;
+        shop: unknown;
         last_daily_reward_collected_at: Date | null;
       }>(
         `
@@ -152,7 +157,7 @@ export function registerShopRoutes({
           idle_time_available = $2,
           current_seconds = $3,
           current_seconds_last_updated = $4,
-          seconds_multiplier = $5,
+          shop = $5::jsonb,
           upgrades_purchased = $6,
           completed_achievements = $7::jsonb,
           achievement_count = $8,
@@ -165,7 +170,7 @@ export function registerShopRoutes({
           current_seconds,
           current_seconds_last_updated,
           last_collected_at,
-          seconds_multiplier,
+          shop,
           last_daily_reward_collected_at
         `,
         [
@@ -173,7 +178,7 @@ export function registerShopRoutes({
           idleTimeAvailable - totalCost,
           syncedCurrentSeconds,
           now,
-          nextMultiplier,
+          JSON.stringify(nextShopState),
           nextUpgradesPurchased,
           JSON.stringify(nextCompletedAchievementIds),
           nextAchievementCount,
@@ -204,7 +209,7 @@ export function registerShopRoutes({
         },
         upgradesPurchased: nextUpgradesPurchased,
         currentSeconds: toNumber(updated.current_seconds),
-        secondsMultiplier: toNumber(updated.seconds_multiplier),
+        secondsMultiplier: getSecondsMultiplier(updated.shop),
         achievementBonusMultiplier: nextAchievementBonusMultiplier,
         hasUnseenAchievements: updated.has_unseen_achievements,
         idleSecondsRate: getIdleSecondsRate({ secondsSinceLastCollection: elapsedSinceLastCollection }),
