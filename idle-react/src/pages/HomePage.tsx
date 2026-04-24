@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { formatSeconds } from "../formatSeconds";
 import { Atom, Clock3, Gem, Gift } from "lucide-react";
 import type { SyncedPlayerState } from "../app/types";
@@ -35,6 +36,24 @@ export function HomePage({
   onCollectDailyReward,
   onNavigateLogin
 }: HomePageProps) {
+  const [collectWarning, setCollectWarning] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (realtimeElapsedSeconds >= 15) {
+      setCollectWarning(null);
+    }
+  }, [realtimeElapsedSeconds]);
+
+  const handleCollect = async () => {
+    if (realtimeElapsedSeconds < 15) {
+      setCollectWarning("Don't you think you should wait?");
+      return;
+    }
+
+    setCollectWarning(null);
+    await onCollect();
+  };
+
   if (!playerState) {
     return (
       <>
@@ -57,9 +76,10 @@ export function HomePage({
       <p className="subtle">Realtime: {formatSeconds(realtimeElapsedSeconds)}</p>
       <p className="subtle">Current rate: {effectiveIdleSecondsRate.toFixed(2)}x</p>
 
-      <button className="collect" onClick={() => void onCollect()} disabled={collecting || collectBlockedByRestraint}>
+      <button className="collect" onClick={() => void handleCollect()} disabled={collecting || collectBlockedByRestraint}>
         {collecting ? "Collecting..." : collectBlockedByRestraint ? "Collect (Collect after 1h)" : "Collect"}
       </button>
+      {collectWarning ? <p className="warning-alert">{collectWarning}</p> : null}
 
       <p className="subtle">Totals</p>
       <div className="shop-currencies">
