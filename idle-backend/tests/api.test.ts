@@ -107,9 +107,37 @@ describe("auth + player lifecycle", () => {
     expect(collectResponse.body.upgradesPurchased).toBe(0);
     expect(collectResponse.body.serverTime).toBeTypeOf("string");
 
+    const firstHistoryResult = await pool.query<{
+      collection_date: Date;
+      real_time: string | number;
+      idle_time: string | number;
+    }>(
+      `
+      SELECT collection_date, real_time, idle_time
+      FROM player_collection_history
+      WHERE user_id = $1
+      ORDER BY collection_date DESC
+      LIMIT 1
+      `,
+      [userId]
+    );
+    expect(firstHistoryResult.rows[0]?.collection_date).toBeTruthy();
+    expect(Number(firstHistoryResult.rows[0]?.real_time ?? 0)).toBeGreaterThanOrEqual(10);
+    expect(Number(firstHistoryResult.rows[0]?.idle_time ?? 0)).toBeGreaterThanOrEqual(10);
+
     const secondCollect = await request(app).post("/player/collect").set("Authorization", `Bearer ${token}`);
     expect(secondCollect.status).toBe(200);
     expect(secondCollect.body.collectedSeconds).toBe(0);
+
+    const historyCountResult = await pool.query<{ count: string }>(
+      `
+      SELECT COUNT(*) AS count
+      FROM player_collection_history
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+    expect(Number(historyCountResult.rows[0]?.count ?? 0)).toBe(2);
   });
 
   it("collects a daily reward once per UTC day", async () => {
@@ -979,30 +1007,31 @@ describe("auth + player lifecycle", () => {
     expect(maxedPurchaseResponse.body.code).toBe("ALREADY_OWNED");
   });
 
-  it("allows purchasing luck upgrade once", async () => {
+  it("allows purchasing luck upgrade up to max level", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
 
-    await pool.query(`UPDATE player_states SET idle_time_available = 999999 WHERE user_id = $1`, [userId]);
+    await pool.query(`UPDATE player_states SET idle_time_available = 9999999 WHERE user_id = $1`, [userId]);
 
-    const purchaseResponse = await request(app)
+    for (let level = 1; level <= 5; level += 1) {
+      const purchaseResponse = await request(app)
+        .post("/shop/purchase")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ upgradeType: "luck" });
+      expect(purchaseResponse.status).toBe(200);
+      expect(purchaseResponse.body.purchase.upgradeType).toBe("luck");
+      expect(purchaseResponse.body.purchase.quantity).toBe(1);
+      expect(purchaseResponse.body.shop.luck).toBe(level);
+    }
+
+    const maxedPurchaseResponse = await request(app)
       .post("/shop/purchase")
       .set("Authorization", `Bearer ${token}`)
       .send({ upgradeType: "luck" });
-
-    expect(purchaseResponse.status).toBe(200);
-    expect(purchaseResponse.body.purchase.upgradeType).toBe("luck");
-    expect(purchaseResponse.body.purchase.quantity).toBe(1);
-    expect(purchaseResponse.body.shop.luck).toBe(true);
-
-    const secondPurchaseResponse = await request(app)
-      .post("/shop/purchase")
-      .set("Authorization", `Bearer ${token}`)
-      .send({ upgradeType: "luck" });
-    expect(secondPurchaseResponse.status).toBe(400);
-    expect(secondPurchaseResponse.body.code).toBe("ALREADY_OWNED");
+    expect(maxedPurchaseResponse.status).toBe(400);
+    expect(maxedPurchaseResponse.body.code).toBe("ALREADY_OWNED");
   });
 
   it("preserves timer on collect when luck roll succeeds", async () => {
@@ -1017,7 +1046,7 @@ describe("auth + player lifecycle", () => {
         `
         UPDATE player_states
         SET
-          shop = '{"seconds_multiplier": 0, "restraint": false, "luck": true}'::jsonb,
+          shop = '{"seconds_multiplier": 0, "restraint": 0, "luck": 1}'::jsonb,
           current_seconds = 0,
           current_seconds_last_updated = NOW() - INTERVAL '120 seconds',
           last_collected_at = NOW() - INTERVAL '120 seconds'
@@ -1047,7 +1076,7 @@ describe("auth + player lifecycle", () => {
         `
         UPDATE player_states
         SET
-          shop = '{"seconds_multiplier": 0, "restraint": false, "luck": true}'::jsonb,
+          shop = '{"seconds_multiplier": 0, "restraint": 0, "luck": 1}'::jsonb,
           current_seconds = 0,
           current_seconds_last_updated = NOW() - INTERVAL '120 seconds',
           last_collected_at = NOW() - INTERVAL '120 seconds'

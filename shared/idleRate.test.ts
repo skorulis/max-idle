@@ -38,22 +38,22 @@ describe("calculateIdleSecondsGain", () => {
 
 describe("luck + boosted gain", () => {
   it("preserves timer only when luck is enabled and roll succeeds", () => {
-    expect(shouldPreserveIdleTimerOnCollect({ luck: false }, 0.1)).toBe(false);
-    expect(shouldPreserveIdleTimerOnCollect({ luck: true }, 0.1)).toBe(true);
-    expect(shouldPreserveIdleTimerOnCollect({ luck: true }, 0.9)).toBe(false);
+    expect(shouldPreserveIdleTimerOnCollect({ luck: 0 }, 0.1)).toBe(false);
+    expect(shouldPreserveIdleTimerOnCollect({ luck: 1 }, 0.1)).toBe(true);
+    expect(shouldPreserveIdleTimerOnCollect({ luck: 1 }, 0.9)).toBe(false);
   });
 
   it("applies restraint/luck-aware boosted gain", () => {
     const gainWithoutRestraint = calculateBoostedIdleSecondsGain({
       secondsSinceLastCollection: 60,
-      shop: { seconds_multiplier: 0, restraint: false, luck: false },
+      shop: { seconds_multiplier: 0, restraint: 0, luck: 0 },
       achievementBonusMultiplier: 1
     });
     expect(gainWithoutRestraint).toBeGreaterThan(0);
 
     const gainWithRestraint = calculateBoostedIdleSecondsGain({
       secondsSinceLastCollection: 60,
-      shop: { seconds_multiplier: 0, restraint: true, luck: false },
+      shop: { seconds_multiplier: 0, restraint: 1, luck: 0 },
       achievementBonusMultiplier: 1
     });
     expect(gainWithRestraint).toBe(Math.floor(gainWithoutRestraint * 1.5));

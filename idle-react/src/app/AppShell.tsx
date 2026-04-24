@@ -4,7 +4,8 @@ import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "rea
 import GameIcon from "../GameIcon";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
 import {
-  getLuckEnabled,
+  getLuckLevel,
+  getLuckMaxLevel,
   getRestraintLevel,
   getRestraintMaxLevel,
   getSecondsMultiplierLevel,
@@ -561,7 +562,8 @@ export function AppShell() {
   }, [secondsMultiplierLevel]);
   const restraintLevel = playerState ? getRestraintLevel(playerState.shop) : 0;
   const restraintMaxLevel = getRestraintMaxLevel();
-  const hasLuckUpgrade = playerState ? getLuckEnabled(playerState.shop) : false;
+  const luckLevel = playerState ? getLuckLevel(playerState.shop) : 0;
+  const luckMaxLevel = getLuckMaxLevel();
 
   const activeMessageCardText = isAuthenticated
     ? getMessageFromIndex(messageCardRandomIndex)
@@ -703,7 +705,7 @@ export function AppShell() {
   };
 
   const onPurchaseLuck = async () => {
-    if (!playerState || hasLuckUpgrade) {
+    if (!playerState || luckLevel >= luckMaxLevel) {
       return;
     }
 
@@ -715,7 +717,7 @@ export function AppShell() {
       const synced = toSyncedState(updatedPlayer);
       alignClientClock();
       setPlayerState(synced);
-      setStatus("Luck acquired: 50% chance to keep your timer on collect.");
+      setStatus("Luck upgraded.");
     } catch (purchaseError) {
       if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
         setError("Not enough spendable idle seconds for that purchase.");
@@ -1039,7 +1041,8 @@ export function AppShell() {
                 restraintLevel={restraintLevel}
                 restraintMaxLevel={restraintMaxLevel}
                 onPurchaseRestraint={onPurchaseRestraint}
-                hasLuckUpgrade={hasLuckUpgrade}
+                luckLevel={luckLevel}
+                luckMaxLevel={luckMaxLevel}
                 onPurchaseLuck={onPurchaseLuck}
                 onNavigateHome={() => navigate("/")}
               />

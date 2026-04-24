@@ -45,7 +45,7 @@ const playerStateSchema = registry.register(
       .object({
         seconds_multiplier: z.number().int().nonnegative(),
         restraint: z.number().int().nonnegative(),
-        luck: z.boolean()
+        luck: z.number().int().nonnegative()
       })
       .catchall(z.unknown()),
     achievementBonusMultiplier: z.number().positive(),

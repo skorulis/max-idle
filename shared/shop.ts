@@ -6,7 +6,7 @@ const DEFAULT_SECONDS_MULTIPLIER_VALUE = 1;
 export type ShopState = {
   seconds_multiplier: number;
   restraint: number | boolean;
-  luck: boolean;
+  luck: number | boolean;
   [key: string]: unknown;
 };
 
@@ -96,18 +96,51 @@ export function getRestraintUpgradeCostAtLevel(currentLevel: number): number {
 }
 
 export function getLuckEnabled(shop: ShopState): boolean {
-  return shop.luck;
+  return getLuckLevel(shop) > 0;
+}
+
+export function getLuckMaxLevel(): number {
+  return LUCK_SHOP_UPGRADE.levels.length;
+}
+
+export function getLuckLevel(shop: ShopState): number {
+  const rawLevel = shop.luck;
+  if (rawLevel === true) {
+    return 1;
+  }
+  if (typeof rawLevel !== "number" || !Number.isFinite(rawLevel)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(getLuckMaxLevel(), Math.floor(rawLevel)));
+}
+
+export function getLuckPreserveChance(shop: ShopState): number {
+  const luckLevel = getLuckLevel(shop);
+  if (luckLevel <= 0) {
+    return 0;
+  }
+  return LUCK_SHOP_UPGRADE.levels[luckLevel - 1]?.value ?? 0;
+}
+
+export function withLuckLevel(shop: ShopState, luckLevel: number): ShopState {
+  const safeLevel = Number.isFinite(luckLevel) ? Math.max(0, Math.min(getLuckMaxLevel(), Math.floor(luckLevel))) : 0;
+  return {
+    ...shop,
+    luck: safeLevel
+  };
 }
 
 export function withLuck(shop: ShopState, enabled: boolean): ShopState {
-  return {
-    ...shop,
-    luck: enabled === true
-  };
+  return withLuckLevel(shop, enabled ? 1 : 0);
 }
 
 export function getLuckUpgradeCost(): number {
   return LUCK_SHOP_UPGRADE.levels[0]?.cost ?? 0;
+}
+
+export function getLuckUpgradeCostAtLevel(currentLevel: number): number {
+  const safeLevel = Math.max(0, Math.min(getLuckMaxLevel(), Math.floor(currentLevel)));
+  return LUCK_SHOP_UPGRADE.levels[safeLevel]?.cost ?? 0;
 }
 
 export function multiplierToLevel(secondsMultiplier: number): number {

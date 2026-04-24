@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS player_states (
   achievement_count BIGINT NOT NULL DEFAULT 0,
   has_unseen_achievements BOOLEAN NOT NULL DEFAULT FALSE,
   completed_achievements JSONB NOT NULL DEFAULT '[]'::jsonb,
-  shop JSONB NOT NULL DEFAULT '{"seconds_multiplier": 0, "restraint": 0, "luck": false}'::jsonb,
+  shop JSONB NOT NULL DEFAULT '{"seconds_multiplier": 0, "restraint": 0, "luck": 0}'::jsonb,
   seconds_multiplier DOUBLE PRECISION NOT NULL DEFAULT 0,
   current_seconds BIGINT NOT NULL DEFAULT 0,
   current_seconds_last_updated TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -36,19 +36,19 @@ ALTER TABLE player_states
 ADD COLUMN IF NOT EXISTS upgrades_purchased BIGINT NOT NULL DEFAULT 0;
 
 ALTER TABLE player_states
-ADD COLUMN IF NOT EXISTS shop JSONB NOT NULL DEFAULT '{"seconds_multiplier": 0, "restraint": 0, "luck": false}'::jsonb;
+ADD COLUMN IF NOT EXISTS shop JSONB NOT NULL DEFAULT '{"seconds_multiplier": 0, "restraint": 0, "luck": 0}'::jsonb;
 
 ALTER TABLE player_states
 ADD COLUMN IF NOT EXISTS seconds_multiplier DOUBLE PRECISION NOT NULL DEFAULT 0;
 
 ALTER TABLE player_states
-ALTER COLUMN shop SET DEFAULT '{"seconds_multiplier": 0, "restraint": 0, "luck": false}'::jsonb;
+ALTER COLUMN shop SET DEFAULT '{"seconds_multiplier": 0, "restraint": 0, "luck": 0}'::jsonb;
 
 ALTER TABLE player_states
 ALTER COLUMN seconds_multiplier SET DEFAULT 0;
 
 UPDATE player_states
-SET shop = '{"seconds_multiplier": 0, "restraint": 0, "luck": false}'::jsonb
+SET shop = '{"seconds_multiplier": 0, "restraint": 0, "luck": 0}'::jsonb
 WHERE COALESCE(shop->>'seconds_multiplier', '') = '';
 
 UPDATE player_states
@@ -62,3 +62,13 @@ CREATE TABLE IF NOT EXISTS auth_identities (
 );
 
 CREATE INDEX IF NOT EXISTS auth_identities_game_user_id_idx ON auth_identities (game_user_id);
+
+CREATE TABLE IF NOT EXISTS player_collection_history (
+  id BIGSERIAL PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  collection_date TIMESTAMPTZ NOT NULL,
+  real_time BIGINT NOT NULL,
+  idle_time BIGINT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS player_collection_history_user_id_idx ON player_collection_history (user_id);

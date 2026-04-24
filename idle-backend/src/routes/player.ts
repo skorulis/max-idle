@@ -259,6 +259,19 @@ export function registerPlayerRoutes({
         return;
       }
 
+      await client.query(
+        `
+        INSERT INTO player_collection_history (
+          user_id,
+          collection_date,
+          real_time,
+          idle_time
+        )
+        VALUES ($1, $2, $3::BIGINT, $4::BIGINT)
+        `,
+        [userId, collectedAt, realSecondsCollected, collectedSeconds]
+      );
+
       const completedAchievementIds = normalizeCompletedAchievementIds(lockedRow.completed_achievements);
       if (
         toNumber(row.real_time_total) >= REAL_TIME_COLLECT_65_MINUTES_SECONDS &&

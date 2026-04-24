@@ -2,7 +2,9 @@ import express from "express";
 import type { Pool } from "pg";
 import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import {
-  getLuckEnabled,
+  getLuckLevel,
+  getLuckMaxLevel,
+  getLuckUpgradeCostAtLevel,
   getRestraintLevel,
   getRestraintMaxLevel,
   getRestraintUpgradeCostAtLevel,
@@ -10,8 +12,7 @@ import {
   getSecondsMultiplierMaxLevel,
   getSecondsMultiplier,
   getSecondsMultiplierPurchaseCost,
-  withLuck,
-  withRestraint,
+  withLuckLevel,
   withRestraintLevel,
   withSecondsMultiplier
 } from "@maxidle/shared/shop";
@@ -126,7 +127,7 @@ export function registerShopRoutes({
       const now = new Date();
       const quantity = upgradeType === "seconds_multiplier" ? requestedQuantity : 1;
       const restraintLevel = getRestraintLevel(row.shop);
-      const luckEnabled = getLuckEnabled(row.shop);
+      const luckLevel = getLuckLevel(row.shop);
 
       const currentLevel = getSecondsMultiplierLevel(row.shop);
       if (upgradeType === "seconds_multiplier" && currentLevel + quantity > getSecondsMultiplierMaxLevel()) {
@@ -139,17 +140,17 @@ export function registerShopRoutes({
         res.status(400).json({ error: "Upgrade already maxed", code: "ALREADY_OWNED" });
         return;
       }
+      if (upgradeType === "luck" && luckLevel + quantity > getLuckMaxLevel()) {
+        await client.query("ROLLBACK");
+        res.status(400).json({ error: "Upgrade already maxed", code: "ALREADY_OWNED" });
+        return;
+      }
       const totalCost =
         upgradeType === "seconds_multiplier"
           ? getSecondsMultiplierPurchaseCost(currentLevel, quantity)
           : upgradeType === "restraint"
             ? getRestraintUpgradeCostAtLevel(restraintLevel)
-            : SHOP_UPGRADES_BY_ID[upgradeType].levels[0]?.cost ?? 0;
-      if (upgradeType === "luck" && luckEnabled) {
-        await client.query("ROLLBACK");
-        res.status(400).json({ error: "Upgrade already owned", code: "ALREADY_OWNED" });
-        return;
-      }
+            : getLuckUpgradeCostAtLevel(luckLevel);
       const idleTimeAvailable = toNumber(row.idle_time_available);
       if (idleTimeAvailable < totalCost) {
         await client.query("ROLLBACK");
@@ -166,7 +167,7 @@ export function registerShopRoutes({
           ? withSecondsMultiplier(row.shop, nextLevel)
           : upgradeType === "restraint"
             ? withRestraintLevel(row.shop, restraintLevel + quantity)
-            : withLuck(row.shop, true);
+            : withLuckLevel(row.shop, luckLevel + quantity);
       const nextUpgradesPurchased = toNumber(row.upgrades_purchased) + quantity;
       const nextCompletedAchievementIds =
         nextUpgradesPurchased >= 4

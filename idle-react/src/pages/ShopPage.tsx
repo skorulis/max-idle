@@ -31,7 +31,8 @@ type ShopPageProps = {
   restraintLevel: number;
   restraintMaxLevel: number;
   onPurchaseRestraint: () => Promise<void>;
-  hasLuckUpgrade: boolean;
+  luckLevel: number;
+  luckMaxLevel: number;
   onPurchaseLuck: () => Promise<void>;
   onNavigateHome: () => void;
 };
@@ -57,6 +58,10 @@ function formatMultiplier(value: number): string {
   return `${value.toFixed(1)}x`;
 }
 
+function formatChance(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
 function getShopUpgradeIcon(iconName: string): LucideIcon {
   switch (iconName) {
     case "gauge":
@@ -78,7 +83,8 @@ export function ShopPage({
   restraintLevel,
   restraintMaxLevel,
   onPurchaseRestraint,
-  hasLuckUpgrade,
+  luckLevel,
+  luckMaxLevel,
   onPurchaseLuck,
   onNavigateHome
 }: ShopPageProps) {
@@ -120,16 +126,20 @@ export function ShopPage({
     }
 
     const isRestraint = upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT;
-    const isOwned = isRestraint ? restraintLevel >= restraintMaxLevel : hasLuckUpgrade;
+    const isLuck = upgrade.id === SHOP_UPGRADE_IDS.LUCK;
+    const currentLevel = isRestraint ? restraintLevel : isLuck ? luckLevel : 0;
+    const maxLevel = isRestraint ? restraintMaxLevel : isLuck ? luckMaxLevel : 0;
+    const isOwned = isRestraint || isLuck ? currentLevel >= maxLevel : false;
     const isPending = isRestraint ? shopPendingQuantity === "restraint" : shopPendingQuantity === "luck";
     const onPurchase = isRestraint ? onPurchaseRestraint : onPurchaseLuck;
-    const nextRestraintLevel = isRestraint ? upgrade.levels[restraintLevel] ?? null : null;
+    const nextLevel = upgrade.levels[currentLevel] ?? null;
+    const nextValue = isRestraint ? formatMultiplier(nextLevel?.value ?? 0) : formatChance(nextLevel?.value ?? 0);
     return {
       description:
-        isRestraint && nextRestraintLevel
-          ? formatShopUpgradeDescription(upgrade, formatMultiplier(nextRestraintLevel.value))
+        (isRestraint || isLuck) && nextLevel
+          ? formatShopUpgradeDescription(upgrade, nextValue)
           : upgrade.description,
-      cost: isRestraint ? nextRestraintLevel?.cost ?? null : upgrade.levels[0]?.cost ?? null,
+      cost: isRestraint || isLuck ? nextLevel?.cost ?? null : upgrade.levels[0]?.cost ?? null,
       isPending,
       isOwned,
       onPurchase
@@ -145,6 +155,9 @@ export function ShopPage({
     }
     if (upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT) {
       return restraintLevel;
+    }
+    if (upgrade.id === SHOP_UPGRADE_IDS.LUCK) {
+      return luckLevel;
     }
     const maybeLevel = playerState?.shop[upgrade.id];
     if (typeof maybeLevel === "number" && Number.isFinite(maybeLevel) && maybeLevel >= 0) {

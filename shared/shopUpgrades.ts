@@ -59,7 +59,7 @@ export const RESTRAINT_SHOP_UPGRADE: ShopUpgradeDefinition = {
   id: SHOP_UPGRADE_IDS.RESTRAINT,
   name: "Restraint",
   icon: "shield-alert",
-  description: "Increase idle gain multiplier to %s, but you must wait 1 hour before collecting.",
+  description: "Multiply idle gain by %s, you must wait 1 hour before collecting.",
   levels: [
     { cost: 2 * 60 * 60, value: 1.5 },
     { cost: 4 * 60 * 60, value: 1.75 },
@@ -74,8 +74,14 @@ export const LUCK_SHOP_UPGRADE: ShopUpgradeDefinition = {
   id: SHOP_UPGRADE_IDS.LUCK,
   name: "Luck",
   icon: "dice-5",
-  description: "50% chance to keep timer on collect.",
-  levels: [{ cost: 7 * 24 * 60 * 60, value: 0.5 }],
+  description: "%s chance to keep timer on collect.",
+  levels: [
+    { cost: 7 * 24 * 60 * 60, value: 0.1 },
+    { cost: 14 * 24 * 60 * 60, value: 0.2 },
+    { cost: 28 * 24 * 60 * 60, value: 0.3 },
+    { cost: 56 * 24 * 60 * 60, value: 0.4 },
+    { cost: 365 * 24 * 60 * 60, value: 0.5 }
+  ],
   currencyType: SHOP_CURRENCY_TYPES.IDLE
 };
 
