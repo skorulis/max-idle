@@ -24,6 +24,7 @@ jobs:
       - name: Shared tests
         run: |
           npm ci --prefix shared
+          npm run --prefix shared build
           npm test --prefix shared
 
       - name: Backend tests

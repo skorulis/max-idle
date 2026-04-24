@@ -6,6 +6,10 @@
   "description": "MVP backend for Max Idle",
   "main": "dist/server.js",
   "scripts": {
+    "build:shared": "npm run --prefix ../shared build",
+    "predev": "npm run build:shared",
+    "prebuild": "npm run build:shared",
+    "pretest": "npm run build:shared",
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/src/server.js",

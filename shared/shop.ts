@@ -4,8 +4,16 @@ const DEFAULT_SECONDS_MULTIPLIER = 1;
 const RESTRAINT_UPGRADE_COST = 5 * 60 * 60;
 const LUCK_UPGRADE_COST = 7 * 24 * 60 * 60;
 
-export function normalizeShopState(shop) {
-  const rawShop = shop && typeof shop === "object" && !Array.isArray(shop) ? shop : {};
+export type ShopState = {
+  seconds_multiplier: number;
+  restraint: boolean;
+  luck: boolean;
+  [key: string]: unknown;
+};
+
+export function normalizeShopState(shop: unknown): ShopState {
+  const rawShop: Record<string, unknown> =
+    shop && typeof shop === "object" && !Array.isArray(shop) ? (shop as Record<string, unknown>) : {};
   const parsedSecondsMultiplier = Number(rawShop.seconds_multiplier);
   const secondsMultiplier =
     Number.isFinite(parsedSecondsMultiplier) && parsedSecondsMultiplier > 0
@@ -21,11 +29,11 @@ export function normalizeShopState(shop) {
   };
 }
 
-export function getSecondsMultiplier(shop) {
+export function getSecondsMultiplier(shop: unknown): number {
   return normalizeShopState(shop).seconds_multiplier;
 }
 
-export function withSecondsMultiplier(shop, secondsMultiplier) {
+export function withSecondsMultiplier(shop: unknown, secondsMultiplier: number): ShopState {
   const nextSecondsMultiplier =
     Number.isFinite(secondsMultiplier) && secondsMultiplier > 0
       ? secondsMultiplier
@@ -36,49 +44,49 @@ export function withSecondsMultiplier(shop, secondsMultiplier) {
   };
 }
 
-export function getRestraintEnabled(shop) {
+export function getRestraintEnabled(shop: unknown): boolean {
   return normalizeShopState(shop).restraint;
 }
 
-export function withRestraint(shop, enabled) {
+export function withRestraint(shop: unknown, enabled: boolean): ShopState {
   return {
     ...normalizeShopState(shop),
     restraint: enabled === true
   };
 }
 
-export function getRestraintUpgradeCost() {
+export function getRestraintUpgradeCost(): number {
   return RESTRAINT_UPGRADE_COST;
 }
 
-export function getLuckEnabled(shop) {
+export function getLuckEnabled(shop: unknown): boolean {
   return normalizeShopState(shop).luck;
 }
 
-export function withLuck(shop, enabled) {
+export function withLuck(shop: unknown, enabled: boolean): ShopState {
   return {
     ...normalizeShopState(shop),
     luck: enabled === true
   };
 }
 
-export function getLuckUpgradeCost() {
+export function getLuckUpgradeCost(): number {
   return LUCK_UPGRADE_COST;
 }
 
-export function multiplierToLevel(secondsMultiplier) {
+export function multiplierToLevel(secondsMultiplier: number): number {
   if (!Number.isFinite(secondsMultiplier) || secondsMultiplier <= 1) {
     return 0;
   }
   return Math.max(0, Math.round((secondsMultiplier - 1) * 10));
 }
 
-export function levelToMultiplier(level) {
+export function levelToMultiplier(level: number): number {
   const safeLevel = Math.max(0, Math.floor(level));
   return Number((1 + safeLevel / 10).toFixed(1));
 }
 
-export function getSecondsMultiplierUpgradeCost(currentLevel) {
+export function getSecondsMultiplierUpgradeCost(currentLevel: number): number {
   const safeLevel = Math.max(0, Math.floor(currentLevel));
   let cost = BASE_SECONDS_MULTIPLIER_COST;
   for (let i = 0; i < safeLevel; i += 1) {
@@ -87,7 +95,7 @@ export function getSecondsMultiplierUpgradeCost(currentLevel) {
   return cost;
 }
 
-export function getSecondsMultiplierPurchaseCost(currentLevel, quantity) {
+export function getSecondsMultiplierPurchaseCost(currentLevel: number, quantity: number): number {
   const safeQuantity = Math.max(0, Math.floor(quantity));
   let totalCost = 0;
   for (let i = 0; i < safeQuantity; i += 1) {

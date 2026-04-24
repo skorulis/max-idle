@@ -4,6 +4,8 @@ WORKDIR /app
 COPY shared /app/shared
 COPY idle-backend /app/idle-backend
 
+RUN npm ci --prefix /app/shared
+RUN npm run --prefix /app/shared build
 RUN npm ci --prefix /app/idle-backend
 RUN npm run --prefix /app/idle-backend build
 RUN npm prune --prefix /app/idle-backend --omit=dev

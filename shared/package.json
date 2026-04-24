@@ -4,31 +4,33 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
   "devDependencies": {
+    "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   },
   "exports": {
     "./achievements": {
-      "types": "./achievements.d.ts",
-      "default": "./achievements.js"
+      "types": "./dist/achievements.d.ts",
+      "default": "./dist/achievements.js"
     },
     "./idleRate": {
-      "types": "./idleRate.d.ts",
-      "default": "./idleRate.js"
+      "types": "./dist/idleRate.d.ts",
+      "default": "./dist/idleRate.js"
     },
     "./shop": {
-      "types": "./shop.d.ts",
-      "default": "./shop.js"
+      "types": "./dist/shop.d.ts",
+      "default": "./dist/shop.js"
     },
     "./appVersion": {
-      "types": "./appVersion.d.ts",
-      "default": "./appVersion.js"
+      "types": "./dist/appVersion.d.ts",
+      "default": "./dist/appVersion.js"
     },
     "./authValidation": {
-      "types": "./authValidation.d.ts",
-      "default": "./authValidation.js"
+      "types": "./dist/authValidation.d.ts",
+      "default": "./dist/authValidation.js"
     }
   }
 }

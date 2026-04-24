@@ -7,9 +7,18 @@ export const ACHIEVEMENT_IDS = {
   IDLE_TIME_COLLECTOR_3H_7M: "idle_time_collector_3h_7m",
   REAL_TIME_STREAK_59_MINUTES: "real_time_streak_59_minutes",
   REAL_TIME_STREAK_2D_14H: "real_time_streak_2d_14h"
+} as const;
+
+export type AchievementId = (typeof ACHIEVEMENT_IDS)[keyof typeof ACHIEVEMENT_IDS];
+
+export type AchievementDefinition = {
+  id: AchievementId;
+  name: string;
+  description: string;
+  icon: string;
 };
 
-export const ACHIEVEMENTS = [
+export const ACHIEVEMENTS: AchievementDefinition[] = [
   {
     id: ACHIEVEMENT_IDS.ACCOUNT_CREATION,
     name: "Account creation",
