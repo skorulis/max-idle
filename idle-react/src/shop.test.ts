@@ -6,17 +6,17 @@ import {
 } from "./shop";
 
 describe("shop pricing", () => {
-  it("calculates per-step costs", () => {
-    expect(getSecondsMultiplierUpgradeCost(0)).toBe(5);
-    expect(getSecondsMultiplierUpgradeCost(1)).toBe(7);
-    expect(getSecondsMultiplierUpgradeCost(2)).toBe(9);
-    expect(getSecondsMultiplierUpgradeCost(3)).toBe(12);
+  it("uses per-level costs from the seconds multiplier table", () => {
+    expect(getSecondsMultiplierUpgradeCost(0)).toBe(20);
+    expect(getSecondsMultiplierUpgradeCost(1)).toBe(60);
+    expect(getSecondsMultiplierUpgradeCost(2)).toBe(120);
+    expect(getSecondsMultiplierUpgradeCost(3)).toBe(300);
   });
 
   it("calculates cumulative bundle costs", () => {
-    expect(getSecondsMultiplierPurchaseCost(0, 1)).toBe(5);
-    expect(getSecondsMultiplierPurchaseCost(0, 5)).toBe(49);
-    expect(getSecondsMultiplierPurchaseCost(3, 2)).toBe(28);
+    expect(getSecondsMultiplierPurchaseCost(0, 1)).toBe(20);
+    expect(getSecondsMultiplierPurchaseCost(0, 5)).toBe(20 + 60 + 120 + 300 + 600);
+    expect(getSecondsMultiplierPurchaseCost(3, 2)).toBe(300 + 600);
   });
 
   it("derives level from multiplier", () => {
