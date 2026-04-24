@@ -3,6 +3,13 @@ import { formatSeconds } from "../formatSeconds";
 import { Atom, Clock3, Gem, Gift } from "lucide-react";
 import type { SyncedPlayerState } from "../app/types";
 
+const EARLY_COLLECT_WARNING_MESSAGES = [
+  "Don't you think you should wait?",
+  "This game isn't about clicking",
+  "Stop being impatient",
+  "Just relax a little"
+];
+
 type HomePageProps = {
   playerState: SyncedPlayerState | null;
   starting: boolean;
@@ -37,6 +44,7 @@ export function HomePage({
   onNavigateLogin
 }: HomePageProps) {
   const [collectWarning, setCollectWarning] = useState<string | null>(null);
+  const [collectWarningIndex, setCollectWarningIndex] = useState(0);
 
   useEffect(() => {
     if (realtimeElapsedSeconds >= 15) {
@@ -46,7 +54,8 @@ export function HomePage({
 
   const handleCollect = async () => {
     if (realtimeElapsedSeconds < 15) {
-      setCollectWarning("Don't you think you should wait?");
+      setCollectWarning(EARLY_COLLECT_WARNING_MESSAGES[collectWarningIndex]);
+      setCollectWarningIndex((prev) => (prev + 1) % EARLY_COLLECT_WARNING_MESSAGES.length);
       return;
     }
 
