@@ -44,7 +44,7 @@ const playerStateSchema = registry.register(
     shop: z
       .object({
         seconds_multiplier: z.number().int().nonnegative(),
-        restraint: z.boolean(),
+        restraint: z.number().int().nonnegative(),
         luck: z.boolean()
       })
       .catchall(z.unknown()),

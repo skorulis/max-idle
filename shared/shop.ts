@@ -5,7 +5,7 @@ const DEFAULT_SECONDS_MULTIPLIER_VALUE = 1;
 
 export type ShopState = {
   seconds_multiplier: number;
-  restraint: boolean;
+  restraint: number | boolean;
   luck: boolean;
   [key: string]: unknown;
 };
@@ -46,18 +46,53 @@ export function withSecondsMultiplier(shop: ShopState, secondsMultiplierLevel: n
 }
 
 export function getRestraintEnabled(shop: ShopState): boolean {
-  return shop.restraint;
+  return getRestraintLevel(shop) > 0;
+}
+
+export function getRestraintMaxLevel(): number {
+  return RESTRAINT_SHOP_UPGRADE.levels.length;
+}
+
+export function getRestraintLevel(shop: ShopState): number {
+  const rawLevel = shop.restraint;
+  if (rawLevel === true) {
+    return 1;
+  }
+  if (typeof rawLevel !== "number" || !Number.isFinite(rawLevel)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(getRestraintMaxLevel(), Math.floor(rawLevel)));
+}
+
+export function getRestraintBonusMultiplier(shop: ShopState): number {
+  const restraintLevel = getRestraintLevel(shop);
+  if (restraintLevel <= 0) {
+    return 1;
+  }
+  return RESTRAINT_SHOP_UPGRADE.levels[restraintLevel - 1]?.value ?? 1;
+}
+
+export function withRestraintLevel(shop: ShopState, restraintLevel: number): ShopState {
+  const safeLevel = Number.isFinite(restraintLevel)
+    ? Math.max(0, Math.min(getRestraintMaxLevel(), Math.floor(restraintLevel)))
+    : 0;
+  return {
+    ...shop,
+    restraint: safeLevel
+  };
 }
 
 export function withRestraint(shop: ShopState, enabled: boolean): ShopState {
-  return {
-    ...shop,
-    restraint: enabled === true
-  };
+  return withRestraintLevel(shop, enabled ? 1 : 0);
 }
 
 export function getRestraintUpgradeCost(): number {
   return RESTRAINT_SHOP_UPGRADE.levels[0]?.cost ?? 0;
+}
+
+export function getRestraintUpgradeCostAtLevel(currentLevel: number): number {
+  const safeLevel = Math.max(0, Math.min(getRestraintMaxLevel(), Math.floor(currentLevel)));
+  return RESTRAINT_SHOP_UPGRADE.levels[safeLevel]?.cost ?? 0;
 }
 
 export function getLuckEnabled(shop: ShopState): boolean {

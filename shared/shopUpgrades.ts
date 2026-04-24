@@ -59,8 +59,14 @@ export const RESTRAINT_SHOP_UPGRADE: ShopUpgradeDefinition = {
   id: SHOP_UPGRADE_IDS.RESTRAINT,
   name: "Restraint",
   icon: "shield-alert",
-  description: "+50% idle gain, but you must wait 1 hour before collecting.",
-  levels: [{ cost: 2 * 60 * 60, value: 1.5 }],
+  description: "Increase idle gain multiplier to %s, but you must wait 1 hour before collecting.",
+  levels: [
+    { cost: 2 * 60 * 60, value: 1.5 },
+    { cost: 4 * 60 * 60, value: 1.75 },
+    { cost: 8 * 60 * 60, value: 2.0 },
+    { cost: 12 * 60 * 60, value: 2.25 },
+    { cost: 16 * 60 * 60, value: 2.5 }
+  ],
   currencyType: SHOP_CURRENCY_TYPES.REAL
 };
 

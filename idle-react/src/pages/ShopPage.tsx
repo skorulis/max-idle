@@ -28,7 +28,8 @@ type ShopPageProps = {
   shopPendingQuantity: "seconds_multiplier" | "restraint" | "luck" | null;
   secondsMultiplierCost: number | null;
   onPurchaseUpgrade: () => Promise<void>;
-  hasRestraintUpgrade: boolean;
+  restraintLevel: number;
+  restraintMaxLevel: number;
   onPurchaseRestraint: () => Promise<void>;
   hasLuckUpgrade: boolean;
   onPurchaseLuck: () => Promise<void>;
@@ -74,7 +75,8 @@ export function ShopPage({
   shopPendingQuantity,
   secondsMultiplierCost,
   onPurchaseUpgrade,
-  hasRestraintUpgrade,
+  restraintLevel,
+  restraintMaxLevel,
   onPurchaseRestraint,
   hasLuckUpgrade,
   onPurchaseLuck,
@@ -117,12 +119,17 @@ export function ShopPage({
       };
     }
 
-    const isOwned = upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT ? hasRestraintUpgrade : hasLuckUpgrade;
-    const isPending = upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT ? shopPendingQuantity === "restraint" : shopPendingQuantity === "luck";
-    const onPurchase = upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT ? onPurchaseRestraint : onPurchaseLuck;
+    const isRestraint = upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT;
+    const isOwned = isRestraint ? restraintLevel >= restraintMaxLevel : hasLuckUpgrade;
+    const isPending = isRestraint ? shopPendingQuantity === "restraint" : shopPendingQuantity === "luck";
+    const onPurchase = isRestraint ? onPurchaseRestraint : onPurchaseLuck;
+    const nextRestraintLevel = isRestraint ? upgrade.levels[restraintLevel] ?? null : null;
     return {
-      description: upgrade.description,
-      cost: upgrade.levels[0]?.cost ?? null,
+      description:
+        isRestraint && nextRestraintLevel
+          ? formatShopUpgradeDescription(upgrade, formatMultiplier(nextRestraintLevel.value))
+          : upgrade.description,
+      cost: isRestraint ? nextRestraintLevel?.cost ?? null : upgrade.levels[0]?.cost ?? null,
       isPending,
       isOwned,
       onPurchase
@@ -135,6 +142,9 @@ export function ShopPage({
     }
     if (upgrade.id === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER) {
       return secondsMultiplierLevel;
+    }
+    if (upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT) {
+      return restraintLevel;
     }
     const maybeLevel = playerState?.shop[upgrade.id];
     if (typeof maybeLevel === "number" && Number.isFinite(maybeLevel) && maybeLevel >= 0) {

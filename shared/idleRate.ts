@@ -1,4 +1,4 @@
-import { getLuckEnabled, getRestraintEnabled, getSecondsMultiplier } from "./shop.js";
+import { getLuckEnabled, getRestraintBonusMultiplier, getRestraintEnabled, getSecondsMultiplier } from "./shop.js";
 import type { ShopState } from "./shop.js";
 
 type IdleRateStep = {
@@ -18,7 +18,6 @@ const IDLE_RATE_STEPS: IdleRateStep[] = [
   { seconds: 365 * 24 * 60 * 60, rate: 30 }
 ];
 const RESTRAINT_MIN_REALTIME_SECONDS = 60 * 60;
-const RESTRAINT_IDLE_BONUS_MULTIPLIER = 1.5;
 const LUCK_TIMER_PRESERVE_CHANCE = 0.5;
 
 export type IdleRatePlayer = {
@@ -96,7 +95,7 @@ export function calculateIdleSecondsGain(secondsSinceLastCollection: number): nu
 }
 
 export function getIdleShopBonusMultiplier(shop: ShopState): number {
-  return getRestraintEnabled(shop) ? RESTRAINT_IDLE_BONUS_MULTIPLIER : 1;
+  return getRestraintEnabled(shop) ? getRestraintBonusMultiplier(shop) : 1;
 }
 
 export function isIdleCollectionBlockedByRestraint(player: {

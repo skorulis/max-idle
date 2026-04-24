@@ -3,7 +3,14 @@ import { CircleUserRound, House, Medal, ShoppingCart, Star } from "lucide-react"
 import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "react-router-dom";
 import GameIcon from "../GameIcon";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
-import { getLuckEnabled, getSecondsMultiplierLevel, getSecondsMultiplierMaxLevel, getSecondsMultiplierPurchaseCost } from "../shop";
+import {
+  getLuckEnabled,
+  getRestraintLevel,
+  getRestraintMaxLevel,
+  getSecondsMultiplierLevel,
+  getSecondsMultiplierMaxLevel,
+  getSecondsMultiplierPurchaseCost
+} from "../shop";
 import { AccountPage } from "../pages/AccountPage";
 import { AchievementsPage } from "../pages/AchievementsPage";
 import { HomePage } from "../pages/HomePage";
@@ -552,7 +559,8 @@ export function AppShell() {
     }
     return getSecondsMultiplierPurchaseCost(secondsMultiplierLevel, 1);
   }, [secondsMultiplierLevel]);
-  const hasRestraintUpgrade = playerState ? playerState.shop.restraint : false;
+  const restraintLevel = playerState ? getRestraintLevel(playerState.shop) : 0;
+  const restraintMaxLevel = getRestraintMaxLevel();
   const hasLuckUpgrade = playerState ? getLuckEnabled(playerState.shop) : false;
 
   const activeMessageCardText = isAuthenticated
@@ -667,7 +675,7 @@ export function AppShell() {
   };
 
   const onPurchaseRestraint = async () => {
-    if (!playerState || hasRestraintUpgrade) {
+    if (!playerState || restraintLevel >= restraintMaxLevel) {
       return;
     }
 
@@ -679,7 +687,7 @@ export function AppShell() {
       const synced = toSyncedState(updatedPlayer);
       alignClientClock();
       setPlayerState(synced);
-      setStatus("Restraint acquired: +50% idle boost, 1 hour minimum collection.");
+      setStatus("Restraint upgraded.");
     } catch (purchaseError) {
       if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
         setError("Not enough spendable idle seconds for that purchase.");
@@ -1028,7 +1036,8 @@ export function AppShell() {
                 shopPendingQuantity={shopPendingQuantity}
                 secondsMultiplierCost={secondsMultiplierCost}
                 onPurchaseUpgrade={onPurchaseUpgrade}
-                hasRestraintUpgrade={hasRestraintUpgrade}
+                restraintLevel={restraintLevel}
+                restraintMaxLevel={restraintMaxLevel}
                 onPurchaseRestraint={onPurchaseRestraint}
                 hasLuckUpgrade={hasLuckUpgrade}
                 onPurchaseLuck={onPurchaseLuck}

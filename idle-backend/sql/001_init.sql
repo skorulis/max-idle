@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS player_states (
   achievement_count BIGINT NOT NULL DEFAULT 0,
   has_unseen_achievements BOOLEAN NOT NULL DEFAULT FALSE,
   completed_achievements JSONB NOT NULL DEFAULT '[]'::jsonb,
-  shop JSONB NOT NULL DEFAULT '{"seconds_multiplier": 0, "restraint": false, "luck": false}'::jsonb,
+  shop JSONB NOT NULL DEFAULT '{"seconds_multiplier": 0, "restraint": 0, "luck": false}'::jsonb,
   seconds_multiplier DOUBLE PRECISION NOT NULL DEFAULT 0,
   current_seconds BIGINT NOT NULL DEFAULT 0,
   current_seconds_last_updated TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -36,19 +36,19 @@ ALTER TABLE player_states
 ADD COLUMN IF NOT EXISTS upgrades_purchased BIGINT NOT NULL DEFAULT 0;
 
 ALTER TABLE player_states
-ADD COLUMN IF NOT EXISTS shop JSONB NOT NULL DEFAULT '{"seconds_multiplier": 0, "restraint": false, "luck": false}'::jsonb;
+ADD COLUMN IF NOT EXISTS shop JSONB NOT NULL DEFAULT '{"seconds_multiplier": 0, "restraint": 0, "luck": false}'::jsonb;
 
 ALTER TABLE player_states
 ADD COLUMN IF NOT EXISTS seconds_multiplier DOUBLE PRECISION NOT NULL DEFAULT 0;
 
 ALTER TABLE player_states
-ALTER COLUMN shop SET DEFAULT '{"seconds_multiplier": 0, "restraint": false, "luck": false}'::jsonb;
+ALTER COLUMN shop SET DEFAULT '{"seconds_multiplier": 0, "restraint": 0, "luck": false}'::jsonb;
 
 ALTER TABLE player_states
 ALTER COLUMN seconds_multiplier SET DEFAULT 0;
 
 UPDATE player_states
-SET shop = '{"seconds_multiplier": 0, "restraint": false, "luck": false}'::jsonb
+SET shop = '{"seconds_multiplier": 0, "restraint": 0, "luck": false}'::jsonb
 WHERE COALESCE(shop->>'seconds_multiplier', '') = '';
 
 UPDATE player_states

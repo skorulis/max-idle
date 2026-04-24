@@ -2,6 +2,8 @@ export type { ShopState } from "@maxidle/shared/shop";
 export {
   getLuckEnabled,
   getLuckUpgradeCost,
+  getRestraintLevel,
+  getRestraintMaxLevel,
   getRestraintUpgradeCost,
   getSecondsMultiplierLevel,
   getSecondsMultiplierMaxLevel,

@@ -952,31 +952,31 @@ describe("auth + player lifecycle", () => {
     expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toEqual(["beginner_shopper"]);
   });
 
-  it("allows purchasing restraint upgrade once", async () => {
+  it("allows purchasing restraint upgrade up to max level", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
 
-    await pool.query(`UPDATE player_states SET idle_time_available = 20000 WHERE user_id = $1`, [userId]);
+    await pool.query(`UPDATE player_states SET idle_time_available = 500000 WHERE user_id = $1`, [userId]);
 
-    const purchaseResponse = await request(app)
+    for (let level = 1; level <= 5; level += 1) {
+      const purchaseResponse = await request(app)
+        .post("/shop/purchase")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ upgradeType: "restraint" });
+      expect(purchaseResponse.status).toBe(200);
+      expect(purchaseResponse.body.purchase.upgradeType).toBe("restraint");
+      expect(purchaseResponse.body.purchase.quantity).toBe(1);
+      expect(purchaseResponse.body.shop.restraint).toBe(level);
+    }
+
+    const maxedPurchaseResponse = await request(app)
       .post("/shop/purchase")
       .set("Authorization", `Bearer ${token}`)
       .send({ upgradeType: "restraint" });
-
-    expect(purchaseResponse.status).toBe(200);
-    expect(purchaseResponse.body.purchase.upgradeType).toBe("restraint");
-    expect(purchaseResponse.body.purchase.quantity).toBe(1);
-    expect(purchaseResponse.body.shop.restraint).toBe(true);
-    expect(purchaseResponse.body.idleTime.available).toBe(12800);
-
-    const secondPurchaseResponse = await request(app)
-      .post("/shop/purchase")
-      .set("Authorization", `Bearer ${token}`)
-      .send({ upgradeType: "restraint" });
-    expect(secondPurchaseResponse.status).toBe(400);
-    expect(secondPurchaseResponse.body.code).toBe("ALREADY_OWNED");
+    expect(maxedPurchaseResponse.status).toBe(400);
+    expect(maxedPurchaseResponse.body.code).toBe("ALREADY_OWNED");
   });
 
   it("allows purchasing luck upgrade once", async () => {
