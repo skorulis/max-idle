@@ -129,6 +129,20 @@ export function ShopPage({
     };
   }
 
+  function getUpgradeCurrentLevel(upgrade: ShopUpgradeDefinition): number | null {
+    if (upgrade.levels.length <= 1) {
+      return null;
+    }
+    if (upgrade.id === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER) {
+      return secondsMultiplierLevel;
+    }
+    const maybeLevel = playerState?.shop[upgrade.id];
+    if (typeof maybeLevel === "number" && Number.isFinite(maybeLevel) && maybeLevel >= 0) {
+      return Math.floor(maybeLevel);
+    }
+    return 0;
+  }
+
   return (
     <>
       <h2>Shop</h2>
@@ -185,6 +199,7 @@ export function ShopPage({
         <div className="shop-upgrade-list">
           {visibleUpgrades.map((upgrade) => {
             const upgradeState = getUpgradeRowState(upgrade);
+            const currentLevel = getUpgradeCurrentLevel(upgrade);
             const upgradeAvailableBalance = getCurrencyAmount(playerState, upgrade.currencyType);
             const cannotAfford = upgradeState.cost !== null && upgradeAvailableBalance < upgradeState.cost;
             const isDisabled = shopPendingQuantity !== null || upgradeState.isOwned || upgradeState.cost === null || cannotAfford;
@@ -193,7 +208,10 @@ export function ShopPage({
                 <div className="shop-upgrade-main">
                   <GameIcon icon={getShopUpgradeIcon(upgrade.icon)} className="shop-upgrade-icon" />
                   <div className="shop-upgrade-copy">
-                    <p className="shop-upgrade-name">{upgrade.name}</p>
+                    <p className="shop-upgrade-name">
+                      {upgrade.name}
+                      {currentLevel !== null ? ` (Lv ${currentLevel})` : ""}
+                    </p>
                     <p className="shop-upgrade-description">{upgradeState.description}</p>
                   </div>
                 </div>

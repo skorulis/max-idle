@@ -34,7 +34,7 @@ export const SECONDS_MULTIPLIER_SHOP_UPGRADE: ShopUpgradeDefinition = {
   id: SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER,
   name: "Seconds Multiplier",
   icon: "gauge",
-  description: "Multiply idle gain by %s.",
+  description: "Multiply idle gain by %s",
   levels: [
     { cost: 20, value: 1.1 },
     { cost: 60, value: 1.2 },
