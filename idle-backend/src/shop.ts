@@ -17,7 +17,7 @@ import {
   withSecondsMultiplier
 } from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
-import { SHOP_UPGRADES_BY_ID } from "@maxidle/shared/shopUpgrades";
+import { REALTIME_WAIT_EXTENSION_SECONDS } from "@maxidle/shared/shopUpgrades";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 import { normalizeCompletedAchievementIds } from "./achievementUpdates.js";
 import { calculateElapsedSeconds } from "./time.js";
@@ -65,7 +65,12 @@ export function registerShopRoutes({
 
       const upgradeType = String(req.body?.upgradeType ?? "");
       const requestedQuantity = Number(req.body?.quantity);
-      if (upgradeType !== "seconds_multiplier" && upgradeType !== "restraint" && upgradeType !== "luck") {
+      if (
+        upgradeType !== "seconds_multiplier" &&
+        upgradeType !== "restraint" &&
+        upgradeType !== "luck" &&
+        upgradeType !== "extra_realtime_wait"
+      ) {
         res.status(400).json({ error: "Unsupported upgrade type" });
         return;
       }
@@ -125,7 +130,12 @@ export function registerShopRoutes({
       }
 
       const now = new Date();
-      const quantity = upgradeType === "seconds_multiplier" ? requestedQuantity : 1;
+      const isExtraRealtimeWait = upgradeType === "extra_realtime_wait";
+      const quantity = isExtraRealtimeWait
+        ? 1
+        : upgradeType === "seconds_multiplier"
+          ? requestedQuantity
+          : 1;
       const restraintLevel = getRestraintLevel(row.shop);
       const luckLevel = getLuckLevel(row.shop);
 
@@ -145,14 +155,25 @@ export function registerShopRoutes({
         res.status(400).json({ error: "Upgrade already maxed", code: "ALREADY_OWNED" });
         return;
       }
-      const totalCost =
-        upgradeType === "seconds_multiplier"
+      const totalCost = isExtraRealtimeWait
+        ? 1
+        : upgradeType === "seconds_multiplier"
           ? getSecondsMultiplierPurchaseCost(currentLevel, quantity)
           : upgradeType === "restraint"
             ? getRestraintUpgradeCostAtLevel(restraintLevel)
             : getLuckUpgradeCostAtLevel(luckLevel);
       const idleTimeAvailable = toNumber(row.idle_time_available);
-      if (idleTimeAvailable < totalCost) {
+      const timeGemsAvailable = toNumber(row.time_gems_available);
+      if (isExtraRealtimeWait) {
+        if (timeGemsAvailable < totalCost) {
+          await client.query("ROLLBACK");
+          res.status(400).json({
+            error: "Not enough funds",
+            code: "INSUFFICIENT_FUNDS"
+          });
+          return;
+        }
+      } else if (idleTimeAvailable < totalCost) {
         await client.query("ROLLBACK");
         res.status(400).json({
           error: "Not enough funds",
@@ -162,12 +183,16 @@ export function registerShopRoutes({
       }
 
       const nextLevel = upgradeType === "seconds_multiplier" ? currentLevel + quantity : currentLevel;
-      const nextShopState =
-        upgradeType === "seconds_multiplier"
+      const nextShopState = isExtraRealtimeWait
+        ? row.shop
+        : upgradeType === "seconds_multiplier"
           ? withSecondsMultiplier(row.shop, nextLevel)
           : upgradeType === "restraint"
             ? withRestraintLevel(row.shop, restraintLevel + quantity)
             : withLuckLevel(row.shop, luckLevel + quantity);
+      const nextLastCollectedAt = isExtraRealtimeWait
+        ? new Date(row.last_collected_at.getTime() - REALTIME_WAIT_EXTENSION_SECONDS * 1000)
+        : row.last_collected_at;
       const nextUpgradesPurchased = toNumber(row.upgrades_purchased) + quantity;
       const nextCompletedAchievementIds =
         nextUpgradesPurchased >= 4
@@ -177,14 +202,20 @@ export function registerShopRoutes({
       const nextAchievementCount = nextCompletedAchievementIds.length;
       const nextAchievementBonusMultiplier = getAchievementBonusMultiplier(nextAchievementCount);
       const syncedCurrentSeconds = boostedUncollectedIdleSeconds(
-        row.last_collected_at,
+        nextLastCollectedAt,
         now,
         nextShopState,
         nextAchievementBonusMultiplier
       );
+      const nextIdleTimeAvailable = isExtraRealtimeWait ? idleTimeAvailable : idleTimeAvailable - totalCost;
+      const nextTimeGemsAvailable = isExtraRealtimeWait ? timeGemsAvailable - totalCost : timeGemsAvailable;
       const updateResult = await client.query<{
         idle_time_total: string;
         idle_time_available: string;
+        time_gems_total: string;
+        time_gems_available: string;
+        real_time_total: string;
+        real_time_available: string;
         has_unseen_achievements: boolean;
         current_seconds: string;
         current_seconds_last_updated: Date;
@@ -196,17 +227,23 @@ export function registerShopRoutes({
         UPDATE player_states
         SET
           idle_time_available = $2,
-          current_seconds = $3,
-          current_seconds_last_updated = $4,
-          shop = $5::jsonb,
-          upgrades_purchased = $6,
-          completed_achievements = $7::jsonb,
-          achievement_count = $8,
-          has_unseen_achievements = has_unseen_achievements OR $9::boolean
+          time_gems_available = $3,
+          last_collected_at = $4,
+          current_seconds = $5,
+          current_seconds_last_updated = $6,
+          shop = $7::jsonb,
+          upgrades_purchased = $8,
+          completed_achievements = $9::jsonb,
+          achievement_count = $10,
+          has_unseen_achievements = has_unseen_achievements OR $11::boolean
         WHERE user_id = $1
         RETURNING
           idle_time_total,
           idle_time_available,
+          time_gems_total,
+          time_gems_available,
+          real_time_total,
+          real_time_available,
           has_unseen_achievements,
           current_seconds,
           current_seconds_last_updated,
@@ -216,7 +253,9 @@ export function registerShopRoutes({
         `,
         [
           userId,
-          idleTimeAvailable - totalCost,
+          nextIdleTimeAvailable,
+          nextTimeGemsAvailable,
+          nextLastCollectedAt,
           syncedCurrentSeconds,
           now,
           JSON.stringify(nextShopState),
@@ -246,12 +285,12 @@ export function registerShopRoutes({
           available: toNumber(updated.idle_time_available)
         },
         realTime: {
-          total: toNumber(row.real_time_total),
-          available: toNumber(row.real_time_available)
+          total: toNumber(updated.real_time_total),
+          available: toNumber(updated.real_time_available)
         },
         timeGems: {
-          total: toNumber(row.time_gems_total),
-          available: toNumber(row.time_gems_available)
+          total: toNumber(updated.time_gems_total),
+          available: toNumber(updated.time_gems_available)
         },
         upgradesPurchased: nextUpgradesPurchased,
         currentSeconds: toNumber(updated.current_seconds),

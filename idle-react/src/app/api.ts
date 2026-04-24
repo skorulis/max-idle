@@ -277,7 +277,11 @@ export async function updateUsername(token: string | null, username: string): Pr
 
 async function purchaseUpgrade(
   token: string | null,
-  body: { upgradeType: "seconds_multiplier"; quantity: 1 | 5 | 10 } | { upgradeType: "restraint" } | { upgradeType: "luck" }
+  body:
+    | { upgradeType: "seconds_multiplier"; quantity: 1 | 5 | 10 }
+    | { upgradeType: "restraint" }
+    | { upgradeType: "luck" }
+    | { upgradeType: "extra_realtime_wait" }
 ): Promise<PlayerResponse> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json"
@@ -320,6 +324,10 @@ export async function purchaseRestraint(token: string | null): Promise<PlayerRes
 
 export async function purchaseLuck(token: string | null): Promise<PlayerResponse> {
   return purchaseUpgrade(token, { upgradeType: "luck" });
+}
+
+export async function purchaseExtraRealtimeWait(token: string | null): Promise<PlayerResponse> {
+  return purchaseUpgrade(token, { upgradeType: "extra_realtime_wait" });
 }
 
 export async function logoutSession(): Promise<void> {

@@ -482,6 +482,20 @@
             "required": [
               "upgradeType"
             ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "upgradeType": {
+                "type": "string",
+                "enum": [
+                  "extra_realtime_wait"
+                ]
+              }
+            },
+            "required": [
+              "upgradeType"
+            ]
           }
         ]
       },
@@ -514,6 +528,12 @@
                         "type": "string",
                         "enum": [
                           "luck"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "extra_realtime_wait"
                         ]
                       }
                     ]

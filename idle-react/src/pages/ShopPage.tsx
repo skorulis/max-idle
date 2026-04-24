@@ -6,6 +6,7 @@ import {
   Dice5,
   Gauge,
   Gem,
+  Hourglass,
   Plus,
   ShieldAlert,
   type LucideIcon
@@ -25,7 +26,7 @@ import GameIcon from "../GameIcon";
 
 type ShopPageProps = {
   playerState: SyncedPlayerState | null;
-  shopPendingQuantity: "seconds_multiplier" | "restraint" | "luck" | null;
+  shopPendingQuantity: "seconds_multiplier" | "restraint" | "luck" | "extra_realtime_wait" | null;
   secondsMultiplierCost: number | null;
   onPurchaseUpgrade: () => Promise<void>;
   restraintLevel: number;
@@ -34,6 +35,7 @@ type ShopPageProps = {
   luckLevel: number;
   luckMaxLevel: number;
   onPurchaseLuck: () => Promise<void>;
+  onPurchaseExtraRealtimeWait: () => Promise<void>;
   onNavigateHome: () => void;
 };
 
@@ -70,6 +72,8 @@ function getShopUpgradeIcon(iconName: string): LucideIcon {
       return ShieldAlert;
     case "dice-5":
       return Dice5;
+    case "hourglass":
+      return Hourglass;
     default:
       return CircleHelp;
   }
@@ -86,6 +90,7 @@ export function ShopPage({
   luckLevel,
   luckMaxLevel,
   onPurchaseLuck,
+  onPurchaseExtraRealtimeWait,
   onNavigateHome
 }: ShopPageProps) {
   const [selectedCurrencyType, setSelectedCurrencyType] = useState<ShopCurrencyType>(SHOP_CURRENCY_TYPES.IDLE);
@@ -122,6 +127,19 @@ export function ShopPage({
         isPending: shopPendingQuantity === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER,
         isOwned: secondsMultiplierLevel >= maxSecondsMultiplierLevel,
         onPurchase: onPurchaseUpgrade
+      };
+    }
+
+    if (upgrade.id === SHOP_UPGRADE_IDS.EXTRA_REALTIME_WAIT) {
+      const level = upgrade.levels[0] ?? null;
+      return {
+        description: level
+          ? formatShopUpgradeDescription(upgrade, formatSeconds(level.value, 2, "floor"))
+          : upgrade.description,
+        cost: level?.cost ?? null,
+        isPending: shopPendingQuantity === "extra_realtime_wait",
+        isOwned: false,
+        onPurchase: onPurchaseExtraRealtimeWait
       };
     }
 

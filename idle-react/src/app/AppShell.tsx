@@ -33,6 +33,7 @@ import {
   loginWithEmail,
   markAchievementsSeen,
   logoutSession,
+  purchaseExtraRealtimeWait,
   purchaseLuck,
   purchaseRestraint,
   purchaseSecondsMultiplier,
@@ -143,7 +144,9 @@ export function AppShell() {
   const [usernameDraft, setUsernameDraft] = useState("");
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [usernameSuccess, setUsernameSuccess] = useState<string | null>(null);
-  const [shopPendingQuantity, setShopPendingQuantity] = useState<"seconds_multiplier" | "restraint" | "luck" | null>(null);
+  const [shopPendingQuantity, setShopPendingQuantity] = useState<
+    "seconds_multiplier" | "restraint" | "luck" | "extra_realtime_wait" | null
+  >(null);
   const [messageCardRandomIndex, setMessageCardRandomIndex] = useState(() => getRandomMessageIndex());
   const [displayedMessage, setDisplayedMessage] = useState(WELCOME_MESSAGE);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
@@ -732,6 +735,32 @@ export function AppShell() {
     }
   };
 
+  const onPurchaseExtraRealtimeWait = async () => {
+    if (!playerState) {
+      return;
+    }
+
+    setShopPendingQuantity("extra_realtime_wait");
+    setError(null);
+    setStatus("Applying extra realtime wait...");
+    try {
+      const updatedPlayer = await purchaseExtraRealtimeWait(token);
+      const synced = toSyncedState(updatedPlayer);
+      alignClientClock();
+      setPlayerState(synced);
+      setStatus("Extra realtime wait applied.");
+    } catch (purchaseError) {
+      if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
+        setError("Not enough time gems for that purchase.");
+      } else {
+        setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
+      }
+      setStatus("Could not complete shop purchase.");
+    } finally {
+      setShopPendingQuantity(null);
+    }
+  };
+
   const onCollectDailyReward = async () => {
     if (!playerState) {
       return;
@@ -1044,6 +1073,7 @@ export function AppShell() {
                 luckLevel={luckLevel}
                 luckMaxLevel={luckMaxLevel}
                 onPurchaseLuck={onPurchaseLuck}
+                onPurchaseExtraRealtimeWait={onPurchaseExtraRealtimeWait}
                 onNavigateHome={() => navigate("/")}
               />
             }

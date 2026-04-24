@@ -6,10 +6,15 @@ export const SHOP_CURRENCY_TYPES = {
 
 export type ShopCurrencyType = (typeof SHOP_CURRENCY_TYPES)[keyof typeof SHOP_CURRENCY_TYPES];
 
+/** Wall-clock second shift applied to last_collected_at (purchase moves collection time back by this much). */
+export const REALTIME_WAIT_EXTENSION_SECONDS = 6 * 60 * 60;
+
 export const SHOP_UPGRADE_IDS = {
   SECONDS_MULTIPLIER: "seconds_multiplier",
   RESTRAINT: "restraint",
-  LUCK: "luck"
+  LUCK: "luck",
+  /** Spend 1 gem to move last_collected_at back by {@link REALTIME_WAIT_EXTENSION_SECONDS} real seconds (recalculates uncollected idle). */
+  EXTRA_REALTIME_WAIT: "extra_realtime_wait"
 } as const;
 
 export type ShopUpgradeId = (typeof SHOP_UPGRADE_IDS)[keyof typeof SHOP_UPGRADE_IDS];
@@ -85,16 +90,27 @@ export const LUCK_SHOP_UPGRADE: ShopUpgradeDefinition = {
   currencyType: SHOP_CURRENCY_TYPES.IDLE
 };
 
+export const EXTRA_REALTIME_WAIT_SHOP_UPGRADE: ShopUpgradeDefinition = {
+  id: SHOP_UPGRADE_IDS.EXTRA_REALTIME_WAIT,
+  name: "Time skip",
+  icon: "hourglass",
+  description: "Add %s realtime to your current collection",
+  levels: [{ cost: 1, value: REALTIME_WAIT_EXTENSION_SECONDS }],
+  currencyType: SHOP_CURRENCY_TYPES.GEM
+};
+
 export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   SECONDS_MULTIPLIER_SHOP_UPGRADE,
   RESTRAINT_SHOP_UPGRADE,
-  LUCK_SHOP_UPGRADE
+  LUCK_SHOP_UPGRADE,
+  EXTRA_REALTIME_WAIT_SHOP_UPGRADE
 ];
 
 export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> = {
   [SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER]: SECONDS_MULTIPLIER_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.RESTRAINT]: RESTRAINT_SHOP_UPGRADE,
-  [SHOP_UPGRADE_IDS.LUCK]: LUCK_SHOP_UPGRADE
+  [SHOP_UPGRADE_IDS.LUCK]: LUCK_SHOP_UPGRADE,
+  [SHOP_UPGRADE_IDS.EXTRA_REALTIME_WAIT]: EXTRA_REALTIME_WAIT_SHOP_UPGRADE
 };
 
 export function formatShopUpgradeDescription(upgrade: ShopUpgradeDefinition, value: string): string {

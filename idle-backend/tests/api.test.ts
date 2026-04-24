@@ -4,7 +4,7 @@ import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createApp, syncStalePlayerCurrentSeconds } from "../src/app.js";
 import { ensureGameIdentityForAuthUser } from "../src/betterAuth.js";
-import { calculateIdleSecondsGain } from "../src/idleRate.js";
+import { calculateBoostedIdleSecondsGain, calculateIdleSecondsGain } from "../src/idleRate.js";
 import type { AppConfig } from "../src/types.js";
 import { createTestPool } from "./testDb.js";
 
@@ -1042,6 +1042,56 @@ describe("auth + player lifecycle", () => {
       .send({ upgradeType: "restraint" });
     expect(maxedPurchaseResponse.status).toBe(400);
     expect(maxedPurchaseResponse.body.code).toBe("ALREADY_OWNED");
+  });
+
+  it("purchases extra_realtime_wait for 1 gem and shifts last_collected_at back 6h", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(
+      `UPDATE player_states
+       SET
+         time_gems_available = 2,
+         time_gems_total = 2,
+         last_collected_at = NOW() - INTERVAL '1000 seconds',
+         current_seconds = 0,
+         current_seconds_last_updated = NOW() - INTERVAL '1000 seconds',
+         shop = '{"seconds_multiplier": 0, "restraint": 0, "luck": 0}'::jsonb
+       WHERE user_id = $1`,
+      [userId]
+    );
+
+    const before = await pool.query<{ last_collected_at: Date }>(
+      `SELECT last_collected_at FROM player_states WHERE user_id = $1`,
+      [userId]
+    );
+    const beforeLastMs = before.rows[0]!.last_collected_at.getTime();
+
+    const purchaseResponse = await request(app)
+      .post("/shop/purchase")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ upgradeType: "extra_realtime_wait" });
+
+    expect(purchaseResponse.status).toBe(200);
+    expect(purchaseResponse.body.purchase.upgradeType).toBe("extra_realtime_wait");
+    expect(purchaseResponse.body.purchase.totalCost).toBe(1);
+    expect(purchaseResponse.body.purchase.quantity).toBe(1);
+    expect(purchaseResponse.body.timeGems.available).toBe(1);
+    const expectedCurrent = calculateBoostedIdleSecondsGain({
+      secondsSinceLastCollection: 1000 + 6 * 60 * 60,
+      shop: { seconds_multiplier: 0, restraint: 0, luck: 0 },
+      achievementBonusMultiplier: purchaseResponse.body.achievementBonusMultiplier
+    });
+    expect(purchaseResponse.body.currentSeconds).toBe(expectedCurrent);
+
+    const after = await pool.query<{ last_collected_at: Date }>(
+      `SELECT last_collected_at FROM player_states WHERE user_id = $1`,
+      [userId]
+    );
+    const afterLastMs = after.rows[0]!.last_collected_at.getTime();
+    expect(afterLastMs - beforeLastMs).toBe(-6 * 60 * 60 * 1000);
   });
 
   it("allows purchasing luck upgrade up to max level", async () => {

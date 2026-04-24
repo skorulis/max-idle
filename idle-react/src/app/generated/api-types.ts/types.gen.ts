@@ -111,11 +111,13 @@ export type ShopPurchaseRequest = {
     upgradeType: 'restraint';
 } | {
     upgradeType: 'luck';
+} | {
+    upgradeType: 'extra_realtime_wait';
 };
 
 export type ShopPurchaseResponse = PlayerState & {
     purchase: {
-        upgradeType: 'seconds_multiplier' | 'restraint' | 'luck';
+        upgradeType: 'seconds_multiplier' | 'restraint' | 'luck' | 'extra_realtime_wait';
         quantity: number;
         totalCost: number;
     };
