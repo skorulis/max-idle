@@ -2,13 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   getLuckEnabled,
   getLuckUpgradeCost,
-  getRestraintEnabled,
   getRestraintUpgradeCost,
   getSecondsMultiplierPurchaseCost,
   getSecondsMultiplierUpgradeCost,
   levelToMultiplier,
   multiplierToLevel,
-  normalizeShopState,
   withLuck,
   withRestraint
 } from "../src/shop.js";
@@ -34,20 +32,6 @@ describe("shop pricing", () => {
     expect(multiplierToLevel(1.3)).toBe(3);
     expect(levelToMultiplier(0)).toBe(1);
     expect(levelToMultiplier(7)).toBe(1.7);
-  });
-
-  it("normalizes and toggles restraint state", () => {
-    expect(normalizeShopState({}).restraint).toBe(false);
-    expect(getRestraintEnabled({ ...baseShop, restraint: true })).toBe(true);
-    expect(withRestraint({ ...baseShop, seconds_multiplier: 1.3 }, true).restraint).toBe(true);
-    expect(withRestraint({ ...baseShop, restraint: true }, false).restraint).toBe(false);
-  });
-
-  it("normalizes and toggles luck state", () => {
-    expect(normalizeShopState({}).luck).toBe(false);
-    expect(getLuckEnabled({ ...baseShop, luck: true })).toBe(true);
-    expect(withLuck({ ...baseShop, seconds_multiplier: 1.3 }, true).luck).toBe(true);
-    expect(withLuck({ ...baseShop, luck: true }, false).luck).toBe(false);
   });
 
   it("uses fixed restraint upgrade cost", () => {

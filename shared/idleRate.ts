@@ -95,25 +95,19 @@ export function calculateIdleSecondsGain(secondsSinceLastCollection: number): nu
   return Math.floor(total);
 }
 
+export function getIdleShopBonusMultiplier(shop: ShopState): number {
+  return getRestraintEnabled(shop) ? RESTRAINT_IDLE_BONUS_MULTIPLIER : 1;
+}
+
 export function isIdleCollectionBlockedByRestraint(player: {
   secondsSinceLastCollection: number;
   shop: ShopState;
 }): boolean {
   const elapsedSeconds = clampElapsedSeconds(player.secondsSinceLastCollection);
-  if (!getRestraintEnabled(player.shop)) {
-    return false;
-  }
-  return elapsedSeconds < RESTRAINT_MIN_REALTIME_SECONDS;
-}
-
-export function getIdleShopBonusMultiplier(shop: ShopState): number {
-  return getRestraintEnabled(shop) ? RESTRAINT_IDLE_BONUS_MULTIPLIER : 1;
+  return getRestraintEnabled(player.shop) && elapsedSeconds < RESTRAINT_MIN_REALTIME_SECONDS;
 }
 
 export function calculateBoostedIdleSecondsGain(player: IdleCollectionPlayer): number {
-  if (isIdleCollectionBlockedByRestraint(player)) {
-    return 0;
-  }
   const elapsedSeconds = clampElapsedSeconds(player.secondsSinceLastCollection);
   const baseGain = calculateIdleSecondsGain(elapsedSeconds);
   const secondsMultiplier = getSecondsMultiplier(player.shop);
@@ -123,9 +117,6 @@ export function calculateBoostedIdleSecondsGain(player: IdleCollectionPlayer): n
 }
 
 export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): number {
-  if (isIdleCollectionBlockedByRestraint(player)) {
-    return 0;
-  }
   return (
     getIdleSecondsRate({ secondsSinceLastCollection: player.secondsSinceLastCollection }) *
     getSecondsMultiplier(player.shop) *

@@ -365,6 +365,24 @@ input {
   padding: 10px;
 }
 
+.shop-currency-button {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.shop-currency-button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.shop-currency-card-active {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
 .shop-currency-title {
   margin: 0;
   color: #6b7280;

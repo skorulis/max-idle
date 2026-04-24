@@ -76,6 +76,12 @@ export async function collectIdleTime(token: string | null): Promise<PlayerRespo
   if (response.status === 401) {
     throw new Error("UNAUTHORIZED");
   }
+  if (response.status === 400) {
+    const payload = (await response.json().catch(() => null)) as { code?: string } | null;
+    if (payload?.code === "RESTRAINT_BLOCKED") {
+      throw new Error("RESTRAINT_BLOCKED");
+    }
+  }
   if (!response.ok) {
     throw new Error("Failed to collect idle time");
   }

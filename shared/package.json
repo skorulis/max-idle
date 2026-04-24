@@ -24,6 +24,10 @@
       "types": "./dist/shop.d.ts",
       "default": "./dist/shop.js"
     },
+    "./shopUpgrades": {
+      "types": "./dist/shopUpgrades.d.ts",
+      "default": "./dist/shopUpgrades.js"
+    },
     "./appVersion": {
       "types": "./dist/appVersion.d.ts",
       "default": "./dist/appVersion.js"

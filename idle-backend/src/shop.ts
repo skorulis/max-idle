@@ -4,14 +4,12 @@ import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import {
   getLuckEnabled,
   getLuckUpgradeCost,
-  getRestraintEnabled,
   getRestraintUpgradeCost,
   getSecondsMultiplier,
   getSecondsMultiplierPurchaseCost,
   getSecondsMultiplierUpgradeCost,
   levelToMultiplier,
   multiplierToLevel,
-  normalizeShopState,
   withLuck,
   withRestraint,
   withSecondsMultiplier
@@ -26,14 +24,12 @@ import type { AuthClaims } from "./types.js";
 export {
   getLuckEnabled,
   getLuckUpgradeCost,
-  getRestraintEnabled,
   getRestraintUpgradeCost,
   getSecondsMultiplier,
   getSecondsMultiplierPurchaseCost,
   getSecondsMultiplierUpgradeCost,
   levelToMultiplier,
   multiplierToLevel,
-  normalizeShopState,
   withLuck,
   withRestraint,
   withSecondsMultiplier
@@ -127,7 +123,7 @@ export function registerShopRoutes({
       const now = new Date();
       const quantity = upgradeType === "seconds_multiplier" ? requestedQuantity : 1;
       const secondsMultiplier = getSecondsMultiplier(row.shop);
-      const restraintEnabled = getRestraintEnabled(row.shop);
+      const restraintEnabled = row.shop.restraint;
       const luckEnabled = getLuckEnabled(row.shop);
 
       const currentLevel = multiplierToLevel(secondsMultiplier);

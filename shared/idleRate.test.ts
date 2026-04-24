@@ -51,11 +51,11 @@ describe("luck + boosted gain", () => {
     });
     expect(gainWithoutRestraint).toBeGreaterThan(0);
 
-    const blockedByRestraint = calculateBoostedIdleSecondsGain({
+    const gainWithRestraint = calculateBoostedIdleSecondsGain({
       secondsSinceLastCollection: 60,
       shop: { seconds_multiplier: 1, restraint: true, luck: false },
       achievementBonusMultiplier: 1
     });
-    expect(blockedByRestraint).toBe(0);
+    expect(gainWithRestraint).toBe(Math.floor(gainWithoutRestraint * 1.5));
   });
 });

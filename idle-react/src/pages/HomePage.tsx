@@ -58,11 +58,8 @@ export function HomePage({
       <p className="subtle">Current rate: {effectiveIdleSecondsRate.toFixed(2)}x</p>
 
       <button className="collect" onClick={() => void onCollect()} disabled={collecting || collectBlockedByRestraint}>
-        {collecting ? "Collecting..." : "Collect"}
+        {collecting ? "Collecting..." : collectBlockedByRestraint ? "Collect (Collect after 1h)" : "Collect"}
       </button>
-      {collectBlockedByRestraint ? (
-        <p className="subtle">Restraint active: you can collect after 1 hour of realtime.</p>
-      ) : null}
 
       <p className="subtle">Totals</p>
       <div className="shop-currencies">

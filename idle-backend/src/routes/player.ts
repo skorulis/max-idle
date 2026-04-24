@@ -5,7 +5,7 @@ import { getSecondsMultiplier } from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
 import { boostedUncollectedIdleSeconds } from "../boostedUncollectedIdle.js";
 import { calculateElapsedSeconds } from "../time.js";
-import { getEffectiveIdleSecondsRate, shouldPreserveIdleTimerOnCollect } from "../idleRate.js";
+import { getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint, shouldPreserveIdleTimerOnCollect } from "../idleRate.js";
 import { normalizeCompletedAchievementIds, updateCompletedAchievements } from "../achievementUpdates.js";
 import type { AuthClaims } from "../types.js";
 
@@ -198,6 +198,14 @@ export function registerPlayerRoutes({
         collectionAchievementBonusMultiplier
       );
       const realSecondsCollected = calculateElapsedSeconds(lockedRow.last_collected_at, collectedAt);
+      if (isIdleCollectionBlockedByRestraint({ secondsSinceLastCollection: realSecondsCollected, shop: lockedRow.shop })) {
+        await client.query("ROLLBACK");
+        res.status(400).json({
+          error: "Restraint blocks collection until at least 1 hour of realtime has passed",
+          code: "RESTRAINT_BLOCKED"
+        });
+        return;
+      }
       const preserveTimer = shouldPreserveIdleTimerOnCollect(lockedRow.shop);
       const nextCurrentSeconds = preserveTimer ? collectedSeconds : 0;
       const nextLastCollectedAt = preserveTimer ? lockedRow.last_collected_at : collectedAt;

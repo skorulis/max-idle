@@ -846,7 +846,7 @@ describe("auth + player lifecycle", () => {
     expect(playerResponse.body.achievementBonusMultiplier).toBe(1.5);
   });
 
-  it("blocks idle generation under 1 hour when restraint is enabled", async () => {
+  it("continues idle generation under 1 hour when restraint is enabled", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
@@ -867,8 +867,33 @@ describe("auth + player lifecycle", () => {
 
     const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
     expect(playerResponse.status).toBe(200);
-    expect(playerResponse.body.currentSeconds).toBe(0);
-    expect(playerResponse.body.idleSecondsRate).toBe(0);
+    const minExpectedCurrent = Math.floor(calculateIdleSecondsGain(120) * 1.5);
+    expect(playerResponse.body.currentSeconds).toBeGreaterThanOrEqual(minExpectedCurrent);
+    expect(playerResponse.body.idleSecondsRate).toBeGreaterThan(0);
+  });
+
+  it("blocks collect under 1 hour when restraint is enabled", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(
+      `
+      UPDATE player_states
+      SET
+        shop = '{"seconds_multiplier": 1, "restraint": true}'::jsonb,
+        current_seconds = 0,
+        current_seconds_last_updated = NOW() - INTERVAL '120 seconds',
+        last_collected_at = NOW() - INTERVAL '120 seconds'
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+
+    const collectResponse = await request(app).post("/player/collect").set("Authorization", `Bearer ${token}`);
+    expect(collectResponse.status).toBe(400);
+    expect(collectResponse.body.code).toBe("RESTRAINT_BLOCKED");
   });
 
   it("applies restraint 50% bonus after 1 hour realtime", async () => {

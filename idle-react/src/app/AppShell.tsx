@@ -3,7 +3,7 @@ import { CircleUserRound, House, Medal, ShoppingCart, Star } from "lucide-react"
 import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "react-router-dom";
 import GameIcon from "../GameIcon";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
-import { getLuckEnabled, getLuckUpgradeCost, getRestraintEnabled, getRestraintUpgradeCost, getSecondsMultiplierPurchaseCost, multiplierToLevel } from "../shop";
+import { getLuckEnabled, getSecondsMultiplierPurchaseCost, multiplierToLevel } from "../shop";
 import { AccountPage } from "../pages/AccountPage";
 import { AchievementsPage } from "../pages/AchievementsPage";
 import { HomePage } from "../pages/HomePage";
@@ -60,7 +60,7 @@ const HUMOROUS_MESSAGES = [
   "What will you do with all of that time?",
   "Your goal is simple.  Be idle for longer than anyone else.",
   "To catch up, try doing nothing faster.",
-  "If you keep going, you’ll waste a full day by next week.",
+  "If you keep going, you’ll waste a full day in only 24 hours.",
   "Who has time? But then if we do not ever take time, how can we ever have time? -Merovingian",
 ];
 
@@ -552,9 +552,7 @@ export function AppShell() {
       10: getSecondsMultiplierPurchaseCost(secondsMultiplierLevel, 10)
     };
   }, [secondsMultiplierLevel]);
-  const restraintUpgradeCost = getRestraintUpgradeCost();
-  const hasRestraintUpgrade = playerState ? getRestraintEnabled(playerState.shop) : false;
-  const luckUpgradeCost = getLuckUpgradeCost();
+  const hasRestraintUpgrade = playerState ? playerState.shop.restraint : false;
   const hasLuckUpgrade = playerState ? getLuckEnabled(playerState.shop) : false;
 
   const activeMessageCardText = isAuthenticated
@@ -630,6 +628,10 @@ export function AppShell() {
         setPlayerState(null);
         setAccount(null);
         setStatus("Press start when you are ready to do nothing.");
+      } else if (collectError instanceof Error && collectError.message === "RESTRAINT_BLOCKED") {
+        setError("Restraint blocks collection until at least 1 hour of realtime has passed.");
+        setStatus("Keep idling to satisfy Restraint.");
+        return;
       }
       setError(collectError instanceof Error ? collectError.message : "Collect failed");
       setStatus("Your inactivity transfer was interrupted.");
@@ -1026,10 +1028,8 @@ export function AppShell() {
                 shopPendingQuantity={shopPendingQuantity}
                 shopCosts={shopCosts}
                 onPurchaseUpgrade={onPurchaseUpgrade}
-                restraintUpgradeCost={restraintUpgradeCost}
                 hasRestraintUpgrade={hasRestraintUpgrade}
                 onPurchaseRestraint={onPurchaseRestraint}
-                luckUpgradeCost={luckUpgradeCost}
                 hasLuckUpgrade={hasLuckUpgrade}
                 onPurchaseLuck={onPurchaseLuck}
                 onNavigateHome={() => navigate("/")}

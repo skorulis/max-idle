@@ -1,7 +1,7 @@
 const BASE_SECONDS_MULTIPLIER_COST = 5;
 const SECONDS_MULTIPLIER_COST_GROWTH = 1.4;
 const DEFAULT_SECONDS_MULTIPLIER = 1;
-const RESTRAINT_UPGRADE_COST = 5 * 60 * 60;
+const RESTRAINT_UPGRADE_COST = 2 * 60 * 60;
 const LUCK_UPGRADE_COST = 7 * 24 * 60 * 60;
 
 export type ShopState = {
@@ -10,24 +10,6 @@ export type ShopState = {
   luck: boolean;
   [key: string]: unknown;
 };
-
-export function normalizeShopState(shop: unknown): ShopState {
-  const rawShop: Record<string, unknown> =
-    shop && typeof shop === "object" && !Array.isArray(shop) ? (shop as Record<string, unknown>) : {};
-  const parsedSecondsMultiplier = Number(rawShop.seconds_multiplier);
-  const secondsMultiplier =
-    Number.isFinite(parsedSecondsMultiplier) && parsedSecondsMultiplier > 0
-      ? parsedSecondsMultiplier
-      : DEFAULT_SECONDS_MULTIPLIER;
-  const restraint = rawShop.restraint === true;
-  const luck = rawShop.luck === true;
-  return {
-    ...rawShop,
-    seconds_multiplier: secondsMultiplier,
-    restraint,
-    luck
-  };
-}
 
 export function getSecondsMultiplier(shop: ShopState): number {
   return shop.seconds_multiplier;
