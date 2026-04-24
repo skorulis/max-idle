@@ -400,6 +400,86 @@ input {
   font-weight: 600;
 }
 
+.shop-upgrade-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.shop-upgrade-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.shop-upgrade-row-owned {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.shop-upgrade-main {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.shop-upgrade-icon {
+  color: #6b7280;
+  width: 18px;
+  height: 18px;
+}
+
+.shop-upgrade-row-owned .shop-upgrade-icon {
+  color: #15803d;
+}
+
+.shop-upgrade-copy p {
+  margin: 0;
+}
+
+.shop-upgrade-name {
+  font-weight: 600;
+}
+
+.shop-upgrade-description {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.shop-upgrade-action {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+  align-items: center;
+}
+
+.shop-upgrade-buy-button {
+  min-width: 88px;
+  min-height: 52px;
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+  margin-top: 0;
+}
+
+.shop-upgrade-buy-plus {
+  line-height: 1;
+}
+
+.shop-upgrade-buy-cost {
+  font-size: 11px;
+  line-height: 1;
+}
+
 .achievements-list {
   display: grid;
   gap: 8px;

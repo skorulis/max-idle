@@ -135,7 +135,7 @@ export function AppShell() {
   const [usernameDraft, setUsernameDraft] = useState("");
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [usernameSuccess, setUsernameSuccess] = useState<string | null>(null);
-  const [shopPendingQuantity, setShopPendingQuantity] = useState<1 | 5 | 10 | "restraint" | "luck" | null>(null);
+  const [shopPendingQuantity, setShopPendingQuantity] = useState<"seconds_multiplier" | "restraint" | "luck" | null>(null);
   const [messageCardRandomIndex, setMessageCardRandomIndex] = useState(() => getRandomMessageIndex());
   const [displayedMessage, setDisplayedMessage] = useState(WELCOME_MESSAGE);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
@@ -545,16 +545,12 @@ export function AppShell() {
     return playerState ? getSecondsMultiplierLevel(playerState.shop) : 0;
   }, [playerState]);
 
-  const shopCosts = useMemo(() => {
+  const secondsMultiplierCost = useMemo(() => {
     const maxLevel = getSecondsMultiplierMaxLevel();
-    const remainingLevels = Math.max(0, maxLevel - secondsMultiplierLevel);
-    const getCost = (quantity: 1 | 5 | 10): number | null =>
-      quantity <= remainingLevels ? getSecondsMultiplierPurchaseCost(secondsMultiplierLevel, quantity) : null;
-    return {
-      1: getCost(1),
-      5: getCost(5),
-      10: getCost(10)
-    };
+    if (secondsMultiplierLevel >= maxLevel) {
+      return null;
+    }
+    return getSecondsMultiplierPurchaseCost(secondsMultiplierLevel, 1);
   }, [secondsMultiplierLevel]);
   const hasRestraintUpgrade = playerState ? playerState.shop.restraint : false;
   const hasLuckUpgrade = playerState ? getLuckEnabled(playerState.shop) : false;
@@ -644,16 +640,16 @@ export function AppShell() {
     }
   };
 
-  const onPurchaseUpgrade = async (quantity: 1 | 5 | 10) => {
+  const onPurchaseUpgrade = async () => {
     if (!playerState) {
       return;
     }
 
-    setShopPendingQuantity(quantity);
+    setShopPendingQuantity("seconds_multiplier");
     setError(null);
-    setStatus(`Purchasing seconds multiplier x${quantity}...`);
+    setStatus("Purchasing seconds multiplier...");
     try {
-      const updatedPlayer = await purchaseSecondsMultiplier(token, quantity);
+      const updatedPlayer = await purchaseSecondsMultiplier(token, 1);
       const synced = toSyncedState(updatedPlayer);
       alignClientClock();
       setPlayerState(synced);
@@ -1030,7 +1026,7 @@ export function AppShell() {
               <ShopPage
                 playerState={playerState}
                 shopPendingQuantity={shopPendingQuantity}
-                shopCosts={shopCosts}
+                secondsMultiplierCost={secondsMultiplierCost}
                 onPurchaseUpgrade={onPurchaseUpgrade}
                 hasRestraintUpgrade={hasRestraintUpgrade}
                 onPurchaseRestraint={onPurchaseRestraint}
