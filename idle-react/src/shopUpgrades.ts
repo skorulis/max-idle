@@ -1,6 +1,10 @@
 export {
+  COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
   EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
   formatShopUpgradeDescription,
+  getCollectGemIdleSecondsMultiplier,
+  getCollectGemTimeBoostMaxLevel,
+  getCollectGemTimeBoostUpgradeCostAtLevel,
   LUCK_SHOP_UPGRADE,
   REALTIME_WAIT_EXTENSION_SECONDS,
   RESTRAINT_SHOP_UPGRADE,

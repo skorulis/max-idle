@@ -3,6 +3,8 @@ import { CircleUserRound, House, Medal, ShoppingCart, Star } from "lucide-react"
 import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "react-router-dom";
 import GameIcon from "../GameIcon";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
+import { getCollectGemBoostLevel } from "../shop";
+import { getCollectGemIdleSecondsMultiplier } from "../shopUpgrades";
 import {
   getLuckLevel,
   getLuckMaxLevel,
@@ -34,6 +36,7 @@ import {
   markAchievementsSeen,
   logoutSession,
   purchaseExtraRealtimeWait,
+  purchaseCollectGemTimeBoost,
   purchaseLuck,
   purchaseRestraint,
   purchaseSecondsMultiplier,
@@ -145,7 +148,7 @@ export function AppShell() {
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [usernameSuccess, setUsernameSuccess] = useState<string | null>(null);
   const [shopPendingQuantity, setShopPendingQuantity] = useState<
-    "seconds_multiplier" | "restraint" | "luck" | "extra_realtime_wait" | null
+    "seconds_multiplier" | "restraint" | "luck" | "extra_realtime_wait" | "collect_gem_time_boost" | null
   >(null);
   const [messageCardRandomIndex, setMessageCardRandomIndex] = useState(() => getRandomMessageIndex());
   const [displayedMessage, setDisplayedMessage] = useState(WELCOME_MESSAGE);
@@ -492,11 +495,12 @@ export function AppShell() {
     }
 
     const elapsedSinceLastCollection = Math.floor((estimatedServerNowMs - playerState.lastCollectedAtMs) / 1000);
-    return calculateBoostedIdleSecondsGain({
+    const base = calculateBoostedIdleSecondsGain({
       secondsSinceLastCollection: Math.max(0, elapsedSinceLastCollection),
       shop: playerState.shop,
       achievementBonusMultiplier: playerState.achievementBonusMultiplier
     });
+    return Math.floor(base * getCollectGemIdleSecondsMultiplier(getCollectGemBoostLevel(playerState.shop)));
   }, [estimatedServerNowMs, playerState]);
 
   const realtimeElapsedSeconds = useMemo(() => {
@@ -752,6 +756,34 @@ export function AppShell() {
     } catch (purchaseError) {
       if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
         setError("Not enough time gems for that purchase.");
+      } else {
+        setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
+      }
+      setStatus("Could not complete shop purchase.");
+    } finally {
+      setShopPendingQuantity(null);
+    }
+  };
+
+  const onPurchaseCollectGemTimeBoost = async () => {
+    if (!playerState) {
+      return;
+    }
+
+    setShopPendingQuantity("collect_gem_time_boost");
+    setError(null);
+    setStatus("Upgrading hasty collection...");
+    try {
+      const updatedPlayer = await purchaseCollectGemTimeBoost(token);
+      const synced = toSyncedState(updatedPlayer);
+      alignClientClock();
+      setPlayerState(synced);
+      setStatus("Hasty collection upgraded.");
+    } catch (purchaseError) {
+      if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
+        setError("Not enough time gems for that purchase.");
+      } else if (purchaseError instanceof Error && purchaseError.message === "ALREADY_OWNED") {
+        setError("Hasty collection is already maxed.");
       } else {
         setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
       }
@@ -1074,6 +1106,8 @@ export function AppShell() {
                 luckMaxLevel={luckMaxLevel}
                 onPurchaseLuck={onPurchaseLuck}
                 onPurchaseExtraRealtimeWait={onPurchaseExtraRealtimeWait}
+                onPurchaseCollectGemTimeBoost={onPurchaseCollectGemTimeBoost}
+                collectGemBoostLevel={playerState ? getCollectGemBoostLevel(playerState.shop) : 0}
                 onNavigateHome={() => navigate("/")}
               />
             }

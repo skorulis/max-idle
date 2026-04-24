@@ -45,7 +45,8 @@ const playerStateSchema = registry.register(
       .object({
         seconds_multiplier: z.number().int().nonnegative(),
         restraint: z.number().int().nonnegative(),
-        luck: z.number().int().nonnegative()
+        luck: z.number().int().nonnegative(),
+        collect_gem_time_boost: z.number().int().min(0).max(5).optional()
       })
       .catchall(z.unknown()),
     achievementBonusMultiplier: z.number().positive(),
@@ -150,6 +151,12 @@ const shopPurchaseRequestSchema = registry.register(
     }),
     z.object({
       upgradeType: z.literal("luck")
+    }),
+    z.object({
+      upgradeType: z.literal("extra_realtime_wait")
+    }),
+    z.object({
+      upgradeType: z.literal("collect_gem_time_boost")
     })
   ])
 );
@@ -158,7 +165,13 @@ const shopPurchaseResponseSchema = registry.register(
   "ShopPurchaseResponse",
   playerStateSchema.extend({
     purchase: z.object({
-      upgradeType: z.union([z.literal("seconds_multiplier"), z.literal("restraint"), z.literal("luck")]),
+      upgradeType: z.union([
+        z.literal("seconds_multiplier"),
+        z.literal("restraint"),
+        z.literal("luck"),
+        z.literal("extra_realtime_wait"),
+        z.literal("collect_gem_time_boost")
+      ]),
       quantity: z.number().int().positive(),
       totalCost: z.number().int().nonnegative()
     })

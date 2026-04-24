@@ -9,12 +9,15 @@ import {
   Hourglass,
   Plus,
   ShieldAlert,
+  Timer,
   type LucideIcon
 } from "lucide-react";
 import { useState } from "react";
 import type { SyncedPlayerState } from "../app/types";
 import {
   formatShopUpgradeDescription,
+  getCollectGemTimeBoostMaxLevel,
+  getCollectGemTimeBoostUpgradeCostAtLevel,
   SHOP_CURRENCY_TYPES,
   SHOP_UPGRADE_IDS,
   SHOP_UPGRADES,
@@ -26,7 +29,7 @@ import GameIcon from "../GameIcon";
 
 type ShopPageProps = {
   playerState: SyncedPlayerState | null;
-  shopPendingQuantity: "seconds_multiplier" | "restraint" | "luck" | "extra_realtime_wait" | null;
+  shopPendingQuantity: "seconds_multiplier" | "restraint" | "luck" | "extra_realtime_wait" | "collect_gem_time_boost" | null;
   secondsMultiplierCost: number | null;
   onPurchaseUpgrade: () => Promise<void>;
   restraintLevel: number;
@@ -36,6 +39,8 @@ type ShopPageProps = {
   luckMaxLevel: number;
   onPurchaseLuck: () => Promise<void>;
   onPurchaseExtraRealtimeWait: () => Promise<void>;
+  onPurchaseCollectGemTimeBoost: () => Promise<void>;
+  collectGemBoostLevel: number;
   onNavigateHome: () => void;
 };
 
@@ -74,6 +79,8 @@ function getShopUpgradeIcon(iconName: string): LucideIcon {
       return Dice5;
     case "hourglass":
       return Hourglass;
+    case "timer":
+      return Timer;
     default:
       return CircleHelp;
   }
@@ -91,6 +98,8 @@ export function ShopPage({
   luckMaxLevel,
   onPurchaseLuck,
   onPurchaseExtraRealtimeWait,
+  onPurchaseCollectGemTimeBoost,
+  collectGemBoostLevel,
   onNavigateHome
 }: ShopPageProps) {
   const [selectedCurrencyType, setSelectedCurrencyType] = useState<ShopCurrencyType>(SHOP_CURRENCY_TYPES.IDLE);
@@ -109,6 +118,7 @@ export function ShopPage({
   const visibleUpgrades = SHOP_UPGRADES.filter((upgrade) => upgrade.currencyType === selectedCurrencyType);
   const secondsMultiplierLevel = getSecondsMultiplierLevel(playerState.shop);
   const maxSecondsMultiplierLevel = getSecondsMultiplierMaxLevel();
+  const maxCollectGemBoostLevel = getCollectGemTimeBoostMaxLevel();
 
   function getUpgradeRowState(upgrade: ShopUpgradeDefinition): {
     description: string;
@@ -140,6 +150,20 @@ export function ShopPage({
         isPending: shopPendingQuantity === "extra_realtime_wait",
         isOwned: false,
         onPurchase: onPurchaseExtraRealtimeWait
+      };
+    }
+
+    if (upgrade.id === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST) {
+      const nextLevelDef = upgrade.levels[collectGemBoostLevel] ?? null;
+      const nextValueStr = nextLevelDef ? formatMultiplier(nextLevelDef.value) : "";
+      return {
+        description: nextLevelDef
+          ? formatShopUpgradeDescription(upgrade, nextValueStr)
+          : "Maximum level reached.",
+        cost: getCollectGemTimeBoostUpgradeCostAtLevel(collectGemBoostLevel) || null,
+        isPending: shopPendingQuantity === "collect_gem_time_boost",
+        isOwned: collectGemBoostLevel >= maxCollectGemBoostLevel,
+        onPurchase: onPurchaseCollectGemTimeBoost
       };
     }
 
@@ -176,6 +200,9 @@ export function ShopPage({
     }
     if (upgrade.id === SHOP_UPGRADE_IDS.LUCK) {
       return luckLevel;
+    }
+    if (upgrade.id === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST) {
+      return collectGemBoostLevel;
     }
     const maybeLevel = playerState?.shop[upgrade.id];
     if (typeof maybeLevel === "number" && Number.isFinite(maybeLevel) && maybeLevel >= 0) {

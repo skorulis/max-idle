@@ -108,6 +108,11 @@
               },
               "luck": {
                 "type": "boolean"
+              },
+              "collect_gem_time_boost": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5
               }
             },
             "required": [
@@ -496,6 +501,20 @@
             "required": [
               "upgradeType"
             ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "upgradeType": {
+                "type": "string",
+                "enum": [
+                  "collect_gem_time_boost"
+                ]
+              }
+            },
+            "required": [
+              "upgradeType"
+            ]
           }
         ]
       },
@@ -534,6 +553,12 @@
                         "type": "string",
                         "enum": [
                           "extra_realtime_wait"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "collect_gem_time_boost"
                         ]
                       }
                     ]

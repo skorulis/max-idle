@@ -282,6 +282,7 @@ async function purchaseUpgrade(
     | { upgradeType: "restraint" }
     | { upgradeType: "luck" }
     | { upgradeType: "extra_realtime_wait" }
+    | { upgradeType: "collect_gem_time_boost" }
 ): Promise<PlayerResponse> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json"
@@ -328,6 +329,10 @@ export async function purchaseLuck(token: string | null): Promise<PlayerResponse
 
 export async function purchaseExtraRealtimeWait(token: string | null): Promise<PlayerResponse> {
   return purchaseUpgrade(token, { upgradeType: "extra_realtime_wait" });
+}
+
+export async function purchaseCollectGemTimeBoost(token: string | null): Promise<PlayerResponse> {
+  return purchaseUpgrade(token, { upgradeType: "collect_gem_time_boost" });
 }
 
 export async function logoutSession(): Promise<void> {

@@ -12,12 +12,18 @@ import {
   getSecondsMultiplierMaxLevel,
   getSecondsMultiplier,
   getSecondsMultiplierPurchaseCost,
+  getCollectGemBoostLevel,
+  withCollectGemBoostLevel,
   withLuckLevel,
   withRestraintLevel,
   withSecondsMultiplier
 } from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
-import { REALTIME_WAIT_EXTENSION_SECONDS } from "@maxidle/shared/shopUpgrades";
+import {
+  getCollectGemTimeBoostMaxLevel,
+  getCollectGemTimeBoostUpgradeCostAtLevel,
+  REALTIME_WAIT_EXTENSION_SECONDS
+} from "@maxidle/shared/shopUpgrades";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 import { normalizeCompletedAchievementIds } from "./achievementUpdates.js";
 import { calculateElapsedSeconds } from "./time.js";
@@ -25,6 +31,7 @@ import { getEffectiveIdleSecondsRate } from "./idleRate.js";
 import type { AuthClaims } from "./types.js";
 
 export {
+  getCollectGemBoostLevel,
   getLuckEnabled,
   getLuckUpgradeCost,
   getRestraintUpgradeCost,
@@ -33,6 +40,7 @@ export {
   getSecondsMultiplierUpgradeCost,
   levelToMultiplier,
   multiplierToLevel,
+  withCollectGemBoostLevel,
   withLuck,
   withRestraint,
   withRestraintLevel,
@@ -69,7 +77,8 @@ export function registerShopRoutes({
         upgradeType !== "seconds_multiplier" &&
         upgradeType !== "restraint" &&
         upgradeType !== "luck" &&
-        upgradeType !== "extra_realtime_wait"
+        upgradeType !== "extra_realtime_wait" &&
+        upgradeType !== "collect_gem_time_boost"
       ) {
         res.status(400).json({ error: "Unsupported upgrade type" });
         return;
@@ -131,7 +140,10 @@ export function registerShopRoutes({
 
       const now = new Date();
       const isExtraRealtimeWait = upgradeType === "extra_realtime_wait";
-      const quantity = isExtraRealtimeWait
+      const isCollectGemTimeBoost = upgradeType === "collect_gem_time_boost";
+      const isGemPurchase = isExtraRealtimeWait || isCollectGemTimeBoost;
+      const collectGemLevel = getCollectGemBoostLevel(row.shop);
+      const quantity = isExtraRealtimeWait || isCollectGemTimeBoost
         ? 1
         : upgradeType === "seconds_multiplier"
           ? requestedQuantity
@@ -140,6 +152,11 @@ export function registerShopRoutes({
       const luckLevel = getLuckLevel(row.shop);
 
       const currentLevel = getSecondsMultiplierLevel(row.shop);
+      if (isCollectGemTimeBoost && collectGemLevel >= getCollectGemTimeBoostMaxLevel()) {
+        await client.query("ROLLBACK");
+        res.status(400).json({ error: "Upgrade already maxed", code: "ALREADY_OWNED" });
+        return;
+      }
       if (upgradeType === "seconds_multiplier" && currentLevel + quantity > getSecondsMultiplierMaxLevel()) {
         await client.query("ROLLBACK");
         res.status(400).json({ error: "Invalid purchase quantity" });
@@ -157,14 +174,16 @@ export function registerShopRoutes({
       }
       const totalCost = isExtraRealtimeWait
         ? 1
-        : upgradeType === "seconds_multiplier"
-          ? getSecondsMultiplierPurchaseCost(currentLevel, quantity)
-          : upgradeType === "restraint"
-            ? getRestraintUpgradeCostAtLevel(restraintLevel)
-            : getLuckUpgradeCostAtLevel(luckLevel);
+        : isCollectGemTimeBoost
+          ? getCollectGemTimeBoostUpgradeCostAtLevel(collectGemLevel)
+          : upgradeType === "seconds_multiplier"
+            ? getSecondsMultiplierPurchaseCost(currentLevel, quantity)
+            : upgradeType === "restraint"
+              ? getRestraintUpgradeCostAtLevel(restraintLevel)
+              : getLuckUpgradeCostAtLevel(luckLevel);
       const idleTimeAvailable = toNumber(row.idle_time_available);
       const timeGemsAvailable = toNumber(row.time_gems_available);
-      if (isExtraRealtimeWait) {
+      if (isGemPurchase) {
         if (timeGemsAvailable < totalCost) {
           await client.query("ROLLBACK");
           res.status(400).json({
@@ -185,11 +204,13 @@ export function registerShopRoutes({
       const nextLevel = upgradeType === "seconds_multiplier" ? currentLevel + quantity : currentLevel;
       const nextShopState = isExtraRealtimeWait
         ? row.shop
-        : upgradeType === "seconds_multiplier"
-          ? withSecondsMultiplier(row.shop, nextLevel)
-          : upgradeType === "restraint"
-            ? withRestraintLevel(row.shop, restraintLevel + quantity)
-            : withLuckLevel(row.shop, luckLevel + quantity);
+        : isCollectGemTimeBoost
+          ? withCollectGemBoostLevel(row.shop, collectGemLevel + quantity)
+          : upgradeType === "seconds_multiplier"
+            ? withSecondsMultiplier(row.shop, nextLevel)
+            : upgradeType === "restraint"
+              ? withRestraintLevel(row.shop, restraintLevel + quantity)
+              : withLuckLevel(row.shop, luckLevel + quantity);
       const nextLastCollectedAt = isExtraRealtimeWait
         ? new Date(row.last_collected_at.getTime() - REALTIME_WAIT_EXTENSION_SECONDS * 1000)
         : row.last_collected_at;
@@ -207,8 +228,8 @@ export function registerShopRoutes({
         nextShopState,
         nextAchievementBonusMultiplier
       );
-      const nextIdleTimeAvailable = isExtraRealtimeWait ? idleTimeAvailable : idleTimeAvailable - totalCost;
-      const nextTimeGemsAvailable = isExtraRealtimeWait ? timeGemsAvailable - totalCost : timeGemsAvailable;
+      const nextIdleTimeAvailable = isGemPurchase ? idleTimeAvailable : idleTimeAvailable - totalCost;
+      const nextTimeGemsAvailable = isGemPurchase ? timeGemsAvailable - totalCost : timeGemsAvailable;
       const updateResult = await client.query<{
         idle_time_total: string;
         idle_time_available: string;

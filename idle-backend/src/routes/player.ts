@@ -1,7 +1,7 @@
 import express from "express";
 import type { Pool } from "pg";
 import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
-import { getSecondsMultiplier } from "@maxidle/shared/shop";
+import { getSecondsMultiplier, withCollectGemBoostLevel } from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
 import { boostedUncollectedIdleSeconds } from "../boostedUncollectedIdle.js";
 import { calculateElapsedSeconds } from "../time.js";
@@ -209,6 +209,7 @@ export function registerPlayerRoutes({
       const preserveTimer = shouldPreserveIdleTimerOnCollect(lockedRow.shop);
       const nextCurrentSeconds = preserveTimer ? collectedSeconds : 0;
       const nextLastCollectedAt = preserveTimer ? lockedRow.last_collected_at : collectedAt;
+      const nextShop = withCollectGemBoostLevel(lockedRow.shop, 0);
       const updateResult = await client.query<{
         idle_time_total: number | string;
         idle_time_available: number | string;
@@ -233,6 +234,7 @@ export function registerPlayerRoutes({
           current_seconds = $4::BIGINT,
           current_seconds_last_updated = $5,
           last_collected_at = $6,
+          shop = $7::jsonb,
           updated_at = $5
         WHERE user_id = $1
         RETURNING
@@ -249,7 +251,7 @@ export function registerPlayerRoutes({
           shop,
           last_daily_reward_collected_at
         `,
-        [userId, collectedSeconds, realSecondsCollected, nextCurrentSeconds, collectedAt, nextLastCollectedAt]
+        [userId, collectedSeconds, realSecondsCollected, nextCurrentSeconds, collectedAt, nextLastCollectedAt, JSON.stringify(nextShop)]
       );
 
       const row = updateResult.rows[0];

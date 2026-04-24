@@ -31,6 +31,7 @@ export type PlayerState = {
         seconds_multiplier: number;
         restraint: boolean;
         luck: boolean;
+        collect_gem_time_boost?: number;
         [key: string]: unknown;
     };
     achievementBonusMultiplier: number;
@@ -113,11 +114,13 @@ export type ShopPurchaseRequest = {
     upgradeType: 'luck';
 } | {
     upgradeType: 'extra_realtime_wait';
+} | {
+    upgradeType: 'collect_gem_time_boost';
 };
 
 export type ShopPurchaseResponse = PlayerState & {
     purchase: {
-        upgradeType: 'seconds_multiplier' | 'restraint' | 'luck' | 'extra_realtime_wait';
+        upgradeType: 'seconds_multiplier' | 'restraint' | 'luck' | 'extra_realtime_wait' | 'collect_gem_time_boost';
         quantity: number;
         totalCost: number;
     };

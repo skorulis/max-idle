@@ -1,5 +1,7 @@
 export type { ShopState } from "@maxidle/shared/shop";
 export {
+  getCollectGemBoostLevel,
+  withCollectGemBoostLevel,
   getLuckEnabled,
   getLuckLevel,
   getLuckMaxLevel,

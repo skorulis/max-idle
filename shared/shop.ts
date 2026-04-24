@@ -1,4 +1,10 @@
-import { LUCK_SHOP_UPGRADE, RESTRAINT_SHOP_UPGRADE, SECONDS_MULTIPLIER_SHOP_UPGRADE } from "./shopUpgrades.js";
+import {
+  LUCK_SHOP_UPGRADE,
+  RESTRAINT_SHOP_UPGRADE,
+  SECONDS_MULTIPLIER_SHOP_UPGRADE,
+  SHOP_UPGRADE_IDS,
+  getCollectGemTimeBoostMaxLevel
+} from "./shopUpgrades.js";
 
 const DEFAULT_SECONDS_MULTIPLIER_LEVEL = 0;
 const DEFAULT_SECONDS_MULTIPLIER_VALUE = 1;
@@ -7,6 +13,8 @@ export type ShopState = {
   seconds_multiplier: number;
   restraint: number | boolean;
   luck: number | boolean;
+  /** Resets to 0 on collect. Same key as {@link SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST}. */
+  collect_gem_time_boost?: number;
   [key: string]: unknown;
 };
 
@@ -19,6 +27,24 @@ function clampSecondsMultiplierLevel(level: number): number {
 
 export function getSecondsMultiplierMaxLevel(): number {
   return SECONDS_MULTIPLIER_SHOP_UPGRADE.levels.length;
+}
+
+export function getCollectGemBoostLevel(shop: ShopState): number {
+  const raw = shop[SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST];
+  if (typeof raw !== "number" || !Number.isFinite(raw)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(getCollectGemTimeBoostMaxLevel(), Math.floor(raw)));
+}
+
+export function withCollectGemBoostLevel(shop: ShopState, level: number): ShopState {
+  const safe = Number.isFinite(level)
+    ? Math.max(0, Math.min(getCollectGemTimeBoostMaxLevel(), Math.floor(level)))
+    : 0;
+  return {
+    ...shop,
+    [SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST]: safe
+  };
 }
 
 export function getSecondsMultiplierUpgradeValue(level: number): number {
