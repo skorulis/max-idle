@@ -43,7 +43,7 @@ const playerStateSchema = registry.register(
     secondsMultiplier: z.number().positive(),
     shop: z
       .object({
-        seconds_multiplier: z.number().positive(),
+        seconds_multiplier: z.number().int().nonnegative(),
         restraint: z.boolean(),
         luck: z.boolean()
       })

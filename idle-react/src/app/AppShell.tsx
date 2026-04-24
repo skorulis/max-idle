@@ -3,7 +3,7 @@ import { CircleUserRound, House, Medal, ShoppingCart, Star } from "lucide-react"
 import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "react-router-dom";
 import GameIcon from "../GameIcon";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
-import { getLuckEnabled, getSecondsMultiplierPurchaseCost, multiplierToLevel } from "../shop";
+import { getLuckEnabled, getSecondsMultiplierLevel, getSecondsMultiplierMaxLevel, getSecondsMultiplierPurchaseCost } from "../shop";
 import { AccountPage } from "../pages/AccountPage";
 import { AchievementsPage } from "../pages/AchievementsPage";
 import { HomePage } from "../pages/HomePage";
@@ -542,14 +542,18 @@ export function AppShell() {
   }, [dailyRewardAvailable, estimatedServerNowMs, playerState]);
 
   const secondsMultiplierLevel = useMemo(() => {
-    return playerState ? multiplierToLevel(playerState.secondsMultiplier) : 0;
+    return playerState ? getSecondsMultiplierLevel(playerState.shop) : 0;
   }, [playerState]);
 
   const shopCosts = useMemo(() => {
+    const maxLevel = getSecondsMultiplierMaxLevel();
+    const remainingLevels = Math.max(0, maxLevel - secondsMultiplierLevel);
+    const getCost = (quantity: 1 | 5 | 10): number | null =>
+      quantity <= remainingLevels ? getSecondsMultiplierPurchaseCost(secondsMultiplierLevel, quantity) : null;
     return {
-      1: getSecondsMultiplierPurchaseCost(secondsMultiplierLevel, 1),
-      5: getSecondsMultiplierPurchaseCost(secondsMultiplierLevel, 5),
-      10: getSecondsMultiplierPurchaseCost(secondsMultiplierLevel, 10)
+      1: getCost(1),
+      5: getCost(5),
+      10: getCost(10)
     };
   }, [secondsMultiplierLevel]);
   const hasRestraintUpgrade = playerState ? playerState.shop.restraint : false;
@@ -653,7 +657,7 @@ export function AppShell() {
       const synced = toSyncedState(updatedPlayer);
       alignClientClock();
       setPlayerState(synced);
-      setStatus(`Seconds multiplier upgraded by ${quantity * 0.1}x.`);
+      setStatus(`Seconds multiplier upgraded to ${synced.secondsMultiplier.toFixed(1)}x.`);
     } catch (purchaseError) {
       if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
         setError("Not enough spendable idle seconds for that purchase.");

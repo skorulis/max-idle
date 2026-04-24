@@ -758,7 +758,7 @@ describe("auth + player lifecycle", () => {
         upgrades_purchased = 7,
         current_seconds = 0,
         last_collected_at = NOW() - INTERVAL '35 seconds',
-        shop = '{"seconds_multiplier": 1}'::jsonb
+        shop = '{"seconds_multiplier": 0}'::jsonb
       WHERE user_id = $1
       `,
       [userId]
@@ -803,7 +803,7 @@ describe("auth + player lifecycle", () => {
       `
       UPDATE player_states
       SET
-        shop = '{"seconds_multiplier": 2}'::jsonb,
+        shop = '{"seconds_multiplier": 10}'::jsonb,
         current_seconds = 0,
         current_seconds_last_updated = NOW() - INTERVAL '120 seconds',
         last_collected_at = NOW() - INTERVAL '120 seconds'
@@ -856,7 +856,7 @@ describe("auth + player lifecycle", () => {
       `
       UPDATE player_states
       SET
-        shop = '{"seconds_multiplier": 1, "restraint": true}'::jsonb,
+        shop = '{"seconds_multiplier": 0, "restraint": true}'::jsonb,
         current_seconds = 0,
         current_seconds_last_updated = NOW() - INTERVAL '120 seconds',
         last_collected_at = NOW() - INTERVAL '120 seconds'
@@ -882,7 +882,7 @@ describe("auth + player lifecycle", () => {
       `
       UPDATE player_states
       SET
-        shop = '{"seconds_multiplier": 1, "restraint": true}'::jsonb,
+        shop = '{"seconds_multiplier": 0, "restraint": true}'::jsonb,
         current_seconds = 0,
         current_seconds_last_updated = NOW() - INTERVAL '120 seconds',
         last_collected_at = NOW() - INTERVAL '120 seconds'
@@ -906,7 +906,7 @@ describe("auth + player lifecycle", () => {
       `
       UPDATE player_states
       SET
-        shop = '{"seconds_multiplier": 1, "restraint": true}'::jsonb,
+        shop = '{"seconds_multiplier": 0, "restraint": true}'::jsonb,
         current_seconds = 0,
         current_seconds_last_updated = NOW() - INTERVAL '7200 seconds',
         last_collected_at = NOW() - INTERVAL '7200 seconds'
@@ -969,7 +969,7 @@ describe("auth + player lifecycle", () => {
     expect(purchaseResponse.body.purchase.upgradeType).toBe("restraint");
     expect(purchaseResponse.body.purchase.quantity).toBe(1);
     expect(purchaseResponse.body.shop.restraint).toBe(true);
-    expect(purchaseResponse.body.idleTime.available).toBe(2000);
+    expect(purchaseResponse.body.idleTime.available).toBe(12800);
 
     const secondPurchaseResponse = await request(app)
       .post("/shop/purchase")
@@ -1017,7 +1017,7 @@ describe("auth + player lifecycle", () => {
         `
         UPDATE player_states
         SET
-          shop = '{"seconds_multiplier": 1, "restraint": false, "luck": true}'::jsonb,
+          shop = '{"seconds_multiplier": 0, "restraint": false, "luck": true}'::jsonb,
           current_seconds = 0,
           current_seconds_last_updated = NOW() - INTERVAL '120 seconds',
           last_collected_at = NOW() - INTERVAL '120 seconds'
@@ -1047,7 +1047,7 @@ describe("auth + player lifecycle", () => {
         `
         UPDATE player_states
         SET
-          shop = '{"seconds_multiplier": 1, "restraint": false, "luck": true}'::jsonb,
+          shop = '{"seconds_multiplier": 0, "restraint": false, "luck": true}'::jsonb,
           current_seconds = 0,
           current_seconds_last_updated = NOW() - INTERVAL '120 seconds',
           last_collected_at = NOW() - INTERVAL '120 seconds'
@@ -1096,7 +1096,7 @@ describe("auth + player lifecycle", () => {
         UPDATE player_states
         SET
           achievement_count = 0,
-          shop = '{"seconds_multiplier": 1}'::jsonb,
+          shop = '{"seconds_multiplier": 0}'::jsonb,
           current_seconds_last_updated = $2,
           last_collected_at = $2
         WHERE user_id = $1

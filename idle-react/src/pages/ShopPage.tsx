@@ -2,13 +2,20 @@ import { formatSeconds } from "../formatSeconds";
 import { Atom, Clock3, Gem } from "lucide-react";
 import { useState } from "react";
 import type { SyncedPlayerState } from "../app/types";
-import { SHOP_CURRENCY_TYPES, SHOP_UPGRADE_IDS, SHOP_UPGRADES } from "../shopUpgrades";
+import {
+  formatShopUpgradeDescription,
+  SECONDS_MULTIPLIER_SHOP_UPGRADE,
+  SHOP_CURRENCY_TYPES,
+  SHOP_UPGRADE_IDS,
+  SHOP_UPGRADES
+} from "../shopUpgrades";
 import type { ShopCurrencyType, ShopUpgradeId } from "../shopUpgrades";
+import { getSecondsMultiplierLevel } from "../shop";
 
 type ShopPageProps = {
   playerState: SyncedPlayerState | null;
   shopPendingQuantity: 1 | 5 | 10 | "restraint" | "luck" | null;
-  shopCosts: Record<1 | 5 | 10, number>;
+  shopCosts: Record<1 | 5 | 10, number | null>;
   onPurchaseUpgrade: (quantity: 1 | 5 | 10) => Promise<void>;
   hasRestraintUpgrade: boolean;
   onPurchaseRestraint: () => Promise<void>;
@@ -32,6 +39,10 @@ function formatUpgradeCost(currencyType: ShopCurrencyType, amount: number): stri
     return amount.toString();
   }
   return formatSeconds(amount);
+}
+
+function formatMultiplier(value: number): string {
+  return `${value.toFixed(1)}x`;
 }
 
 export function ShopPage({
@@ -58,9 +69,17 @@ export function ShopPage({
     );
   }
 
-  const visibleUpgrades = SHOP_UPGRADES.filter((upgrade) => upgrade.currencyType === selectedCurrencyType);
+  const visibleUpgrades = SHOP_UPGRADES.filter(
+    (upgrade) =>
+      upgrade.currencyType === selectedCurrencyType && upgrade.id !== SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER
+  );
+  const secondsMultiplierLevel = getSecondsMultiplierLevel(playerState.shop);
+  const nextSecondsMultiplierLevel = SECONDS_MULTIPLIER_SHOP_UPGRADE.levels[secondsMultiplierLevel] ?? null;
+  const secondsMultiplierDescription = nextSecondsMultiplierLevel
+    ? formatShopUpgradeDescription(SECONDS_MULTIPLIER_SHOP_UPGRADE, formatMultiplier(nextSecondsMultiplierLevel.value))
+    : "Maximum level reached.";
   const sharedUpgradeStateById: Record<
-    ShopUpgradeId,
+    Exclude<ShopUpgradeId, "seconds_multiplier">,
     {
       hasUpgrade: boolean;
       isPending: boolean;
@@ -128,32 +147,53 @@ export function ShopPage({
       </div>
       {selectedCurrencyType === SHOP_CURRENCY_TYPES.IDLE ? (
         <>
-          <p className="subtle">Upgrade: seconds multiplier (+0.1x per purchase)</p>
+          <p className="subtle">Upgrade: {SECONDS_MULTIPLIER_SHOP_UPGRADE.name} ({secondsMultiplierDescription})</p>
+          <p className="subtle">Current level: {secondsMultiplierLevel}</p>
           <p className="subtle">Current multiplier: {playerState.secondsMultiplier.toFixed(1)}x</p>
           <div className="shop-actions">
             <button
               type="button"
               className="secondary"
               onClick={() => void onPurchaseUpgrade(1)}
-              disabled={shopPendingQuantity !== null || playerState.idleTime.available < shopCosts[1]}
+              disabled={
+                shopPendingQuantity !== null || shopCosts[1] === null || playerState.idleTime.available < (shopCosts[1] ?? 0)
+              }
             >
-              {shopPendingQuantity === 1 ? "Purchasing..." : `Buy x1 (${formatSeconds(shopCosts[1])})`}
+              {shopPendingQuantity === 1
+                ? "Purchasing..."
+                : shopCosts[1] === null
+                  ? "Buy x1 (max level)"
+                  : `Buy x1 (${formatSeconds(shopCosts[1])})`}
             </button>
             <button
               type="button"
               className="secondary"
               onClick={() => void onPurchaseUpgrade(5)}
-              disabled={shopPendingQuantity !== null || playerState.idleTime.available < shopCosts[5]}
+              disabled={
+                shopPendingQuantity !== null || shopCosts[5] === null || playerState.idleTime.available < (shopCosts[5] ?? 0)
+              }
             >
-              {shopPendingQuantity === 5 ? "Purchasing..." : `Buy x5 (${formatSeconds(shopCosts[5])})`}
+              {shopPendingQuantity === 5
+                ? "Purchasing..."
+                : shopCosts[5] === null
+                  ? "Buy x5 (max level)"
+                  : `Buy x5 (${formatSeconds(shopCosts[5])})`}
             </button>
             <button
               type="button"
               className="secondary"
               onClick={() => void onPurchaseUpgrade(10)}
-              disabled={shopPendingQuantity !== null || playerState.idleTime.available < shopCosts[10]}
+              disabled={
+                shopPendingQuantity !== null ||
+                shopCosts[10] === null ||
+                playerState.idleTime.available < (shopCosts[10] ?? 0)
+              }
             >
-              {shopPendingQuantity === 10 ? "Purchasing..." : `Buy x10 (${formatSeconds(shopCosts[10])})`}
+              {shopPendingQuantity === 10
+                ? "Purchasing..."
+                : shopCosts[10] === null
+                  ? "Buy x10 (max level)"
+                  : `Buy x10 (${formatSeconds(shopCosts[10])})`}
             </button>
           </div>
         </>
@@ -162,6 +202,9 @@ export function ShopPage({
         <p className="subtle">No upgrades currently available for this currency.</p>
       ) : (
         visibleUpgrades.map((upgrade) => {
+          if (upgrade.id === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER) {
+            return null;
+          }
           const upgradeState = sharedUpgradeStateById[upgrade.id];
           const upgradeAvailableBalance = getCurrencyAmount(playerState, upgrade.currencyType);
           return (
@@ -175,14 +218,16 @@ export function ShopPage({
                   className="secondary"
                   onClick={() => void upgradeState.onPurchase()}
                   disabled={
-                    shopPendingQuantity !== null || upgradeState.hasUpgrade || upgradeAvailableBalance < upgrade.cost
+                    shopPendingQuantity !== null ||
+                    upgradeState.hasUpgrade ||
+                    upgradeAvailableBalance < (upgrade.levels[0]?.cost ?? 0)
                   }
                 >
                   {upgradeState.hasUpgrade
                     ? `${upgrade.name} owned`
                     : upgradeState.isPending
                       ? "Purchasing..."
-                      : `Buy ${upgrade.name} (${formatUpgradeCost(upgrade.currencyType, upgrade.cost)})`}
+                      : `Buy ${upgrade.name} (${formatUpgradeCost(upgrade.currencyType, upgrade.levels[0]?.cost ?? 0)})`}
                 </button>
               </div>
             </div>

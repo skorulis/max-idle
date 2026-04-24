@@ -3,11 +3,10 @@ import type { Pool } from "pg";
 import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import {
   getLuckEnabled,
+  getSecondsMultiplierLevel,
+  getSecondsMultiplierMaxLevel,
   getSecondsMultiplier,
   getSecondsMultiplierPurchaseCost,
-  getSecondsMultiplierUpgradeCost,
-  levelToMultiplier,
-  multiplierToLevel,
   withLuck,
   withRestraint,
   withSecondsMultiplier
@@ -121,15 +120,19 @@ export function registerShopRoutes({
 
       const now = new Date();
       const quantity = upgradeType === "seconds_multiplier" ? requestedQuantity : 1;
-      const secondsMultiplier = getSecondsMultiplier(row.shop);
       const restraintEnabled = row.shop.restraint;
       const luckEnabled = getLuckEnabled(row.shop);
 
-      const currentLevel = multiplierToLevel(secondsMultiplier);
+      const currentLevel = getSecondsMultiplierLevel(row.shop);
+      if (upgradeType === "seconds_multiplier" && currentLevel + quantity > getSecondsMultiplierMaxLevel()) {
+        await client.query("ROLLBACK");
+        res.status(400).json({ error: "Invalid purchase quantity" });
+        return;
+      }
       const totalCost =
         upgradeType === "seconds_multiplier"
           ? getSecondsMultiplierPurchaseCost(currentLevel, quantity)
-          : SHOP_UPGRADES_BY_ID[upgradeType].cost;
+          : SHOP_UPGRADES_BY_ID[upgradeType].levels[0]?.cost ?? 0;
       if (upgradeType === "restraint" && restraintEnabled) {
         await client.query("ROLLBACK");
         res.status(400).json({ error: "Upgrade already owned", code: "ALREADY_OWNED" });
@@ -151,10 +154,9 @@ export function registerShopRoutes({
       }
 
       const nextLevel = upgradeType === "seconds_multiplier" ? currentLevel + quantity : currentLevel;
-      const nextMultiplier = levelToMultiplier(nextLevel);
       const nextShopState =
         upgradeType === "seconds_multiplier"
-          ? withSecondsMultiplier(row.shop, nextMultiplier)
+          ? withSecondsMultiplier(row.shop, nextLevel)
           : upgradeType === "restraint"
             ? withRestraint(row.shop, true)
             : withLuck(row.shop, true);
@@ -166,12 +168,10 @@ export function registerShopRoutes({
       const hasNewAchievement = nextCompletedAchievementIds.length > toNumber(row.achievement_count);
       const nextAchievementCount = nextCompletedAchievementIds.length;
       const nextAchievementBonusMultiplier = getAchievementBonusMultiplier(nextAchievementCount);
-      const effectiveMultiplierForCurrentSync =
-        upgradeType === "seconds_multiplier" ? nextMultiplier : secondsMultiplier;
       const syncedCurrentSeconds = boostedUncollectedIdleSeconds(
         row.last_collected_at,
         now,
-        withSecondsMultiplier(nextShopState, effectiveMultiplierForCurrentSync),
+        nextShopState,
         nextAchievementBonusMultiplier
       );
       const updateResult = await client.query<{

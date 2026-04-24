@@ -12,7 +12,7 @@ import {
 } from "../src/shop.js";
 
 describe("shop pricing", () => {
-  const baseShop = { seconds_multiplier: 1, restraint: false, luck: false };
+  const baseShop = { seconds_multiplier: 0, restraint: false, luck: false };
 
   it("calculates compounding per-step costs with floor", () => {
     expect(getSecondsMultiplierUpgradeCost(0)).toBe(5);
@@ -35,7 +35,7 @@ describe("shop pricing", () => {
   });
 
   it("uses fixed restraint upgrade cost", () => {
-    expect(getRestraintUpgradeCost()).toBe(5 * 60 * 60);
+    expect(getRestraintUpgradeCost()).toBe(2 * 60 * 60);
   });
 
   it("uses fixed luck upgrade cost", () => {

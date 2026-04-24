@@ -46,14 +46,14 @@ describe("luck + boosted gain", () => {
   it("applies restraint/luck-aware boosted gain", () => {
     const gainWithoutRestraint = calculateBoostedIdleSecondsGain({
       secondsSinceLastCollection: 60,
-      shop: { seconds_multiplier: 1, restraint: false, luck: false },
+      shop: { seconds_multiplier: 0, restraint: false, luck: false },
       achievementBonusMultiplier: 1
     });
     expect(gainWithoutRestraint).toBeGreaterThan(0);
 
     const gainWithRestraint = calculateBoostedIdleSecondsGain({
       secondsSinceLastCollection: 60,
-      shop: { seconds_multiplier: 1, restraint: true, luck: false },
+      shop: { seconds_multiplier: 0, restraint: true, luck: false },
       achievementBonusMultiplier: 1
     });
     expect(gainWithRestraint).toBe(Math.floor(gainWithoutRestraint * 1.5));
