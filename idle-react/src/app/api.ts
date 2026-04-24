@@ -269,7 +269,7 @@ export async function updateUsername(token: string | null, username: string): Pr
   return (payload ?? { username }) as { username: string };
 }
 
-export async function purchaseSecondsMultiplier(token: string | null, quantity: 1 | 5 | 10): Promise<PlayerResponse> {
+async function purchaseUpgrade(token: string | null, body: { upgradeType: "seconds_multiplier"; quantity: 1 | 5 | 10 } | { upgradeType: "restraint" }): Promise<PlayerResponse> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json"
   };
@@ -281,10 +281,7 @@ export async function purchaseSecondsMultiplier(token: string | null, quantity: 
     method: "POST",
     credentials: "include",
     headers,
-    body: JSON.stringify({
-      upgradeType: "seconds_multiplier",
-      quantity
-    })
+    body: JSON.stringify(body)
   });
 
   const payload = (await response.json().catch(() => null)) as { error?: string; code?: string } | null;
@@ -295,10 +292,21 @@ export async function purchaseSecondsMultiplier(token: string | null, quantity: 
     if (response.status === 400 && payload?.code === "INSUFFICIENT_FUNDS") {
       throw new Error("INSUFFICIENT_FUNDS");
     }
+    if (response.status === 400 && payload?.code === "ALREADY_OWNED") {
+      throw new Error("ALREADY_OWNED");
+    }
     throw new Error(payload?.error ?? "Failed to purchase upgrade");
   }
 
   return payload as PlayerResponse;
+}
+
+export async function purchaseSecondsMultiplier(token: string | null, quantity: 1 | 5 | 10): Promise<PlayerResponse> {
+  return purchaseUpgrade(token, { upgradeType: "seconds_multiplier", quantity });
+}
+
+export async function purchaseRestraint(token: string | null): Promise<PlayerResponse> {
+  return purchaseUpgrade(token, { upgradeType: "restraint" });
 }
 
 export async function logoutSession(): Promise<void> {

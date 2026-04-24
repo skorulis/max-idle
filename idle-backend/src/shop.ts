@@ -2,25 +2,33 @@ import express from "express";
 import type { Pool } from "pg";
 import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import {
+  getRestraintEnabled,
+  getRestraintUpgradeCost,
   getSecondsMultiplier,
   getSecondsMultiplierPurchaseCost,
   getSecondsMultiplierUpgradeCost,
   levelToMultiplier,
   multiplierToLevel,
+  normalizeShopState,
+  withRestraint,
   withSecondsMultiplier
 } from "@maxidle/shared/shop";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 import { normalizeCompletedAchievementIds } from "./achievementUpdates.js";
 import { calculateElapsedSeconds } from "./time.js";
-import { getIdleSecondsRate } from "./idleRate.js";
+import { getEffectiveIdleSecondsRate } from "./idleRate.js";
 import type { AuthClaims } from "./types.js";
 
 export {
+  getRestraintEnabled,
+  getRestraintUpgradeCost,
   getSecondsMultiplier,
   getSecondsMultiplierPurchaseCost,
   getSecondsMultiplierUpgradeCost,
   levelToMultiplier,
   multiplierToLevel,
+  normalizeShopState,
+  withRestraint,
   withSecondsMultiplier
 } from "@maxidle/shared/shop";
 
@@ -49,12 +57,12 @@ export function registerShopRoutes({
       const identity = await resolveIdentity(req);
 
       const upgradeType = String(req.body?.upgradeType ?? "");
-      const quantity = Number(req.body?.quantity);
-      if (upgradeType !== "seconds_multiplier") {
+      const requestedQuantity = Number(req.body?.quantity);
+      if (upgradeType !== "seconds_multiplier" && upgradeType !== "restraint") {
         res.status(400).json({ error: "Unsupported upgrade type" });
         return;
       }
-      if (![1, 5, 10].includes(quantity)) {
+      if (upgradeType === "seconds_multiplier" && ![1, 5, 10].includes(requestedQuantity)) {
         res.status(400).json({ error: "Invalid purchase quantity" });
         return;
       }
@@ -110,10 +118,20 @@ export function registerShopRoutes({
       }
 
       const now = new Date();
+      const quantity = upgradeType === "seconds_multiplier" ? requestedQuantity : 1;
       const secondsMultiplier = getSecondsMultiplier(row.shop);
+      const restraintEnabled = getRestraintEnabled(row.shop);
 
       const currentLevel = multiplierToLevel(secondsMultiplier);
-      const totalCost = getSecondsMultiplierPurchaseCost(currentLevel, quantity);
+      const totalCost =
+        upgradeType === "seconds_multiplier"
+          ? getSecondsMultiplierPurchaseCost(currentLevel, quantity)
+          : getRestraintUpgradeCost();
+      if (upgradeType === "restraint" && restraintEnabled) {
+        await client.query("ROLLBACK");
+        res.status(400).json({ error: "Upgrade already owned", code: "ALREADY_OWNED" });
+        return;
+      }
       const idleTimeAvailable = toNumber(row.idle_time_available);
       if (idleTimeAvailable < totalCost) {
         await client.query("ROLLBACK");
@@ -124,9 +142,12 @@ export function registerShopRoutes({
         return;
       }
 
-      const nextLevel = currentLevel + quantity;
+      const nextLevel = upgradeType === "seconds_multiplier" ? currentLevel + quantity : currentLevel;
       const nextMultiplier = levelToMultiplier(nextLevel);
-      const nextShopState = withSecondsMultiplier(row.shop, nextMultiplier);
+      const nextShopState =
+        upgradeType === "seconds_multiplier"
+          ? withSecondsMultiplier(row.shop, nextMultiplier)
+          : withRestraint(row.shop, true);
       const nextUpgradesPurchased = toNumber(row.upgrades_purchased) + quantity;
       const nextCompletedAchievementIds =
         nextUpgradesPurchased >= 4
@@ -135,10 +156,12 @@ export function registerShopRoutes({
       const hasNewAchievement = nextCompletedAchievementIds.length > toNumber(row.achievement_count);
       const nextAchievementCount = nextCompletedAchievementIds.length;
       const nextAchievementBonusMultiplier = getAchievementBonusMultiplier(nextAchievementCount);
+      const effectiveMultiplierForCurrentSync =
+        upgradeType === "seconds_multiplier" ? nextMultiplier : secondsMultiplier;
       const syncedCurrentSeconds = boostedUncollectedIdleSeconds(
         row.last_collected_at,
         now,
-        nextMultiplier,
+        withSecondsMultiplier(nextShopState, effectiveMultiplierForCurrentSync),
         nextAchievementBonusMultiplier
       );
       const updateResult = await client.query<{
@@ -194,6 +217,12 @@ export function registerShopRoutes({
       }
 
       const elapsedSinceLastCollection = calculateElapsedSeconds(updated.last_collected_at, now);
+      const normalizedUpdatedShop = normalizeShopState(updated.shop);
+      const idleSecondsRate = getEffectiveIdleSecondsRate({
+        secondsSinceLastCollection: elapsedSinceLastCollection,
+        shop: normalizedUpdatedShop,
+        achievementBonusMultiplier: nextAchievementBonusMultiplier
+      });
       res.json({
         idleTime: {
           total: toNumber(updated.idle_time_total),
@@ -209,10 +238,11 @@ export function registerShopRoutes({
         },
         upgradesPurchased: nextUpgradesPurchased,
         currentSeconds: toNumber(updated.current_seconds),
-        secondsMultiplier: getSecondsMultiplier(updated.shop),
+        secondsMultiplier: getSecondsMultiplier(normalizedUpdatedShop),
+        shop: normalizedUpdatedShop,
         achievementBonusMultiplier: nextAchievementBonusMultiplier,
         hasUnseenAchievements: updated.has_unseen_achievements,
-        idleSecondsRate: getIdleSecondsRate({ secondsSinceLastCollection: elapsedSinceLastCollection }),
+        idleSecondsRate,
         currentSecondsLastUpdated: updated.current_seconds_last_updated.toISOString(),
         lastCollectedAt: updated.last_collected_at.toISOString(),
         lastDailyRewardCollectedAt: updated.last_daily_reward_collected_at?.toISOString() ?? null,

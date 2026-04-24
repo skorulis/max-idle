@@ -1,14 +1,17 @@
-import { calculateIdleSecondsGain } from "./idleRate.js";
+import { calculateBoostedIdleSecondsGain } from "./idleRate.js";
 import { calculateElapsedSeconds } from "./time.js";
 
 /** Uncollected idle seconds at refTime (matches client: integral since last_collected_at, then multipliers). */
 export function boostedUncollectedIdleSeconds(
   lastCollectedAt: Date,
   refTime: Date,
-  secondsMultiplier: number,
+  shop: unknown,
   achievementBonusMultiplier: number
 ): number {
   const elapsedSinceLastCollection = calculateElapsedSeconds(lastCollectedAt, refTime);
-  const baseGain = calculateIdleSecondsGain(elapsedSinceLastCollection);
-  return Math.floor(baseGain * secondsMultiplier * achievementBonusMultiplier);
+  return calculateBoostedIdleSecondsGain({
+    secondsSinceLastCollection: elapsedSinceLastCollection,
+    shop,
+    achievementBonusMultiplier
+  });
 }

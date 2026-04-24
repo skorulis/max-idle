@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { CircleUserRound, House, Medal, ShoppingCart, Star } from "lucide-react";
 import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "react-router-dom";
 import GameIcon from "../GameIcon";
-import { calculateIdleSecondsGain, getIdleSecondsRate } from "../idleRate";
-import { getSecondsMultiplierPurchaseCost, multiplierToLevel } from "../shop";
+import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
+import { getRestraintEnabled, getRestraintUpgradeCost, getSecondsMultiplierPurchaseCost, multiplierToLevel } from "../shop";
 import { AccountPage } from "../pages/AccountPage";
 import { AchievementsPage } from "../pages/AchievementsPage";
 import { HomePage } from "../pages/HomePage";
@@ -25,6 +25,7 @@ import {
   loginWithEmail,
   markAchievementsSeen,
   logoutSession,
+  purchaseRestraint,
   purchaseSecondsMultiplier,
   registerWithEmail,
   updateUsername,
@@ -133,7 +134,7 @@ export function AppShell() {
   const [usernameDraft, setUsernameDraft] = useState("");
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [usernameSuccess, setUsernameSuccess] = useState<string | null>(null);
-  const [shopPendingQuantity, setShopPendingQuantity] = useState<1 | 5 | 10 | null>(null);
+  const [shopPendingQuantity, setShopPendingQuantity] = useState<1 | 5 | 10 | "restraint" | null>(null);
   const [messageCardRandomIndex, setMessageCardRandomIndex] = useState(() => getRandomMessageIndex());
   const [displayedMessage, setDisplayedMessage] = useState(WELCOME_MESSAGE);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
@@ -479,11 +480,11 @@ export function AppShell() {
     }
 
     const elapsedSinceLastCollection = Math.floor((estimatedServerNowMs - playerState.lastCollectedAtMs) / 1000);
-    return Math.floor(
-      calculateIdleSecondsGain(Math.max(0, elapsedSinceLastCollection)) *
-        playerState.secondsMultiplier *
-        playerState.achievementBonusMultiplier
-    );
+    return calculateBoostedIdleSecondsGain({
+      secondsSinceLastCollection: Math.max(0, elapsedSinceLastCollection),
+      shop: playerState.shop,
+      achievementBonusMultiplier: playerState.achievementBonusMultiplier
+    });
   }, [estimatedServerNowMs, playerState]);
 
   const realtimeElapsedSeconds = useMemo(() => {
@@ -495,20 +496,27 @@ export function AppShell() {
     return Math.max(0, elapsed);
   }, [estimatedServerNowMs, playerState]);
 
-  const idleSecondsRate = useMemo(() => {
-    if (!playerState) {
-      return 1;
-    }
-    const elapsed = Math.floor((estimatedServerNowMs - playerState.lastCollectedAtMs) / 1000);
-    return getIdleSecondsRate({ secondsSinceLastCollection: Math.max(0, elapsed) });
-  }, [estimatedServerNowMs, playerState]);
-
   const effectiveIdleSecondsRate = useMemo(() => {
     if (!playerState) {
       return 1;
     }
-    return idleSecondsRate * playerState.secondsMultiplier * playerState.achievementBonusMultiplier;
-  }, [idleSecondsRate, playerState]);
+    const elapsed = Math.floor((estimatedServerNowMs - playerState.lastCollectedAtMs) / 1000);
+    return getEffectiveIdleSecondsRate({
+      secondsSinceLastCollection: Math.max(0, elapsed),
+      shop: playerState.shop,
+      achievementBonusMultiplier: playerState.achievementBonusMultiplier
+    });
+  }, [estimatedServerNowMs, playerState]);
+
+  const isCollectBlockedByRestraint = useMemo(() => {
+    if (!playerState) {
+      return false;
+    }
+    return isIdleCollectionBlockedByRestraint({
+      secondsSinceLastCollection: realtimeElapsedSeconds,
+      shop: playerState.shop
+    });
+  }, [playerState, realtimeElapsedSeconds]);
 
   const dailyRewardAvailable = useMemo(() => {
     if (!playerState) {
@@ -543,6 +551,8 @@ export function AppShell() {
       10: getSecondsMultiplierPurchaseCost(secondsMultiplierLevel, 10)
     };
   }, [secondsMultiplierLevel]);
+  const restraintUpgradeCost = getRestraintUpgradeCost();
+  const hasRestraintUpgrade = playerState ? getRestraintEnabled(playerState.shop) : false;
 
   const activeMessageCardText = isAuthenticated
     ? getMessageFromIndex(messageCardRandomIndex)
@@ -593,6 +603,11 @@ export function AppShell() {
     if (!playerState) {
       return;
     }
+    if (isCollectBlockedByRestraint) {
+      setError("Restraint blocks collection until at least 1 hour of realtime has passed.");
+      setStatus("Keep idling to satisfy Restraint.");
+      return;
+    }
 
     setCollecting(true);
     setError(null);
@@ -637,6 +652,34 @@ export function AppShell() {
     } catch (purchaseError) {
       if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
         setError("Not enough spendable idle seconds for that purchase.");
+      } else {
+        setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
+      }
+      setStatus("Could not complete shop purchase.");
+    } finally {
+      setShopPendingQuantity(null);
+    }
+  };
+
+  const onPurchaseRestraint = async () => {
+    if (!playerState || hasRestraintUpgrade) {
+      return;
+    }
+
+    setShopPendingQuantity("restraint");
+    setError(null);
+    setStatus("Purchasing Restraint...");
+    try {
+      const updatedPlayer = await purchaseRestraint(token);
+      const synced = toSyncedState(updatedPlayer);
+      alignClientClock();
+      setPlayerState(synced);
+      setStatus("Restraint acquired: +50% idle boost, 1 hour minimum collection.");
+    } catch (purchaseError) {
+      if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
+        setError("Not enough spendable idle seconds for that purchase.");
+      } else if (purchaseError instanceof Error && purchaseError.message === "ALREADY_OWNED") {
+        setError("Restraint is already active.");
       } else {
         setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
       }
@@ -930,6 +973,7 @@ export function AppShell() {
                 playerState={playerState}
                 starting={starting}
                 collecting={collecting}
+                collectBlockedByRestraint={isCollectBlockedByRestraint}
                 uncollectedIdleSeconds={uncollectedIdleSeconds}
                 realtimeElapsedSeconds={realtimeElapsedSeconds}
                 effectiveIdleSecondsRate={effectiveIdleSecondsRate}
@@ -951,6 +995,9 @@ export function AppShell() {
                 shopPendingQuantity={shopPendingQuantity}
                 shopCosts={shopCosts}
                 onPurchaseUpgrade={onPurchaseUpgrade}
+                restraintUpgradeCost={restraintUpgradeCost}
+                hasRestraintUpgrade={hasRestraintUpgrade}
+                onPurchaseRestraint={onPurchaseRestraint}
                 onNavigateHome={() => navigate("/")}
               />
             }

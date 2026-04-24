@@ -6,6 +6,7 @@ type HomePageProps = {
   playerState: SyncedPlayerState | null;
   starting: boolean;
   collecting: boolean;
+  collectBlockedByRestraint: boolean;
   collectingDailyReward: boolean;
   uncollectedIdleSeconds: number;
   realtimeElapsedSeconds: number;
@@ -22,6 +23,7 @@ export function HomePage({
   playerState,
   starting,
   collecting,
+  collectBlockedByRestraint,
   collectingDailyReward,
   uncollectedIdleSeconds,
   realtimeElapsedSeconds,
@@ -55,9 +57,12 @@ export function HomePage({
       <p className="subtle">Realtime: {formatSeconds(realtimeElapsedSeconds)}</p>
       <p className="subtle">Current rate: {effectiveIdleSecondsRate.toFixed(2)}x</p>
 
-      <button className="collect" onClick={() => void onCollect()} disabled={collecting}>
+      <button className="collect" onClick={() => void onCollect()} disabled={collecting || collectBlockedByRestraint}>
         {collecting ? "Collecting..." : "Collect"}
       </button>
+      {collectBlockedByRestraint ? (
+        <p className="subtle">Restraint active: you can collect after 1 hour of realtime.</p>
+      ) : null}
 
       <p className="subtle">Totals</p>
       <div className="shop-currencies">

@@ -27,6 +27,11 @@ export type PlayerState = {
     currentSeconds: number;
     idleSecondsRate: number;
     secondsMultiplier: number;
+    shop: {
+        seconds_multiplier: number;
+        restraint: boolean;
+        [key: string]: unknown;
+    };
     achievementBonusMultiplier: number;
     hasUnseenAchievements: boolean;
     currentSecondsLastUpdated: string;
@@ -101,11 +106,13 @@ export type LeaderboardResponse = {
 export type ShopPurchaseRequest = {
     upgradeType: 'seconds_multiplier';
     quantity: 1 | 5 | 10;
+} | {
+    upgradeType: 'restraint';
 };
 
 export type ShopPurchaseResponse = PlayerState & {
     purchase: {
-        upgradeType: 'seconds_multiplier';
+        upgradeType: 'seconds_multiplier' | 'restraint';
         quantity: number;
         totalCost: number;
     };

@@ -41,6 +41,12 @@ const playerStateSchema = registry.register(
     currentSeconds: z.number().int().nonnegative(),
     idleSecondsRate: z.number().nonnegative(),
     secondsMultiplier: z.number().positive(),
+    shop: z
+      .object({
+        seconds_multiplier: z.number().positive(),
+        restraint: z.boolean()
+      })
+      .catchall(z.unknown()),
     achievementBonusMultiplier: z.number().positive(),
     hasUnseenAchievements: z.boolean(),
     currentSecondsLastUpdated: z.string().datetime(),
@@ -133,17 +139,22 @@ const leaderboardResponseSchema = registry.register(
 
 const shopPurchaseRequestSchema = registry.register(
   "ShopPurchaseRequest",
-  z.object({
-    upgradeType: z.literal("seconds_multiplier"),
-    quantity: z.union([z.literal(1), z.literal(5), z.literal(10)])
-  })
+  z.discriminatedUnion("upgradeType", [
+    z.object({
+      upgradeType: z.literal("seconds_multiplier"),
+      quantity: z.union([z.literal(1), z.literal(5), z.literal(10)])
+    }),
+    z.object({
+      upgradeType: z.literal("restraint")
+    })
+  ])
 );
 
 const shopPurchaseResponseSchema = registry.register(
   "ShopPurchaseResponse",
   playerStateSchema.extend({
     purchase: z.object({
-      upgradeType: z.literal("seconds_multiplier"),
+      upgradeType: z.union([z.literal("seconds_multiplier"), z.literal("restraint")]),
       quantity: z.number().int().positive(),
       totalCost: z.number().int().nonnegative()
     })

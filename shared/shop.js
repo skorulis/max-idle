@@ -1,6 +1,7 @@
 const BASE_SECONDS_MULTIPLIER_COST = 5;
 const SECONDS_MULTIPLIER_COST_GROWTH = 1.4;
 const DEFAULT_SECONDS_MULTIPLIER = 1;
+const RESTRAINT_UPGRADE_COST = 5 * 60 * 60;
 
 export function normalizeShopState(shop) {
   const rawShop = shop && typeof shop === "object" && !Array.isArray(shop) ? shop : {};
@@ -9,9 +10,11 @@ export function normalizeShopState(shop) {
     Number.isFinite(parsedSecondsMultiplier) && parsedSecondsMultiplier > 0
       ? parsedSecondsMultiplier
       : DEFAULT_SECONDS_MULTIPLIER;
+  const restraint = rawShop.restraint === true;
   return {
     ...rawShop,
-    seconds_multiplier: secondsMultiplier
+    seconds_multiplier: secondsMultiplier,
+    restraint
   };
 }
 
@@ -28,6 +31,21 @@ export function withSecondsMultiplier(shop, secondsMultiplier) {
     ...normalizeShopState(shop),
     seconds_multiplier: nextSecondsMultiplier
   };
+}
+
+export function getRestraintEnabled(shop) {
+  return normalizeShopState(shop).restraint;
+}
+
+export function withRestraint(shop, enabled) {
+  return {
+    ...normalizeShopState(shop),
+    restraint: enabled === true
+  };
+}
+
+export function getRestraintUpgradeCost() {
+  return RESTRAINT_UPGRADE_COST;
 }
 
 export function multiplierToLevel(secondsMultiplier) {

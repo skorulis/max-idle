@@ -13,7 +13,7 @@ import {
 } from "./betterAuth.js";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 import { calculateElapsedSeconds } from "./time.js";
-import { getIdleSecondsRate } from "./idleRate.js";
+import { getEffectiveIdleSecondsRate } from "./idleRate.js";
 import {
   grantAchievement,
   normalizeCompletedAchievementIds,
@@ -22,7 +22,7 @@ import {
 } from "./achievementUpdates.js";
 import { ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION, ACHIEVEMENT_IDS, ACHIEVEMENTS } from "@maxidle/shared/achievements";
 import { validateEmailPasswordInput } from "@maxidle/shared/authValidation";
-import { getSecondsMultiplier } from "@maxidle/shared/shop";
+import { getSecondsMultiplier, normalizeShopState } from "@maxidle/shared/shop";
 import { registerShopRoutes } from "./shop.js";
 import { registerLeaderboardRoutes } from "./leaderboard.js";
 import { registerApiDocumentation } from "./apiContract.js";
@@ -99,12 +99,11 @@ export async function syncStalePlayerCurrentSeconds(pool: Pool, limit = 100): Pr
     );
 
     for (const row of stalePlayersResult.rows) {
-      const secondsMultiplier = getSecondsMultiplier(row.shop);
       const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
       const nextCurrentSeconds = boostedUncollectedIdleSeconds(
         row.last_collected_at,
         row.server_time,
-        secondsMultiplier,
+        row.shop,
         achievementBonusMultiplier
       );
 
@@ -852,12 +851,11 @@ export function createApp(pool: Pool, config: AppConfig) {
       }
 
       const accountAgeSeconds = calculateElapsedSeconds(row.created_at, row.server_time);
-      const secondsMultiplier = getSecondsMultiplier(row.shop);
       const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
       const currentIdleSeconds = boostedUncollectedIdleSeconds(
         row.last_collected_at,
         row.server_time,
-        secondsMultiplier,
+        row.shop,
         achievementBonusMultiplier
       );
 
@@ -943,12 +941,11 @@ export function createApp(pool: Pool, config: AppConfig) {
         return;
       }
 
-      const secondsMultiplier = getSecondsMultiplier(row.shop);
       const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
       const currentIdleSeconds = boostedUncollectedIdleSeconds(
         row.last_collected_at,
         row.server_time,
-        secondsMultiplier,
+        row.shop,
         achievementBonusMultiplier
       );
       await pool.query(
@@ -962,7 +959,11 @@ export function createApp(pool: Pool, config: AppConfig) {
         [userId, currentIdleSeconds, row.server_time]
       );
       const elapsedSinceLastCollection = calculateElapsedSeconds(row.last_collected_at, row.server_time);
-      const idleSecondsRate = getIdleSecondsRate({ secondsSinceLastCollection: elapsedSinceLastCollection });
+      const idleSecondsRate = getEffectiveIdleSecondsRate({
+        secondsSinceLastCollection: elapsedSinceLastCollection,
+        shop: row.shop,
+        achievementBonusMultiplier
+      });
 
       res.json({
         idleTime: {
@@ -980,7 +981,8 @@ export function createApp(pool: Pool, config: AppConfig) {
         upgradesPurchased: toNumber(row.upgrades_purchased),
         currentSeconds: currentIdleSeconds,
         idleSecondsRate,
-        secondsMultiplier,
+        secondsMultiplier: getSecondsMultiplier(row.shop),
+        shop: normalizeShopState(row.shop),
         achievementBonusMultiplier,
         hasUnseenAchievements: row.has_unseen_achievements,
         currentSecondsLastUpdated: row.server_time.toISOString(),
@@ -1037,12 +1039,11 @@ export function createApp(pool: Pool, config: AppConfig) {
       }
 
       const collectedAt = new Date();
-      const secondsMultiplier = getSecondsMultiplier(lockedRow.shop);
       const collectionAchievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(lockedRow.achievement_count));
       const collectedSeconds = boostedUncollectedIdleSeconds(
         lockedRow.last_collected_at,
         collectedAt,
-        secondsMultiplier,
+        lockedRow.shop,
         collectionAchievementBonusMultiplier
       );
       const realSecondsCollected = calculateElapsedSeconds(lockedRow.last_collected_at, collectedAt);
@@ -1128,6 +1129,11 @@ export function createApp(pool: Pool, config: AppConfig) {
         lockedRow.has_unseen_achievements || completedAchievementIds.length !== toNumber(lockedRow.achievement_count);
 
       const achievementBonusMultiplier = getAchievementBonusMultiplier(completedAchievementIds.length);
+      const idleSecondsRate = getEffectiveIdleSecondsRate({
+        secondsSinceLastCollection: 0,
+        shop: row.shop,
+        achievementBonusMultiplier
+      });
       await client.query("COMMIT");
       res.json({
         collectedSeconds,
@@ -1147,9 +1153,10 @@ export function createApp(pool: Pool, config: AppConfig) {
         upgradesPurchased: toNumber(row.upgrades_purchased),
         currentSeconds: toNumber(row.current_seconds),
         secondsMultiplier: getSecondsMultiplier(row.shop),
+        shop: normalizeShopState(row.shop),
         achievementBonusMultiplier,
         hasUnseenAchievements,
-        idleSecondsRate: 1,
+        idleSecondsRate,
         currentSecondsLastUpdated: row.current_seconds_last_updated.toISOString(),
         lastCollectedAt: row.last_collected_at.toISOString(),
         lastDailyRewardCollectedAt: row.last_daily_reward_collected_at?.toISOString() ?? null,
@@ -1275,8 +1282,12 @@ export function createApp(pool: Pool, config: AppConfig) {
       }
 
       const elapsedSinceLastCollection = calculateElapsedSeconds(updatedPlayer.last_collected_at, now);
-      const idleSecondsRate = getIdleSecondsRate({ secondsSinceLastCollection: elapsedSinceLastCollection });
       const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(updatedPlayer.achievement_count));
+      const idleSecondsRate = getEffectiveIdleSecondsRate({
+        secondsSinceLastCollection: elapsedSinceLastCollection,
+        shop: updatedPlayer.shop,
+        achievementBonusMultiplier
+      });
       await client.query("COMMIT");
 
       res.json({
@@ -1295,6 +1306,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         upgradesPurchased: toNumber(updatedPlayer.upgrades_purchased),
         currentSeconds: toNumber(updatedPlayer.current_seconds),
         secondsMultiplier: getSecondsMultiplier(updatedPlayer.shop),
+        shop: normalizeShopState(updatedPlayer.shop),
         achievementBonusMultiplier,
         hasUnseenAchievements: updatedPlayer.has_unseen_achievements,
         idleSecondsRate,

@@ -1,3 +1,5 @@
+import type { ShopState } from "../shop";
+
 export type AuthResponse = {
   userId: string;
   token: string;
@@ -18,6 +20,7 @@ export type PlayerResponse = {
   currentSeconds: number;
   idleSecondsRate: number;
   secondsMultiplier: number;
+  shop: ShopState;
   achievementBonusMultiplier: number;
   hasUnseenAchievements: boolean;
   currentSecondsLastUpdated: string;
@@ -82,6 +85,7 @@ export type SyncedPlayerState = {
   currentSeconds: number;
   currentSecondsLastUpdatedMs: number;
   secondsMultiplier: number;
+  shop: ShopState;
   achievementBonusMultiplier: number;
   hasUnseenAchievements: boolean;
   lastCollectedAtMs: number;

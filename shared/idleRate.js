@@ -1,3 +1,5 @@
+import { getRestraintEnabled, getSecondsMultiplier } from "./shop.js";
+
 const IDLE_RATE_STEPS = [
   { seconds: 0, rate: 1 },
   { seconds: 60, rate: 2 },
@@ -9,6 +11,8 @@ const IDLE_RATE_STEPS = [
   { seconds: 4 * 7 * 24 * 60 * 60, rate: 20 },
   { seconds: 365 * 24 * 60 * 60, rate: 30 }
 ];
+const RESTRAINT_MIN_REALTIME_SECONDS = 60 * 60;
+const RESTRAINT_IDLE_BONUS_MULTIPLIER = 1.5;
 
 function clampElapsedSeconds(value) {
   if (!Number.isFinite(value) || value <= 0) {
@@ -72,4 +76,40 @@ export function calculateIdleSecondsGain(secondsSinceLastCollection) {
   }
 
   return Math.floor(total);
+}
+
+export function isIdleCollectionBlockedByRestraint(player) {
+  const elapsedSeconds = clampElapsedSeconds(player.secondsSinceLastCollection);
+  if (!getRestraintEnabled(player.shop)) {
+    return false;
+  }
+  return elapsedSeconds < RESTRAINT_MIN_REALTIME_SECONDS;
+}
+
+export function getIdleShopBonusMultiplier(shop) {
+  return getRestraintEnabled(shop) ? RESTRAINT_IDLE_BONUS_MULTIPLIER : 1;
+}
+
+export function calculateBoostedIdleSecondsGain(player) {
+  if (isIdleCollectionBlockedByRestraint(player)) {
+    return 0;
+  }
+  const elapsedSeconds = clampElapsedSeconds(player.secondsSinceLastCollection);
+  const baseGain = calculateIdleSecondsGain(elapsedSeconds);
+  const secondsMultiplier = getSecondsMultiplier(player.shop);
+  const achievementBonusMultiplier = Number.isFinite(player.achievementBonusMultiplier) ? player.achievementBonusMultiplier : 1;
+  const shopBonusMultiplier = getIdleShopBonusMultiplier(player.shop);
+  return Math.floor(baseGain * secondsMultiplier * shopBonusMultiplier * achievementBonusMultiplier);
+}
+
+export function getEffectiveIdleSecondsRate(player) {
+  if (isIdleCollectionBlockedByRestraint(player)) {
+    return 0;
+  }
+  return (
+    getIdleSecondsRate({ secondsSinceLastCollection: player.secondsSinceLastCollection }) *
+    getSecondsMultiplier(player.shop) *
+    getIdleShopBonusMultiplier(player.shop) *
+    (Number.isFinite(player.achievementBonusMultiplier) ? player.achievementBonusMultiplier : 1)
+  );
 }

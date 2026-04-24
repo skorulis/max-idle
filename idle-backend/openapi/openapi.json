@@ -95,6 +95,26 @@
             "minimum": 0,
             "exclusiveMinimum": true
           },
+          "shop": {
+            "type": "object",
+            "properties": {
+              "seconds_multiplier": {
+                "type": "number",
+                "minimum": 0,
+                "exclusiveMinimum": true
+              },
+              "restraint": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "seconds_multiplier",
+              "restraint"
+            ],
+            "additionalProperties": {
+              "nullable": true
+            }
+          },
           "achievementBonusMultiplier": {
             "type": "number",
             "minimum": 0,
@@ -129,6 +149,7 @@
           "currentSeconds",
           "idleSecondsRate",
           "secondsMultiplier",
+          "shop",
           "achievementBonusMultiplier",
           "hasUnseenAchievements",
           "currentSecondsLastUpdated",
@@ -392,40 +413,58 @@
         ]
       },
       "ShopPurchaseRequest": {
-        "type": "object",
-        "properties": {
-          "upgradeType": {
-            "type": "string",
-            "enum": [
-              "seconds_multiplier"
-            ]
-          },
-          "quantity": {
-            "anyOf": [
-              {
-                "type": "number",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "upgradeType": {
+                "type": "string",
                 "enum": [
-                  1
+                  "seconds_multiplier"
                 ]
               },
-              {
-                "type": "number",
-                "enum": [
-                  5
-                ]
-              },
-              {
-                "type": "number",
-                "enum": [
-                  10
+              "quantity": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "enum": [
+                      1
+                    ]
+                  },
+                  {
+                    "type": "number",
+                    "enum": [
+                      5
+                    ]
+                  },
+                  {
+                    "type": "number",
+                    "enum": [
+                      10
+                    ]
+                  }
                 ]
               }
+            },
+            "required": [
+              "upgradeType",
+              "quantity"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "upgradeType": {
+                "type": "string",
+                "enum": [
+                  "restraint"
+                ]
+              }
+            },
+            "required": [
+              "upgradeType"
             ]
           }
-        },
-        "required": [
-          "upgradeType",
-          "quantity"
         ]
       },
       "ShopPurchaseResponse": {
@@ -440,9 +479,19 @@
                 "type": "object",
                 "properties": {
                   "upgradeType": {
-                    "type": "string",
-                    "enum": [
-                      "seconds_multiplier"
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "seconds_multiplier"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "restraint"
+                        ]
+                      }
                     ]
                   },
                   "quantity": {

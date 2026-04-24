@@ -4,9 +4,12 @@ import type { SyncedPlayerState } from "../app/types";
 
 type ShopPageProps = {
   playerState: SyncedPlayerState | null;
-  shopPendingQuantity: 1 | 5 | 10 | null;
+  shopPendingQuantity: 1 | 5 | 10 | "restraint" | null;
   shopCosts: Record<1 | 5 | 10, number>;
   onPurchaseUpgrade: (quantity: 1 | 5 | 10) => Promise<void>;
+  restraintUpgradeCost: number;
+  hasRestraintUpgrade: boolean;
+  onPurchaseRestraint: () => Promise<void>;
   onNavigateHome: () => void;
 };
 
@@ -15,6 +18,9 @@ export function ShopPage({
   shopPendingQuantity,
   shopCosts,
   onPurchaseUpgrade,
+  restraintUpgradeCost,
+  hasRestraintUpgrade,
+  onPurchaseRestraint,
   onNavigateHome
 }: ShopPageProps) {
   if (!playerState) {
@@ -80,6 +86,23 @@ export function ShopPage({
           disabled={shopPendingQuantity !== null || playerState.idleTime.available < shopCosts[10]}
         >
           {shopPendingQuantity === 10 ? "Purchasing..." : `Buy x10 (${formatSeconds(shopCosts[10])})`}
+        </button>
+      </div>
+      <p className="subtle">Upgrade: Restraint (+50% idle gain, cannot collect under 1 hour realtime)</p>
+      <div className="shop-actions">
+        <button
+          type="button"
+          className="secondary"
+          onClick={() => void onPurchaseRestraint()}
+          disabled={
+            shopPendingQuantity !== null || hasRestraintUpgrade || playerState.idleTime.available < restraintUpgradeCost
+          }
+        >
+          {hasRestraintUpgrade
+            ? "Restraint owned"
+            : shopPendingQuantity === "restraint"
+              ? "Purchasing..."
+              : `Buy Restraint (${formatSeconds(restraintUpgradeCost)})`}
         </button>
       </div>
     </>
