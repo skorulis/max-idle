@@ -24,6 +24,7 @@ export type ShopUpgradeLevel = {
 export type ShopUpgradeDefinition = {
   id: ShopUpgradeId;
   name: string;
+  icon: string;
   description: string;
   levels: ShopUpgradeLevel[];
   currencyType: ShopCurrencyType;
@@ -32,6 +33,7 @@ export type ShopUpgradeDefinition = {
 export const SECONDS_MULTIPLIER_SHOP_UPGRADE: ShopUpgradeDefinition = {
   id: SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER,
   name: "Seconds Multiplier",
+  icon: "gauge",
   description: "Multiply idle gain by %s.",
   levels: [
     { cost: 5, value: 1.1 },
@@ -51,6 +53,7 @@ export const SECONDS_MULTIPLIER_SHOP_UPGRADE: ShopUpgradeDefinition = {
 export const RESTRAINT_SHOP_UPGRADE: ShopUpgradeDefinition = {
   id: SHOP_UPGRADE_IDS.RESTRAINT,
   name: "Restraint",
+  icon: "shield-alert",
   description: "+50% idle gain, but you must wait 1 hour before collecting.",
   levels: [{ cost: 2 * 60 * 60, value: 1.5 }],
   currencyType: SHOP_CURRENCY_TYPES.REAL
@@ -59,6 +62,7 @@ export const RESTRAINT_SHOP_UPGRADE: ShopUpgradeDefinition = {
 export const LUCK_SHOP_UPGRADE: ShopUpgradeDefinition = {
   id: SHOP_UPGRADE_IDS.LUCK,
   name: "Luck",
+  icon: "dice-5",
   description: "50% chance to keep timer on collect.",
   levels: [{ cost: 7 * 24 * 60 * 60, value: 0.5 }],
   currencyType: SHOP_CURRENCY_TYPES.IDLE
