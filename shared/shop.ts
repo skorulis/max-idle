@@ -29,28 +29,28 @@ export function normalizeShopState(shop: unknown): ShopState {
   };
 }
 
-export function getSecondsMultiplier(shop: unknown): number {
-  return normalizeShopState(shop).seconds_multiplier;
+export function getSecondsMultiplier(shop: ShopState): number {
+  return shop.seconds_multiplier;
 }
 
-export function withSecondsMultiplier(shop: unknown, secondsMultiplier: number): ShopState {
+export function withSecondsMultiplier(shop: ShopState, secondsMultiplier: number): ShopState {
   const nextSecondsMultiplier =
     Number.isFinite(secondsMultiplier) && secondsMultiplier > 0
       ? secondsMultiplier
       : DEFAULT_SECONDS_MULTIPLIER;
   return {
-    ...normalizeShopState(shop),
+    ...shop,
     seconds_multiplier: nextSecondsMultiplier
   };
 }
 
-export function getRestraintEnabled(shop: unknown): boolean {
-  return normalizeShopState(shop).restraint;
+export function getRestraintEnabled(shop: ShopState): boolean {
+  return shop.restraint;
 }
 
-export function withRestraint(shop: unknown, enabled: boolean): ShopState {
+export function withRestraint(shop: ShopState, enabled: boolean): ShopState {
   return {
-    ...normalizeShopState(shop),
+    ...shop,
     restraint: enabled === true
   };
 }
@@ -59,13 +59,13 @@ export function getRestraintUpgradeCost(): number {
   return RESTRAINT_UPGRADE_COST;
 }
 
-export function getLuckEnabled(shop: unknown): boolean {
-  return normalizeShopState(shop).luck;
+export function getLuckEnabled(shop: ShopState): boolean {
+  return shop.luck;
 }
 
-export function withLuck(shop: unknown, enabled: boolean): ShopState {
+export function withLuck(shop: ShopState, enabled: boolean): ShopState {
   return {
-    ...normalizeShopState(shop),
+    ...shop,
     luck: enabled === true
   };
 }

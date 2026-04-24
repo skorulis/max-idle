@@ -22,6 +22,7 @@ import { registerAuthRoutes } from "./routes/auth.js";
 import { registerAccountRoutes } from "./routes/account.js";
 import { registerAchievementsRoutes } from "./routes/achievements.js";
 import { registerPlayerRoutes } from "./routes/player.js";
+import type { ShopState } from "@maxidle/shared/shop";
 
 function toNumber(value: unknown): number {
   if (typeof value === "number") {
@@ -50,7 +51,7 @@ type PlayerCurrentSecondsSyncRow = {
   current_seconds_last_updated: Date;
   last_collected_at: Date;
   achievement_count: number | string;
-  shop: unknown;
+  shop: ShopState;
   server_time: Date;
 };
 
@@ -310,7 +311,7 @@ export function createApp(pool: Pool, config: AppConfig) {
         current_seconds_last_updated: Date;
         last_collected_at: Date;
         achievement_count: string;
-        shop: unknown;
+        shop: ShopState;
         server_time: Date;
       }>(
         `

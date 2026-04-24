@@ -14,6 +14,8 @@ import {
 } from "../src/shop.js";
 
 describe("shop pricing", () => {
+  const baseShop = { seconds_multiplier: 1, restraint: false, luck: false };
+
   it("calculates compounding per-step costs with floor", () => {
     expect(getSecondsMultiplierUpgradeCost(0)).toBe(5);
     expect(getSecondsMultiplierUpgradeCost(1)).toBe(7);
@@ -36,16 +38,16 @@ describe("shop pricing", () => {
 
   it("normalizes and toggles restraint state", () => {
     expect(normalizeShopState({}).restraint).toBe(false);
-    expect(getRestraintEnabled({ restraint: true })).toBe(true);
-    expect(withRestraint({ seconds_multiplier: 1.3 }, true).restraint).toBe(true);
-    expect(withRestraint({ restraint: true }, false).restraint).toBe(false);
+    expect(getRestraintEnabled({ ...baseShop, restraint: true })).toBe(true);
+    expect(withRestraint({ ...baseShop, seconds_multiplier: 1.3 }, true).restraint).toBe(true);
+    expect(withRestraint({ ...baseShop, restraint: true }, false).restraint).toBe(false);
   });
 
   it("normalizes and toggles luck state", () => {
     expect(normalizeShopState({}).luck).toBe(false);
-    expect(getLuckEnabled({ luck: true })).toBe(true);
-    expect(withLuck({ seconds_multiplier: 1.3 }, true).luck).toBe(true);
-    expect(withLuck({ luck: true }, false).luck).toBe(false);
+    expect(getLuckEnabled({ ...baseShop, luck: true })).toBe(true);
+    expect(withLuck({ ...baseShop, seconds_multiplier: 1.3 }, true).luck).toBe(true);
+    expect(withLuck({ ...baseShop, luck: true }, false).luck).toBe(false);
   });
 
   it("uses fixed restraint upgrade cost", () => {

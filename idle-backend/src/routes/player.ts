@@ -1,7 +1,8 @@
 import express from "express";
 import type { Pool } from "pg";
 import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
-import { getSecondsMultiplier, normalizeShopState } from "@maxidle/shared/shop";
+import { getSecondsMultiplier } from "@maxidle/shared/shop";
+import type { ShopState } from "@maxidle/shared/shop";
 import { boostedUncollectedIdleSeconds } from "../boostedUncollectedIdle.js";
 import { calculateElapsedSeconds } from "../time.js";
 import { getEffectiveIdleSecondsRate, shouldPreserveIdleTimerOnCollect } from "../idleRate.js";
@@ -55,7 +56,7 @@ export function registerPlayerRoutes({
         upgrades_purchased: string;
         achievement_count: string;
         has_unseen_achievements: boolean;
-        shop: unknown;
+        shop: ShopState;
         last_collected_at: Date;
         current_seconds: string;
         current_seconds_last_updated: Date;
@@ -132,7 +133,7 @@ export function registerPlayerRoutes({
         currentSeconds: currentIdleSeconds,
         idleSecondsRate,
         secondsMultiplier: getSecondsMultiplier(row.shop),
-        shop: normalizeShopState(row.shop),
+        shop: row.shop,
         achievementBonusMultiplier,
         hasUnseenAchievements: row.has_unseen_achievements,
         currentSecondsLastUpdated: row.server_time.toISOString(),
@@ -157,7 +158,7 @@ export function registerPlayerRoutes({
         achievement_count: number | string;
         completed_achievements: unknown;
         has_unseen_achievements: boolean;
-        shop: unknown;
+        shop: ShopState;
         last_collected_at: Date;
         current_seconds: number | string;
         current_seconds_last_updated: Date;
@@ -211,7 +212,7 @@ export function registerPlayerRoutes({
         last_collected_at: Date;
         current_seconds: number | string;
         current_seconds_last_updated: Date;
-        shop: unknown;
+        shop: ShopState;
         last_daily_reward_collected_at: Date | null;
       }>(
         `
@@ -307,7 +308,7 @@ export function registerPlayerRoutes({
         upgradesPurchased: toNumber(row.upgrades_purchased),
         currentSeconds: toNumber(row.current_seconds),
         secondsMultiplier: getSecondsMultiplier(row.shop),
-        shop: normalizeShopState(row.shop),
+        shop: row.shop,
         achievementBonusMultiplier,
         hasUnseenAchievements,
         idleSecondsRate,
@@ -341,7 +342,7 @@ export function registerPlayerRoutes({
         upgrades_purchased: number | string;
         current_seconds: number | string;
         current_seconds_last_updated: Date;
-        shop: unknown;
+        shop: ShopState;
         achievement_count: number | string;
         has_unseen_achievements: boolean;
         last_collected_at: Date;
@@ -396,7 +397,7 @@ export function registerPlayerRoutes({
         upgrades_purchased: number | string;
         current_seconds: number | string;
         current_seconds_last_updated: Date;
-        shop: unknown;
+        shop: ShopState;
         achievement_count: number | string;
         has_unseen_achievements: boolean;
         last_collected_at: Date;
@@ -460,7 +461,7 @@ export function registerPlayerRoutes({
         upgradesPurchased: toNumber(updatedPlayer.upgrades_purchased),
         currentSeconds: toNumber(updatedPlayer.current_seconds),
         secondsMultiplier: getSecondsMultiplier(updatedPlayer.shop),
-        shop: normalizeShopState(updatedPlayer.shop),
+        shop: updatedPlayer.shop,
         achievementBonusMultiplier,
         hasUnseenAchievements: updatedPlayer.has_unseen_achievements,
         idleSecondsRate,

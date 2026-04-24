@@ -27,7 +27,7 @@ export type IdleRatePlayer = {
 
 export type IdleCollectionPlayer = {
   secondsSinceLastCollection: number;
-  shop: ShopState | unknown;
+  shop: ShopState;
   achievementBonusMultiplier: number;
 };
 
@@ -97,7 +97,7 @@ export function calculateIdleSecondsGain(secondsSinceLastCollection: number): nu
 
 export function isIdleCollectionBlockedByRestraint(player: {
   secondsSinceLastCollection: number;
-  shop: ShopState | unknown;
+  shop: ShopState;
 }): boolean {
   const elapsedSeconds = clampElapsedSeconds(player.secondsSinceLastCollection);
   if (!getRestraintEnabled(player.shop)) {
@@ -106,7 +106,7 @@ export function isIdleCollectionBlockedByRestraint(player: {
   return elapsedSeconds < RESTRAINT_MIN_REALTIME_SECONDS;
 }
 
-export function getIdleShopBonusMultiplier(shop: ShopState | unknown): number {
+export function getIdleShopBonusMultiplier(shop: ShopState): number {
   return getRestraintEnabled(shop) ? RESTRAINT_IDLE_BONUS_MULTIPLIER : 1;
 }
 
@@ -134,7 +134,7 @@ export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): numbe
   );
 }
 
-export function shouldPreserveIdleTimerOnCollect(shop: ShopState | unknown, randomValue = Math.random()): boolean {
+export function shouldPreserveIdleTimerOnCollect(shop: ShopState, randomValue = Math.random()): boolean {
   if (!getLuckEnabled(shop)) {
     return false;
   }

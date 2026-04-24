@@ -16,6 +16,7 @@ import {
   withRestraint,
   withSecondsMultiplier
 } from "@maxidle/shared/shop";
+import type { ShopState } from "@maxidle/shared/shop";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 import { normalizeCompletedAchievementIds } from "./achievementUpdates.js";
 import { calculateElapsedSeconds } from "./time.js";
@@ -86,7 +87,7 @@ export function registerShopRoutes({
         has_unseen_achievements: boolean;
         completed_achievements: unknown;
         upgrades_purchased: number | string;
-        shop: unknown;
+        shop: ShopState;
         current_seconds: string;
         current_seconds_last_updated: Date;
         last_collected_at: Date;
@@ -187,7 +188,7 @@ export function registerShopRoutes({
         current_seconds: string;
         current_seconds_last_updated: Date;
         last_collected_at: Date;
-        shop: unknown;
+        shop: ShopState;
         last_daily_reward_collected_at: Date | null;
       }>(
         `
@@ -233,10 +234,9 @@ export function registerShopRoutes({
       }
 
       const elapsedSinceLastCollection = calculateElapsedSeconds(updated.last_collected_at, now);
-      const normalizedUpdatedShop = normalizeShopState(updated.shop);
       const idleSecondsRate = getEffectiveIdleSecondsRate({
         secondsSinceLastCollection: elapsedSinceLastCollection,
-        shop: normalizedUpdatedShop,
+        shop: updated.shop,
         achievementBonusMultiplier: nextAchievementBonusMultiplier
       });
       res.json({
@@ -254,8 +254,8 @@ export function registerShopRoutes({
         },
         upgradesPurchased: nextUpgradesPurchased,
         currentSeconds: toNumber(updated.current_seconds),
-        secondsMultiplier: getSecondsMultiplier(normalizedUpdatedShop),
-        shop: normalizedUpdatedShop,
+        secondsMultiplier: getSecondsMultiplier(updated.shop),
+        shop: updated.shop,
         achievementBonusMultiplier: nextAchievementBonusMultiplier,
         hasUnseenAchievements: updated.has_unseen_achievements,
         idleSecondsRate,
