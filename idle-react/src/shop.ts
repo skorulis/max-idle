@@ -7,6 +7,7 @@ export {
   getRestraintLevel,
   getRestraintMaxLevel,
   getRestraintUpgradeCost,
+  getSecondsMultiplier,
   getSecondsMultiplierLevel,
   getSecondsMultiplierMaxLevel,
   getSecondsMultiplierPurchaseCost,

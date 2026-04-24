@@ -265,6 +265,84 @@ input {
   font-size: 14px;
 }
 
+.current-rate-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.current-rate-row .subtle {
+  margin: 0;
+}
+
+.info-icon-button {
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  color: #4b5563;
+  cursor: pointer;
+}
+
+.info-icon-button:hover {
+  background: #f9fafb;
+}
+
+.info-icon-button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.rate-info-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 30;
+  padding: 16px;
+}
+
+.rate-info-dialog {
+  width: min(480px, 100%);
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  background: #fafafa;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.rate-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.rate-info-header h3 {
+  margin: 0;
+}
+
+.rate-factor-row,
+.rate-factor-total {
+  margin: 8px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.rate-factor-total {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  font-weight: 600;
+}
+
 .error {
   margin-top: 12px;
   color: #b91c1c;

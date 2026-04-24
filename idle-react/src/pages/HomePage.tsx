@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { formatSeconds } from "../formatSeconds";
-import { Atom, Clock3, Gem, Gift } from "lucide-react";
+import { Atom, CircleHelp, Clock3, Gem, Gift } from "lucide-react";
 import type { SyncedPlayerState } from "../app/types";
+import { CurrentRateInfoOverlay } from "./CurrentRateInfoOverlay";
 
 const EARLY_COLLECT_WARNING_MESSAGES = [
   "Don't you think you should wait?",
@@ -45,6 +46,7 @@ export function HomePage({
 }: HomePageProps) {
   const [collectWarning, setCollectWarning] = useState<string | null>(null);
   const [collectWarningIndex, setCollectWarningIndex] = useState(0);
+  const [showRateInfo, setShowRateInfo] = useState(false);
 
   useEffect(() => {
     if (realtimeElapsedSeconds >= 15) {
@@ -83,7 +85,17 @@ export function HomePage({
       <p className="label">Current idle time</p>
       <p className="counter">{formatSeconds(uncollectedIdleSeconds)}</p>
       <p className="subtle">Realtime: {formatSeconds(realtimeElapsedSeconds)}</p>
-      <p className="subtle">Current rate: {effectiveIdleSecondsRate.toFixed(2)}x</p>
+      <div className="current-rate-row">
+        <p className="subtle">Current rate: {effectiveIdleSecondsRate.toFixed(2)}x</p>
+        <button
+          type="button"
+          className="info-icon-button"
+          aria-label="Show current rate factors"
+          onClick={() => setShowRateInfo(true)}
+        >
+          <CircleHelp size={15} aria-hidden="true" />
+        </button>
+      </div>
 
       <button className="collect" onClick={() => void handleCollect()} disabled={collecting || collectBlockedByRestraint}>
         {collecting ? "Collecting..." : collectBlockedByRestraint ? "Collect (Collect after 1h)" : "Collect"}
@@ -136,6 +148,14 @@ export function HomePage({
           </>
         )}
       </div>
+      <CurrentRateInfoOverlay
+        open={showRateInfo}
+        onClose={() => setShowRateInfo(false)}
+        secondsSinceLastCollection={realtimeElapsedSeconds}
+        effectiveIdleSecondsRate={effectiveIdleSecondsRate}
+        shop={playerState.shop}
+        achievementBonusMultiplier={playerState.achievementBonusMultiplier}
+      />
     </>
   );
 }
