@@ -515,9 +515,9 @@ describe("auth + player lifecycle", () => {
     const response = await request(app).get("/achievements").set("Authorization", `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(response.body.completedCount).toBe(0);
-    expect(response.body.totalCount).toBe(7);
+    expect(response.body.totalCount).toBe(8);
     expect(response.body.earningsBonusMultiplier).toBe(1);
-    expect(response.body.achievements).toHaveLength(7);
+    expect(response.body.achievements).toHaveLength(8);
     expect(response.body.achievements[0].id).toBe("account_creation");
     expect(response.body.achievements[1].id).toBe("username_selected");
     expect(response.body.achievements[2].id).toBe("beginner_shopper");
@@ -525,6 +525,7 @@ describe("auth + player lifecycle", () => {
     expect(response.body.achievements[4].id).toBe("idle_time_collector_3h_7m");
     expect(response.body.achievements[5].id).toBe("real_time_streak_59_minutes");
     expect(response.body.achievements[6].id).toBe("real_time_streak_2d_14h");
+    expect(response.body.achievements[7].id).toBe("collection_count_15");
   });
 
   it("clears unseen achievements when achievements are marked seen", async () => {
@@ -673,6 +674,42 @@ describe("auth + player lifecycle", () => {
 
     // Keep this test from affecting leaderboard ordering in later tests.
     await pool.query(`UPDATE player_states SET idle_time_total = 0, idle_time_available = 0 WHERE user_id = $1`, [userId]);
+  });
+
+  it("awards collection-count achievement after collecting 15 times", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    for (let index = 0; index < 14; index += 1) {
+      await pool.query(
+        `
+        INSERT INTO player_collection_history (user_id, collection_date, real_time, idle_time)
+        VALUES ($1, NOW(), 1, 1)
+        `,
+        [userId]
+      );
+    }
+    await pool.query(
+      `
+      UPDATE player_states
+      SET
+        last_collected_at = NOW() - INTERVAL '1 second',
+        current_seconds_last_updated = NOW() - INTERVAL '1 second'
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+
+    const collectResponse = await request(app).post("/player/collect").set("Authorization", `Bearer ${token}`);
+    expect(collectResponse.status).toBe(200);
+
+    const achievementState = await pool.query<{
+      completed_achievements: unknown;
+    }>(`SELECT completed_achievements FROM player_states WHERE user_id = $1`, [userId]);
+    expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toContain("collection_count_15");
+    expect(collectResponse.body.hasUnseenAchievements).toBe(true);
   });
 
   it("marks completed achievements from stored jsonb ids", async () => {

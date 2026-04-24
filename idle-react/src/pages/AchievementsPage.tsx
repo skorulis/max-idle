@@ -1,4 +1,4 @@
-import { BadgeCheck, Check, CircleHelp, Clock3, Lock, UserPlus, type LucideIcon } from "lucide-react";
+import { BadgeCheck, Check, CircleHelp, Clock3, Lock, UserPlus, Repeat, type LucideIcon } from "lucide-react";
 import type { AchievementsResponse } from "../app/types";
 import GameIcon from "../GameIcon";
 
@@ -16,6 +16,8 @@ function getAchievementIcon(iconName: string): LucideIcon {
       return BadgeCheck;
     case "clock":
       return Clock3;
+    case "repeat":
+      return Repeat;
     default:
       return CircleHelp;
   }

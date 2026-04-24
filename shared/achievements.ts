@@ -6,7 +6,8 @@ export const ACHIEVEMENT_IDS = {
   REAL_TIME_COLLECTOR_65_MINUTES: "real_time_collector_65_minutes",
   IDLE_TIME_COLLECTOR_3H_7M: "idle_time_collector_3h_7m",
   REAL_TIME_STREAK_59_MINUTES: "real_time_streak_59_minutes",
-  REAL_TIME_STREAK_2D_14H: "real_time_streak_2d_14h"
+  REAL_TIME_STREAK_2D_14H: "real_time_streak_2d_14h",
+  COLLECTION_COUNT_15: "collection_count_15"
 } as const;
 
 export type AchievementId = (typeof ACHIEVEMENT_IDS)[keyof typeof ACHIEVEMENT_IDS];
@@ -18,6 +19,7 @@ export type AchievementDefinition = {
   icon: string;
 };
 
+// Make sure to update AchievementsPage.tsx to map new icons
 export const ACHIEVEMENTS: AchievementDefinition[] = [
   {
     id: ACHIEVEMENT_IDS.ACCOUNT_CREATION,
@@ -60,5 +62,11 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     name: "Hibernation",
     description: "Wait at least 2 days and 14 hours before collecting.",
     icon: "clock"
+  },
+  {
+    id: ACHIEVEMENT_IDS.COLLECTION_COUNT_15,
+    name: "You're doing it wrong",
+    description: "Collect 15 times.",
+    icon: "repeat"
   }
 ];

@@ -271,6 +271,15 @@ export function registerPlayerRoutes({
         `,
         [userId, collectedAt, realSecondsCollected, collectedSeconds]
       );
+      const collectionCountResult = await client.query<{ collection_count: string | number }>(
+        `
+        SELECT COUNT(*) AS collection_count
+        FROM player_collection_history
+        WHERE user_id = $1
+        `,
+        [userId]
+      );
+      const collectionCount = toNumber(collectionCountResult.rows[0]?.collection_count ?? 0);
 
       const completedAchievementIds = normalizeCompletedAchievementIds(lockedRow.completed_achievements);
       if (
@@ -296,6 +305,12 @@ export function registerPlayerRoutes({
         !completedAchievementIds.includes(ACHIEVEMENT_IDS.REAL_TIME_STREAK_2D_14H)
       ) {
         completedAchievementIds.push(ACHIEVEMENT_IDS.REAL_TIME_STREAK_2D_14H);
+      }
+      if (
+        collectionCount >= 15 &&
+        !completedAchievementIds.includes(ACHIEVEMENT_IDS.COLLECTION_COUNT_15)
+      ) {
+        completedAchievementIds.push(ACHIEVEMENT_IDS.COLLECTION_COUNT_15);
       }
       if (completedAchievementIds.length !== toNumber(lockedRow.achievement_count)) {
         await updateCompletedAchievements(client, userId, completedAchievementIds);
