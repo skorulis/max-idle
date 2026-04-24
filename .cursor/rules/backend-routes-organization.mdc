@@ -1,0 +1,18 @@
+---
+description: Keep backend endpoints in route modules
+globs: idle-backend/src/**/*.ts
+alwaysApply: false
+---
+
+# Backend Route Organization
+
+- Place new HTTP endpoints in files under `idle-backend/src/routes/`.
+- In `idle-backend/src/app.ts`, register route modules and shared middleware only.
+- Do not add inline `app.get`, `app.post`, `app.put`, `app.patch`, or `app.delete` handlers directly in `app.ts` unless the user explicitly asks for an exception.
+- Prefer `register*Routes` functions that accept dependencies (`pool`, auth helpers, and utility callbacks) from `app.ts`.
+
+## Examples
+
+- Good: add `/player/history` in `idle-backend/src/routes/player.ts`.
+- Good: add a new `idle-backend/src/routes/inventory.ts` and register it from `app.ts`.
+- Avoid: adding endpoint handler bodies directly inside `idle-backend/src/app.ts`.
