@@ -993,7 +993,7 @@ describe("auth + player lifecycle", () => {
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
 
-    await pool.query(`UPDATE player_states SET idle_time_available = 100 WHERE user_id = $1`, [userId]);
+    await pool.query(`UPDATE player_states SET idle_time_available = 2000 WHERE user_id = $1`, [userId]);
 
     const purchaseResponse = await request(app)
       .post("/shop/purchase")
@@ -1001,8 +1001,8 @@ describe("auth + player lifecycle", () => {
       .send({ upgradeType: "seconds_multiplier", quantity: 5 });
 
     expect(purchaseResponse.status).toBe(200);
-    expect(purchaseResponse.body.purchase.totalCost).toBe(49);
-    expect(purchaseResponse.body.idleTime.available).toBe(51);
+    expect(purchaseResponse.body.purchase.totalCost).toBe(20 + 60 + 120 + 300 + 600);
+    expect(purchaseResponse.body.idleTime.available).toBe(2000 - (20 + 60 + 120 + 300 + 600));
     expect(purchaseResponse.body.upgradesPurchased).toBe(5);
     expect(purchaseResponse.body.secondsMultiplier).toBe(1.5);
     expect(purchaseResponse.body.achievementBonusMultiplier).toBe(1.25);
@@ -1100,7 +1100,8 @@ describe("auth + player lifecycle", () => {
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
 
-    await pool.query(`UPDATE player_states SET idle_time_available = 9999999 WHERE user_id = $1`, [userId]);
+    // LUCK_SHOP_UPGRADE idle costs: 7d + 14d + 28d + 56d + 365d of seconds (final tier is 31_536_000).
+    await pool.query(`UPDATE player_states SET idle_time_available = 50000000 WHERE user_id = $1`, [userId]);
 
     for (let level = 1; level <= 5; level += 1) {
       const purchaseResponse = await request(app)

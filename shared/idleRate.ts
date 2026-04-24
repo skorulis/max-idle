@@ -129,5 +129,5 @@ export function shouldPreserveIdleTimerOnCollect(shop: ShopState, randomValue = 
   if (!getLuckEnabled(shop)) {
     return false;
   }
-  return randomValue < getLuckPreserveChance(shop);
+  return randomValue <= getLuckPreserveChance(shop);
 }

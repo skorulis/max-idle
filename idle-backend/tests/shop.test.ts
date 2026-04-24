@@ -14,17 +14,17 @@ import {
 describe("shop pricing", () => {
   const baseShop = { seconds_multiplier: 0, restraint: false, luck: false };
 
-  it("calculates compounding per-step costs with floor", () => {
-    expect(getSecondsMultiplierUpgradeCost(0)).toBe(5);
-    expect(getSecondsMultiplierUpgradeCost(1)).toBe(7);
-    expect(getSecondsMultiplierUpgradeCost(2)).toBe(9);
-    expect(getSecondsMultiplierUpgradeCost(3)).toBe(12);
+  it("uses per-level costs from the seconds multiplier table", () => {
+    expect(getSecondsMultiplierUpgradeCost(0)).toBe(20);
+    expect(getSecondsMultiplierUpgradeCost(1)).toBe(60);
+    expect(getSecondsMultiplierUpgradeCost(2)).toBe(120);
+    expect(getSecondsMultiplierUpgradeCost(3)).toBe(300);
   });
 
   it("calculates cumulative bundle purchase cost", () => {
-    expect(getSecondsMultiplierPurchaseCost(0, 1)).toBe(5);
-    expect(getSecondsMultiplierPurchaseCost(0, 5)).toBe(5 + 7 + 9 + 12 + 16);
-    expect(getSecondsMultiplierPurchaseCost(3, 2)).toBe(12 + 16);
+    expect(getSecondsMultiplierPurchaseCost(0, 1)).toBe(20);
+    expect(getSecondsMultiplierPurchaseCost(0, 5)).toBe(20 + 60 + 120 + 300 + 600);
+    expect(getSecondsMultiplierPurchaseCost(3, 2)).toBe(300 + 600);
   });
 
   it("maps levels and multipliers consistently", () => {
