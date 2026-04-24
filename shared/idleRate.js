@@ -1,4 +1,4 @@
-import { getRestraintEnabled, getSecondsMultiplier } from "./shop.js";
+import { getLuckEnabled, getRestraintEnabled, getSecondsMultiplier } from "./shop.js";
 
 const IDLE_RATE_STEPS = [
   { seconds: 0, rate: 1 },
@@ -13,6 +13,7 @@ const IDLE_RATE_STEPS = [
 ];
 const RESTRAINT_MIN_REALTIME_SECONDS = 60 * 60;
 const RESTRAINT_IDLE_BONUS_MULTIPLIER = 1.5;
+const LUCK_TIMER_PRESERVE_CHANCE = 0.5;
 
 function clampElapsedSeconds(value) {
   if (!Number.isFinite(value) || value <= 0) {
@@ -112,4 +113,11 @@ export function getEffectiveIdleSecondsRate(player) {
     getIdleShopBonusMultiplier(player.shop) *
     (Number.isFinite(player.achievementBonusMultiplier) ? player.achievementBonusMultiplier : 1)
   );
+}
+
+export function shouldPreserveIdleTimerOnCollect(shop, randomValue = Math.random()) {
+  if (!getLuckEnabled(shop)) {
+    return false;
+  }
+  return randomValue < LUCK_TIMER_PRESERVE_CHANCE;
 }

@@ -44,7 +44,8 @@ const playerStateSchema = registry.register(
     shop: z
       .object({
         seconds_multiplier: z.number().positive(),
-        restraint: z.boolean()
+        restraint: z.boolean(),
+        luck: z.boolean()
       })
       .catchall(z.unknown()),
     achievementBonusMultiplier: z.number().positive(),
@@ -146,6 +147,9 @@ const shopPurchaseRequestSchema = registry.register(
     }),
     z.object({
       upgradeType: z.literal("restraint")
+    }),
+    z.object({
+      upgradeType: z.literal("luck")
     })
   ])
 );
@@ -154,7 +158,7 @@ const shopPurchaseResponseSchema = registry.register(
   "ShopPurchaseResponse",
   playerStateSchema.extend({
     purchase: z.object({
-      upgradeType: z.union([z.literal("seconds_multiplier"), z.literal("restraint")]),
+      upgradeType: z.union([z.literal("seconds_multiplier"), z.literal("restraint"), z.literal("luck")]),
       quantity: z.number().int().positive(),
       totalCost: z.number().int().nonnegative()
     })

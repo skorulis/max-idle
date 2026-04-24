@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Pool } from "pg";
 import request from "supertest";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createApp, syncStalePlayerCurrentSeconds } from "../src/app.js";
 import { ensureGameIdentityForAuthUser } from "../src/betterAuth.js";
 import { calculateIdleSecondsGain } from "../src/idleRate.js";
@@ -952,6 +952,91 @@ describe("auth + player lifecycle", () => {
       .send({ upgradeType: "restraint" });
     expect(secondPurchaseResponse.status).toBe(400);
     expect(secondPurchaseResponse.body.code).toBe("ALREADY_OWNED");
+  });
+
+  it("allows purchasing luck upgrade once", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(`UPDATE player_states SET idle_time_available = 999999 WHERE user_id = $1`, [userId]);
+
+    const purchaseResponse = await request(app)
+      .post("/shop/purchase")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ upgradeType: "luck" });
+
+    expect(purchaseResponse.status).toBe(200);
+    expect(purchaseResponse.body.purchase.upgradeType).toBe("luck");
+    expect(purchaseResponse.body.purchase.quantity).toBe(1);
+    expect(purchaseResponse.body.shop.luck).toBe(true);
+
+    const secondPurchaseResponse = await request(app)
+      .post("/shop/purchase")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ upgradeType: "luck" });
+    expect(secondPurchaseResponse.status).toBe(400);
+    expect(secondPurchaseResponse.body.code).toBe("ALREADY_OWNED");
+  });
+
+  it("preserves timer on collect when luck roll succeeds", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.1);
+
+    try {
+      await pool.query(
+        `
+        UPDATE player_states
+        SET
+          shop = '{"seconds_multiplier": 1, "restraint": false, "luck": true}'::jsonb,
+          current_seconds = 0,
+          current_seconds_last_updated = NOW() - INTERVAL '120 seconds',
+          last_collected_at = NOW() - INTERVAL '120 seconds'
+        WHERE user_id = $1
+        `,
+        [userId]
+      );
+
+      const collectResponse = await request(app).post("/player/collect").set("Authorization", `Bearer ${token}`);
+      expect(collectResponse.status).toBe(200);
+      expect(collectResponse.body.currentSeconds).toBeGreaterThan(0);
+      expect(collectResponse.body.collectedSeconds).toBeGreaterThanOrEqual(calculateIdleSecondsGain(120));
+    } finally {
+      randomSpy.mockRestore();
+    }
+  });
+
+  it("resets timer on collect when luck roll fails", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.9);
+
+    try {
+      await pool.query(
+        `
+        UPDATE player_states
+        SET
+          shop = '{"seconds_multiplier": 1, "restraint": false, "luck": true}'::jsonb,
+          current_seconds = 0,
+          current_seconds_last_updated = NOW() - INTERVAL '120 seconds',
+          last_collected_at = NOW() - INTERVAL '120 seconds'
+        WHERE user_id = $1
+        `,
+        [userId]
+      );
+
+      const collectResponse = await request(app).post("/player/collect").set("Authorization", `Bearer ${token}`);
+      expect(collectResponse.status).toBe(200);
+      expect(collectResponse.body.currentSeconds).toBe(0);
+    } finally {
+      randomSpy.mockRestore();
+    }
   });
 
   it("rejects shop purchases when funds are insufficient", async () => {

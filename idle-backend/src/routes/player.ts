@@ -4,7 +4,7 @@ import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import { getSecondsMultiplier, normalizeShopState } from "@maxidle/shared/shop";
 import { boostedUncollectedIdleSeconds } from "../boostedUncollectedIdle.js";
 import { calculateElapsedSeconds } from "../time.js";
-import { getEffectiveIdleSecondsRate } from "../idleRate.js";
+import { getEffectiveIdleSecondsRate, shouldPreserveIdleTimerOnCollect } from "../idleRate.js";
 import { normalizeCompletedAchievementIds, updateCompletedAchievements } from "../achievementUpdates.js";
 import type { AuthClaims } from "../types.js";
 
@@ -197,6 +197,9 @@ export function registerPlayerRoutes({
         collectionAchievementBonusMultiplier
       );
       const realSecondsCollected = calculateElapsedSeconds(lockedRow.last_collected_at, collectedAt);
+      const preserveTimer = shouldPreserveIdleTimerOnCollect(lockedRow.shop);
+      const nextCurrentSeconds = preserveTimer ? collectedSeconds : 0;
+      const nextLastCollectedAt = preserveTimer ? lockedRow.last_collected_at : collectedAt;
       const updateResult = await client.query<{
         idle_time_total: number | string;
         idle_time_available: number | string;
@@ -218,10 +221,10 @@ export function registerPlayerRoutes({
           idle_time_available = idle_time_available + $2::BIGINT,
           real_time_total = real_time_total + $3::BIGINT,
           real_time_available = real_time_available + $3::BIGINT,
-          current_seconds = 0,
-          current_seconds_last_updated = $4,
-          last_collected_at = $4,
-          updated_at = $4
+          current_seconds = $4::BIGINT,
+          current_seconds_last_updated = $5,
+          last_collected_at = $6,
+          updated_at = $5
         WHERE user_id = $1
         RETURNING
           idle_time_total,
@@ -237,7 +240,7 @@ export function registerPlayerRoutes({
           shop,
           last_daily_reward_collected_at
         `,
-        [userId, collectedSeconds, realSecondsCollected, collectedAt]
+        [userId, collectedSeconds, realSecondsCollected, nextCurrentSeconds, collectedAt, nextLastCollectedAt]
       );
 
       const row = updateResult.rows[0];
@@ -279,8 +282,9 @@ export function registerPlayerRoutes({
         lockedRow.has_unseen_achievements || completedAchievementIds.length !== toNumber(lockedRow.achievement_count);
 
       const achievementBonusMultiplier = getAchievementBonusMultiplier(completedAchievementIds.length);
+      const elapsedSinceLastCollectionAfterCollect = calculateElapsedSeconds(nextLastCollectedAt, collectedAt);
       const idleSecondsRate = getEffectiveIdleSecondsRate({
-        secondsSinceLastCollection: 0,
+        secondsSinceLastCollection: elapsedSinceLastCollectionAfterCollect,
         shop: row.shop,
         achievementBonusMultiplier
       });

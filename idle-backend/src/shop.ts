@@ -2,6 +2,8 @@ import express from "express";
 import type { Pool } from "pg";
 import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import {
+  getLuckEnabled,
+  getLuckUpgradeCost,
   getRestraintEnabled,
   getRestraintUpgradeCost,
   getSecondsMultiplier,
@@ -10,6 +12,7 @@ import {
   levelToMultiplier,
   multiplierToLevel,
   normalizeShopState,
+  withLuck,
   withRestraint,
   withSecondsMultiplier
 } from "@maxidle/shared/shop";
@@ -20,6 +23,8 @@ import { getEffectiveIdleSecondsRate } from "./idleRate.js";
 import type { AuthClaims } from "./types.js";
 
 export {
+  getLuckEnabled,
+  getLuckUpgradeCost,
   getRestraintEnabled,
   getRestraintUpgradeCost,
   getSecondsMultiplier,
@@ -28,6 +33,7 @@ export {
   levelToMultiplier,
   multiplierToLevel,
   normalizeShopState,
+  withLuck,
   withRestraint,
   withSecondsMultiplier
 } from "@maxidle/shared/shop";
@@ -58,7 +64,7 @@ export function registerShopRoutes({
 
       const upgradeType = String(req.body?.upgradeType ?? "");
       const requestedQuantity = Number(req.body?.quantity);
-      if (upgradeType !== "seconds_multiplier" && upgradeType !== "restraint") {
+      if (upgradeType !== "seconds_multiplier" && upgradeType !== "restraint" && upgradeType !== "luck") {
         res.status(400).json({ error: "Unsupported upgrade type" });
         return;
       }
@@ -121,13 +127,21 @@ export function registerShopRoutes({
       const quantity = upgradeType === "seconds_multiplier" ? requestedQuantity : 1;
       const secondsMultiplier = getSecondsMultiplier(row.shop);
       const restraintEnabled = getRestraintEnabled(row.shop);
+      const luckEnabled = getLuckEnabled(row.shop);
 
       const currentLevel = multiplierToLevel(secondsMultiplier);
       const totalCost =
         upgradeType === "seconds_multiplier"
           ? getSecondsMultiplierPurchaseCost(currentLevel, quantity)
-          : getRestraintUpgradeCost();
+          : upgradeType === "restraint"
+            ? getRestraintUpgradeCost()
+            : getLuckUpgradeCost();
       if (upgradeType === "restraint" && restraintEnabled) {
+        await client.query("ROLLBACK");
+        res.status(400).json({ error: "Upgrade already owned", code: "ALREADY_OWNED" });
+        return;
+      }
+      if (upgradeType === "luck" && luckEnabled) {
         await client.query("ROLLBACK");
         res.status(400).json({ error: "Upgrade already owned", code: "ALREADY_OWNED" });
         return;
@@ -147,7 +161,9 @@ export function registerShopRoutes({
       const nextShopState =
         upgradeType === "seconds_multiplier"
           ? withSecondsMultiplier(row.shop, nextMultiplier)
-          : withRestraint(row.shop, true);
+          : upgradeType === "restraint"
+            ? withRestraint(row.shop, true)
+            : withLuck(row.shop, true);
       const nextUpgradesPurchased = toNumber(row.upgrades_purchased) + quantity;
       const nextCompletedAchievementIds =
         nextUpgradesPurchased >= 4

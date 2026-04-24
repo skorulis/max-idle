@@ -4,5 +4,6 @@ export {
   calculateIdleSecondsGain,
   getEffectiveIdleSecondsRate,
   getIdleSecondsRate,
-  isIdleCollectionBlockedByRestraint
+  isIdleCollectionBlockedByRestraint,
+  shouldPreserveIdleTimerOnCollect
 } from "@maxidle/shared/idleRate";

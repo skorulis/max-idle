@@ -3,7 +3,7 @@ import { CircleUserRound, House, Medal, ShoppingCart, Star } from "lucide-react"
 import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "react-router-dom";
 import GameIcon from "../GameIcon";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
-import { getRestraintEnabled, getRestraintUpgradeCost, getSecondsMultiplierPurchaseCost, multiplierToLevel } from "../shop";
+import { getLuckEnabled, getLuckUpgradeCost, getRestraintEnabled, getRestraintUpgradeCost, getSecondsMultiplierPurchaseCost, multiplierToLevel } from "../shop";
 import { AccountPage } from "../pages/AccountPage";
 import { AchievementsPage } from "../pages/AchievementsPage";
 import { HomePage } from "../pages/HomePage";
@@ -25,6 +25,7 @@ import {
   loginWithEmail,
   markAchievementsSeen,
   logoutSession,
+  purchaseLuck,
   purchaseRestraint,
   purchaseSecondsMultiplier,
   registerWithEmail,
@@ -134,7 +135,7 @@ export function AppShell() {
   const [usernameDraft, setUsernameDraft] = useState("");
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [usernameSuccess, setUsernameSuccess] = useState<string | null>(null);
-  const [shopPendingQuantity, setShopPendingQuantity] = useState<1 | 5 | 10 | "restraint" | null>(null);
+  const [shopPendingQuantity, setShopPendingQuantity] = useState<1 | 5 | 10 | "restraint" | "luck" | null>(null);
   const [messageCardRandomIndex, setMessageCardRandomIndex] = useState(() => getRandomMessageIndex());
   const [displayedMessage, setDisplayedMessage] = useState(WELCOME_MESSAGE);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
@@ -553,6 +554,8 @@ export function AppShell() {
   }, [secondsMultiplierLevel]);
   const restraintUpgradeCost = getRestraintUpgradeCost();
   const hasRestraintUpgrade = playerState ? getRestraintEnabled(playerState.shop) : false;
+  const luckUpgradeCost = getLuckUpgradeCost();
+  const hasLuckUpgrade = playerState ? getLuckEnabled(playerState.shop) : false;
 
   const activeMessageCardText = isAuthenticated
     ? getMessageFromIndex(messageCardRandomIndex)
@@ -680,6 +683,34 @@ export function AppShell() {
         setError("Not enough spendable idle seconds for that purchase.");
       } else if (purchaseError instanceof Error && purchaseError.message === "ALREADY_OWNED") {
         setError("Restraint is already active.");
+      } else {
+        setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
+      }
+      setStatus("Could not complete shop purchase.");
+    } finally {
+      setShopPendingQuantity(null);
+    }
+  };
+
+  const onPurchaseLuck = async () => {
+    if (!playerState || hasLuckUpgrade) {
+      return;
+    }
+
+    setShopPendingQuantity("luck");
+    setError(null);
+    setStatus("Purchasing Luck...");
+    try {
+      const updatedPlayer = await purchaseLuck(token);
+      const synced = toSyncedState(updatedPlayer);
+      alignClientClock();
+      setPlayerState(synced);
+      setStatus("Luck acquired: 50% chance to keep your timer on collect.");
+    } catch (purchaseError) {
+      if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
+        setError("Not enough spendable idle seconds for that purchase.");
+      } else if (purchaseError instanceof Error && purchaseError.message === "ALREADY_OWNED") {
+        setError("Luck is already active.");
       } else {
         setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
       }
@@ -998,6 +1029,9 @@ export function AppShell() {
                 restraintUpgradeCost={restraintUpgradeCost}
                 hasRestraintUpgrade={hasRestraintUpgrade}
                 onPurchaseRestraint={onPurchaseRestraint}
+                luckUpgradeCost={luckUpgradeCost}
+                hasLuckUpgrade={hasLuckUpgrade}
+                onPurchaseLuck={onPurchaseLuck}
                 onNavigateHome={() => navigate("/")}
               />
             }

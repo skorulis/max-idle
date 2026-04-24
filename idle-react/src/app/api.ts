@@ -269,7 +269,10 @@ export async function updateUsername(token: string | null, username: string): Pr
   return (payload ?? { username }) as { username: string };
 }
 
-async function purchaseUpgrade(token: string | null, body: { upgradeType: "seconds_multiplier"; quantity: 1 | 5 | 10 } | { upgradeType: "restraint" }): Promise<PlayerResponse> {
+async function purchaseUpgrade(
+  token: string | null,
+  body: { upgradeType: "seconds_multiplier"; quantity: 1 | 5 | 10 } | { upgradeType: "restraint" } | { upgradeType: "luck" }
+): Promise<PlayerResponse> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json"
   };
@@ -307,6 +310,10 @@ export async function purchaseSecondsMultiplier(token: string | null, quantity: 
 
 export async function purchaseRestraint(token: string | null): Promise<PlayerResponse> {
   return purchaseUpgrade(token, { upgradeType: "restraint" });
+}
+
+export async function purchaseLuck(token: string | null): Promise<PlayerResponse> {
+  return purchaseUpgrade(token, { upgradeType: "luck" });
 }
 
 export async function logoutSession(): Promise<void> {

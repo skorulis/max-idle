@@ -105,11 +105,15 @@
               },
               "restraint": {
                 "type": "boolean"
+              },
+              "luck": {
+                "type": "boolean"
               }
             },
             "required": [
               "seconds_multiplier",
-              "restraint"
+              "restraint",
+              "luck"
             ],
             "additionalProperties": {
               "nullable": true
@@ -464,6 +468,20 @@
             "required": [
               "upgradeType"
             ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "upgradeType": {
+                "type": "string",
+                "enum": [
+                  "luck"
+                ]
+              }
+            },
+            "required": [
+              "upgradeType"
+            ]
           }
         ]
       },
@@ -490,6 +508,12 @@
                         "type": "string",
                         "enum": [
                           "restraint"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "luck"
                         ]
                       }
                     ]

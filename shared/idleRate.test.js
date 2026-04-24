@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { calculateIdleSecondsGain, getIdleSecondsRate } from "./idleRate.js";
+import {
+  calculateBoostedIdleSecondsGain,
+  calculateIdleSecondsGain,
+  getIdleSecondsRate,
+  shouldPreserveIdleTimerOnCollect
+} from "./idleRate.js";
 
 describe("getIdleSecondsRate", () => {
   it("matches all configured step values", () => {
@@ -28,5 +33,29 @@ describe("calculateIdleSecondsGain", () => {
 
     // 60 -> 600s ramps 2x -> 3x, average 2.5x across 540s => +1350, total 1440.
     expect(calculateIdleSecondsGain(10 * 60)).toBe(1440);
+  });
+});
+
+describe("luck + boosted gain", () => {
+  it("preserves timer only when luck is enabled and roll succeeds", () => {
+    expect(shouldPreserveIdleTimerOnCollect({ luck: false }, 0.1)).toBe(false);
+    expect(shouldPreserveIdleTimerOnCollect({ luck: true }, 0.1)).toBe(true);
+    expect(shouldPreserveIdleTimerOnCollect({ luck: true }, 0.9)).toBe(false);
+  });
+
+  it("applies restraint/luck-aware boosted gain", () => {
+    const gainWithoutRestraint = calculateBoostedIdleSecondsGain({
+      secondsSinceLastCollection: 60,
+      shop: { seconds_multiplier: 1, restraint: false, luck: false },
+      achievementBonusMultiplier: 1
+    });
+    expect(gainWithoutRestraint).toBeGreaterThan(0);
+
+    const blockedByRestraint = calculateBoostedIdleSecondsGain({
+      secondsSinceLastCollection: 60,
+      shop: { seconds_multiplier: 1, restraint: true, luck: false },
+      achievementBonusMultiplier: 1
+    });
+    expect(blockedByRestraint).toBe(0);
   });
 });

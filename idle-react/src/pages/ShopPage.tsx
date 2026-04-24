@@ -4,12 +4,15 @@ import type { SyncedPlayerState } from "../app/types";
 
 type ShopPageProps = {
   playerState: SyncedPlayerState | null;
-  shopPendingQuantity: 1 | 5 | 10 | "restraint" | null;
+  shopPendingQuantity: 1 | 5 | 10 | "restraint" | "luck" | null;
   shopCosts: Record<1 | 5 | 10, number>;
   onPurchaseUpgrade: (quantity: 1 | 5 | 10) => Promise<void>;
   restraintUpgradeCost: number;
   hasRestraintUpgrade: boolean;
   onPurchaseRestraint: () => Promise<void>;
+  luckUpgradeCost: number;
+  hasLuckUpgrade: boolean;
+  onPurchaseLuck: () => Promise<void>;
   onNavigateHome: () => void;
 };
 
@@ -21,6 +24,9 @@ export function ShopPage({
   restraintUpgradeCost,
   hasRestraintUpgrade,
   onPurchaseRestraint,
+  luckUpgradeCost,
+  hasLuckUpgrade,
+  onPurchaseLuck,
   onNavigateHome
 }: ShopPageProps) {
   if (!playerState) {
@@ -103,6 +109,21 @@ export function ShopPage({
             : shopPendingQuantity === "restraint"
               ? "Purchasing..."
               : `Buy Restraint (${formatSeconds(restraintUpgradeCost)})`}
+        </button>
+      </div>
+      <p className="subtle">Upgrade: Luck (50% chance to keep timer on collect)</p>
+      <div className="shop-actions">
+        <button
+          type="button"
+          className="secondary"
+          onClick={() => void onPurchaseLuck()}
+          disabled={shopPendingQuantity !== null || hasLuckUpgrade || playerState.idleTime.available < luckUpgradeCost}
+        >
+          {hasLuckUpgrade
+            ? "Luck owned"
+            : shopPendingQuantity === "luck"
+              ? "Purchasing..."
+              : `Buy Luck (${formatSeconds(luckUpgradeCost)})`}
         </button>
       </div>
     </>

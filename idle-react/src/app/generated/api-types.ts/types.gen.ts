@@ -30,6 +30,7 @@ export type PlayerState = {
     shop: {
         seconds_multiplier: number;
         restraint: boolean;
+        luck: boolean;
         [key: string]: unknown;
     };
     achievementBonusMultiplier: number;
@@ -108,11 +109,13 @@ export type ShopPurchaseRequest = {
     quantity: 1 | 5 | 10;
 } | {
     upgradeType: 'restraint';
+} | {
+    upgradeType: 'luck';
 };
 
 export type ShopPurchaseResponse = PlayerState & {
     purchase: {
-        upgradeType: 'seconds_multiplier' | 'restraint';
+        upgradeType: 'seconds_multiplier' | 'restraint' | 'luck';
         quantity: number;
         totalCost: number;
     };

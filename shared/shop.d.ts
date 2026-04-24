@@ -1,6 +1,7 @@
 export type ShopState = {
   seconds_multiplier: number;
   restraint: boolean;
+  luck: boolean;
   [key: string]: unknown;
 };
 
@@ -10,6 +11,9 @@ export function withSecondsMultiplier(shop: unknown, secondsMultiplier: number):
 export function getRestraintEnabled(shop: unknown): boolean;
 export function withRestraint(shop: unknown, enabled: boolean): ShopState;
 export function getRestraintUpgradeCost(): number;
+export function getLuckEnabled(shop: unknown): boolean;
+export function withLuck(shop: unknown, enabled: boolean): ShopState;
+export function getLuckUpgradeCost(): number;
 export function multiplierToLevel(secondsMultiplier: number): number;
 export function levelToMultiplier(level: number): number;
 export function getSecondsMultiplierUpgradeCost(currentLevel: number): number;

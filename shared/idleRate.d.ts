@@ -20,3 +20,4 @@ export function isIdleCollectionBlockedByRestraint(player: {
 export function getIdleShopBonusMultiplier(shop: ShopState | unknown): number;
 export function calculateBoostedIdleSecondsGain(player: IdleCollectionPlayer): number;
 export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): number;
+export function shouldPreserveIdleTimerOnCollect(shop: ShopState | unknown, randomValue?: number): boolean;
