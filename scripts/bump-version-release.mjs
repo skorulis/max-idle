@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Bumps APP_VERSION patch in shared/appVersion.js, commits, and tags release/x.y.z.
+ * Bumps APP_VERSION patch in shared/appVersion.ts, commits, and tags release/x.y.z.
  */
 import { execSync } from "node:child_process";
 import fs from "node:fs";
@@ -8,7 +8,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
-const versionFile = path.join(root, "shared", "appVersion.js");
+const versionFile = path.join(root, "shared", "appVersion.ts");
 
 process.chdir(root);
 
@@ -28,7 +28,7 @@ const next = `${major}.${minor}.${patch}`;
 const nextSrc = src.replace(re, `export const APP_VERSION = "${next}"`);
 fs.writeFileSync(versionFile, nextSrc, "utf8");
 
-execSync(`git add shared/appVersion.js`, { stdio: "inherit" });
+execSync(`git add shared/appVersion.ts`, { stdio: "inherit" });
 execSync(`git commit -m "Bump version ${next}"`, { stdio: "inherit" });
 execSync(`git tag "release/${next}"`, { stdio: "inherit" });
 
