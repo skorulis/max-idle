@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { formatSeconds } from "../formatSeconds";
 import { Atom, CircleHelp, Clock3, Gem, Gift } from "lucide-react";
 import type { SyncedPlayerState } from "../app/types";
@@ -48,11 +48,7 @@ export function HomePage({
   const [collectWarningIndex, setCollectWarningIndex] = useState(0);
   const [showRateInfo, setShowRateInfo] = useState(false);
 
-  useEffect(() => {
-    if (realtimeElapsedSeconds >= 15) {
-      setCollectWarning(null);
-    }
-  }, [realtimeElapsedSeconds]);
+  const visibleCollectWarning = realtimeElapsedSeconds >= 15 ? null : collectWarning;
 
   const handleCollect = async () => {
     if (realtimeElapsedSeconds < 15) {
@@ -100,7 +96,7 @@ export function HomePage({
       <button className="collect" onClick={() => void handleCollect()} disabled={collecting || collectBlockedByRestraint}>
         {collecting ? "Collecting..." : collectBlockedByRestraint ? "Collect (Collect after 1h)" : "Collect"}
       </button>
-      {collectWarning ? <p className="warning-alert">{collectWarning}</p> : null}
+      {visibleCollectWarning ? <p className="warning-alert">{visibleCollectWarning}</p> : null}
 
       <p className="subtle">Totals</p>
       <div className="shop-currencies">

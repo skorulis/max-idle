@@ -30,7 +30,8 @@ jobs:
           npm ci --prefix idle-backend
           npm test --prefix idle-backend
 
-      - name: Frontend unit tests
+      - name: Frontend lint and unit tests
         run: |
           npm ci --prefix idle-react
+          npm run --prefix idle-react lint
           npm test --prefix idle-react

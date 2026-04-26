@@ -420,9 +420,11 @@ export function AppShell() {
 
     if (upgradeSocial === "error") {
       sessionStorage.removeItem(UPGRADE_SOCIAL_INTENT_KEY);
-      setError("Could not complete Google account upgrade.");
-      setStatus("Could not upgrade account.");
-      clearUpgradeQuery();
+      setTimeout(() => {
+        setError("Could not complete Google account upgrade.");
+        setStatus("Could not upgrade account.");
+        clearUpgradeQuery();
+      }, 0);
       return;
     }
 
@@ -480,7 +482,7 @@ export function AppShell() {
     return () => {
       cancelled = true;
     };
-  }, [location.pathname, location.search]);
+  }, [location.pathname, location.search, navigate]);
 
   const estimatedServerNowMs = useMemo(() => {
     if (!playerState) {
