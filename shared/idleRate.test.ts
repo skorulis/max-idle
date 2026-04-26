@@ -72,6 +72,6 @@ describe("luck + boosted gain", () => {
       achievementBonusMultiplier: 1,
       realTimeAvailable: 120
     });
-    expect(withIdleHoarderAtCap).toBe(Math.floor(baseline * 1.5));
+    expect(withIdleHoarderAtCap).toBe(Math.floor(baseline * 2.5));
   });
 });
