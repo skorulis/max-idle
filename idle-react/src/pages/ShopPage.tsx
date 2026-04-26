@@ -37,6 +37,7 @@ type ShopPageProps = {
     | "extra_realtime_wait"
     | "collect_gem_time_boost"
     | "purchase_refund"
+    | "debug_add_gems"
     | null;
   secondsMultiplierCost: number | null;
   onPurchaseUpgrade: () => Promise<void>;
@@ -49,6 +50,8 @@ type ShopPageProps = {
   onPurchaseExtraRealtimeWait: () => Promise<void>;
   onPurchaseCollectGemTimeBoost: () => Promise<void>;
   onPurchaseRefund: () => Promise<void>;
+  showDebugAddGemsButton: boolean;
+  onDebugAddGems: () => Promise<void>;
   collectGemBoostLevel: number;
   onNavigateHome: () => void;
 };
@@ -111,6 +114,8 @@ export function ShopPage({
   onPurchaseExtraRealtimeWait,
   onPurchaseCollectGemTimeBoost,
   onPurchaseRefund,
+  showDebugAddGemsButton,
+  onDebugAddGems,
   collectGemBoostLevel,
   onNavigateHome
 }: ShopPageProps) {
@@ -283,6 +288,16 @@ export function ShopPage({
       </div>
       {selectedCurrencyType === SHOP_CURRENCY_TYPES.IDLE ? (
         <p className="subtle">Current multiplier: {playerState.secondsMultiplier.toFixed(1)}x</p>
+      ) : null}
+      {showDebugAddGemsButton && selectedCurrencyType === SHOP_CURRENCY_TYPES.GEM ? (
+        <button
+          type="button"
+          className="secondary"
+          onClick={() => void onDebugAddGems()}
+          disabled={shopPendingQuantity !== null}
+        >
+          {shopPendingQuantity === "debug_add_gems" ? "Adding gems..." : "Debug: Add 5 Time Gems"}
+        </button>
       ) : null}
       {visibleUpgrades.length === 0 ? (
         <p className="subtle">No upgrades currently available for this currency.</p>

@@ -388,6 +388,29 @@ export async function purchaseRefund(token: string | null): Promise<PlayerRespon
   return purchaseUpgrade(token, { upgradeType: "purchase_refund" });
 }
 
+export async function debugAddGems(token: string | null): Promise<PlayerResponse> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/shop/debug/add-gems`, {
+    method: "POST",
+    credentials: "include",
+    headers
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(payload?.error ?? "Failed to add debug gems");
+  }
+
+  return (await response.json()) as PlayerResponse;
+}
+
 export async function logoutSession(): Promise<void> {
   await apiRequest("/auth/logout", { method: "POST" });
 }

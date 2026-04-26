@@ -27,6 +27,7 @@ import {
   collectDailyReward,
   collectIdleTime,
   createAnonymousSession,
+  debugAddGems,
   completeSocialUpgrade,
   enterTournament,
   getAccount,
@@ -158,7 +159,14 @@ export function AppShell() {
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [usernameSuccess, setUsernameSuccess] = useState<string | null>(null);
   const [shopPendingQuantity, setShopPendingQuantity] = useState<
-    "seconds_multiplier" | "restraint" | "luck" | "extra_realtime_wait" | "collect_gem_time_boost" | "purchase_refund" | null
+    | "seconds_multiplier"
+    | "restraint"
+    | "luck"
+    | "extra_realtime_wait"
+    | "collect_gem_time_boost"
+    | "purchase_refund"
+    | "debug_add_gems"
+    | null
   >(null);
   const [messageCardRandomIndex, setMessageCardRandomIndex] = useState(() => getRandomMessageIndex());
   const [displayedMessage, setDisplayedMessage] = useState(WELCOME_MESSAGE);
@@ -873,6 +881,28 @@ export function AppShell() {
     }
   };
 
+  const onDebugAddGems = async () => {
+    if (!playerState) {
+      return;
+    }
+
+    setShopPendingQuantity("debug_add_gems");
+    setError(null);
+    setStatus("Adding debug gems...");
+    try {
+      const updatedPlayer = await debugAddGems(token);
+      const synced = toSyncedState(updatedPlayer);
+      alignClientClock();
+      setPlayerState(synced);
+      setStatus("Added 5 debug gems.");
+    } catch (debugError) {
+      setError(debugError instanceof Error ? debugError.message : "Failed to add debug gems");
+      setStatus("Could not add debug gems.");
+    } finally {
+      setShopPendingQuantity(null);
+    }
+  };
+
   const onCollectDailyReward = async () => {
     if (!playerState) {
       return;
@@ -1240,6 +1270,8 @@ export function AppShell() {
                 onPurchaseExtraRealtimeWait={onPurchaseExtraRealtimeWait}
                 onPurchaseCollectGemTimeBoost={onPurchaseCollectGemTimeBoost}
                 onPurchaseRefund={onPurchaseRefund}
+                showDebugAddGemsButton={import.meta.env.DEV}
+                onDebugAddGems={onDebugAddGems}
                 collectGemBoostLevel={playerState ? getCollectGemBoostLevel(playerState.shop) : 0}
                 onNavigateHome={() => navigate("/")}
               />

@@ -17,6 +17,7 @@ export function loadConfig(): AppConfig {
 
   return {
     port,
+    isProduction: process.env.NODE_ENV === "production",
     databaseUrl: requiredEnv("DATABASE_URL"),
     jwtSecret: requiredEnv("JWT_SECRET"),
     corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:5173",

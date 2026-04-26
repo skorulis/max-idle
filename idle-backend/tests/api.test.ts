@@ -12,6 +12,7 @@ import { createTestPool } from "./testDb.js";
 describe("auth + player lifecycle", () => {
   const config: AppConfig = {
     port: 3000,
+    isProduction: false,
     databaseUrl: "postgres://unused",
     jwtSecret: "test-secret",
     corsOrigin: "http://localhost:5173",
@@ -1349,6 +1350,29 @@ describe("auth + player lifecycle", () => {
 
     expect(purchaseResponse.status).toBe(400);
     expect(purchaseResponse.body.code).toBe("NO_REFUNDABLE_PURCHASES");
+  });
+
+  it("adds 5 gems with debug endpoint in non-production config", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(`UPDATE player_states SET time_gems_total = 1, time_gems_available = 1 WHERE user_id = $1`, [userId]);
+
+    const debugResponse = await request(app).post("/shop/debug/add-gems").set("Authorization", `Bearer ${token}`);
+    expect(debugResponse.status).toBe(200);
+    expect(debugResponse.body.timeGems.total).toBe(6);
+    expect(debugResponse.body.timeGems.available).toBe(6);
+  });
+
+  it("does not register debug gems endpoint in production config", async () => {
+    const app = createApp(pool, { ...config, isProduction: true });
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+
+    const debugResponse = await request(app).post("/shop/debug/add-gems").set("Authorization", `Bearer ${token}`);
+    expect(debugResponse.status).toBe(404);
   });
 
   it("preserves timer on collect when luck roll succeeds", async () => {

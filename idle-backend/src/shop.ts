@@ -64,6 +64,7 @@ type RegisterShopRoutesOptions = {
   resolveIdentity: (req: express.Request) => Promise<ShopRouteIdentity>;
   toNumber: (value: unknown) => number;
   getAchievementBonusMultiplier: (achievementCount: number) => number;
+  isProduction: boolean;
 };
 
 export function registerShopRoutes({
@@ -71,7 +72,8 @@ export function registerShopRoutes({
   pool,
   resolveIdentity,
   toNumber,
-  getAchievementBonusMultiplier
+  getAchievementBonusMultiplier,
+  isProduction
 }: RegisterShopRoutesOptions): void {
   app.post("/shop/purchase", async (req, res, next) => {
     const client = await pool.connect();
@@ -123,6 +125,7 @@ export function registerShopRoutes({
           real_time_available,
           time_gems_total,
           time_gems_available,
+          upgrades_purchased,
           achievement_count,
           has_unseen_achievements,
           completed_achievements,
@@ -257,6 +260,7 @@ export function registerShopRoutes({
         idle_time_available: string;
         time_gems_total: string;
         time_gems_available: string;
+        upgrades_purchased: string;
         real_time_total: string;
         real_time_available: string;
         has_unseen_achievements: boolean;
@@ -286,6 +290,7 @@ export function registerShopRoutes({
           idle_time_available,
           time_gems_total,
           time_gems_available,
+          upgrades_purchased,
           real_time_total,
           real_time_available,
           has_unseen_achievements,
@@ -353,6 +358,145 @@ export function registerShopRoutes({
           quantity,
           totalCost
         }
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      next(error);
+    } finally {
+      client.release();
+    }
+  });
+
+  if (isProduction) {
+    return;
+  }
+
+  app.post("/shop/debug/add-gems", async (req, res, next) => {
+    const client = await pool.connect();
+    try {
+      const identity = await resolveIdentity(req);
+      const userId = identity.claims.sub;
+      await client.query("BEGIN");
+      const rowResult = await client.query<{
+        idle_time_total: string;
+        idle_time_available: string;
+        real_time_total: string;
+        real_time_available: string;
+        time_gems_total: string;
+        time_gems_available: string;
+        achievement_count: string;
+        has_unseen_achievements: boolean;
+        shop: ShopState;
+        last_collected_at: Date;
+        last_daily_reward_collected_at: Date | null;
+      }>(
+        `
+        SELECT
+          idle_time_total,
+          idle_time_available,
+          real_time_total,
+          real_time_available,
+          time_gems_total,
+          time_gems_available,
+          achievement_count,
+          has_unseen_achievements,
+          shop,
+          last_collected_at,
+          last_daily_reward_collected_at
+        FROM player_states
+        WHERE user_id = $1
+        FOR UPDATE
+        `,
+        [userId]
+      );
+      const row = rowResult.rows[0];
+      if (!row) {
+        await client.query("ROLLBACK");
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+
+      const now = new Date();
+      const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
+      const syncedCurrentSeconds = boostedUncollectedIdleSeconds(row.last_collected_at, now, row.shop, achievementBonusMultiplier);
+      const updateResult = await client.query<{
+        idle_time_total: string;
+        idle_time_available: string;
+        time_gems_total: string;
+        time_gems_available: string;
+        upgrades_purchased: string;
+        real_time_total: string;
+        real_time_available: string;
+        has_unseen_achievements: boolean;
+        current_seconds: string;
+        current_seconds_last_updated: Date;
+        last_collected_at: Date;
+        shop: ShopState;
+        last_daily_reward_collected_at: Date | null;
+      }>(
+        `
+        UPDATE player_states
+        SET
+          time_gems_total = time_gems_total + 5,
+          time_gems_available = time_gems_available + 5,
+          current_seconds = $2,
+          current_seconds_last_updated = $3
+        WHERE user_id = $1
+        RETURNING
+          idle_time_total,
+          idle_time_available,
+          time_gems_total,
+          time_gems_available,
+          upgrades_purchased,
+          real_time_total,
+          real_time_available,
+          has_unseen_achievements,
+          current_seconds,
+          current_seconds_last_updated,
+          last_collected_at,
+          shop,
+          last_daily_reward_collected_at
+        `,
+        [userId, syncedCurrentSeconds, now]
+      );
+      const updated = updateResult.rows[0];
+      await client.query("COMMIT");
+
+      if (!updated) {
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+
+      const elapsedSinceLastCollection = calculateElapsedSeconds(updated.last_collected_at, now);
+      const idleSecondsRate = getEffectiveIdleSecondsRate({
+        secondsSinceLastCollection: elapsedSinceLastCollection,
+        shop: updated.shop,
+        achievementBonusMultiplier
+      });
+      res.json({
+        idleTime: {
+          total: toNumber(updated.idle_time_total),
+          available: toNumber(updated.idle_time_available)
+        },
+        realTime: {
+          total: toNumber(updated.real_time_total),
+          available: toNumber(updated.real_time_available)
+        },
+        timeGems: {
+          total: toNumber(updated.time_gems_total),
+          available: toNumber(updated.time_gems_available)
+        },
+        upgradesPurchased: toNumber(updated.upgrades_purchased),
+        currentSeconds: toNumber(updated.current_seconds),
+        secondsMultiplier: getSecondsMultiplier(updated.shop),
+        shop: updated.shop,
+        achievementBonusMultiplier,
+        hasUnseenAchievements: updated.has_unseen_achievements,
+        idleSecondsRate,
+        currentSecondsLastUpdated: updated.current_seconds_last_updated.toISOString(),
+        lastCollectedAt: updated.last_collected_at.toISOString(),
+        lastDailyRewardCollectedAt: updated.last_daily_reward_collected_at?.toISOString() ?? null,
+        serverTime: now.toISOString()
       });
     } catch (error) {
       await client.query("ROLLBACK");

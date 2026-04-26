@@ -404,7 +404,8 @@ export function createApp(pool: Pool, config: AppConfig) {
     pool,
     resolveIdentity: resolveIdentityForRequest,
     toNumber,
-    getAchievementBonusMultiplier
+    getAchievementBonusMultiplier,
+    isProduction: config.isProduction
   });
 
   registerLeaderboardRoutes({

@@ -6,6 +6,7 @@ export type AuthClaims = {
 
 export type AppConfig = {
   port: number;
+  isProduction: boolean;
   databaseUrl: string;
   jwtSecret: string;
   corsOrigin: string;
