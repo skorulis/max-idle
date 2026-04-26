@@ -29,8 +29,8 @@ export type PlayerState = {
     secondsMultiplier: number;
     shop: {
         seconds_multiplier: number;
-        restraint: boolean;
-        luck: boolean;
+        restraint: number;
+        luck: number;
         collect_gem_time_boost?: number;
         [key: string]: unknown;
     };
@@ -116,11 +116,13 @@ export type ShopPurchaseRequest = {
     upgradeType: 'extra_realtime_wait';
 } | {
     upgradeType: 'collect_gem_time_boost';
+} | {
+    upgradeType: 'purchase_refund';
 };
 
 export type ShopPurchaseResponse = PlayerState & {
     purchase: {
-        upgradeType: 'seconds_multiplier' | 'restraint' | 'luck' | 'extra_realtime_wait' | 'collect_gem_time_boost';
+        upgradeType: 'seconds_multiplier' | 'restraint' | 'luck' | 'extra_realtime_wait' | 'collect_gem_time_boost' | 'purchase_refund';
         quantity: number;
         totalCost: number;
     };
@@ -129,6 +131,29 @@ export type ShopPurchaseResponse = PlayerState & {
 export type PlayerCollectResponse = PlayerState & {
     collectedSeconds: number;
     realSecondsCollected: number;
+};
+
+export type TournamentEntry = {
+    enteredAt: string;
+    finalRank: number | null;
+    timeScoreSeconds: number | null;
+    gemsAwarded: number | null;
+    finalizedAt: string | null;
+};
+
+export type TournamentCurrentResponse = {
+    drawAt: string;
+    isActive: boolean;
+    hasEntered: boolean;
+    playerCount: number;
+    currentRank: number | null;
+    expectedRewardGems: number | null;
+    entry: TournamentEntry & unknown;
+};
+
+export type TournamentEnterResponse = {
+    tournament: TournamentCurrentResponse;
+    enteredNow: boolean;
 };
 
 export type EmailAuthRequest = {
@@ -430,6 +455,60 @@ export type PostPlayerDailyRewardCollectResponses = {
 };
 
 export type PostPlayerDailyRewardCollectResponse = PostPlayerDailyRewardCollectResponses[keyof PostPlayerDailyRewardCollectResponses];
+
+export type GetTournamentCurrentData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/tournament/current';
+};
+
+export type GetTournamentCurrentErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+};
+
+export type GetTournamentCurrentError = GetTournamentCurrentErrors[keyof GetTournamentCurrentErrors];
+
+export type GetTournamentCurrentResponses = {
+    /**
+     * Current tournament details for the user
+     */
+    200: TournamentCurrentResponse;
+};
+
+export type GetTournamentCurrentResponse = GetTournamentCurrentResponses[keyof GetTournamentCurrentResponses];
+
+export type PostTournamentEnterData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/tournament/enter';
+};
+
+export type PostTournamentEnterErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Draw is currently being finalized
+     */
+    409: ErrorResponse;
+};
+
+export type PostTournamentEnterError = PostTournamentEnterErrors[keyof PostTournamentEnterErrors];
+
+export type PostTournamentEnterResponses = {
+    /**
+     * Tournament entry result
+     */
+    200: TournamentEnterResponse;
+};
+
+export type PostTournamentEnterResponse = PostTournamentEnterResponses[keyof PostTournamentEnterResponses];
 
 export type GetPlayersByIdData = {
     body?: never;

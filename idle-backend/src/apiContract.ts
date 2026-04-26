@@ -157,6 +157,9 @@ const shopPurchaseRequestSchema = registry.register(
     }),
     z.object({
       upgradeType: z.literal("collect_gem_time_boost")
+    }),
+    z.object({
+      upgradeType: z.literal("purchase_refund")
     })
   ])
 );
@@ -170,7 +173,8 @@ const shopPurchaseResponseSchema = registry.register(
         z.literal("restraint"),
         z.literal("luck"),
         z.literal("extra_realtime_wait"),
-        z.literal("collect_gem_time_boost")
+        z.literal("collect_gem_time_boost"),
+        z.literal("purchase_refund")
       ]),
       quantity: z.number().int().positive(),
       totalCost: z.number().int().nonnegative()

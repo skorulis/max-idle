@@ -10,6 +10,7 @@ import {
   Plus,
   ShieldAlert,
   Timer,
+  Undo2,
   type LucideIcon
 } from "lucide-react";
 import { useState } from "react";
@@ -24,12 +25,19 @@ import {
   type ShopUpgradeDefinition
 } from "../shopUpgrades";
 import type { ShopCurrencyType } from "../shopUpgrades";
-import { getSecondsMultiplierLevel, getSecondsMultiplierMaxLevel } from "../shop";
+import { getSecondsMultiplierLevel, getSecondsMultiplierMaxLevel, hasRefundableShopPurchases } from "../shop";
 import GameIcon from "../GameIcon";
 
 type ShopPageProps = {
   playerState: SyncedPlayerState | null;
-  shopPendingQuantity: "seconds_multiplier" | "restraint" | "luck" | "extra_realtime_wait" | "collect_gem_time_boost" | null;
+  shopPendingQuantity:
+    | "seconds_multiplier"
+    | "restraint"
+    | "luck"
+    | "extra_realtime_wait"
+    | "collect_gem_time_boost"
+    | "purchase_refund"
+    | null;
   secondsMultiplierCost: number | null;
   onPurchaseUpgrade: () => Promise<void>;
   restraintLevel: number;
@@ -40,6 +48,7 @@ type ShopPageProps = {
   onPurchaseLuck: () => Promise<void>;
   onPurchaseExtraRealtimeWait: () => Promise<void>;
   onPurchaseCollectGemTimeBoost: () => Promise<void>;
+  onPurchaseRefund: () => Promise<void>;
   collectGemBoostLevel: number;
   onNavigateHome: () => void;
 };
@@ -81,6 +90,8 @@ function getShopUpgradeIcon(iconName: string): LucideIcon {
       return Hourglass;
     case "timer":
       return Timer;
+    case "undo-2":
+      return Undo2;
     default:
       return CircleHelp;
   }
@@ -99,6 +110,7 @@ export function ShopPage({
   onPurchaseLuck,
   onPurchaseExtraRealtimeWait,
   onPurchaseCollectGemTimeBoost,
+  onPurchaseRefund,
   collectGemBoostLevel,
   onNavigateHome
 }: ShopPageProps) {
@@ -119,6 +131,7 @@ export function ShopPage({
   const secondsMultiplierLevel = getSecondsMultiplierLevel(playerState.shop);
   const maxSecondsMultiplierLevel = getSecondsMultiplierMaxLevel();
   const maxCollectGemBoostLevel = getCollectGemTimeBoostMaxLevel();
+  const hasRefundablePurchases = hasRefundableShopPurchases(playerState.shop);
 
   function getUpgradeRowState(upgrade: ShopUpgradeDefinition): {
     description: string;
@@ -164,6 +177,16 @@ export function ShopPage({
         isPending: shopPendingQuantity === "collect_gem_time_boost",
         isOwned: collectGemBoostLevel >= maxCollectGemBoostLevel,
         onPurchase: onPurchaseCollectGemTimeBoost
+      };
+    }
+
+    if (upgrade.id === SHOP_UPGRADE_IDS.PURCHASE_REFUND) {
+      return {
+        description: upgrade.description,
+        cost: upgrade.levels[0]?.cost ?? null,
+        isPending: shopPendingQuantity === SHOP_UPGRADE_IDS.PURCHASE_REFUND,
+        isOwned: false,
+        onPurchase: onPurchaseRefund
       };
     }
 
@@ -270,7 +293,14 @@ export function ShopPage({
             const currentLevel = getUpgradeCurrentLevel(upgrade);
             const upgradeAvailableBalance = getCurrencyAmount(playerState, upgrade.currencyType);
             const cannotAfford = upgradeState.cost !== null && upgradeAvailableBalance < upgradeState.cost;
-            const isDisabled = shopPendingQuantity !== null || upgradeState.isOwned || upgradeState.cost === null || cannotAfford;
+            const refundUnavailable =
+              upgrade.id === SHOP_UPGRADE_IDS.PURCHASE_REFUND && !hasRefundablePurchases;
+            const isDisabled =
+              shopPendingQuantity !== null ||
+              upgradeState.isOwned ||
+              upgradeState.cost === null ||
+              cannotAfford ||
+              refundUnavailable;
             return (
               <div key={upgrade.id} className={`shop-upgrade-row${upgradeState.isOwned ? " shop-upgrade-row-owned" : ""}`}>
                 <div className="shop-upgrade-main">

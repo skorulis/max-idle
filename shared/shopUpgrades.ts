@@ -25,7 +25,9 @@ export const SHOP_UPGRADE_IDS = {
    * Gem upgrade: 0.5× realtime wait per level on current collection (stacks; resets to level 0 on collect).
    * See {@link getCollectGemIdleSecondsMultiplier}.
    */
-  COLLECT_GEM_TIME_BOOST: "collect_gem_time_boost"
+  COLLECT_GEM_TIME_BOOST: "collect_gem_time_boost",
+  /** Spend 1 gem to reset purchased idle/real shop upgrades and refund their spent time. */
+  PURCHASE_REFUND: "purchase_refund"
 } as const;
 
 export type ShopUpgradeId = (typeof SHOP_UPGRADE_IDS)[keyof typeof SHOP_UPGRADE_IDS];
@@ -126,12 +128,22 @@ export const COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE: ShopUpgradeDefinition = {
   currencyType: SHOP_CURRENCY_TYPES.GEM
 };
 
+export const PURCHASE_REFUND_SHOP_UPGRADE: ShopUpgradeDefinition = {
+  id: SHOP_UPGRADE_IDS.PURCHASE_REFUND,
+  name: "Purchase refund",
+  icon: "undo-2",
+  description: "Refund all idle and real time purchases",
+  levels: [{ cost: 1, value: 0 }],
+  currencyType: SHOP_CURRENCY_TYPES.GEM
+};
+
 export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   SECONDS_MULTIPLIER_SHOP_UPGRADE,
   RESTRAINT_SHOP_UPGRADE,
   LUCK_SHOP_UPGRADE,
   EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
-  COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE
+  COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
+  PURCHASE_REFUND_SHOP_UPGRADE
 ];
 
 export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> = {
@@ -139,7 +151,8 @@ export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> =
   [SHOP_UPGRADE_IDS.RESTRAINT]: RESTRAINT_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.LUCK]: LUCK_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.EXTRA_REALTIME_WAIT]: EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
-  [SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST]: COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE
+  [SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST]: COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
+  [SHOP_UPGRADE_IDS.PURCHASE_REFUND]: PURCHASE_REFUND_SHOP_UPGRADE
 };
 
 export function getCollectGemTimeBoostMaxLevel(): number {

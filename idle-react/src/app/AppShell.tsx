@@ -41,6 +41,7 @@ import {
   purchaseExtraRealtimeWait,
   purchaseCollectGemTimeBoost,
   purchaseLuck,
+  purchaseRefund,
   purchaseRestraint,
   purchaseSecondsMultiplier,
   registerWithEmail,
@@ -157,7 +158,7 @@ export function AppShell() {
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [usernameSuccess, setUsernameSuccess] = useState<string | null>(null);
   const [shopPendingQuantity, setShopPendingQuantity] = useState<
-    "seconds_multiplier" | "restraint" | "luck" | "extra_realtime_wait" | "collect_gem_time_boost" | null
+    "seconds_multiplier" | "restraint" | "luck" | "extra_realtime_wait" | "collect_gem_time_boost" | "purchase_refund" | null
   >(null);
   const [messageCardRandomIndex, setMessageCardRandomIndex] = useState(() => getRandomMessageIndex());
   const [displayedMessage, setDisplayedMessage] = useState(WELCOME_MESSAGE);
@@ -846,6 +847,32 @@ export function AppShell() {
     }
   };
 
+  const onPurchaseRefund = async () => {
+    if (!playerState) {
+      return;
+    }
+
+    setShopPendingQuantity("purchase_refund");
+    setError(null);
+    setStatus("Refunding purchases...");
+    try {
+      const updatedPlayer = await purchaseRefund(token);
+      const synced = toSyncedState(updatedPlayer);
+      alignClientClock();
+      setPlayerState(synced);
+      setStatus("Shop purchases refunded.");
+    } catch (purchaseError) {
+      if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
+        setError("Not enough time gems for that purchase.");
+      } else {
+        setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
+      }
+      setStatus("Could not complete shop purchase.");
+    } finally {
+      setShopPendingQuantity(null);
+    }
+  };
+
   const onCollectDailyReward = async () => {
     if (!playerState) {
       return;
@@ -1212,6 +1239,7 @@ export function AppShell() {
                 onPurchaseLuck={onPurchaseLuck}
                 onPurchaseExtraRealtimeWait={onPurchaseExtraRealtimeWait}
                 onPurchaseCollectGemTimeBoost={onPurchaseCollectGemTimeBoost}
+                onPurchaseRefund={onPurchaseRefund}
                 collectGemBoostLevel={playerState ? getCollectGemBoostLevel(playerState.shop) : 0}
                 onNavigateHome={() => navigate("/")}
               />

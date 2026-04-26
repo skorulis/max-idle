@@ -1284,6 +1284,73 @@ describe("auth + player lifecycle", () => {
     expect(maxedPurchaseResponse.body.code).toBe("ALREADY_OWNED");
   });
 
+  it("resets shop to default and refunds spent idle and real time", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(
+      `
+      UPDATE player_states
+      SET
+        time_gems_available = 2,
+        time_gems_total = 2,
+        idle_time_available = 100,
+        real_time_available = 200,
+        shop = '{"seconds_multiplier": 2, "restraint": 1, "luck": 1, "collect_gem_time_boost": 3}'::jsonb
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+
+    const purchaseResponse = await request(app)
+      .post("/shop/purchase")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ upgradeType: "purchase_refund" });
+
+    expect(purchaseResponse.status).toBe(200);
+    expect(purchaseResponse.body.purchase.upgradeType).toBe("purchase_refund");
+    expect(purchaseResponse.body.purchase.quantity).toBe(1);
+    expect(purchaseResponse.body.purchase.totalCost).toBe(1);
+    expect(purchaseResponse.body.timeGems.available).toBe(1);
+    expect(purchaseResponse.body.idleTime.available).toBe(100 + 20 + 60 + 7 * 24 * 60 * 60);
+    expect(purchaseResponse.body.realTime.available).toBe(200 + 2 * 60 * 60);
+    expect(purchaseResponse.body.shop).toEqual({
+      seconds_multiplier: 0,
+      restraint: 0,
+      luck: 0,
+      collect_gem_time_boost: 0
+    });
+  });
+
+  it("rejects purchase_refund when no refundable upgrades are active", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(
+      `
+      UPDATE player_states
+      SET
+        time_gems_available = 2,
+        time_gems_total = 2,
+        shop = '{"seconds_multiplier": 0, "restraint": 0, "luck": 0, "collect_gem_time_boost": 4}'::jsonb
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+
+    const purchaseResponse = await request(app)
+      .post("/shop/purchase")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ upgradeType: "purchase_refund" });
+
+    expect(purchaseResponse.status).toBe(400);
+    expect(purchaseResponse.body.code).toBe("NO_REFUNDABLE_PURCHASES");
+  });
+
   it("preserves timer on collect when luck roll succeeds", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");

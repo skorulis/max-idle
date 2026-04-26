@@ -99,15 +99,16 @@
             "type": "object",
             "properties": {
               "seconds_multiplier": {
-                "type": "number",
-                "minimum": 0,
-                "exclusiveMinimum": true
+                "type": "integer",
+                "minimum": 0
               },
               "restraint": {
-                "type": "boolean"
+                "type": "integer",
+                "minimum": 0
               },
               "luck": {
-                "type": "boolean"
+                "type": "integer",
+                "minimum": 0
               },
               "collect_gem_time_boost": {
                 "type": "integer",
@@ -515,6 +516,20 @@
             "required": [
               "upgradeType"
             ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "upgradeType": {
+                "type": "string",
+                "enum": [
+                  "purchase_refund"
+                ]
+              }
+            },
+            "required": [
+              "upgradeType"
+            ]
           }
         ]
       },
@@ -559,6 +574,12 @@
                         "type": "string",
                         "enum": [
                           "collect_gem_time_boost"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "purchase_refund"
                         ]
                       }
                     ]
@@ -608,6 +629,109 @@
               "realSecondsCollected"
             ]
           }
+        ]
+      },
+      "TournamentEntry": {
+        "type": "object",
+        "properties": {
+          "enteredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finalRank": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "timeScoreSeconds": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0
+          },
+          "gemsAwarded": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 5
+          },
+          "finalizedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "enteredAt",
+          "finalRank",
+          "timeScoreSeconds",
+          "gemsAwarded",
+          "finalizedAt"
+        ]
+      },
+      "TournamentCurrentResponse": {
+        "type": "object",
+        "properties": {
+          "drawAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "hasEntered": {
+            "type": "boolean"
+          },
+          "playerCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "currentRank": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "expectedRewardGems": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 5
+          },
+          "entry": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TournamentEntry"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          }
+        },
+        "required": [
+          "drawAt",
+          "isActive",
+          "hasEntered",
+          "playerCount",
+          "currentRank",
+          "expectedRewardGems",
+          "entry"
+        ]
+      },
+      "TournamentEnterResponse": {
+        "type": "object",
+        "properties": {
+          "tournament": {
+            "$ref": "#/components/schemas/TournamentCurrentResponse"
+          },
+          "enteredNow": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "tournament",
+          "enteredNow"
         ]
       },
       "EmailAuthRequest": {
@@ -1125,6 +1249,92 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tournament/current": {
+      "get": {
+        "tags": [
+          "Tournament"
+        ],
+        "summary": "Get the current weekly tournament",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current tournament details for the user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentCurrentResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tournament/enter": {
+      "post": {
+        "tags": [
+          "Tournament"
+        ],
+        "summary": "Enter the current weekly tournament",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tournament entry result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentEnterResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Draw is currently being finalized",
             "content": {
               "application/json": {
                 "schema": {

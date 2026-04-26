@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetAccountData, GetAccountErrors, GetAccountResponses, GetAchievementsData, GetAchievementsErrors, GetAchievementsResponses, GetHealthData, GetHealthResponses, GetLeaderboardData, GetLeaderboardErrors, GetLeaderboardResponses, GetPlayerData, GetPlayerErrors, GetPlayerResponses, GetPlayersByIdData, GetPlayersByIdErrors, GetPlayersByIdResponses, PostAccountUpgradeData, PostAccountUpgradeErrors, PostAccountUpgradeResponses, PostAccountUsernameData, PostAccountUsernameErrors, PostAccountUsernameResponses, PostAchievementsSeenData, PostAchievementsSeenErrors, PostAchievementsSeenResponses, PostAuthAnonymousData, PostAuthAnonymousErrors, PostAuthAnonymousResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutData, PostAuthLogoutResponses, PostAuthRegisterData, PostAuthRegisterErrors, PostAuthRegisterResponses, PostPlayerCollectData, PostPlayerCollectErrors, PostPlayerCollectResponses, PostPlayerDailyRewardCollectData, PostPlayerDailyRewardCollectErrors, PostPlayerDailyRewardCollectResponses, PostShopPurchaseData, PostShopPurchaseErrors, PostShopPurchaseResponses } from './types.gen';
+import type { GetAccountData, GetAccountErrors, GetAccountResponses, GetAchievementsData, GetAchievementsErrors, GetAchievementsResponses, GetHealthData, GetHealthResponses, GetLeaderboardData, GetLeaderboardErrors, GetLeaderboardResponses, GetPlayerData, GetPlayerErrors, GetPlayerResponses, GetPlayersByIdData, GetPlayersByIdErrors, GetPlayersByIdResponses, GetTournamentCurrentData, GetTournamentCurrentErrors, GetTournamentCurrentResponses, PostAccountUpgradeData, PostAccountUpgradeErrors, PostAccountUpgradeResponses, PostAccountUsernameData, PostAccountUsernameErrors, PostAccountUsernameResponses, PostAchievementsSeenData, PostAchievementsSeenErrors, PostAchievementsSeenResponses, PostAuthAnonymousData, PostAuthAnonymousErrors, PostAuthAnonymousResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutData, PostAuthLogoutResponses, PostAuthRegisterData, PostAuthRegisterErrors, PostAuthRegisterResponses, PostPlayerCollectData, PostPlayerCollectErrors, PostPlayerCollectResponses, PostPlayerDailyRewardCollectData, PostPlayerDailyRewardCollectErrors, PostPlayerDailyRewardCollectResponses, PostShopPurchaseData, PostShopPurchaseErrors, PostShopPurchaseResponses, PostTournamentEnterData, PostTournamentEnterErrors, PostTournamentEnterResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -144,6 +144,32 @@ export const postPlayerDailyRewardCollect = <ThrowOnError extends boolean = fals
             type: 'apiKey'
         }, { scheme: 'bearer', type: 'http' }],
     url: '/player/daily-reward/collect',
+    ...options
+});
+
+/**
+ * Get the current weekly tournament
+ */
+export const getTournamentCurrent = <ThrowOnError extends boolean = false>(options?: Options<GetTournamentCurrentData, ThrowOnError>) => (options?.client ?? client).get<GetTournamentCurrentResponses, GetTournamentCurrentErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'better-auth.session_token',
+            type: 'apiKey'
+        }, { scheme: 'bearer', type: 'http' }],
+    url: '/tournament/current',
+    ...options
+});
+
+/**
+ * Enter the current weekly tournament
+ */
+export const postTournamentEnter = <ThrowOnError extends boolean = false>(options?: Options<PostTournamentEnterData, ThrowOnError>) => (options?.client ?? client).post<PostTournamentEnterResponses, PostTournamentEnterErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'better-auth.session_token',
+            type: 'apiKey'
+        }, { scheme: 'bearer', type: 'http' }],
+    url: '/tournament/enter',
     ...options
 });
 

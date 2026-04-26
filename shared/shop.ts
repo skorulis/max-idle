@@ -2,6 +2,7 @@ import {
   LUCK_SHOP_UPGRADE,
   RESTRAINT_SHOP_UPGRADE,
   SECONDS_MULTIPLIER_SHOP_UPGRADE,
+  SHOP_CURRENCY_TYPES,
   SHOP_UPGRADE_IDS,
   getCollectGemTimeBoostMaxLevel
 } from "./shopUpgrades.js";
@@ -17,6 +18,17 @@ export type ShopState = {
   collect_gem_time_boost?: number;
   [key: string]: unknown;
 };
+
+export const DEFAULT_SHOP_STATE: ShopState = {
+  [SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER]: 0,
+  [SHOP_UPGRADE_IDS.RESTRAINT]: 0,
+  [SHOP_UPGRADE_IDS.LUCK]: 0,
+  [SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST]: 0
+};
+
+export function getDefaultShopState(): ShopState {
+  return { ...DEFAULT_SHOP_STATE };
+}
 
 function clampSecondsMultiplierLevel(level: number): number {
   if (!Number.isFinite(level)) {
@@ -201,4 +213,32 @@ export function getSecondsMultiplierPurchaseCost(currentLevel: number, quantity:
     totalCost += getSecondsMultiplierUpgradeCost(safeLevel + i);
   }
   return totalCost;
+}
+
+function getTotalUpgradeCostPurchased(level: number, getCostAtLevel: (currentLevel: number) => number): number {
+  const safeLevel = Math.max(0, Math.floor(Number(level) || 0));
+  let total = 0;
+  for (let i = 0; i < safeLevel; i += 1) {
+    total += getCostAtLevel(i);
+  }
+  return total;
+}
+
+export function getShopPurchaseRefundTotals(shop: ShopState): { idle: number; real: number } {
+  const secondsMultiplierRefund = getSecondsMultiplierPurchaseCost(0, getSecondsMultiplierLevel(shop));
+  const restraintRefund = getTotalUpgradeCostPurchased(getRestraintLevel(shop), getRestraintUpgradeCostAtLevel);
+  const luckRefund = getTotalUpgradeCostPurchased(getLuckLevel(shop), getLuckUpgradeCostAtLevel);
+
+  return {
+    idle: secondsMultiplierRefund + luckRefund,
+    real: restraintRefund
+  };
+}
+
+export function hasRefundableShopPurchases(shop: ShopState): boolean {
+  const refundTotals = getShopPurchaseRefundTotals(shop);
+  return (
+    refundTotals[SHOP_CURRENCY_TYPES.IDLE] > 0 ||
+    refundTotals[SHOP_CURRENCY_TYPES.REAL] > 0
+  );
 }
