@@ -4,9 +4,11 @@ import {
   LUCK_SHOP_UPGRADE,
   RESTRAINT_SHOP_UPGRADE,
   SECONDS_MULTIPLIER_SHOP_UPGRADE,
+  SHOP_UPGRADES,
   SHOP_CURRENCY_TYPES,
   SHOP_UPGRADE_IDS
 } from "./shopUpgrades.js";
+import type { ShopUpgradeDefinition } from "./shopUpgrades.js";
 
 const DEFAULT_SECONDS_MULTIPLIER_LEVEL = 0;
 const DEFAULT_SECONDS_MULTIPLIER_VALUE = 1;
@@ -219,25 +221,29 @@ export function getSecondsMultiplierPurchaseCost(currentLevel: number, quantity:
   return totalCost;
 }
 
-function getTotalUpgradeCostPurchased(level: number, getCostAtLevel: (currentLevel: number) => number): number {
-  const safeLevel = Math.max(0, Math.floor(Number(level) || 0));
+function getTotalUpgradeCostPurchased(upgrade: ShopUpgradeDefinition, shop: ShopState): number {
+  const safeLevel = upgrade.currentLevel(shop);
   let total = 0;
   for (let i = 0; i < safeLevel; i += 1) {
-    total += getCostAtLevel(i);
+    total += upgrade.costAtLevel(i);
   }
   return total;
 }
 
 export function getShopPurchaseRefundTotals(shop: ShopState): { idle: number; real: number } {
-  const secondsMultiplierRefund = getSecondsMultiplierPurchaseCost(0, getSecondsMultiplierLevel(shop));
-  const restraintRefund = getTotalUpgradeCostPurchased(getRestraintLevel(shop), getRestraintUpgradeCostAtLevel);
-  const idleHoarderRefund = getTotalUpgradeCostPurchased(getIdleHoarderLevel(shop), getIdleHoarderUpgradeCostAtLevel);
-  const luckRefund = getTotalUpgradeCostPurchased(getLuckLevel(shop), getLuckUpgradeCostAtLevel);
-
-  return {
-    idle: secondsMultiplierRefund + luckRefund,
-    real: restraintRefund + idleHoarderRefund
-  };
+  const totals = { idle: 0, real: 0 };
+  for (const upgrade of SHOP_UPGRADES) {
+    if (upgrade.currencyType === SHOP_CURRENCY_TYPES.GEM) {
+      continue;
+    }
+    const refund = getTotalUpgradeCostPurchased(upgrade, shop);
+    if (upgrade.currencyType === SHOP_CURRENCY_TYPES.IDLE) {
+      totals.idle += refund;
+    } else {
+      totals.real += refund;
+    }
+  }
+  return totals;
 }
 
 export function hasRefundableShopPurchases(shop: ShopState): boolean {
