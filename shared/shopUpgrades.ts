@@ -1,3 +1,5 @@
+import type { ShopState } from "./shop.js";
+
 export const SHOP_CURRENCY_TYPES = {
   IDLE: "idle",
   REAL: "real",
@@ -49,9 +51,48 @@ export type ShopUpgradeDefinition = {
   description: string;
   levels: ShopUpgradeLevel[];
   currencyType: ShopCurrencyType;
+  maxLevel(): number;
+  costAtLevel(level: number): number;
+  currentLevel(shop: ShopState): number;
 };
 
-export const SECONDS_MULTIPLIER_SHOP_UPGRADE: ShopUpgradeDefinition = {
+type ShopUpgradeDefinitionConfig = Omit<ShopUpgradeDefinition, "maxLevel" | "costAtLevel" | "currentLevel">;
+
+function normalizeUpgradeLevel(rawLevel: unknown, maxLevel: number, allowBooleanTrue: boolean): number {
+  if (allowBooleanTrue && rawLevel === true) {
+    return Math.min(1, maxLevel);
+  }
+  if (typeof rawLevel !== "number" || !Number.isFinite(rawLevel)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(maxLevel, Math.floor(rawLevel)));
+}
+
+function normalizeCostLevel(level: number, maxLevel: number): number {
+  if (!Number.isFinite(level)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(maxLevel, Math.floor(level)));
+}
+
+function defineShopUpgrade(upgrade: ShopUpgradeDefinitionConfig): ShopUpgradeDefinition {
+  const allowBooleanTrue = upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT || upgrade.id === SHOP_UPGRADE_IDS.LUCK;
+  const maxLevel = upgrade.levels.length;
+  return {
+    ...upgrade,
+    maxLevel: () => maxLevel,
+    costAtLevel: (level: number) => {
+      const safeLevel = normalizeCostLevel(level, maxLevel);
+      if (safeLevel >= maxLevel) {
+        return 0;
+      }
+      return upgrade.levels[safeLevel]?.cost ?? 0;
+    },
+    currentLevel: (shop: ShopState) => normalizeUpgradeLevel(shop[upgrade.id], maxLevel, allowBooleanTrue)
+  };
+}
+
+export const SECONDS_MULTIPLIER_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER,
   name: "Seconds Multiplier",
   icon: "gauge",
@@ -74,9 +115,9 @@ export const SECONDS_MULTIPLIER_SHOP_UPGRADE: ShopUpgradeDefinition = {
     { cost: 28 * 24 * 3600, value: 2.5 },
   ],
   currencyType: SHOP_CURRENCY_TYPES.IDLE
-};
+});
 
-export const RESTRAINT_SHOP_UPGRADE: ShopUpgradeDefinition = {
+export const RESTRAINT_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.RESTRAINT,
   name: "Restraint",
   icon: "shield-alert",
@@ -89,9 +130,9 @@ export const RESTRAINT_SHOP_UPGRADE: ShopUpgradeDefinition = {
     { cost: 16 * 60 * 60, value: 2.5 }
   ],
   currencyType: SHOP_CURRENCY_TYPES.REAL
-};
+});
 
-export const IDLE_HOARDER_SHOP_UPGRADE: ShopUpgradeDefinition = {
+export const IDLE_HOARDER_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.IDLE_HOARDER,
   name: "Idle hoarder",
   icon: "archive",
@@ -104,9 +145,9 @@ export const IDLE_HOARDER_SHOP_UPGRADE: ShopUpgradeDefinition = {
     { cost: 16 * SECONDS_PER_HOUR, value: 2.5 }
   ],
   currencyType: SHOP_CURRENCY_TYPES.REAL
-};
+});
 
-export const LUCK_SHOP_UPGRADE: ShopUpgradeDefinition = {
+export const LUCK_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.LUCK,
   name: "Luck",
   icon: "dice-5",
@@ -119,19 +160,19 @@ export const LUCK_SHOP_UPGRADE: ShopUpgradeDefinition = {
     { cost: 365 * 24 * 60 * 60, value: 0.5 }
   ],
   currencyType: SHOP_CURRENCY_TYPES.IDLE
-};
+});
 
-export const EXTRA_REALTIME_WAIT_SHOP_UPGRADE: ShopUpgradeDefinition = {
+export const EXTRA_REALTIME_WAIT_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.EXTRA_REALTIME_WAIT,
   name: "Time skip",
   icon: "hourglass",
   description: "Add %s realtime to your current collection",
   levels: [{ cost: 1, value: REALTIME_WAIT_EXTENSION_SECONDS }],
   currencyType: SHOP_CURRENCY_TYPES.GEM
-};
+});
 
 /** Five levels: gem costs 1, 2, 4, 8, 16. `value` = idle mult after purchasing that level (2^level). */
-export const COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE: ShopUpgradeDefinition = {
+export const COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST,
   name: "Idle boost",
   icon: "timer",
@@ -144,16 +185,16 @@ export const COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE: ShopUpgradeDefinition = {
     { cost: 16, value: 2.5 }
   ],
   currencyType: SHOP_CURRENCY_TYPES.GEM
-};
+});
 
-export const PURCHASE_REFUND_SHOP_UPGRADE: ShopUpgradeDefinition = {
+export const PURCHASE_REFUND_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.PURCHASE_REFUND,
   name: "Purchase refund",
   icon: "undo-2",
   description: "Refund all idle and real time purchases",
   levels: [{ cost: 1, value: 0 }],
   currencyType: SHOP_CURRENCY_TYPES.GEM
-};
+});
 
 export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   SECONDS_MULTIPLIER_SHOP_UPGRADE,
@@ -175,30 +216,37 @@ export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> =
   [SHOP_UPGRADE_IDS.PURCHASE_REFUND]: PURCHASE_REFUND_SHOP_UPGRADE
 };
 
+export function getShopUpgradeDefinition(upgradeType: string): ShopUpgradeDefinition | null {
+  switch (upgradeType) {
+    case SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER:
+      return SECONDS_MULTIPLIER_SHOP_UPGRADE;
+    case SHOP_UPGRADE_IDS.RESTRAINT:
+      return RESTRAINT_SHOP_UPGRADE;
+    case SHOP_UPGRADE_IDS.IDLE_HOARDER:
+      return IDLE_HOARDER_SHOP_UPGRADE;
+    case SHOP_UPGRADE_IDS.LUCK:
+      return LUCK_SHOP_UPGRADE;
+    case SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST:
+      return COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE;
+    default:
+      return null;
+  }
+}
+
 export function getCollectGemTimeBoostMaxLevel(): number {
-  return COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.levels.length;
+  return COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.maxLevel();
 }
 
 export function getCollectGemTimeBoostUpgradeCostAtLevel(currentLevel: number): number {
-  const max = getCollectGemTimeBoostMaxLevel();
-  const L = Math.max(0, Math.min(max, Math.floor(Number(currentLevel) || 0)));
-  if (L >= max) {
-    return 0;
-  }
-  return COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.levels[L]?.cost ?? 0;
+  return COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.costAtLevel(currentLevel);
 }
 
 export function getIdleHoarderMaxLevel(): number {
-  return IDLE_HOARDER_SHOP_UPGRADE.levels.length;
+  return IDLE_HOARDER_SHOP_UPGRADE.maxLevel();
 }
 
 export function getIdleHoarderUpgradeCostAtLevel(currentLevel: number): number {
-  const max = getIdleHoarderMaxLevel();
-  const L = Math.max(0, Math.min(max, Math.floor(Number(currentLevel) || 0)));
-  if (L >= max) {
-    return 0;
-  }
-  return IDLE_HOARDER_SHOP_UPGRADE.levels[L]?.cost ?? 0;
+  return IDLE_HOARDER_SHOP_UPGRADE.costAtLevel(currentLevel);
 }
 
 export function getIdleHoarderMaxMultiplierForLevel(level: number): number {

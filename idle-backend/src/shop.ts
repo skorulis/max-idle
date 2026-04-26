@@ -4,18 +4,14 @@ import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import {
   getDefaultShopState,
   getIdleHoarderLevel,
-  getIdleHoarderMaxLevel,
   getIdleHoarderUpgradeCostAtLevel,
   getLuckLevel,
-  getLuckMaxLevel,
   getLuckUpgradeCostAtLevel,
   getShopPurchaseRefundTotals,
   hasRefundableShopPurchases,
   getRestraintLevel,
-  getRestraintMaxLevel,
   getRestraintUpgradeCostAtLevel,
   getSecondsMultiplierLevel,
-  getSecondsMultiplierMaxLevel,
   getSecondsMultiplier,
   getSecondsMultiplierPurchaseCost,
   getCollectGemBoostLevel,
@@ -27,11 +23,11 @@ import {
 } from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
 import {
-  getCollectGemTimeBoostMaxLevel,
-  getCollectGemTimeBoostUpgradeCostAtLevel,
+  getShopUpgradeDefinition,
   REALTIME_WAIT_EXTENSION_SECONDS,
   SHOP_UPGRADE_IDS
 } from "@maxidle/shared/shopUpgrades";
+import type { ShopUpgradeDefinition } from "@maxidle/shared/shopUpgrades";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 import { normalizeCompletedAchievementIds } from "./achievementUpdates.js";
 import { calculateElapsedSeconds } from "./time.js";
@@ -71,6 +67,20 @@ type RegisterShopRoutesOptions = {
   isProduction: boolean;
 };
 
+function wouldExceedUpgradeMaxLevel(upgrade: ShopUpgradeDefinition, shop: ShopState, quantity: number): boolean {
+  const safeQuantity = Number.isFinite(quantity) ? Math.max(0, Math.floor(quantity)) : 0;
+  return upgrade.currentLevel(shop) + safeQuantity > upgrade.maxLevel();
+}
+
+function getUpgradePurchaseCost(upgrade: ShopUpgradeDefinition, currentLevel: number, quantity: number): number {
+  const safeQuantity = Number.isFinite(quantity) ? Math.max(0, Math.floor(quantity)) : 0;
+  let totalCost = 0;
+  for (let i = 0; i < safeQuantity; i += 1) {
+    totalCost += upgrade.costAtLevel(currentLevel + i);
+  }
+  return totalCost;
+}
+
 export function registerShopRoutes({
   app,
   pool,
@@ -86,15 +96,8 @@ export function registerShopRoutes({
 
       const upgradeType = String(req.body?.upgradeType ?? "");
       const requestedQuantity = Number(req.body?.quantity);
-      if (
-        upgradeType !== SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER &&
-        upgradeType !== SHOP_UPGRADE_IDS.RESTRAINT &&
-        upgradeType !== SHOP_UPGRADE_IDS.IDLE_HOARDER &&
-        upgradeType !== SHOP_UPGRADE_IDS.LUCK &&
-        upgradeType !== SHOP_UPGRADE_IDS.EXTRA_REALTIME_WAIT &&
-        upgradeType !== SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST &&
-        upgradeType !== SHOP_UPGRADE_IDS.PURCHASE_REFUND
-      ) {
+      const boundedUpgrade = getShopUpgradeDefinition(upgradeType);
+      if (!boundedUpgrade) {
         res.status(400).json({ error: "Unsupported upgrade type" });
         return;
       }
@@ -177,44 +180,13 @@ export function registerShopRoutes({
         res.status(400).json({ error: "No idle or real purchases to refund", code: "NO_REFUNDABLE_PURCHASES" });
         return;
       }
-      if (isCollectGemTimeBoost && collectGemLevel >= getCollectGemTimeBoostMaxLevel()) {
+      
+      if (boundedUpgrade && wouldExceedUpgradeMaxLevel(boundedUpgrade, row.shop, quantity)) {
         await client.query("ROLLBACK");
         res.status(400).json({ error: "Upgrade already maxed", code: "ALREADY_OWNED" });
         return;
       }
-      if (upgradeType === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER && currentLevel + quantity > getSecondsMultiplierMaxLevel()) {
-        await client.query("ROLLBACK");
-        res.status(400).json({ error: "Invalid purchase quantity" });
-        return;
-      }
-      if (upgradeType === SHOP_UPGRADE_IDS.RESTRAINT && restraintLevel + quantity > getRestraintMaxLevel()) {
-        await client.query("ROLLBACK");
-        res.status(400).json({ error: "Upgrade already maxed", code: "ALREADY_OWNED" });
-        return;
-      }
-      if (isIdleHoarder && idleHoarderLevel + quantity > getIdleHoarderMaxLevel()) {
-        await client.query("ROLLBACK");
-        res.status(400).json({ error: "Upgrade already maxed", code: "ALREADY_OWNED" });
-        return;
-      }
-      if (upgradeType === SHOP_UPGRADE_IDS.LUCK && luckLevel + quantity > getLuckMaxLevel()) {
-        await client.query("ROLLBACK");
-        res.status(400).json({ error: "Upgrade already maxed", code: "ALREADY_OWNED" });
-        return;
-      }
-      const totalCost = isExtraRealtimeWait
-        ? 1
-        : isCollectGemTimeBoost
-          ? getCollectGemTimeBoostUpgradeCostAtLevel(collectGemLevel)
-          : isPurchaseRefund
-            ? 1
-            : upgradeType === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER
-            ? getSecondsMultiplierPurchaseCost(currentLevel, quantity)
-            : upgradeType === SHOP_UPGRADE_IDS.RESTRAINT
-              ? getRestraintUpgradeCostAtLevel(restraintLevel)
-              : isIdleHoarder
-                ? getIdleHoarderUpgradeCostAtLevel(idleHoarderLevel)
-              : getLuckUpgradeCostAtLevel(luckLevel);
+      const totalCost = getUpgradePurchaseCost(boundedUpgrade, boundedUpgrade.currentLevel(row.shop), quantity);
       const idleTimeAvailable = toNumber(row.idle_time_available);
       const realTimeAvailable = toNumber(row.real_time_available);
       const timeGemsAvailable = toNumber(row.time_gems_available);
