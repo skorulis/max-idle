@@ -1084,7 +1084,7 @@ describe("auth + player lifecycle", () => {
       `
       UPDATE player_states
       SET
-        shop = '{"seconds_multiplier": 0, "restraint": true}'::jsonb,
+        shop = '{"seconds_multiplier": 0, "restraint": 1}'::jsonb,
         current_seconds = 0,
         current_seconds_last_updated = NOW() - INTERVAL '120 seconds',
         last_collected_at = NOW() - INTERVAL '120 seconds'
@@ -1110,7 +1110,7 @@ describe("auth + player lifecycle", () => {
       `
       UPDATE player_states
       SET
-        shop = '{"seconds_multiplier": 0, "restraint": true}'::jsonb,
+        shop = '{"seconds_multiplier": 0, "restraint": 1}'::jsonb,
         current_seconds = 0,
         current_seconds_last_updated = NOW() - INTERVAL '120 seconds',
         last_collected_at = NOW() - INTERVAL '120 seconds'
@@ -1134,7 +1134,7 @@ describe("auth + player lifecycle", () => {
       `
       UPDATE player_states
       SET
-        shop = '{"seconds_multiplier": 0, "restraint": true}'::jsonb,
+        shop = '{"seconds_multiplier": 0, "restraint": 1}'::jsonb,
         current_seconds = 0,
         current_seconds_last_updated = NOW() - INTERVAL '7200 seconds',
         last_collected_at = NOW() - INTERVAL '7200 seconds'
@@ -1186,7 +1186,7 @@ describe("auth + player lifecycle", () => {
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
 
-    await pool.query(`UPDATE player_states SET idle_time_available = 500000 WHERE user_id = $1`, [userId]);
+    await pool.query(`UPDATE player_states SET real_time_available = 500000 WHERE user_id = $1`, [userId]);
 
     for (let level = 1; level <= 5; level += 1) {
       const purchaseResponse = await request(app)

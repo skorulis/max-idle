@@ -4,7 +4,7 @@ import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "rea
 import GameIcon from "../GameIcon";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
 import { getCollectGemBoostLevel } from "../shop";
-import { getCollectGemIdleSecondsMultiplier } from "../shopUpgrades";
+import { getCollectGemIdleSecondsMultiplier, SECONDS_MULTIPLIER_SHOP_UPGRADE } from "../shopUpgrades";
 import {
   getIdleHoarderLevel,
   getIdleHoarderMaxLevel,
@@ -13,8 +13,7 @@ import {
   getRestraintLevel,
   getRestraintMaxLevel,
   getSecondsMultiplierLevel,
-  getSecondsMultiplierMaxLevel,
-  getSecondsMultiplierPurchaseCost
+  getSecondsMultiplierMaxLevel
 } from "../shop";
 import { AccountPage } from "../pages/AccountPage";
 import { AchievementsPage } from "../pages/AchievementsPage";
@@ -619,7 +618,7 @@ export function AppShell() {
     if (secondsMultiplierLevel >= maxLevel) {
       return null;
     }
-    return getSecondsMultiplierPurchaseCost(secondsMultiplierLevel, 1);
+    return SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(secondsMultiplierLevel);
   }, [secondsMultiplierLevel]);
   const restraintLevel = playerState ? getRestraintLevel(playerState.shop) : 0;
   const restraintMaxLevel = getRestraintMaxLevel();

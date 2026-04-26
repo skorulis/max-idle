@@ -213,20 +213,7 @@ export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> =
 };
 
 export function getShopUpgradeDefinition(upgradeType: string): ShopUpgradeDefinition | null {
-  switch (upgradeType) {
-    case SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER:
-      return SECONDS_MULTIPLIER_SHOP_UPGRADE;
-    case SHOP_UPGRADE_IDS.RESTRAINT:
-      return RESTRAINT_SHOP_UPGRADE;
-    case SHOP_UPGRADE_IDS.IDLE_HOARDER:
-      return IDLE_HOARDER_SHOP_UPGRADE;
-    case SHOP_UPGRADE_IDS.LUCK:
-      return LUCK_SHOP_UPGRADE;
-    case SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST:
-      return COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE;
-    default:
-      return null;
-  }
+  return SHOP_UPGRADES_BY_ID[upgradeType as ShopUpgradeId] ?? null;
 }
 
 export function getCollectGemTimeBoostMaxLevel(): number {

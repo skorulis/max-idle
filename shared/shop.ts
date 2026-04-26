@@ -118,14 +118,6 @@ export function withRestraint(shop: ShopState, enabled: boolean): ShopState {
   return withRestraintLevel(shop, enabled ? 1 : 0);
 }
 
-export function getRestraintUpgradeCost(): number {
-  return RESTRAINT_SHOP_UPGRADE.levels[0]?.cost ?? 0;
-}
-
-export function getRestraintUpgradeCostAtLevel(currentLevel: number): number {
-  return RESTRAINT_SHOP_UPGRADE.costAtLevel(currentLevel);
-}
-
 export function getIdleHoarderLevel(shop: ShopState): number {
   return IDLE_HOARDER_SHOP_UPGRADE.currentLevel(shop);
 }
@@ -138,10 +130,6 @@ export function withIdleHoarderLevel(shop: ShopState, idleHoarderLevel: number):
     ...shop,
     [SHOP_UPGRADE_IDS.IDLE_HOARDER]: safeLevel
   };
-}
-
-export function getIdleHoarderUpgradeCostAtLevel(currentLevel: number): number {
-  return IDLE_HOARDER_SHOP_UPGRADE.costAtLevel(currentLevel);
 }
 
 export function getIdleHoarderMaxLevel(): number {
@@ -180,14 +168,6 @@ export function withLuck(shop: ShopState, enabled: boolean): ShopState {
   return withLuckLevel(shop, enabled ? 1 : 0);
 }
 
-export function getLuckUpgradeCost(): number {
-  return LUCK_SHOP_UPGRADE.levels[0]?.cost ?? 0;
-}
-
-export function getLuckUpgradeCostAtLevel(currentLevel: number): number {
-  return LUCK_SHOP_UPGRADE.costAtLevel(currentLevel);
-}
-
 export function multiplierToLevel(secondsMultiplier: number): number {
   if (!Number.isFinite(secondsMultiplier) || secondsMultiplier <= 1) {
     return 0;
@@ -202,23 +182,6 @@ export function multiplierToLevel(secondsMultiplier: number): number {
 
 export function levelToMultiplier(level: number): number {
   return getSecondsMultiplierUpgradeValue(level);
-}
-
-export function getSecondsMultiplierUpgradeCost(currentLevel: number): number {
-  return SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(clampSecondsMultiplierLevel(currentLevel));
-}
-
-export function getSecondsMultiplierPurchaseCost(currentLevel: number, quantity: number): number {
-  const safeLevel = clampSecondsMultiplierLevel(currentLevel);
-  const safeQuantity = Math.max(0, Math.floor(quantity));
-  if (safeLevel + safeQuantity > getSecondsMultiplierMaxLevel()) {
-    return Number.POSITIVE_INFINITY;
-  }
-  let totalCost = 0;
-  for (let i = 0; i < safeQuantity; i += 1) {
-    totalCost += getSecondsMultiplierUpgradeCost(safeLevel + i);
-  }
-  return totalCost;
 }
 
 function getTotalUpgradeCostPurchased(upgrade: ShopUpgradeDefinition, shop: ShopState): number {
