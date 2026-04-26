@@ -229,6 +229,10 @@ h3 {
   color: #6b7280;
 }
 
+.tournament-panel {
+  margin-top: 12px;
+}
+
 input {
   width: 100%;
   border: 1px solid #d1d5db;

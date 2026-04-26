@@ -186,6 +186,35 @@ const playerCollectResponseSchema = registry.register(
   })
 );
 
+const tournamentEntrySchema = registry.register(
+  "TournamentEntry",
+  z.object({
+    enteredAt: z.string().datetime(),
+    finalRank: z.number().int().positive().nullable(),
+    timeScoreSeconds: z.number().int().nonnegative().nullable(),
+    gemsAwarded: z.number().int().min(1).max(5).nullable(),
+    finalizedAt: z.string().datetime().nullable()
+  })
+);
+
+const tournamentCurrentResponseSchema = registry.register(
+  "TournamentCurrentResponse",
+  z.object({
+    drawAt: z.string().datetime(),
+    isActive: z.boolean(),
+    hasEntered: z.boolean(),
+    entry: tournamentEntrySchema.nullable()
+  })
+);
+
+const tournamentEnterResponseSchema = registry.register(
+  "TournamentEnterResponse",
+  z.object({
+    tournament: tournamentCurrentResponseSchema,
+    enteredNow: z.boolean()
+  })
+);
+
 const emailAuthRequestSchema = registry.register(
   "EmailAuthRequest",
   z.object({
@@ -509,6 +538,56 @@ registry.registerPath({
     },
     401: {
       description: "Unauthorized",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    }
+  }
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/tournament/current",
+  tags: ["Tournament"],
+  summary: "Get the current weekly tournament",
+  security: authViaCookieOrBearer,
+  responses: {
+    200: {
+      description: "Current tournament details for the user",
+      content: {
+        "application/json": { schema: tournamentCurrentResponseSchema }
+      }
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    }
+  }
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/tournament/enter",
+  tags: ["Tournament"],
+  summary: "Enter the current weekly tournament",
+  security: authViaCookieOrBearer,
+  responses: {
+    200: {
+      description: "Tournament entry result",
+      content: {
+        "application/json": { schema: tournamentEnterResponseSchema }
+      }
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    },
+    409: {
+      description: "Draw is currently being finalized",
       content: {
         "application/json": { schema: errorResponseSchema }
       }

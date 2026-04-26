@@ -1,4 +1,4 @@
-import type { PlayerResponse, SyncedPlayerState } from "./types";
+import type { PlayerResponse, SyncedPlayerState, SyncedTournamentState, TournamentCurrentResponse } from "./types";
 
 export function toSyncedState(data: PlayerResponse): SyncedPlayerState {
   return {
@@ -17,4 +17,26 @@ export function toSyncedState(data: PlayerResponse): SyncedPlayerState {
     serverTimeMs: Date.parse(data.serverTime),
     syncedAtClientMs: Date.now()
   };
+}
+
+export function toSyncedTournamentState(data: TournamentCurrentResponse): SyncedTournamentState {
+  return {
+    drawAtMs: Date.parse(data.drawAt),
+    isActive: data.isActive,
+    hasEntered: data.hasEntered,
+    entry: data.entry
+      ? {
+          enteredAtMs: Date.parse(data.entry.enteredAt),
+          finalRank: data.entry.finalRank,
+          timeScoreSeconds: data.entry.timeScoreSeconds,
+          gemsAwarded: data.entry.gemsAwarded,
+          finalizedAtMs: data.entry.finalizedAt ? Date.parse(data.entry.finalizedAt) : null
+        }
+      : null,
+    syncedAtClientMs: Date.now()
+  };
+}
+
+export function getTournamentSecondsUntilDraw(drawAtMs: number, estimatedServerNowMs: number): number {
+  return Math.max(0, Math.ceil((drawAtMs - estimatedServerNowMs) / 1000));
 }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { formatSeconds } from "../formatSeconds";
-import { Atom, CircleHelp, Clock3, Gem, Gift } from "lucide-react";
+import { Atom, CircleHelp, Clock3, Gem, Gift, Trophy } from "lucide-react";
 import type { SyncedPlayerState } from "../app/types";
 import { CurrentRateInfoOverlay } from "./CurrentRateInfoOverlay";
 
@@ -22,9 +22,13 @@ type HomePageProps = {
   effectiveIdleSecondsRate: number;
   dailyRewardAvailable: boolean;
   dailyRewardSecondsUntilAvailable: number;
+  tournamentHasEntered: boolean;
+  tournamentSecondsUntilDraw: number;
+  enteringTournament: boolean;
   onStartIdling: () => Promise<void>;
   onCollect: () => Promise<void>;
   onCollectDailyReward: () => Promise<void>;
+  onEnterTournament: () => Promise<void>;
   onNavigateLogin: () => void;
 };
 
@@ -39,9 +43,13 @@ export function HomePage({
   effectiveIdleSecondsRate,
   dailyRewardAvailable,
   dailyRewardSecondsUntilAvailable,
+  tournamentHasEntered,
+  tournamentSecondsUntilDraw,
+  enteringTournament,
   onStartIdling,
   onCollect,
   onCollectDailyReward,
+  onEnterTournament,
   onNavigateLogin
 }: HomePageProps) {
   const [collectWarning, setCollectWarning] = useState<string | null>(null);
@@ -143,6 +151,21 @@ export function HomePage({
             <p className="subtle">Resets in {formatSeconds(dailyRewardSecondsUntilAvailable)}</p>
           </>
         )}
+      </div>
+      <div className="panel tournament-panel">
+        <p className="shop-currency-title">
+          <Trophy size={16} aria-hidden="true" />
+          Weekly Tournament
+        </p>
+        <p className="shop-currency-value">Compete for time gem rewards</p>
+        {tournamentHasEntered ? (
+          <p className="subtle">You are entered for this week.</p>
+        ) : (
+          <button className="collect" onClick={() => void onEnterTournament()} disabled={enteringTournament}>
+            {enteringTournament ? "Entering tournament..." : "Enter tournament"}
+          </button>
+        )}
+        <p className="subtle">Draw in {formatSeconds(tournamentSecondsUntilDraw)} (Sunday 00:00:00 UTC)</p>
       </div>
       <CurrentRateInfoOverlay
         open={showRateInfo}

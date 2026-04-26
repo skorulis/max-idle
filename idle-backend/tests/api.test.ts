@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createApp, syncStalePlayerCurrentSeconds } from "../src/app.js";
 import { ensureGameIdentityForAuthUser } from "../src/betterAuth.js";
 import { calculateBoostedIdleSecondsGain, calculateIdleSecondsGain } from "../src/idleRate.js";
+import { finalizeDueTournaments, getNextTournamentDrawAt } from "../src/tournaments.js";
 import type { AppConfig } from "../src/types.js";
 import { createTestPool } from "./testDb.js";
 
@@ -44,6 +45,29 @@ describe("auth + player lifecycle", () => {
       currentSeconds
     ]);
     return userId;
+  }
+
+  async function createTournamentEntrant(
+    app: ReturnType<typeof createApp>,
+    secondsSinceLastCollection: number
+  ): Promise<{ userId: string; token: string }> {
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+    const lastCollectedAt = new Date(Date.now() - secondsSinceLastCollection * 1000);
+    await pool.query(
+      `
+      UPDATE player_states
+      SET
+        last_collected_at = $2,
+        current_seconds_last_updated = $2
+      WHERE user_id = $1
+      `,
+      [userId, lastCollectedAt]
+    );
+    const enterResponse = await request(app).post("/tournament/enter").set("Authorization", `Bearer ${token}`);
+    expect(enterResponse.status).toBe(200);
+    return { userId, token };
   }
 
   beforeAll(async () => {
@@ -167,6 +191,138 @@ describe("auth + player lifecycle", () => {
     expect(Number(state.rows[0]?.time_gems_total ?? 0)).toBe(1);
     expect(Number(state.rows[0]?.time_gems_available ?? 0)).toBe(1);
     expect(state.rows[0]?.last_daily_reward_collected_at).toBeTruthy();
+  });
+
+  it("returns current weekly tournament state and allows entering once", async () => {
+    const app = createApp(pool, config);
+    await pool.query("DELETE FROM tournament_entries");
+    await pool.query("DELETE FROM tournaments");
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    const currentBeforeEntry = await request(app).get("/tournament/current").set("Authorization", `Bearer ${token}`);
+    expect(currentBeforeEntry.status).toBe(200);
+    expect(currentBeforeEntry.body.hasEntered).toBe(false);
+    expect(currentBeforeEntry.body.entry).toBeNull();
+    expect(typeof currentBeforeEntry.body.drawAt).toBe("string");
+    expect(currentBeforeEntry.body.isActive).toBe(true);
+
+    const firstEnter = await request(app).post("/tournament/enter").set("Authorization", `Bearer ${token}`);
+    expect(firstEnter.status).toBe(200);
+    expect(firstEnter.body.enteredNow).toBe(true);
+    expect(firstEnter.body.tournament.hasEntered).toBe(true);
+    expect(firstEnter.body.tournament.entry.enteredAt).toBeTypeOf("string");
+
+    const secondEnter = await request(app).post("/tournament/enter").set("Authorization", `Bearer ${token}`);
+    expect(secondEnter.status).toBe(200);
+    expect(secondEnter.body.enteredNow).toBe(false);
+    expect(secondEnter.body.tournament.hasEntered).toBe(true);
+
+    const entryCountResult = await pool.query<{ entry_count: string }>(
+      `
+      SELECT COUNT(*) AS entry_count
+      FROM tournament_entries
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+    expect(Number(entryCountResult.rows[0]?.entry_count ?? 0)).toBe(1);
+  });
+
+  it("finalizes tournament rankings with NTILE rewards and avoids double-awarding", async () => {
+    const app = createApp(pool, config);
+    await pool.query("DELETE FROM tournament_entries");
+    await pool.query("DELETE FROM tournaments");
+    const entrants: Array<{ userId: string; token: string }> = [];
+    const idleSeconds = [600, 500, 400, 300, 200, 100];
+    for (const seconds of idleSeconds) {
+      entrants.push(await createTournamentEntrant(app, seconds));
+    }
+
+    await pool.query(
+      `
+      UPDATE tournaments
+      SET draw_at_utc = NOW() - INTERVAL '1 second'
+      WHERE is_active = TRUE
+      `
+    );
+    const finalizedCount = await finalizeDueTournaments(pool, new Date());
+    expect(finalizedCount).toBe(1);
+
+    const rankingResult = await pool.query<{
+      user_id: string;
+      final_rank: string;
+      time_score_seconds: string;
+      gems_awarded: string;
+    }>(
+      `
+      SELECT user_id, final_rank, time_score_seconds, gems_awarded
+      FROM tournament_entries
+      WHERE final_rank IS NOT NULL
+      ORDER BY final_rank ASC
+      `
+    );
+    expect(rankingResult.rows).toHaveLength(6);
+    expect(rankingResult.rows.map((row) => Number(row.gems_awarded))).toEqual([5, 5, 4, 3, 2, 1]);
+    expect(rankingResult.rows.map((row) => Number(row.final_rank))).toEqual([1, 2, 3, 4, 5, 6]);
+
+    const gemsResult = await pool.query<{ user_id: string; time_gems_total: string }>(
+      `
+      SELECT ps.user_id, ps.time_gems_total
+      FROM player_states ps
+      INNER JOIN tournament_entries te ON te.user_id = ps.user_id
+      WHERE te.tournament_id = (
+        SELECT id
+        FROM tournaments
+        WHERE finalized_at IS NOT NULL
+        ORDER BY finalized_at DESC, id DESC
+        LIMIT 1
+      )
+      ORDER BY ps.time_gems_total DESC, ps.user_id ASC
+      `
+    );
+    expect(gemsResult.rows.map((row) => Number(row.time_gems_total))).toEqual([5, 5, 4, 3, 2, 1]);
+
+    const finalizedAgain = await finalizeDueTournaments(pool, new Date());
+    expect(finalizedAgain).toBe(0);
+    const gemSumResult = await pool.query<{ total_gems: string }>(
+      `
+      SELECT COALESCE(SUM(ps.time_gems_total), 0) AS total_gems
+      FROM player_states ps
+      INNER JOIN tournament_entries te ON te.user_id = ps.user_id
+      WHERE te.tournament_id = (
+        SELECT id
+        FROM tournaments
+        WHERE finalized_at IS NOT NULL
+        ORDER BY finalized_at DESC, id DESC
+        LIMIT 1
+      )
+      `
+    );
+    expect(Number(gemSumResult.rows[0]?.total_gems ?? 0)).toBe(20);
+
+    await pool.query(
+      `
+      UPDATE player_states
+      SET
+        current_seconds = 0,
+        idle_time_total = 0,
+        idle_time_available = 0
+      WHERE user_id = ANY($1::uuid[])
+      `,
+      [entrants.map((entrant) => entrant.userId)]
+    );
+  });
+
+  it("computes next tournament draw at Sunday 00:00 UTC", () => {
+    const mondayUtc = new Date("2026-04-20T10:00:00.000Z");
+    const nextFromMonday = getNextTournamentDrawAt(mondayUtc);
+    expect(nextFromMonday.toISOString()).toBe("2026-04-26T00:00:00.000Z");
+
+    const sundayAfterMidnightUtc = new Date("2026-04-26T04:30:00.000Z");
+    const nextFromSunday = getNextTournamentDrawAt(sundayAfterMidnightUtc);
+    expect(nextFromSunday.toISOString()).toBe("2026-05-03T00:00:00.000Z");
   });
 
   it("returns anonymous account info for bearer users", async () => {
@@ -799,7 +955,7 @@ describe("auth + player lifecycle", () => {
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
 
-    await pool.query(`UPDATE player_states SET current_seconds = $2, idle_time_total = $3 WHERE user_id = $1`, [userId, 500, 0]);
+    await pool.query(`UPDATE player_states SET current_seconds = $2, idle_time_total = $3 WHERE user_id = $1`, [userId, 5000, 0]);
     await insertLeaderboardPlayer(0, 490);
     await insertLeaderboardPlayer(5000, 10);
 
@@ -807,7 +963,7 @@ describe("auth + player lifecycle", () => {
     expect(leaderboardResponse.status).toBe(200);
     expect(leaderboardResponse.body.type).toBe("current");
     expect(leaderboardResponse.body.entries[0].userId).toBe(userId);
-    expect(leaderboardResponse.body.entries[0].totalIdleSeconds).toBe(500);
+    expect(leaderboardResponse.body.entries[0].totalIdleSeconds).toBe(5000);
   });
 
   it("returns public player profile by id", async () => {

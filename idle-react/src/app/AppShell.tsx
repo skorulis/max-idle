@@ -27,10 +27,12 @@ import {
   collectIdleTime,
   createAnonymousSession,
   completeSocialUpgrade,
+  enterTournament,
   getAccount,
   getAchievements,
   getLeaderboard,
   getPlayer,
+  getCurrentTournament,
   getPublicPlayerProfile,
   loginWithEmail,
   markAchievementsSeen,
@@ -46,7 +48,7 @@ import {
 } from "./api";
 import { authClient } from "./authClient.ts";
 import { alignClientClock, useClientNowMs } from "./clientClock";
-import { toSyncedState } from "./playerState";
+import { getTournamentSecondsUntilDraw, toSyncedState, toSyncedTournamentState } from "./playerState";
 import type {
   AccountResponse,
   AchievementsResponse,
@@ -54,6 +56,7 @@ import type {
   LeaderboardResponse,
   LeaderboardType,
   PlayerProfileResponse,
+  SyncedTournamentState,
   SyncedPlayerState
 } from "./types";
 
@@ -128,6 +131,7 @@ export function AppShell() {
   const playerRouteMatch = useMatch("/player/:playerId");
   const [token, setToken] = useState<string | null>(null);
   const [playerState, setPlayerState] = useState<SyncedPlayerState | null>(null);
+  const [tournamentState, setTournamentState] = useState<SyncedTournamentState | null>(null);
   const [publicPlayerProfile, setPublicPlayerProfile] = useState<PlayerProfileResponse["player"] | null>(null);
   const [publicPlayerLoading, setPublicPlayerLoading] = useState(false);
   const [account, setAccount] = useState<AccountResponse | null>(null);
@@ -142,6 +146,7 @@ export function AppShell() {
   const [starting, setStarting] = useState(false);
   const [collecting, setCollecting] = useState(false);
   const [collectingDailyReward, setCollectingDailyReward] = useState(false);
+  const [enteringTournament, setEnteringTournament] = useState(false);
   const [authPending, setAuthPending] = useState(false);
   const [usernamePending, setUsernamePending] = useState(false);
   const [usernameDraft, setUsernameDraft] = useState("");
@@ -359,6 +364,20 @@ export function AppShell() {
     setPlayerState(synced);
   };
 
+  const refreshTournament = async (currentToken: string | null) => {
+    try {
+      const tournament = await getCurrentTournament(currentToken);
+      const synced = toSyncedTournamentState(tournament);
+      setTournamentState(synced);
+    } catch (tournamentError) {
+      if (tournamentError instanceof Error && tournamentError.message === "UNAUTHORIZED") {
+        setTournamentState(null);
+        return;
+      }
+      throw tournamentError;
+    }
+  };
+
   useEffect(() => {
     const bootstrap = async () => {
       setLoading(true);
@@ -371,6 +390,7 @@ export function AppShell() {
           await refreshPlayer(currentToken);
           setToken(currentToken);
           await refreshAccount(currentToken);
+          await refreshTournament(currentToken);
           setStatus("You are doing nothing. Excellent.");
           return;
         } catch (bootstrapError) {
@@ -381,6 +401,7 @@ export function AppShell() {
             try {
               await refreshPlayer(null);
               await refreshAccount(null);
+              await refreshTournament(null);
               setStatus("You are doing nothing. Excellent.");
               return;
             } catch {
@@ -390,6 +411,7 @@ export function AppShell() {
         }
 
         setPlayerState(null);
+        setTournamentState(null);
         setAccount(null);
         setUsernameDraft("");
         setStatus("Press start when you are ready to do nothing.");
@@ -558,6 +580,17 @@ export function AppShell() {
     return Math.max(0, Math.ceil((nextUtcDayStartMs - estimatedServerNowMs) / 1000));
   }, [dailyRewardAvailable, estimatedServerNowMs, playerState]);
 
+  const tournamentHasEntered = useMemo(() => {
+    return Boolean(tournamentState?.hasEntered);
+  }, [tournamentState]);
+
+  const tournamentSecondsUntilDraw = useMemo(() => {
+    if (!playerState || !tournamentState) {
+      return 0;
+    }
+    return getTournamentSecondsUntilDraw(tournamentState.drawAtMs, estimatedServerNowMs);
+  }, [estimatedServerNowMs, playerState, tournamentState]);
+
   const secondsMultiplierLevel = useMemo(() => {
     return playerState ? getSecondsMultiplierLevel(playerState.shop) : 0;
   }, [playerState]);
@@ -579,6 +612,20 @@ export function AppShell() {
     : WELCOME_MESSAGE;
   const isFadingOutMessage = messageFadeStage === "fading-out";
   const isFadingInMessage = messageFadeStage === "fading-in";
+
+  useEffect(() => {
+    if (!playerState || !tournamentState || tournamentSecondsUntilDraw > 0) {
+      return;
+    }
+    const refreshTimer = window.setTimeout(() => {
+      void refreshTournament(token).catch(() => {
+        // Keep current state if refresh fails.
+      });
+    }, 1_000);
+    return () => {
+      window.clearTimeout(refreshTimer);
+    };
+  }, [playerState, refreshTournament, token, tournamentSecondsUntilDraw, tournamentState]);
 
   useEffect(() => {
     if (activeMessageCardText === displayedMessage || activeMessageCardText === pendingMessage) {
@@ -825,6 +872,37 @@ export function AppShell() {
     }
   };
 
+  const onEnterTournament = async () => {
+    if (!playerState) {
+      return;
+    }
+    setEnteringTournament(true);
+    setError(null);
+    try {
+      const response = await enterTournament(token);
+      setTournamentState(toSyncedTournamentState(response.tournament));
+      setStatus(response.enteredNow ? "Entered weekly tournament." : "Already entered in this week's tournament.");
+    } catch (tournamentError) {
+      if (tournamentError instanceof Error && tournamentError.message === "UNAUTHORIZED") {
+        localStorage.removeItem(TOKEN_KEY);
+        setToken(null);
+        setPlayerState(null);
+        setTournamentState(null);
+        setAccount(null);
+        setStatus("Press start when you are ready to do nothing.");
+      } else if (tournamentError instanceof Error && tournamentError.message === "TOURNAMENT_DRAW_IN_PROGRESS") {
+        setError("Tournament draw is finalizing. Please retry in a moment.");
+        void refreshTournament(token).catch(() => {
+          // Ignore refresh errors and keep current state.
+        });
+      } else {
+        setError(tournamentError instanceof Error ? tournamentError.message : "Failed to enter tournament");
+      }
+    } finally {
+      setEnteringTournament(false);
+    }
+  };
+
   const onStartIdling = async () => {
     setStarting(true);
     setError(null);
@@ -836,6 +914,7 @@ export function AppShell() {
       setToken(auth.token);
       await refreshPlayer(auth.token);
       await refreshAccount(auth.token);
+        await refreshTournament(auth.token);
       setStatus("You are doing nothing. Excellent.");
     } catch (startError) {
       setError(startError instanceof Error ? startError.message : "Failed to start idling");
@@ -855,6 +934,7 @@ export function AppShell() {
       setToken(null);
       await refreshPlayer(null);
       await refreshAccount(null);
+      await refreshTournament(null);
       setStatus("Welcome back. Nothing waits for you.");
       navigate("/");
     } catch (loginError) {
@@ -875,6 +955,7 @@ export function AppShell() {
       setToken(null);
       await refreshPlayer(null);
       await refreshAccount(null);
+      await refreshTournament(null);
       setStatus("Account created. Continue doing nothing.");
       navigate("/");
     } catch (registerError) {
@@ -941,6 +1022,7 @@ export function AppShell() {
       setToken(null);
       await refreshPlayer(null);
       await refreshAccount(null);
+        await refreshTournament(null);
       setStatus("Anonymous account upgraded.");
     } catch (upgradeError) {
       setError(upgradeError instanceof Error ? upgradeError.message : "Upgrade failed");
@@ -961,6 +1043,7 @@ export function AppShell() {
       localStorage.removeItem(TOKEN_KEY);
       setToken(null);
       setPlayerState(null);
+      setTournamentState(null);
       setAccount(null);
       setLeaderboard(null);
       setAchievements(null);
@@ -1086,9 +1169,13 @@ export function AppShell() {
                 collectingDailyReward={collectingDailyReward}
                 dailyRewardAvailable={dailyRewardAvailable}
                 dailyRewardSecondsUntilAvailable={dailyRewardSecondsUntilAvailable}
+                tournamentHasEntered={tournamentHasEntered}
+                tournamentSecondsUntilDraw={tournamentSecondsUntilDraw}
+                enteringTournament={enteringTournament}
                 onStartIdling={onStartIdling}
                 onCollect={onCollect}
                 onCollectDailyReward={onCollectDailyReward}
+                onEnterTournament={onEnterTournament}
                 onNavigateLogin={() => navigate("/login")}
               />
             }

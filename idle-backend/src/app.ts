@@ -22,6 +22,7 @@ import { registerAuthRoutes } from "./routes/auth.js";
 import { registerAccountRoutes } from "./routes/account.js";
 import { registerAchievementsRoutes } from "./routes/achievements.js";
 import { registerPlayerRoutes } from "./routes/player.js";
+import { registerTournamentRoutes } from "./routes/tournament.js";
 import type { ShopState } from "@maxidle/shared/shop";
 
 function toNumber(value: unknown): number {
@@ -390,6 +391,12 @@ export function createApp(pool: Pool, config: AppConfig) {
     resolveIdentity: resolveIdentityForRequest,
     toNumber,
     getAchievementBonusMultiplier
+  });
+
+  registerTournamentRoutes({
+    app,
+    pool,
+    resolveIdentity: resolveIdentityForRequest
   });
 
   registerShopRoutes({

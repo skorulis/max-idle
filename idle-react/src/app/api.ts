@@ -5,7 +5,9 @@ import type {
   LeaderboardResponse,
   LeaderboardType,
   PlayerProfileResponse,
-  PlayerResponse
+  PlayerResponse,
+  TournamentCurrentResponse,
+  TournamentEnterResponse
 } from "./types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
@@ -115,6 +117,52 @@ export async function collectDailyReward(token: string | null): Promise<PlayerRe
     throw new Error("Failed to collect daily reward");
   }
   return (await response.json()) as PlayerResponse;
+}
+
+export async function getCurrentTournament(token: string | null): Promise<TournamentCurrentResponse> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/tournament/current`, {
+    credentials: "include",
+    headers
+  });
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    throw new Error("Failed to load tournament");
+  }
+  return (await response.json()) as TournamentCurrentResponse;
+}
+
+export async function enterTournament(token: string | null): Promise<TournamentEnterResponse> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/tournament/enter`, {
+    method: "POST",
+    credentials: "include",
+    headers
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (response.status === 409) {
+    const payload = (await response.json().catch(() => null)) as { code?: string } | null;
+    if (payload?.code === "TOURNAMENT_DRAW_IN_PROGRESS") {
+      throw new Error("TOURNAMENT_DRAW_IN_PROGRESS");
+    }
+  }
+  if (!response.ok) {
+    throw new Error("Failed to enter tournament");
+  }
+  return (await response.json()) as TournamentEnterResponse;
 }
 
 export async function getAccount(token: string | null): Promise<AccountResponse> {

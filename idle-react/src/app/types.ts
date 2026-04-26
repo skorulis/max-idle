@@ -37,6 +37,26 @@ export type LeaderboardEntry = {
   isCurrentPlayer: boolean;
 };
 
+export type TournamentEntryResponse = {
+  enteredAt: string;
+  finalRank: number | null;
+  timeScoreSeconds: number | null;
+  gemsAwarded: number | null;
+  finalizedAt: string | null;
+};
+
+export type TournamentCurrentResponse = {
+  drawAt: string;
+  isActive: boolean;
+  hasEntered: boolean;
+  entry: TournamentEntryResponse | null;
+};
+
+export type TournamentEnterResponse = {
+  tournament: TournamentCurrentResponse;
+  enteredNow: boolean;
+};
+
 export type LeaderboardType = "current" | "collected" | "total";
 
 export type LeaderboardResponse = {
@@ -91,6 +111,22 @@ export type SyncedPlayerState = {
   lastCollectedAtMs: number;
   lastDailyRewardCollectedAtMs: number | null;
   serverTimeMs: number;
+  syncedAtClientMs: number;
+};
+
+export type SyncedTournamentEntry = {
+  enteredAtMs: number;
+  finalRank: number | null;
+  timeScoreSeconds: number | null;
+  gemsAwarded: number | null;
+  finalizedAtMs: number | null;
+};
+
+export type SyncedTournamentState = {
+  drawAtMs: number;
+  isActive: boolean;
+  hasEntered: boolean;
+  entry: SyncedTournamentEntry | null;
   syncedAtClientMs: number;
 };
 
