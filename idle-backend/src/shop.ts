@@ -4,16 +4,12 @@ import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import {
   getDefaultShopState,
   getIdleHoarderLevel,
-  getIdleHoarderUpgradeCostAtLevel,
   getLuckLevel,
-  getLuckUpgradeCostAtLevel,
   getShopPurchaseRefundTotals,
   hasRefundableShopPurchases,
   getRestraintLevel,
-  getRestraintUpgradeCostAtLevel,
   getSecondsMultiplierLevel,
   getSecondsMultiplier,
-  getSecondsMultiplierPurchaseCost,
   getCollectGemBoostLevel,
   withCollectGemBoostLevel,
   withIdleHoarderLevel,
@@ -25,6 +21,7 @@ import type { ShopState } from "@maxidle/shared/shop";
 import {
   getShopUpgradeDefinition,
   REALTIME_WAIT_EXTENSION_SECONDS,
+  SHOP_CURRENCY_TYPES,
   SHOP_UPGRADE_IDS
 } from "@maxidle/shared/shopUpgrades";
 import type { ShopUpgradeDefinition } from "@maxidle/shared/shopUpgrades";
@@ -162,8 +159,8 @@ export function registerShopRoutes({
       const isCollectGemTimeBoost = upgradeType === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST;
       const isPurchaseRefund = upgradeType === SHOP_UPGRADE_IDS.PURCHASE_REFUND;
       const isIdleHoarder = upgradeType === SHOP_UPGRADE_IDS.IDLE_HOARDER;
-      const isGemPurchase = isExtraRealtimeWait || isCollectGemTimeBoost || isPurchaseRefund;
-      const isRealTimePurchase = isIdleHoarder;
+      const isGemPurchase = boundedUpgrade.currencyType === SHOP_CURRENCY_TYPES.GEM;
+      const isMaxLevelBoundedUpgrade = !isExtraRealtimeWait && !isPurchaseRefund;
       const collectGemLevel = getCollectGemBoostLevel(row.shop);
       const quantity = isGemPurchase
         ? 1
@@ -181,7 +178,7 @@ export function registerShopRoutes({
         return;
       }
       
-      if (boundedUpgrade && wouldExceedUpgradeMaxLevel(boundedUpgrade, row.shop, quantity)) {
+      if (isMaxLevelBoundedUpgrade && wouldExceedUpgradeMaxLevel(boundedUpgrade, row.shop, quantity)) {
         await client.query("ROLLBACK");
         res.status(400).json({ error: "Upgrade already maxed", code: "ALREADY_OWNED" });
         return;
@@ -190,23 +187,13 @@ export function registerShopRoutes({
       const idleTimeAvailable = toNumber(row.idle_time_available);
       const realTimeAvailable = toNumber(row.real_time_available);
       const timeGemsAvailable = toNumber(row.time_gems_available);
-      if (isGemPurchase) {
-        if (timeGemsAvailable < totalCost) {
-          await client.query("ROLLBACK");
-          res.status(400).json({
-            error: "Not enough funds",
-            code: "INSUFFICIENT_FUNDS"
-          });
-          return;
-        }
-      } else if (isRealTimePurchase && realTimeAvailable < totalCost) {
-        await client.query("ROLLBACK");
-        res.status(400).json({
-          error: "Not enough funds",
-          code: "INSUFFICIENT_FUNDS"
-        });
-        return;
-      } else if (!isRealTimePurchase && idleTimeAvailable < totalCost) {
+      const availableForUpgrade =
+        boundedUpgrade.currencyType === "gem"
+          ? timeGemsAvailable
+          : boundedUpgrade.currencyType === "real"
+            ? realTimeAvailable
+            : idleTimeAvailable;
+      if (availableForUpgrade < totalCost) {
         await client.query("ROLLBACK");
         res.status(400).json({
           error: "Not enough funds",
@@ -241,12 +228,14 @@ export function registerShopRoutes({
       const hasNewAchievement = nextCompletedAchievementIds.length > toNumber(row.achievement_count);
       const nextAchievementCount = nextCompletedAchievementIds.length;
       const nextAchievementBonusMultiplier = getAchievementBonusMultiplier(nextAchievementCount);
-      const nextIdleTimeAvailable = isGemPurchase || isRealTimePurchase ? idleTimeAvailable : idleTimeAvailable - totalCost;
+      const nextIdleTimeAvailable =
+        boundedUpgrade.currencyType === SHOP_CURRENCY_TYPES.IDLE ? idleTimeAvailable - totalCost : idleTimeAvailable;
       const nextIdleTimeAvailableWithRefund = nextIdleTimeAvailable + refundTotals.idle;
-      const nextRealTimeAvailable = isRealTimePurchase
+      const nextRealTimeAvailable = boundedUpgrade.currencyType === SHOP_CURRENCY_TYPES.REAL
         ? realTimeAvailable - totalCost + refundTotals.real
         : realTimeAvailable + refundTotals.real;
-      const nextTimeGemsAvailable = isGemPurchase ? timeGemsAvailable - totalCost : timeGemsAvailable;
+      const nextTimeGemsAvailable =
+        boundedUpgrade.currencyType === SHOP_CURRENCY_TYPES.GEM ? timeGemsAvailable - totalCost : timeGemsAvailable;
       const syncedCurrentSeconds = boostedUncollectedIdleSeconds(
         nextLastCollectedAt,
         now,
