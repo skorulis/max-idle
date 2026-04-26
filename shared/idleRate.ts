@@ -1,4 +1,5 @@
 import {
+  getIdleHoarderLevel,
   getLuckEnabled,
   getLuckPreserveChance,
   getRestraintBonusMultiplier,
@@ -6,6 +7,7 @@ import {
   getSecondsMultiplier
 } from "./shop.js";
 import type { ShopState } from "./shop.js";
+import { getIdleHoarderMultiplier } from "./shopUpgrades.js";
 
 type IdleRateStep = {
   seconds: number;
@@ -33,6 +35,7 @@ export type IdleCollectionPlayer = {
   secondsSinceLastCollection: number;
   shop: ShopState;
   achievementBonusMultiplier: number;
+  realTimeAvailable?: number;
 };
 
 function clampElapsedSeconds(value: number): number {
@@ -113,15 +116,28 @@ export function calculateBoostedIdleSecondsGain(player: IdleCollectionPlayer): n
   const secondsMultiplier = getSecondsMultiplier(player.shop);
   const achievementBonusMultiplier = Number.isFinite(player.achievementBonusMultiplier) ? player.achievementBonusMultiplier : 1;
   const shopBonusMultiplier = getRestraintBonusMultiplier(player.shop);
-  return Math.floor(baseGain * secondsMultiplier * shopBonusMultiplier * achievementBonusMultiplier);
+  const boostedGainBeforeIdleHoarder = baseGain * secondsMultiplier * shopBonusMultiplier * achievementBonusMultiplier;
+  const idleHoarderMultiplier = getIdleHoarderMultiplier(
+    getIdleHoarderLevel(player.shop),
+    Number.isFinite(player.realTimeAvailable) ? Number(player.realTimeAvailable) : 0,
+    elapsedSeconds
+  );
+  return Math.floor(boostedGainBeforeIdleHoarder * idleHoarderMultiplier);
 }
 
 export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): number {
-  return (
+  const rateBeforeIdleHoarder =
     getIdleSecondsRate({ secondsSinceLastCollection: player.secondsSinceLastCollection }) *
     getSecondsMultiplier(player.shop) *
     getRestraintBonusMultiplier(player.shop) *
-    (Number.isFinite(player.achievementBonusMultiplier) ? player.achievementBonusMultiplier : 1)
+    (Number.isFinite(player.achievementBonusMultiplier) ? player.achievementBonusMultiplier : 1);
+  const idleHoarderMultiplier = getIdleHoarderMultiplier(
+    getIdleHoarderLevel(player.shop),
+    Number.isFinite(player.realTimeAvailable) ? Number(player.realTimeAvailable) : 0,
+    clampElapsedSeconds(player.secondsSinceLastCollection)
+  );
+  return (
+    rateBeforeIdleHoarder * idleHoarderMultiplier
   );
 }
 

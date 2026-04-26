@@ -49,6 +49,7 @@ function getAchievementBonusMultiplier(achievementCount: number): number {
 type PlayerCurrentSecondsSyncRow = {
   user_id: string;
   current_seconds: number | string;
+  real_time_available: number | string;
   current_seconds_last_updated: Date;
   last_collected_at: Date;
   achievement_count: number | string;
@@ -65,6 +66,7 @@ export async function syncStalePlayerCurrentSeconds(pool: Pool, limit = 100): Pr
       SELECT
         user_id,
         current_seconds,
+        real_time_available,
         current_seconds_last_updated,
         last_collected_at,
         achievement_count,
@@ -84,7 +86,8 @@ export async function syncStalePlayerCurrentSeconds(pool: Pool, limit = 100): Pr
         row.last_collected_at,
         row.server_time,
         row.shop,
-        achievementBonusMultiplier
+        achievementBonusMultiplier,
+        toNumber(row.real_time_available)
       );
 
       await client.query(
@@ -352,7 +355,8 @@ export function createApp(pool: Pool, config: AppConfig) {
         row.last_collected_at,
         row.server_time,
         row.shop,
-        achievementBonusMultiplier
+        achievementBonusMultiplier,
+        toNumber(row.real_time_available)
       );
 
       res.json({

@@ -3,6 +3,9 @@ import type { Pool } from "pg";
 import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import {
   getDefaultShopState,
+  getIdleHoarderLevel,
+  getIdleHoarderMaxLevel,
+  getIdleHoarderUpgradeCostAtLevel,
   getLuckLevel,
   getLuckMaxLevel,
   getLuckUpgradeCostAtLevel,
@@ -17,6 +20,7 @@ import {
   getSecondsMultiplierPurchaseCost,
   getCollectGemBoostLevel,
   withCollectGemBoostLevel,
+  withIdleHoarderLevel,
   withLuckLevel,
   withRestraintLevel,
   withSecondsMultiplier
@@ -85,6 +89,7 @@ export function registerShopRoutes({
       if (
         upgradeType !== SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER &&
         upgradeType !== SHOP_UPGRADE_IDS.RESTRAINT &&
+        upgradeType !== SHOP_UPGRADE_IDS.IDLE_HOARDER &&
         upgradeType !== SHOP_UPGRADE_IDS.LUCK &&
         upgradeType !== SHOP_UPGRADE_IDS.EXTRA_REALTIME_WAIT &&
         upgradeType !== SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST &&
@@ -153,7 +158,9 @@ export function registerShopRoutes({
       const isExtraRealtimeWait = upgradeType === SHOP_UPGRADE_IDS.EXTRA_REALTIME_WAIT;
       const isCollectGemTimeBoost = upgradeType === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST;
       const isPurchaseRefund = upgradeType === SHOP_UPGRADE_IDS.PURCHASE_REFUND;
+      const isIdleHoarder = upgradeType === SHOP_UPGRADE_IDS.IDLE_HOARDER;
       const isGemPurchase = isExtraRealtimeWait || isCollectGemTimeBoost || isPurchaseRefund;
+      const isRealTimePurchase = isIdleHoarder;
       const collectGemLevel = getCollectGemBoostLevel(row.shop);
       const quantity = isGemPurchase
         ? 1
@@ -161,6 +168,7 @@ export function registerShopRoutes({
           ? requestedQuantity
           : 1;
       const restraintLevel = getRestraintLevel(row.shop);
+      const idleHoarderLevel = getIdleHoarderLevel(row.shop);
       const luckLevel = getLuckLevel(row.shop);
 
       const currentLevel = getSecondsMultiplierLevel(row.shop);
@@ -184,6 +192,11 @@ export function registerShopRoutes({
         res.status(400).json({ error: "Upgrade already maxed", code: "ALREADY_OWNED" });
         return;
       }
+      if (isIdleHoarder && idleHoarderLevel + quantity > getIdleHoarderMaxLevel()) {
+        await client.query("ROLLBACK");
+        res.status(400).json({ error: "Upgrade already maxed", code: "ALREADY_OWNED" });
+        return;
+      }
       if (upgradeType === SHOP_UPGRADE_IDS.LUCK && luckLevel + quantity > getLuckMaxLevel()) {
         await client.query("ROLLBACK");
         res.status(400).json({ error: "Upgrade already maxed", code: "ALREADY_OWNED" });
@@ -199,6 +212,8 @@ export function registerShopRoutes({
             ? getSecondsMultiplierPurchaseCost(currentLevel, quantity)
             : upgradeType === SHOP_UPGRADE_IDS.RESTRAINT
               ? getRestraintUpgradeCostAtLevel(restraintLevel)
+              : isIdleHoarder
+                ? getIdleHoarderUpgradeCostAtLevel(idleHoarderLevel)
               : getLuckUpgradeCostAtLevel(luckLevel);
       const idleTimeAvailable = toNumber(row.idle_time_available);
       const realTimeAvailable = toNumber(row.real_time_available);
@@ -212,7 +227,14 @@ export function registerShopRoutes({
           });
           return;
         }
-      } else if (idleTimeAvailable < totalCost) {
+      } else if (isRealTimePurchase && realTimeAvailable < totalCost) {
+        await client.query("ROLLBACK");
+        res.status(400).json({
+          error: "Not enough funds",
+          code: "INSUFFICIENT_FUNDS"
+        });
+        return;
+      } else if (!isRealTimePurchase && idleTimeAvailable < totalCost) {
         await client.query("ROLLBACK");
         res.status(400).json({
           error: "Not enough funds",
@@ -233,6 +255,8 @@ export function registerShopRoutes({
             ? withSecondsMultiplier(row.shop, nextLevel)
             : upgradeType === SHOP_UPGRADE_IDS.RESTRAINT
               ? withRestraintLevel(row.shop, restraintLevel + quantity)
+              : isIdleHoarder
+                ? withIdleHoarderLevel(row.shop, idleHoarderLevel + quantity)
               : withLuckLevel(row.shop, luckLevel + quantity);
       const nextLastCollectedAt = isExtraRealtimeWait
         ? new Date(row.last_collected_at.getTime() - REALTIME_WAIT_EXTENSION_SECONDS * 1000)
@@ -245,16 +269,19 @@ export function registerShopRoutes({
       const hasNewAchievement = nextCompletedAchievementIds.length > toNumber(row.achievement_count);
       const nextAchievementCount = nextCompletedAchievementIds.length;
       const nextAchievementBonusMultiplier = getAchievementBonusMultiplier(nextAchievementCount);
+      const nextIdleTimeAvailable = isGemPurchase || isRealTimePurchase ? idleTimeAvailable : idleTimeAvailable - totalCost;
+      const nextIdleTimeAvailableWithRefund = nextIdleTimeAvailable + refundTotals.idle;
+      const nextRealTimeAvailable = isRealTimePurchase
+        ? realTimeAvailable - totalCost + refundTotals.real
+        : realTimeAvailable + refundTotals.real;
+      const nextTimeGemsAvailable = isGemPurchase ? timeGemsAvailable - totalCost : timeGemsAvailable;
       const syncedCurrentSeconds = boostedUncollectedIdleSeconds(
         nextLastCollectedAt,
         now,
         nextShopState,
-        nextAchievementBonusMultiplier
+        nextAchievementBonusMultiplier,
+        nextRealTimeAvailable
       );
-      const nextIdleTimeAvailable = isGemPurchase ? idleTimeAvailable : idleTimeAvailable - totalCost;
-      const nextIdleTimeAvailableWithRefund = nextIdleTimeAvailable + refundTotals.idle;
-      const nextRealTimeAvailable = realTimeAvailable + refundTotals.real;
-      const nextTimeGemsAvailable = isGemPurchase ? timeGemsAvailable - totalCost : timeGemsAvailable;
       const updateResult = await client.query<{
         idle_time_total: string;
         idle_time_available: string;
@@ -327,7 +354,8 @@ export function registerShopRoutes({
       const idleSecondsRate = getEffectiveIdleSecondsRate({
         secondsSinceLastCollection: elapsedSinceLastCollection,
         shop: updated.shop,
-        achievementBonusMultiplier: nextAchievementBonusMultiplier
+        achievementBonusMultiplier: nextAchievementBonusMultiplier,
+        realTimeAvailable: toNumber(updated.real_time_available)
       });
       res.json({
         idleTime: {
@@ -418,7 +446,13 @@ export function registerShopRoutes({
 
       const now = new Date();
       const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
-      const syncedCurrentSeconds = boostedUncollectedIdleSeconds(row.last_collected_at, now, row.shop, achievementBonusMultiplier);
+      const syncedCurrentSeconds = boostedUncollectedIdleSeconds(
+        row.last_collected_at,
+        now,
+        row.shop,
+        achievementBonusMultiplier,
+        toNumber(row.real_time_available)
+      );
       const updateResult = await client.query<{
         idle_time_total: string;
         idle_time_available: string;
@@ -471,7 +505,8 @@ export function registerShopRoutes({
       const idleSecondsRate = getEffectiveIdleSecondsRate({
         secondsSinceLastCollection: elapsedSinceLastCollection,
         shop: updated.shop,
-        achievementBonusMultiplier
+        achievementBonusMultiplier,
+        realTimeAvailable: toNumber(updated.real_time_available)
       });
       res.json({
         idleTime: {

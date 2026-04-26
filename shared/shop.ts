@@ -1,10 +1,12 @@
 import {
+  IDLE_HOARDER_SHOP_UPGRADE,
   LUCK_SHOP_UPGRADE,
   RESTRAINT_SHOP_UPGRADE,
   SECONDS_MULTIPLIER_SHOP_UPGRADE,
   SHOP_CURRENCY_TYPES,
   SHOP_UPGRADE_IDS,
-  getCollectGemTimeBoostMaxLevel
+  getCollectGemTimeBoostMaxLevel,
+  getIdleHoarderMaxLevel as getIdleHoarderShopUpgradeMaxLevel
 } from "./shopUpgrades.js";
 
 const DEFAULT_SECONDS_MULTIPLIER_LEVEL = 0;
@@ -13,6 +15,7 @@ const DEFAULT_SECONDS_MULTIPLIER_VALUE = 1;
 export type ShopState = {
   seconds_multiplier: number;
   restraint: number | boolean;
+  idle_hoarder?: number;
   luck: number | boolean;
   /** Resets to 0 on collect. Same key as {@link SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST}. */
   collect_gem_time_boost?: number;
@@ -22,6 +25,7 @@ export type ShopState = {
 export const DEFAULT_SHOP_STATE: ShopState = {
   [SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER]: 0,
   [SHOP_UPGRADE_IDS.RESTRAINT]: 0,
+  [SHOP_UPGRADE_IDS.IDLE_HOARDER]: 0,
   [SHOP_UPGRADE_IDS.LUCK]: 0,
   [SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST]: 0
 };
@@ -133,6 +137,33 @@ export function getRestraintUpgradeCostAtLevel(currentLevel: number): number {
   return RESTRAINT_SHOP_UPGRADE.levels[safeLevel]?.cost ?? 0;
 }
 
+export function getIdleHoarderLevel(shop: ShopState): number {
+  const rawLevel = shop[SHOP_UPGRADE_IDS.IDLE_HOARDER];
+  if (typeof rawLevel !== "number" || !Number.isFinite(rawLevel)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(getIdleHoarderMaxLevel(), Math.floor(rawLevel)));
+}
+
+export function withIdleHoarderLevel(shop: ShopState, idleHoarderLevel: number): ShopState {
+  const safeLevel = Number.isFinite(idleHoarderLevel)
+    ? Math.max(0, Math.min(getIdleHoarderMaxLevel(), Math.floor(idleHoarderLevel)))
+    : 0;
+  return {
+    ...shop,
+    [SHOP_UPGRADE_IDS.IDLE_HOARDER]: safeLevel
+  };
+}
+
+export function getIdleHoarderUpgradeCostAtLevel(currentLevel: number): number {
+  const safeLevel = Math.max(0, Math.min(getIdleHoarderMaxLevel(), Math.floor(currentLevel)));
+  return IDLE_HOARDER_SHOP_UPGRADE.levels[safeLevel]?.cost ?? 0;
+}
+
+export function getIdleHoarderMaxLevel(): number {
+  return getIdleHoarderShopUpgradeMaxLevel();
+}
+
 export function getLuckEnabled(shop: ShopState): boolean {
   return getLuckLevel(shop) > 0;
 }
@@ -227,11 +258,12 @@ function getTotalUpgradeCostPurchased(level: number, getCostAtLevel: (currentLev
 export function getShopPurchaseRefundTotals(shop: ShopState): { idle: number; real: number } {
   const secondsMultiplierRefund = getSecondsMultiplierPurchaseCost(0, getSecondsMultiplierLevel(shop));
   const restraintRefund = getTotalUpgradeCostPurchased(getRestraintLevel(shop), getRestraintUpgradeCostAtLevel);
+  const idleHoarderRefund = getTotalUpgradeCostPurchased(getIdleHoarderLevel(shop), getIdleHoarderUpgradeCostAtLevel);
   const luckRefund = getTotalUpgradeCostPurchased(getLuckLevel(shop), getLuckUpgradeCostAtLevel);
 
   return {
     idle: secondsMultiplierRefund + luckRefund,
-    real: restraintRefund
+    real: restraintRefund + idleHoarderRefund
   };
 }
 

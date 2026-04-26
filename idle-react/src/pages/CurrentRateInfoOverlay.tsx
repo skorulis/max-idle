@@ -1,8 +1,9 @@
 import { useEffect, useMemo } from "react";
 import { CircleX } from "lucide-react";
 import type { ShopState } from "../shop";
-import { getRestraintBonusMultiplier, getSecondsMultiplier } from "../shop";
+import { getIdleHoarderLevel, getRestraintBonusMultiplier, getSecondsMultiplier } from "../shop";
 import { getIdleSecondsRate } from "../idleRate";
+import { getIdleHoarderMultiplier } from "../shopUpgrades";
 
 type CurrentRateInfoOverlayProps = {
   open: boolean;
@@ -11,6 +12,7 @@ type CurrentRateInfoOverlayProps = {
   effectiveIdleSecondsRate: number;
   shop: ShopState;
   achievementBonusMultiplier: number;
+  realTimeAvailable: number;
 };
 
 export function CurrentRateInfoOverlay({
@@ -19,7 +21,8 @@ export function CurrentRateInfoOverlay({
   secondsSinceLastCollection,
   effectiveIdleSecondsRate,
   shop,
-  achievementBonusMultiplier
+  achievementBonusMultiplier,
+  realTimeAvailable
 }: CurrentRateInfoOverlayProps) {
   const shouldShowFactor = (value: number): boolean => Math.abs(value - 1) > Number.EPSILON;
 
@@ -46,15 +49,22 @@ export function CurrentRateInfoOverlay({
     const secondsMultiplier = getSecondsMultiplier(shop);
     const shopBonusMultiplier = getRestraintBonusMultiplier(shop);
     const safeAchievementBonusMultiplier = Number.isFinite(achievementBonusMultiplier) ? achievementBonusMultiplier : 1;
+    const rateBeforeIdleHoarder = baseRate * secondsMultiplier * shopBonusMultiplier * safeAchievementBonusMultiplier;
+    const idleHoarderMultiplier = getIdleHoarderMultiplier(
+      getIdleHoarderLevel(shop),
+      realTimeAvailable,
+      Math.max(0, secondsSinceLastCollection)
+    );
 
     return {
       baseRate,
       secondsMultiplier,
       shopBonusMultiplier,
       safeAchievementBonusMultiplier,
-      calculatedRate: baseRate * secondsMultiplier * shopBonusMultiplier * safeAchievementBonusMultiplier
+      idleHoarderMultiplier,
+      calculatedRate: rateBeforeIdleHoarder * idleHoarderMultiplier
     };
-  }, [achievementBonusMultiplier, secondsSinceLastCollection, shop]);
+  }, [achievementBonusMultiplier, realTimeAvailable, secondsSinceLastCollection, shop]);
 
   if (!open) {
     return null;
@@ -96,6 +106,12 @@ export function CurrentRateInfoOverlay({
           <p className="rate-factor-row">
             <span>Achievements bonus</span>
             <span>{factors.safeAchievementBonusMultiplier.toFixed(2)}x</span>
+          </p>
+        ) : null}
+        {shouldShowFactor(factors.idleHoarderMultiplier) ? (
+          <p className="rate-factor-row">
+            <span>Idle hoarder multiplier</span>
+            <span>{factors.idleHoarderMultiplier.toFixed(2)}x</span>
           </p>
         ) : null}
         <p className="rate-factor-total">

@@ -1,5 +1,6 @@
 import { formatSeconds } from "../formatSeconds";
 import {
+  Archive,
   Atom,
   CircleHelp,
   Clock3,
@@ -33,6 +34,7 @@ type ShopPageProps = {
   shopPendingQuantity:
     | "seconds_multiplier"
     | "restraint"
+    | "idle_hoarder"
     | "luck"
     | "extra_realtime_wait"
     | "collect_gem_time_boost"
@@ -47,6 +49,9 @@ type ShopPageProps = {
   luckLevel: number;
   luckMaxLevel: number;
   onPurchaseLuck: () => Promise<void>;
+  idleHoarderLevel: number;
+  idleHoarderMaxLevel: number;
+  onPurchaseIdleHoarder: () => Promise<void>;
   onPurchaseExtraRealtimeWait: () => Promise<void>;
   onPurchaseCollectGemTimeBoost: () => Promise<void>;
   onPurchaseRefund: () => Promise<void>;
@@ -91,6 +96,8 @@ function getShopUpgradeIcon(iconName: string): LucideIcon {
       return Dice5;
     case "hourglass":
       return Hourglass;
+    case "archive":
+      return Archive;
     case "timer":
       return Timer;
     case "undo-2":
@@ -111,6 +118,9 @@ export function ShopPage({
   luckLevel,
   luckMaxLevel,
   onPurchaseLuck,
+  idleHoarderLevel,
+  idleHoarderMaxLevel,
+  onPurchaseIdleHoarder,
   onPurchaseExtraRealtimeWait,
   onPurchaseCollectGemTimeBoost,
   onPurchaseRefund,
@@ -196,20 +206,27 @@ export function ShopPage({
     }
 
     const isRestraint = upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT;
+    const isIdleHoarder = upgrade.id === SHOP_UPGRADE_IDS.IDLE_HOARDER;
     const isLuck = upgrade.id === SHOP_UPGRADE_IDS.LUCK;
-    const currentLevel = isRestraint ? restraintLevel : isLuck ? luckLevel : 0;
-    const maxLevel = isRestraint ? restraintMaxLevel : isLuck ? luckMaxLevel : 0;
-    const isOwned = isRestraint || isLuck ? currentLevel >= maxLevel : false;
-    const isPending = isRestraint ? shopPendingQuantity === "restraint" : shopPendingQuantity === "luck";
-    const onPurchase = isRestraint ? onPurchaseRestraint : onPurchaseLuck;
+    const currentLevel = isRestraint ? restraintLevel : isIdleHoarder ? idleHoarderLevel : isLuck ? luckLevel : 0;
+    const maxLevel = isRestraint ? restraintMaxLevel : isIdleHoarder ? idleHoarderMaxLevel : isLuck ? luckMaxLevel : 0;
+    const isOwned = isRestraint || isIdleHoarder || isLuck ? currentLevel >= maxLevel : false;
+    const isPending = isRestraint
+      ? shopPendingQuantity === "restraint"
+      : isIdleHoarder
+        ? shopPendingQuantity === "idle_hoarder"
+        : shopPendingQuantity === "luck";
+    const onPurchase = isRestraint ? onPurchaseRestraint : isIdleHoarder ? onPurchaseIdleHoarder : onPurchaseLuck;
     const nextLevel = upgrade.levels[currentLevel] ?? null;
-    const nextValue = isRestraint ? formatMultiplier(nextLevel?.value ?? 0) : formatChance(nextLevel?.value ?? 0);
+    const nextValue = isRestraint ? formatMultiplier(nextLevel?.value ?? 0) : isLuck ? formatChance(nextLevel?.value ?? 0) : "";
     return {
       description:
         (isRestraint || isLuck) && nextLevel
           ? formatShopUpgradeDescription(upgrade, nextValue)
-          : upgrade.description,
-      cost: isRestraint || isLuck ? nextLevel?.cost ?? null : upgrade.levels[0]?.cost ?? null,
+          : isOwned
+            ? "Maximum level reached."
+            : upgrade.description,
+      cost: isRestraint || isIdleHoarder || isLuck ? nextLevel?.cost ?? null : upgrade.levels[0]?.cost ?? null,
       isPending,
       isOwned,
       onPurchase
@@ -228,6 +245,9 @@ export function ShopPage({
     }
     if (upgrade.id === SHOP_UPGRADE_IDS.LUCK) {
       return luckLevel;
+    }
+    if (upgrade.id === SHOP_UPGRADE_IDS.IDLE_HOARDER) {
+      return idleHoarderLevel;
     }
     if (upgrade.id === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST) {
       return collectGemBoostLevel;

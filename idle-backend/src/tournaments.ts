@@ -17,6 +17,7 @@ type TournamentEntryRow = {
   entered_at: Date;
   shop: ShopState;
   last_collected_at: Date;
+  real_time_available: string | number;
   achievement_count: string | number;
 };
 
@@ -152,6 +153,7 @@ async function getTournamentEntriesForScoring(
     entered_at: Date;
     shop: ShopState;
     last_collected_at: Date;
+    real_time_available: string | number;
     achievement_count: string | number;
   }>
 > {
@@ -160,6 +162,7 @@ async function getTournamentEntriesForScoring(
     entered_at: Date;
     shop: ShopState;
     last_collected_at: Date;
+    real_time_available: string | number;
     achievement_count: string | number;
   }>(
     `
@@ -168,6 +171,7 @@ async function getTournamentEntriesForScoring(
       te.entered_at,
       ps.shop,
       ps.last_collected_at,
+      ps.real_time_available,
       ps.achievement_count
     FROM tournament_entries te
     INNER JOIN player_states ps ON ps.user_id = te.user_id
@@ -229,7 +233,13 @@ async function buildTournamentSummary(
   const scoredEntries = entriesForScoring
     .map((row) => {
       const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
-      const score = boostedUncollectedIdleSeconds(row.last_collected_at, now, row.shop, achievementBonusMultiplier);
+      const score = boostedUncollectedIdleSeconds(
+        row.last_collected_at,
+        now,
+        row.shop,
+        achievementBonusMultiplier,
+        toNumber(row.real_time_available)
+      );
       return {
         userId: row.user_id,
         enteredAtMs: row.entered_at.getTime(),
@@ -344,6 +354,7 @@ async function finalizeOneDueTournament(pool: Pool, now: Date): Promise<number> 
         te.entered_at,
         ps.shop,
         ps.last_collected_at,
+        ps.real_time_available,
         ps.achievement_count
       FROM tournament_entries te
       INNER JOIN player_states ps ON ps.user_id = te.user_id
@@ -356,7 +367,13 @@ async function finalizeOneDueTournament(pool: Pool, now: Date): Promise<number> 
 
     for (const row of entriesResult.rows) {
       const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
-      const score = boostedUncollectedIdleSeconds(row.last_collected_at, now, row.shop, achievementBonusMultiplier);
+      const score = boostedUncollectedIdleSeconds(
+        row.last_collected_at,
+        now,
+        row.shop,
+        achievementBonusMultiplier,
+        toNumber(row.real_time_available)
+      );
       await client.query(
         `
         UPDATE tournament_entries

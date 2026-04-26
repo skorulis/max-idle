@@ -15,9 +15,12 @@ export const REALTIME_WAIT_EXTENSION_SECONDS = 6 * 60 * 60;
  */
 export const COLLECT_GEM_TIME_PER_LEVEL_WAIT_FACTOR = 0.5;
 
+const SECONDS_PER_HOUR = 60 * 60;
+
 export const SHOP_UPGRADE_IDS = {
   SECONDS_MULTIPLIER: "seconds_multiplier",
   RESTRAINT: "restraint",
+  IDLE_HOARDER: "idle_hoarder",
   LUCK: "luck",
   /** Spend 1 gem to move last_collected_at back by {@link REALTIME_WAIT_EXTENSION_SECONDS} real seconds (recalculates uncollected idle). */
   EXTRA_REALTIME_WAIT: "extra_realtime_wait",
@@ -88,6 +91,21 @@ export const RESTRAINT_SHOP_UPGRADE: ShopUpgradeDefinition = {
   currencyType: SHOP_CURRENCY_TYPES.REAL
 };
 
+export const IDLE_HOARDER_SHOP_UPGRADE: ShopUpgradeDefinition = {
+  id: SHOP_UPGRADE_IDS.IDLE_HOARDER,
+  name: "Idle hoarder",
+  icon: "archive",
+  description: "Gain an idle time bonus based on how much idle time is available",
+  levels: [
+    { cost: 1 * SECONDS_PER_HOUR, value: 1.5 },
+    { cost: 2 * SECONDS_PER_HOUR, value: 1.75 },
+    { cost: 4 * SECONDS_PER_HOUR, value: 2.0 },
+    { cost: 8 * SECONDS_PER_HOUR, value: 2.25 },
+    { cost: 16 * SECONDS_PER_HOUR, value: 2.5 }
+  ],
+  currencyType: SHOP_CURRENCY_TYPES.REAL
+};
+
 export const LUCK_SHOP_UPGRADE: ShopUpgradeDefinition = {
   id: SHOP_UPGRADE_IDS.LUCK,
   name: "Luck",
@@ -140,6 +158,7 @@ export const PURCHASE_REFUND_SHOP_UPGRADE: ShopUpgradeDefinition = {
 export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   SECONDS_MULTIPLIER_SHOP_UPGRADE,
   RESTRAINT_SHOP_UPGRADE,
+  IDLE_HOARDER_SHOP_UPGRADE,
   LUCK_SHOP_UPGRADE,
   EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
@@ -149,6 +168,7 @@ export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
 export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> = {
   [SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER]: SECONDS_MULTIPLIER_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.RESTRAINT]: RESTRAINT_SHOP_UPGRADE,
+  [SHOP_UPGRADE_IDS.IDLE_HOARDER]: IDLE_HOARDER_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.LUCK]: LUCK_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.EXTRA_REALTIME_WAIT]: EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST]: COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
@@ -166,6 +186,51 @@ export function getCollectGemTimeBoostUpgradeCostAtLevel(currentLevel: number): 
     return 0;
   }
   return COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.levels[L]?.cost ?? 0;
+}
+
+export function getIdleHoarderMaxLevel(): number {
+  return IDLE_HOARDER_SHOP_UPGRADE.levels.length;
+}
+
+export function getIdleHoarderUpgradeCostAtLevel(currentLevel: number): number {
+  const max = getIdleHoarderMaxLevel();
+  const L = Math.max(0, Math.min(max, Math.floor(Number(currentLevel) || 0)));
+  if (L >= max) {
+    return 0;
+  }
+  return IDLE_HOARDER_SHOP_UPGRADE.levels[L]?.cost ?? 0;
+}
+
+export function getIdleHoarderMaxMultiplierForLevel(level: number): number {
+  const maxLevel = getIdleHoarderMaxLevel();
+  const L = Math.max(0, Math.min(maxLevel, level));
+  if (L <= 0) {
+    return 1;
+  }
+  return IDLE_HOARDER_SHOP_UPGRADE.levels[L - 1]?.value ?? 1;
+}
+
+const IDLE_HOARDER_MIN_MULTIPLIER = 0.01;
+const IDLE_HOARDER_MAX_RATIO = 2;
+
+/**
+ * Ratio-based multiplier from idle hoarder:
+ * - 0 available real time => 0.01x
+ * - reaches level cap when `realTimeAvailable/secondsSinceLastCollection >= 2`
+ */
+export function getIdleHoarderMultiplier(level: number, realTimeAvailable: number, secondsSinceLastCollection: number): number {
+  const maxMultiplier = getIdleHoarderMaxMultiplierForLevel(level);
+  if (maxMultiplier <= 1) {
+    return 1;
+  }
+  const safeAvailable = Number.isFinite(realTimeAvailable) ? Math.max(0, realTimeAvailable) : 0;
+  const safeRealtime = Number.isFinite(secondsSinceLastCollection) ? Math.max(0, secondsSinceLastCollection) : 0;
+  if (safeRealtime <= 0) {
+    return safeAvailable > 0 ? maxMultiplier : IDLE_HOARDER_MIN_MULTIPLIER;
+  }
+  const ratio = safeAvailable / safeRealtime;
+  const progress = Math.max(0, Math.min(1, ratio / IDLE_HOARDER_MAX_RATIO));
+  return IDLE_HOARDER_MIN_MULTIPLIER + (maxMultiplier - IDLE_HOARDER_MIN_MULTIPLIER) * progress;
 }
 
 /**

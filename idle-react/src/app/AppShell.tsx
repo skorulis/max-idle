@@ -6,6 +6,8 @@ import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCol
 import { getCollectGemBoostLevel } from "../shop";
 import { getCollectGemIdleSecondsMultiplier } from "../shopUpgrades";
 import {
+  getIdleHoarderLevel,
+  getIdleHoarderMaxLevel,
   getLuckLevel,
   getLuckMaxLevel,
   getRestraintLevel,
@@ -41,6 +43,7 @@ import {
   logoutSession,
   purchaseExtraRealtimeWait,
   purchaseCollectGemTimeBoost,
+  purchaseIdleHoarder,
   purchaseLuck,
   purchaseRefund,
   purchaseRestraint,
@@ -161,6 +164,7 @@ export function AppShell() {
   const [shopPendingQuantity, setShopPendingQuantity] = useState<
     | "seconds_multiplier"
     | "restraint"
+    | "idle_hoarder"
     | "luck"
     | "extra_realtime_wait"
     | "collect_gem_time_boost"
@@ -535,7 +539,8 @@ export function AppShell() {
     const base = calculateBoostedIdleSecondsGain({
       secondsSinceLastCollection: Math.max(0, elapsedSinceLastCollection),
       shop: playerState.shop,
-      achievementBonusMultiplier: playerState.achievementBonusMultiplier
+      achievementBonusMultiplier: playerState.achievementBonusMultiplier,
+      realTimeAvailable: playerState.realTime.available
     });
     return Math.floor(base * getCollectGemIdleSecondsMultiplier(getCollectGemBoostLevel(playerState.shop)));
   }, [estimatedServerNowMs, playerState]);
@@ -557,7 +562,8 @@ export function AppShell() {
     return getEffectiveIdleSecondsRate({
       secondsSinceLastCollection: Math.max(0, elapsed),
       shop: playerState.shop,
-      achievementBonusMultiplier: playerState.achievementBonusMultiplier
+      achievementBonusMultiplier: playerState.achievementBonusMultiplier,
+      realTimeAvailable: playerState.realTime.available
     });
   }, [estimatedServerNowMs, playerState]);
 
@@ -619,6 +625,8 @@ export function AppShell() {
   const restraintMaxLevel = getRestraintMaxLevel();
   const luckLevel = playerState ? getLuckLevel(playerState.shop) : 0;
   const luckMaxLevel = getLuckMaxLevel();
+  const idleHoarderLevel = playerState ? getIdleHoarderLevel(playerState.shop) : 0;
+  const idleHoarderMaxLevel = getIdleHoarderMaxLevel();
 
   const activeMessageCardText = isAuthenticated
     ? getMessageFromIndex(messageCardRandomIndex)
@@ -792,6 +800,34 @@ export function AppShell() {
         setError("Not enough spendable idle seconds for that purchase.");
       } else if (purchaseError instanceof Error && purchaseError.message === "ALREADY_OWNED") {
         setError("Luck is already active.");
+      } else {
+        setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
+      }
+      setStatus("Could not complete shop purchase.");
+    } finally {
+      setShopPendingQuantity(null);
+    }
+  };
+
+  const onPurchaseIdleHoarder = async () => {
+    if (!playerState || idleHoarderLevel >= idleHoarderMaxLevel) {
+      return;
+    }
+
+    setShopPendingQuantity("idle_hoarder");
+    setError(null);
+    setStatus("Purchasing Idle hoarder...");
+    try {
+      const updatedPlayer = await purchaseIdleHoarder(token);
+      const synced = toSyncedState(updatedPlayer);
+      alignClientClock();
+      setPlayerState(synced);
+      setStatus("Idle hoarder upgraded.");
+    } catch (purchaseError) {
+      if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
+        setError("Not enough spendable real time for that purchase.");
+      } else if (purchaseError instanceof Error && purchaseError.message === "ALREADY_OWNED") {
+        setError("Idle hoarder is already maxed.");
       } else {
         setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
       }
@@ -1267,6 +1303,9 @@ export function AppShell() {
                 luckLevel={luckLevel}
                 luckMaxLevel={luckMaxLevel}
                 onPurchaseLuck={onPurchaseLuck}
+                idleHoarderLevel={idleHoarderLevel}
+                idleHoarderMaxLevel={idleHoarderMaxLevel}
+                onPurchaseIdleHoarder={onPurchaseIdleHoarder}
                 onPurchaseExtraRealtimeWait={onPurchaseExtraRealtimeWait}
                 onPurchaseCollectGemTimeBoost={onPurchaseCollectGemTimeBoost}
                 onPurchaseRefund={onPurchaseRefund}

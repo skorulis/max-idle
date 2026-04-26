@@ -45,6 +45,7 @@ const playerStateSchema = registry.register(
       .object({
         seconds_multiplier: z.number().int().nonnegative(),
         restraint: z.number().int().nonnegative(),
+        idle_hoarder: z.number().int().min(0).max(5).optional(),
         luck: z.number().int().nonnegative(),
         collect_gem_time_boost: z.number().int().min(0).max(5).optional()
       })
@@ -150,6 +151,9 @@ const shopPurchaseRequestSchema = registry.register(
       upgradeType: z.literal("restraint")
     }),
     z.object({
+      upgradeType: z.literal("idle_hoarder")
+    }),
+    z.object({
       upgradeType: z.literal("luck")
     }),
     z.object({
@@ -171,6 +175,7 @@ const shopPurchaseResponseSchema = registry.register(
       upgradeType: z.union([
         z.literal("seconds_multiplier"),
         z.literal("restraint"),
+        z.literal("idle_hoarder"),
         z.literal("luck"),
         z.literal("extra_realtime_wait"),
         z.literal("collect_gem_time_boost"),

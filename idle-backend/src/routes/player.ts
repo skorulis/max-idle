@@ -97,7 +97,8 @@ export function registerPlayerRoutes({
         row.last_collected_at,
         row.server_time,
         row.shop,
-        achievementBonusMultiplier
+        achievementBonusMultiplier,
+        toNumber(row.real_time_available)
       );
       await pool.query(
         `
@@ -113,7 +114,8 @@ export function registerPlayerRoutes({
       const idleSecondsRate = getEffectiveIdleSecondsRate({
         secondsSinceLastCollection: elapsedSinceLastCollection,
         shop: row.shop,
-        achievementBonusMultiplier
+        achievementBonusMultiplier,
+        realTimeAvailable: toNumber(row.real_time_available)
       });
 
       res.json({
@@ -154,6 +156,8 @@ export function registerPlayerRoutes({
       const userId = identity.claims.sub;
       await client.query("BEGIN");
       const result = await client.query<{
+        idle_time_available: number | string;
+        real_time_available: number | string;
         upgrades_purchased: number | string;
         achievement_count: number | string;
         completed_achievements: unknown;
@@ -167,6 +171,8 @@ export function registerPlayerRoutes({
         `
         SELECT
           upgrades_purchased,
+          idle_time_available,
+          real_time_available,
           achievement_count,
           completed_achievements,
           has_unseen_achievements,
@@ -195,7 +201,8 @@ export function registerPlayerRoutes({
         lockedRow.last_collected_at,
         collectedAt,
         lockedRow.shop,
-        collectionAchievementBonusMultiplier
+        collectionAchievementBonusMultiplier,
+        toNumber(lockedRow.real_time_available)
       );
       const realSecondsCollected = calculateElapsedSeconds(lockedRow.last_collected_at, collectedAt);
       if (isIdleCollectionBlockedByRestraint({ secondsSinceLastCollection: realSecondsCollected, shop: lockedRow.shop })) {
@@ -325,7 +332,8 @@ export function registerPlayerRoutes({
       const idleSecondsRate = getEffectiveIdleSecondsRate({
         secondsSinceLastCollection: elapsedSinceLastCollectionAfterCollect,
         shop: row.shop,
-        achievementBonusMultiplier
+        achievementBonusMultiplier,
+        realTimeAvailable: toNumber(row.real_time_available)
       });
       await client.query("COMMIT");
       res.json({
@@ -479,7 +487,8 @@ export function registerPlayerRoutes({
       const idleSecondsRate = getEffectiveIdleSecondsRate({
         secondsSinceLastCollection: elapsedSinceLastCollection,
         shop: updatedPlayer.shop,
-        achievementBonusMultiplier
+        achievementBonusMultiplier,
+        realTimeAvailable: toNumber(updatedPlayer.real_time_available)
       });
       await client.query("COMMIT");
 

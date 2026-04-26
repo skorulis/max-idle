@@ -170,6 +170,7 @@ export function HomePage({
         effectiveIdleSecondsRate={effectiveIdleSecondsRate}
         shop={playerState.shop}
         achievementBonusMultiplier={playerState.achievementBonusMultiplier}
+        realTimeAvailable={playerState.realTime.available}
       />
     </>
   );

@@ -46,16 +46,32 @@ describe("luck + boosted gain", () => {
   it("applies restraint/luck-aware boosted gain", () => {
     const gainWithoutRestraint = calculateBoostedIdleSecondsGain({
       secondsSinceLastCollection: 60,
-      shop: { seconds_multiplier: 0, restraint: 0, luck: 0 },
+      shop: { seconds_multiplier: 0, restraint: 0, idle_hoarder: 0, luck: 0 },
       achievementBonusMultiplier: 1
     });
     expect(gainWithoutRestraint).toBeGreaterThan(0);
 
     const gainWithRestraint = calculateBoostedIdleSecondsGain({
       secondsSinceLastCollection: 60,
-      shop: { seconds_multiplier: 0, restraint: 1, luck: 0 },
+      shop: { seconds_multiplier: 0, restraint: 1, idle_hoarder: 0, luck: 0 },
       achievementBonusMultiplier: 1
     });
     expect(gainWithRestraint).toBe(Math.floor(gainWithoutRestraint * 1.5));
+  });
+
+  it("applies idle hoarder multiplier last", () => {
+    const baseline = calculateBoostedIdleSecondsGain({
+      secondsSinceLastCollection: 60,
+      shop: { seconds_multiplier: 0, restraint: 0, idle_hoarder: 0, luck: 0 },
+      achievementBonusMultiplier: 1,
+      realTimeAvailable: 0
+    });
+    const withIdleHoarderAtCap = calculateBoostedIdleSecondsGain({
+      secondsSinceLastCollection: 60,
+      shop: { seconds_multiplier: 0, restraint: 0, idle_hoarder: 5, luck: 0 },
+      achievementBonusMultiplier: 1,
+      realTimeAvailable: 120
+    });
+    expect(withIdleHoarderAtCap).toBe(Math.floor(baseline * 1.5));
   });
 });

@@ -2,6 +2,7 @@ export {
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
   EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
   formatShopUpgradeDescription,
+  getIdleHoarderMultiplier,
   getCollectGemIdleSecondsMultiplier,
   getCollectGemTimeBoostMaxLevel,
   getCollectGemTimeBoostUpgradeCostAtLevel,
