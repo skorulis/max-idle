@@ -49,6 +49,9 @@ export type TournamentCurrentResponse = {
   drawAt: string;
   isActive: boolean;
   hasEntered: boolean;
+  playerCount: number;
+  currentRank: number | null;
+  expectedRewardGems: number | null;
   entry: TournamentEntryResponse | null;
 };
 
@@ -126,6 +129,9 @@ export type SyncedTournamentState = {
   drawAtMs: number;
   isActive: boolean;
   hasEntered: boolean;
+  playerCount: number;
+  currentRank: number | null;
+  expectedRewardGems: number | null;
   entry: SyncedTournamentEntry | null;
   syncedAtClientMs: number;
 };

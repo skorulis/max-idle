@@ -32,6 +32,9 @@ export type TournamentCurrentSummary = {
   drawAt: string;
   isActive: boolean;
   hasEntered: boolean;
+  playerCount: number;
+  currentRank: number | null;
+  expectedRewardGems: number | null;
   entry: TournamentEntrySummary | null;
 };
 
@@ -140,19 +143,132 @@ async function getTournamentEntry(client: PoolClient, tournamentId: number, user
   };
 }
 
+async function getTournamentEntriesForScoring(
+  client: PoolClient,
+  tournamentId: number
+): Promise<
+  Array<{
+    user_id: string;
+    entered_at: Date;
+    shop: ShopState;
+    last_collected_at: Date;
+    achievement_count: string | number;
+  }>
+> {
+  const result = await client.query<{
+    user_id: string;
+    entered_at: Date;
+    shop: ShopState;
+    last_collected_at: Date;
+    achievement_count: string | number;
+  }>(
+    `
+    SELECT
+      te.user_id,
+      te.entered_at,
+      ps.shop,
+      ps.last_collected_at,
+      ps.achievement_count
+    FROM tournament_entries te
+    INNER JOIN player_states ps ON ps.user_id = te.user_id
+    WHERE te.tournament_id = $1
+    ORDER BY te.entered_at ASC, te.user_id ASC
+    `,
+    [tournamentId]
+  );
+  return result.rows;
+}
+
+function calculateExpectedGemsByRank(rankIndexZeroBased: number, totalEntries: number): number {
+  const rewardBucket = Math.floor((rankIndexZeroBased * 5) / totalEntries) + 1;
+  return 6 - rewardBucket;
+}
+
+async function buildTournamentSummary(
+  client: PoolClient,
+  tournament: TournamentRow,
+  userId: string,
+  now: Date
+): Promise<TournamentCurrentSummary> {
+  const entry = await getTournamentEntry(client, tournament.id, userId);
+  const playerCountResult = await client.query<{ player_count: string | number }>(
+    `
+    SELECT COUNT(*) AS player_count
+    FROM tournament_entries
+    WHERE tournament_id = $1
+    `,
+    [tournament.id]
+  );
+  const playerCount = toNumber(playerCountResult.rows[0]?.player_count ?? 0);
+
+  if (!entry) {
+    return {
+      drawAt: tournament.draw_at_utc.toISOString(),
+      isActive: tournament.is_active,
+      hasEntered: false,
+      playerCount,
+      currentRank: null,
+      expectedRewardGems: null,
+      entry: null
+    };
+  }
+
+  if (entry.finalRank !== null && entry.gemsAwarded !== null) {
+    return {
+      drawAt: tournament.draw_at_utc.toISOString(),
+      isActive: tournament.is_active,
+      hasEntered: true,
+      playerCount,
+      currentRank: entry.finalRank,
+      expectedRewardGems: entry.gemsAwarded,
+      entry
+    };
+  }
+
+  const entriesForScoring = await getTournamentEntriesForScoring(client, tournament.id);
+  const scoredEntries = entriesForScoring
+    .map((row) => {
+      const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
+      const score = boostedUncollectedIdleSeconds(row.last_collected_at, now, row.shop, achievementBonusMultiplier);
+      return {
+        userId: row.user_id,
+        enteredAtMs: row.entered_at.getTime(),
+        score
+      };
+    })
+    .sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      if (a.enteredAtMs !== b.enteredAtMs) {
+        return a.enteredAtMs - b.enteredAtMs;
+      }
+      return a.userId.localeCompare(b.userId);
+    });
+
+  const userRankIndex = scoredEntries.findIndex((row) => row.userId === userId);
+  const currentRank = userRankIndex >= 0 ? userRankIndex + 1 : null;
+  const expectedRewardGems = userRankIndex >= 0 ? calculateExpectedGemsByRank(userRankIndex, scoredEntries.length) : null;
+
+  return {
+    drawAt: tournament.draw_at_utc.toISOString(),
+    isActive: tournament.is_active,
+    hasEntered: true,
+    playerCount,
+    currentRank,
+    expectedRewardGems,
+    entry
+  };
+}
+
 export async function getCurrentTournamentForUser(pool: Pool, userId: string, now = new Date()): Promise<TournamentCurrentSummary> {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
     const tournament = await ensureActiveTournament(client, now);
-    const entry = await getTournamentEntry(client, tournament.id, userId);
+    const summary = await buildTournamentSummary(client, tournament, userId, now);
     await client.query("COMMIT");
-    return {
-      drawAt: tournament.draw_at_utc.toISOString(),
-      isActive: tournament.is_active,
-      hasEntered: Boolean(entry),
-      entry
-    };
+    return summary;
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -184,15 +300,10 @@ export async function enterCurrentTournament(pool: Pool, userId: string, now = n
       );
       enteredNow = true;
     }
-    const entry = await getTournamentEntry(client, tournament.id, userId);
+    const summary = await buildTournamentSummary(client, tournament, userId, now);
     await client.query("COMMIT");
     return {
-      tournament: {
-        drawAt: tournament.draw_at_utc.toISOString(),
-        isActive: tournament.is_active,
-        hasEntered: Boolean(entry),
-        entry
-      },
+      tournament: summary,
       enteredNow
     };
   } catch (error) {

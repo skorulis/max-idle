@@ -204,6 +204,9 @@ describe("auth + player lifecycle", () => {
     const currentBeforeEntry = await request(app).get("/tournament/current").set("Authorization", `Bearer ${token}`);
     expect(currentBeforeEntry.status).toBe(200);
     expect(currentBeforeEntry.body.hasEntered).toBe(false);
+    expect(currentBeforeEntry.body.playerCount).toBe(0);
+    expect(currentBeforeEntry.body.currentRank).toBeNull();
+    expect(currentBeforeEntry.body.expectedRewardGems).toBeNull();
     expect(currentBeforeEntry.body.entry).toBeNull();
     expect(typeof currentBeforeEntry.body.drawAt).toBe("string");
     expect(currentBeforeEntry.body.isActive).toBe(true);
@@ -212,6 +215,9 @@ describe("auth + player lifecycle", () => {
     expect(firstEnter.status).toBe(200);
     expect(firstEnter.body.enteredNow).toBe(true);
     expect(firstEnter.body.tournament.hasEntered).toBe(true);
+    expect(firstEnter.body.tournament.playerCount).toBe(1);
+    expect(firstEnter.body.tournament.currentRank).toBe(1);
+    expect(firstEnter.body.tournament.expectedRewardGems).toBe(5);
     expect(firstEnter.body.tournament.entry.enteredAt).toBeTypeOf("string");
 
     const secondEnter = await request(app).post("/tournament/enter").set("Authorization", `Bearer ${token}`);

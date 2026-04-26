@@ -8,6 +8,9 @@ describe("tournament state helpers", () => {
       drawAt: "2026-04-26T00:00:00.000Z",
       isActive: true,
       hasEntered: true,
+      playerCount: 12,
+      currentRank: 3,
+      expectedRewardGems: 4,
       entry: {
         enteredAt: "2026-04-22T12:00:00.000Z",
         finalRank: null,
@@ -19,6 +22,9 @@ describe("tournament state helpers", () => {
 
     expect(synced.isActive).toBe(true);
     expect(synced.hasEntered).toBe(true);
+    expect(synced.playerCount).toBe(12);
+    expect(synced.currentRank).toBe(3);
+    expect(synced.expectedRewardGems).toBe(4);
     expect(synced.drawAtMs).toBe(Date.parse("2026-04-26T00:00:00.000Z"));
     expect(synced.entry?.enteredAtMs).toBe(Date.parse("2026-04-22T12:00:00.000Z"));
   });

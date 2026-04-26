@@ -24,6 +24,9 @@ export function toSyncedTournamentState(data: TournamentCurrentResponse): Synced
     drawAtMs: Date.parse(data.drawAt),
     isActive: data.isActive,
     hasEntered: data.hasEntered,
+    playerCount: data.playerCount,
+    currentRank: data.currentRank,
+    expectedRewardGems: data.expectedRewardGems,
     entry: data.entry
       ? {
           enteredAtMs: Date.parse(data.entry.enteredAt),

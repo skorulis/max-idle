@@ -22,6 +22,7 @@ import { LoginPage } from "../pages/LoginPage";
 import { PlayerPage } from "../pages/PlayerPage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { ShopPage } from "../pages/ShopPage";
+import { TournamentPage } from "../pages/TournamentPage";
 import {
   collectDailyReward,
   collectIdleTime,
@@ -118,6 +119,9 @@ function getCurrentPageTitle(pathname: string): string {
   }
   if (pathname === "/shop") {
     return "Shop";
+  }
+  if (pathname === "/tournament") {
+    return "Tournament";
   }
   if (pathname.startsWith("/player/")) {
     return "Player";
@@ -1176,7 +1180,19 @@ export function AppShell() {
                 onCollect={onCollect}
                 onCollectDailyReward={onCollectDailyReward}
                 onEnterTournament={onEnterTournament}
+                onNavigateTournament={() => navigate("/tournament")}
                 onNavigateLogin={() => navigate("/login")}
+              />
+            }
+          />
+          <Route
+            path="/tournament"
+            element={
+              <TournamentPage
+                tournamentState={tournamentState}
+                tournamentSecondsUntilDraw={tournamentSecondsUntilDraw}
+                enteringTournament={enteringTournament}
+                onEnterTournament={onEnterTournament}
               />
             }
           />

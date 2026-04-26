@@ -203,6 +203,9 @@ const tournamentCurrentResponseSchema = registry.register(
     drawAt: z.string().datetime(),
     isActive: z.boolean(),
     hasEntered: z.boolean(),
+    playerCount: z.number().int().nonnegative(),
+    currentRank: z.number().int().positive().nullable(),
+    expectedRewardGems: z.number().int().min(1).max(5).nullable(),
     entry: tournamentEntrySchema.nullable()
   })
 );

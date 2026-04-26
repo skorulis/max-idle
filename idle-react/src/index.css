@@ -233,6 +233,10 @@ h3 {
   margin-top: 12px;
 }
 
+.tournament-details-panel {
+  margin-top: 12px;
+}
+
 input {
   width: 100%;
   border: 1px solid #d1d5db;
