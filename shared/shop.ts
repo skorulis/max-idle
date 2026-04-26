@@ -13,9 +13,9 @@ const DEFAULT_SECONDS_MULTIPLIER_VALUE = 1;
 
 export type ShopState = {
   seconds_multiplier: number;
-  restraint: number | boolean;
+  restraint: number;
   idle_hoarder?: number;
-  luck: number | boolean;
+  luck: number;
   /** Resets to 0 on collect. Same key as {@link SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST}. */
   collect_gem_time_boost?: number;
   [key: string]: unknown;

@@ -58,10 +58,7 @@ export type ShopUpgradeDefinition = {
 
 type ShopUpgradeDefinitionConfig = Omit<ShopUpgradeDefinition, "maxLevel" | "costAtLevel" | "currentLevel">;
 
-function normalizeUpgradeLevel(rawLevel: unknown, maxLevel: number, allowBooleanTrue: boolean): number {
-  if (allowBooleanTrue && rawLevel === true) {
-    return Math.min(1, maxLevel);
-  }
+function normalizeUpgradeLevel(rawLevel: unknown, maxLevel: number): number {
   if (typeof rawLevel !== "number" || !Number.isFinite(rawLevel)) {
     return 0;
   }
@@ -76,7 +73,6 @@ function normalizeCostLevel(level: number, maxLevel: number): number {
 }
 
 function defineShopUpgrade(upgrade: ShopUpgradeDefinitionConfig): ShopUpgradeDefinition {
-  const allowBooleanTrue = upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT || upgrade.id === SHOP_UPGRADE_IDS.LUCK;
   const maxLevel = upgrade.levels.length;
   return {
     ...upgrade,
@@ -88,7 +84,7 @@ function defineShopUpgrade(upgrade: ShopUpgradeDefinitionConfig): ShopUpgradeDef
       }
       return upgrade.levels[safeLevel]?.cost ?? 0;
     },
-    currentLevel: (shop: ShopState) => normalizeUpgradeLevel(shop[upgrade.id], maxLevel, allowBooleanTrue)
+    currentLevel: (shop: ShopState) => normalizeUpgradeLevel(shop[upgrade.id], maxLevel)
   };
 }
 
