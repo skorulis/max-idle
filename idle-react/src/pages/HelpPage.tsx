@@ -1,3 +1,5 @@
+import { APP_VERSION } from "@maxidle/shared/appVersion";
+
 export function HelpPage() {
   return (
     <>
@@ -15,6 +17,9 @@ export function HelpPage() {
           <a href="mailto:support@max-idle.com">support@max-idle.com</a>.
         </p>
       </div>
+      <p style={{ marginTop: "1.25rem", fontSize: "0.85rem", color: "#6b7280" }}>
+        Client version {APP_VERSION}
+      </p>
     </>
   );
 }
