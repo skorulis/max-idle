@@ -1,3 +1,5 @@
+-- Max Idle PostgreSQL schema.
+
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY,
   is_anonymous BOOLEAN NOT NULL DEFAULT TRUE,
@@ -32,29 +34,6 @@ CREATE TABLE IF NOT EXISTS player_states (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-ALTER TABLE player_states
-ADD COLUMN IF NOT EXISTS upgrades_purchased BIGINT NOT NULL DEFAULT 0;
-
-ALTER TABLE player_states
-ADD COLUMN IF NOT EXISTS shop JSONB NOT NULL DEFAULT '{"seconds_multiplier": 0, "restraint": 0, "idle_hoarder": 0, "luck": 0, "collect_gem_time_boost": 0}'::jsonb;
-
-ALTER TABLE player_states
-ADD COLUMN IF NOT EXISTS seconds_multiplier DOUBLE PRECISION NOT NULL DEFAULT 0;
-
-ALTER TABLE player_states
-ALTER COLUMN shop SET DEFAULT '{"seconds_multiplier": 0, "restraint": 0, "idle_hoarder": 0, "luck": 0, "collect_gem_time_boost": 0}'::jsonb;
-
-ALTER TABLE player_states
-ALTER COLUMN seconds_multiplier SET DEFAULT 0;
-
-UPDATE player_states
-SET shop = '{"seconds_multiplier": 0, "restraint": 0, "luck": 0}'::jsonb
-WHERE COALESCE(shop->>'seconds_multiplier', '') = '';
-
-UPDATE player_states
-SET shop = '{"seconds_multiplier": 0}'::jsonb
-WHERE COALESCE(shop->>'seconds_multiplier', '') = '';
-
 CREATE TABLE IF NOT EXISTS auth_identities (
   auth_user_id TEXT PRIMARY KEY,
   game_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -72,3 +51,49 @@ CREATE TABLE IF NOT EXISTS player_collection_history (
 );
 
 CREATE INDEX IF NOT EXISTS player_collection_history_user_id_idx ON player_collection_history (user_id);
+
+CREATE TABLE IF NOT EXISTS tournaments (
+  id BIGSERIAL PRIMARY KEY,
+  draw_at_utc TIMESTAMPTZ NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT FALSE,
+  finalized_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS tournaments_single_active_idx
+ON tournaments (is_active)
+WHERE is_active = TRUE;
+
+CREATE TABLE IF NOT EXISTS tournament_entries (
+  id BIGSERIAL PRIMARY KEY,
+  tournament_id BIGINT NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  entered_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  final_rank BIGINT,
+  time_score_seconds BIGINT,
+  gems_awarded INTEGER,
+  finalized_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS tournament_entries_tournament_user_unique_idx
+ON tournament_entries (tournament_id, user_id);
+
+CREATE INDEX IF NOT EXISTS tournament_entries_tournament_score_idx
+ON tournament_entries (tournament_id, time_score_seconds DESC);
+
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id BIGSERIAL PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  endpoint TEXT NOT NULL,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  last_daily_reward_notified_day_start TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, endpoint)
+);
+
+CREATE INDEX IF NOT EXISTS push_subscriptions_user_id_idx ON push_subscriptions (user_id);
+CREATE INDEX IF NOT EXISTS push_subscriptions_last_daily_reward_day_idx
+  ON push_subscriptions (last_daily_reward_notified_day_start);

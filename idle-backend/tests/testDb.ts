@@ -11,8 +11,7 @@ export async function createTestPool(): Promise<Pool> {
   const { Pool: MemPool } = db.adapters.createPg();
   const pool = new MemPool() as unknown as Pool;
 
-  const schemaSql = readFileSync(resolve(process.cwd(), "sql/001_init.sql"), "utf-8");
-  const tournamentsSql = readFileSync(resolve(process.cwd(), "sql/005_tournaments.sql"), "utf-8");
+  const schemaSql = readFileSync(resolve(process.cwd(), "sql/schema.sql"), "utf-8");
   const betterAuthSql = `
     CREATE TABLE IF NOT EXISTS "user" (
       id TEXT PRIMARY KEY,
@@ -62,7 +61,6 @@ export async function createTestPool(): Promise<Pool> {
     );
   `;
   await pool.query(schemaSql);
-  await pool.query(tournamentsSql);
   await pool.query(betterAuthSql);
   return pool;
 }
