@@ -12,6 +12,14 @@ import type {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
 
+export type PushSubscriptionPayload = {
+  endpoint: string;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+};
+
 async function getErrorMessage(response: Response): Promise<string> {
   const payload = (await response.json().catch(() => null)) as { message?: string; error?: string } | null;
   if (payload?.message) {
@@ -418,4 +426,52 @@ export async function debugAddGems(token: string | null): Promise<PlayerResponse
 
 export async function logoutSession(): Promise<void> {
   await apiRequest("/auth/logout", { method: "POST" });
+}
+
+export async function getPushConfig(): Promise<{ vapidPublicKey: string }> {
+  return apiRequest<{ vapidPublicKey: string }>("/notifications/push-config");
+}
+
+export async function upsertPushSubscription(token: string | null, subscription: PushSubscriptionPayload): Promise<void> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json"
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/notifications/push-subscription`, {
+    method: "POST",
+    credentials: "include",
+    headers,
+    body: JSON.stringify(subscription)
+  });
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    throw new Error("Failed to save push subscription");
+  }
+}
+
+export async function deletePushSubscription(token: string | null, endpoint: string): Promise<void> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json"
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/notifications/push-subscription`, {
+    method: "DELETE",
+    credentials: "include",
+    headers,
+    body: JSON.stringify({ endpoint })
+  });
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    throw new Error("Failed to remove push subscription");
+  }
 }

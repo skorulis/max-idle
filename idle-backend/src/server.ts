@@ -2,16 +2,20 @@ import { createApp, syncStalePlayerCurrentSeconds } from "./app.js";
 import { loadConfig } from "./config.js";
 import { createPool } from "./db.js";
 import { finalizeDueTournaments, getDelayUntilNextTournamentDrawMs } from "./tournaments.js";
+import { configureWebPush, isPushConfigured, sendDueDailyRewardPushNotifications } from "./push.js";
 
 const STALE_PLAYER_SYNC_INTERVAL_MS = 5 * 60 * 1000;
 const STALE_PLAYER_SYNC_BATCH_SIZE = 100;
+const DAILY_REWARD_PUSH_SCAN_INTERVAL_MS = 60 * 1000;
 
 async function main(): Promise<void> {
   const config = loadConfig();
+  configureWebPush(config);
   const pool = createPool(config.databaseUrl);
   const app = createApp(pool, config);
   let isSyncRunning = false;
   let isTournamentFinalizationRunning = false;
+  let isDailyRewardPushScanRunning = false;
   let tournamentTimer: NodeJS.Timeout | null = null;
 
   const runStalePlayerSync = async () => {
@@ -45,6 +49,23 @@ async function main(): Promise<void> {
     }
   };
 
+  const runDailyRewardPushScan = async () => {
+    if (!isPushConfigured(config) || isDailyRewardPushScanRunning) {
+      return;
+    }
+    isDailyRewardPushScanRunning = true;
+    try {
+      const sentCount = await sendDueDailyRewardPushNotifications(pool);
+      if (sentCount > 0) {
+        console.log(`Sent ${sentCount} daily reward push notification(s).`);
+      }
+    } catch (error) {
+      console.error("Failed daily reward push scan", error);
+    } finally {
+      isDailyRewardPushScanRunning = false;
+    }
+  };
+
   const scheduleTournamentFinalization = () => {
     if (tournamentTimer) {
       clearTimeout(tournamentTimer);
@@ -62,7 +83,12 @@ async function main(): Promise<void> {
     void runStalePlayerSync();
   }, STALE_PLAYER_SYNC_INTERVAL_MS);
   stalePlayerSyncTimer.unref();
+  const dailyRewardPushScanTimer = setInterval(() => {
+    void runDailyRewardPushScan();
+  }, DAILY_REWARD_PUSH_SCAN_INTERVAL_MS);
+  dailyRewardPushScanTimer.unref();
   void runStalePlayerSync();
+  void runDailyRewardPushScan();
   await runTournamentFinalization();
   scheduleTournamentFinalization();
 
@@ -72,6 +98,7 @@ async function main(): Promise<void> {
 
   const shutdown = async () => {
     clearInterval(stalePlayerSyncTimer);
+    clearInterval(dailyRewardPushScanTimer);
     if (tournamentTimer) {
       clearTimeout(tournamentTimer);
     }

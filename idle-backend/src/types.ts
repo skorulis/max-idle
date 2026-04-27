@@ -12,6 +12,9 @@ export type AppConfig = {
   corsOrigin: string;
   betterAuthSecret: string;
   betterAuthUrl: string;
+  vapidPublicKey?: string;
+  vapidPrivateKey?: string;
+  vapidSubject?: string;
   googleClientId?: string;
   googleClientSecret?: string;
   appleClientId?: string;

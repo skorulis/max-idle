@@ -23,6 +23,7 @@ import { registerAccountRoutes } from "./routes/account.js";
 import { registerAchievementsRoutes } from "./routes/achievements.js";
 import { registerPlayerRoutes } from "./routes/player.js";
 import { registerTournamentRoutes } from "./routes/tournament.js";
+import { registerNotificationRoutes } from "./routes/notifications.js";
 import type { ShopState } from "@maxidle/shared/shop";
 
 function toNumber(value: unknown): number {
@@ -400,6 +401,13 @@ export function createApp(pool: Pool, config: AppConfig) {
   registerTournamentRoutes({
     app,
     pool,
+    resolveIdentity: resolveIdentityForRequest
+  });
+
+  registerNotificationRoutes({
+    app,
+    pool,
+    config,
     resolveIdentity: resolveIdentityForRequest
   });
 

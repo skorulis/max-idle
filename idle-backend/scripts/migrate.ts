@@ -26,6 +26,9 @@ async function run(): Promise<void> {
     const tournamentsSql = await readFile(resolve(process.cwd(), "sql/005_tournaments.sql"), "utf-8");
     await pool.query(tournamentsSql);
     console.log("Migration completed: 005_tournaments.sql");
+    const pushSubscriptionsSql = await readFile(resolve(process.cwd(), "sql/007_push_subscriptions.sql"), "utf-8");
+    await pool.query(pushSubscriptionsSql);
+    console.log("Migration completed: 007_push_subscriptions.sql");
     await pool.query(`
       ALTER TABLE player_states
       ADD COLUMN IF NOT EXISTS achievement_count BIGINT NOT NULL DEFAULT 0
