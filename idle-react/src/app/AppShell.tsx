@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CircleUserRound, House, Medal, ShoppingCart, Star } from "lucide-react";
+import { CircleHelp, CircleUserRound, House, Medal, ShoppingCart, Star } from "lucide-react";
 import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "react-router-dom";
 import GameIcon from "../GameIcon";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
@@ -18,6 +18,7 @@ import {
 import { AccountPage } from "../pages/AccountPage";
 import { AchievementsPage } from "../pages/AchievementsPage";
 import { HomePage } from "../pages/HomePage";
+import { HelpPage } from "../pages/HelpPage";
 import { LeaderboardPage } from "../pages/LeaderboardPage";
 import { LoginPage } from "../pages/LoginPage";
 import { PlayerPage } from "../pages/PlayerPage";
@@ -112,6 +113,9 @@ function getCurrentPageTitle(pathname: string): string {
   }
   if (pathname === "/login") {
     return "Login";
+  }
+  if (pathname === "/help") {
+    return "Help";
   }
   if (pathname === "/register") {
     return "Create account";
@@ -1364,6 +1368,9 @@ export function AppShell() {
           <button type="button" className="link" onClick={() => navigate("/")}>
             <GameIcon icon={House} />
           </button>
+          <button type="button" className="link" onClick={() => navigate("/help")}>
+            <GameIcon icon={CircleHelp} />
+          </button>
           {isAuthenticated ? (
             <>
               <button type="button" className="link" onClick={() => navigate("/leaderboard")}>
@@ -1416,6 +1423,10 @@ export function AppShell() {
                 onNavigateLogin={() => navigate("/login")}
               />
             }
+          />
+          <Route
+            path="/help"
+            element={<HelpPage />}
           />
           <Route
             path="/tournament"
