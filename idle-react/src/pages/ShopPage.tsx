@@ -86,6 +86,41 @@ function formatChance(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 
+function formatUpgradeValue(upgrade: ShopUpgradeDefinition, value: number): string {
+  if (upgrade.id === SHOP_UPGRADE_IDS.LUCK) {
+    return formatChance(value);
+  }
+  if (
+    upgrade.id === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER ||
+    upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT ||
+    upgrade.id === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST
+  ) {
+    return formatMultiplier(value);
+  }
+  return value.toString();
+}
+
+function getUpgradeBaseValue(upgrade: ShopUpgradeDefinition): number | null {
+  if (upgrade.id === SHOP_UPGRADE_IDS.LUCK) {
+    return 0;
+  }
+  if (upgrade.id === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST) {
+    return 0;
+  }
+  if (upgrade.id === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER || upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT) {
+    return 1;
+  }
+  return null;
+}
+
+function formatValueDescription(upgrade: ShopUpgradeDefinition, value: number): string {
+  const valueDescription = (upgrade as ShopUpgradeDefinition & { valueDescription?: string | null }).valueDescription;
+  if (!valueDescription) {
+    return "";
+  }
+  return valueDescription.replace("%s", formatUpgradeValue(upgrade, value));
+}
+
 function getShopUpgradeIcon(iconName: string): LucideIcon {
   switch (iconName) {
     case "gauge":
@@ -150,17 +185,29 @@ export function ShopPage({
 
   function getUpgradeRowState(upgrade: ShopUpgradeDefinition): {
     description: string;
+    currentValueDescription: string | null;
+    nextValueDescription: string | null;
     cost: number | null;
     isPending: boolean;
     isOwned: boolean;
     onPurchase: () => Promise<void>;
   } {
+    const purchasedLevel = getUpgradeCurrentLevel(upgrade) ?? 0;
+    const valueDescription = (upgrade as ShopUpgradeDefinition & { valueDescription?: string | null }).valueDescription;
+    const hasValueDescription = typeof valueDescription === "string" && valueDescription.length > 0;
+    const currentLevelValue =
+      purchasedLevel > 0 ? (upgrade.levels[purchasedLevel - 1]?.value ?? null) : getUpgradeBaseValue(upgrade);
+    const nextLevelValue = upgrade.levels[purchasedLevel]?.value ?? null;
+    const currentValueDescription =
+      hasValueDescription && currentLevelValue !== null ? formatValueDescription(upgrade, currentLevelValue) : null;
+    const nextValueDescription =
+      hasValueDescription && nextLevelValue !== null ? formatValueDescription(upgrade, nextLevelValue) : null;
+
     if (upgrade.id === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER) {
-      const nextLevel = upgrade.levels[secondsMultiplierLevel] ?? null;
       return {
-        description: nextLevel
-          ? formatShopUpgradeDescription(upgrade, formatMultiplier(nextLevel.value))
-          : "Maximum level reached.",
+        description: upgrade.description,
+        currentValueDescription,
+        nextValueDescription,
         cost: secondsMultiplierCost,
         isPending: shopPendingQuantity === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER,
         isOwned: secondsMultiplierLevel >= maxSecondsMultiplierLevel,
@@ -174,6 +221,8 @@ export function ShopPage({
         description: level
           ? formatShopUpgradeDescription(upgrade, formatSeconds(level.value, 2, "floor"))
           : upgrade.description,
+        currentValueDescription,
+        nextValueDescription,
         cost: level?.cost ?? null,
         isPending: shopPendingQuantity === "extra_realtime_wait",
         isOwned: false,
@@ -183,11 +232,10 @@ export function ShopPage({
 
     if (upgrade.id === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST) {
       const nextLevelDef = upgrade.levels[collectGemBoostLevel] ?? null;
-      const nextValueStr = nextLevelDef ? formatMultiplier(nextLevelDef.value) : "";
       return {
-        description: nextLevelDef
-          ? formatShopUpgradeDescription(upgrade, nextValueStr)
-          : "Maximum level reached.",
+        description: nextLevelDef ? upgrade.description : "Maximum level reached.",
+        currentValueDescription,
+        nextValueDescription,
         cost: getCollectGemTimeBoostUpgradeCostAtLevel(collectGemBoostLevel) || null,
         isPending: shopPendingQuantity === "collect_gem_time_boost",
         isOwned: collectGemBoostLevel >= maxCollectGemBoostLevel,
@@ -198,6 +246,8 @@ export function ShopPage({
     if (upgrade.id === SHOP_UPGRADE_IDS.PURCHASE_REFUND) {
       return {
         description: upgrade.description,
+        currentValueDescription,
+        nextValueDescription,
         cost: upgrade.levels[0]?.cost ?? null,
         isPending: shopPendingQuantity === SHOP_UPGRADE_IDS.PURCHASE_REFUND,
         isOwned: false,
@@ -218,14 +268,13 @@ export function ShopPage({
         : shopPendingQuantity === "luck";
     const onPurchase = isRestraint ? onPurchaseRestraint : isIdleHoarder ? onPurchaseIdleHoarder : onPurchaseLuck;
     const nextLevel = upgrade.levels[currentLevel] ?? null;
-    const nextValue = isRestraint ? formatMultiplier(nextLevel?.value ?? 0) : isLuck ? formatChance(nextLevel?.value ?? 0) : "";
     return {
       description:
-        (isRestraint || isLuck) && nextLevel
-          ? formatShopUpgradeDescription(upgrade, nextValue)
-          : isOwned
+        isOwned
             ? "Maximum level reached."
             : upgrade.description,
+      currentValueDescription,
+      nextValueDescription,
       cost: isRestraint || isIdleHoarder || isLuck ? nextLevel?.cost ?? null : upgrade.levels[0]?.cost ?? null,
       isPending,
       isOwned,
@@ -346,6 +395,12 @@ export function ShopPage({
                       {currentLevel !== null ? ` (Lv ${currentLevel})` : ""}
                     </p>
                     <p className="shop-upgrade-description">{upgradeState.description}</p>
+                    {upgradeState.currentValueDescription ? (
+                      <p className="shop-upgrade-description subtle">Current: {upgradeState.currentValueDescription}</p>
+                    ) : null}
+                    {upgradeState.nextValueDescription ? (
+                      <p className="shop-upgrade-description subtle">Next: {upgradeState.nextValueDescription}</p>
+                    ) : null}
                   </div>
                 </div>
                 <div className="shop-upgrade-action">

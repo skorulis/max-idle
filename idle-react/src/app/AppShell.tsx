@@ -1368,9 +1368,6 @@ export function AppShell() {
           <button type="button" className="link" onClick={() => navigate("/")}>
             <GameIcon icon={House} />
           </button>
-          <button type="button" className="link" onClick={() => navigate("/help")}>
-            <GameIcon icon={CircleHelp} />
-          </button>
           {isAuthenticated ? (
             <>
               <button type="button" className="link" onClick={() => navigate("/leaderboard")}>
@@ -1392,6 +1389,9 @@ export function AppShell() {
               </button>
             </>
           ) : null}
+          <button type="button" className="link" onClick={() => navigate("/help")}>
+            <GameIcon icon={CircleHelp} />
+          </button>
         </div>
       </header>
 

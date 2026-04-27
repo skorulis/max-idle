@@ -49,6 +49,7 @@ export type ShopUpgradeDefinition = {
   name: string;
   icon: string;
   description: string;
+  valueDescription: string | null;
   levels: ShopUpgradeLevel[];
   currencyType: ShopCurrencyType;
   maxLevel(): number;
@@ -92,7 +93,8 @@ export const SECONDS_MULTIPLIER_SHOP_UPGRADE: ShopUpgradeDefinition = defineShop
   id: SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER,
   name: "Seconds Multiplier",
   icon: "gauge",
-  description: "Multiply idle gain by %s",
+  description: "Base multiplier to idle time",
+  valueDescription: "%s",
   levels: [
     { cost: 20, value: 1.1 },
     { cost: 60, value: 1.2 },
@@ -117,7 +119,8 @@ export const RESTRAINT_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.RESTRAINT,
   name: "Restraint",
   icon: "shield-alert",
-  description: "Multiply idle gain by %s, you must wait 1 hour before collecting.",
+  description: "Increase idle multiplier but you must wait 1 hour before collecting.",
+  valueDescription: "%s",
   levels: [
     { cost: 2 * 60 * 60, value: 1.5 },
     { cost: 4 * 60 * 60, value: 1.75 },
@@ -133,6 +136,7 @@ export const IDLE_HOARDER_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrad
   name: "Idle hoarder",
   icon: "archive",
   description: "Gain an idle time bonus based on how much idle time is available",
+  valueDescription: "Max multiplier %sx",
   levels: [
     { cost: 1 * SECONDS_PER_HOUR, value: 1.5 },
     { cost: 2 * SECONDS_PER_HOUR, value: 1.75 },
@@ -147,7 +151,8 @@ export const LUCK_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.LUCK,
   name: "Luck",
   icon: "dice-5",
-  description: "%s chance to keep timer on collect.",
+  description: "Chance to keep timer when collecting",
+  valueDescription: "%s",
   levels: [
     { cost: 7 * 24 * 60 * 60, value: 0.1 },
     { cost: 14 * 24 * 60 * 60, value: 0.2 },
@@ -163,6 +168,7 @@ export const EXTRA_REALTIME_WAIT_SHOP_UPGRADE: ShopUpgradeDefinition = defineSho
   name: "Time skip",
   icon: "hourglass",
   description: "Add %s realtime to your current collection",
+  valueDescription: null,
   levels: [{ cost: 1, value: REALTIME_WAIT_EXTENSION_SECONDS }],
   currencyType: SHOP_CURRENCY_TYPES.GEM
 });
@@ -172,7 +178,8 @@ export const COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE: ShopUpgradeDefinition = define
   id: SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST,
   name: "Idle boost",
   icon: "timer",
-  description: "Boost your next collection by %s.",
+  description: "Apply an idle multiplier to your next collection",
+  valueDescription: "%s",
   levels: [
     { cost: 1, value: 0.5 },
     { cost: 2, value: 1 },
@@ -188,6 +195,7 @@ export const PURCHASE_REFUND_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpg
   name: "Purchase refund",
   icon: "undo-2",
   description: "Refund all idle and real time purchases",
+  valueDescription: null,
   levels: [{ cost: 1, value: 0 }],
   currencyType: SHOP_CURRENCY_TYPES.GEM
 });
