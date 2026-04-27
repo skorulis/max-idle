@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CircleHelp, CircleUserRound, House, Medal, ShoppingCart, Star } from "lucide-react";
 import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "react-router-dom";
 import GameIcon from "../GameIcon";
@@ -439,7 +439,7 @@ export function AppShell() {
     setPlayerState(synced);
   };
 
-  const refreshTournament = async (currentToken: string | null) => {
+  const refreshTournament = useCallback(async (currentToken: string | null) => {
     try {
       const tournament = await getCurrentTournament(currentToken);
       const synced = toSyncedTournamentState(tournament);
@@ -451,7 +451,7 @@ export function AppShell() {
       }
       throw tournamentError;
     }
-  };
+  }, []);
 
   useEffect(() => {
     const bootstrap = async () => {
@@ -498,7 +498,7 @@ export function AppShell() {
     };
 
     void bootstrap();
-  }, []);
+  }, [refreshTournament]);
 
   useEffect(() => {
     if (location.pathname !== "/account") {
@@ -1417,7 +1417,6 @@ export function AppShell() {
                 onStartIdling={onStartIdling}
                 onCollect={onCollect}
                 onCollectDailyReward={onCollectDailyReward}
-                onToggleDailyRewardNotifications={onToggleDailyRewardNotifications}
                 onEnterTournament={onEnterTournament}
                 onNavigateTournament={() => navigate("/tournament")}
                 onNavigateLogin={() => navigate("/login")}
