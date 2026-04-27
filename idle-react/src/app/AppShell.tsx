@@ -1404,10 +1404,6 @@ export function AppShell() {
                 collectingDailyReward={collectingDailyReward}
                 dailyRewardAvailable={dailyRewardAvailable}
                 dailyRewardSecondsUntilAvailable={dailyRewardSecondsUntilAvailable}
-                dailyRewardNotificationsSupported={dailyRewardNotificationsSupported}
-                dailyRewardNotificationsEnabled={dailyRewardNotificationsEnabled}
-                dailyRewardNotificationPermission={dailyRewardNotificationPermission}
-                dailyRewardNotificationPermissionPending={dailyRewardNotificationPermissionPending}
                 tournamentHasEntered={tournamentHasEntered}
                 tournamentSecondsUntilDraw={tournamentSecondsUntilDraw}
                 enteringTournament={enteringTournament}
@@ -1493,6 +1489,10 @@ export function AppShell() {
                 token={token}
                 authPending={authPending}
                 usernamePending={usernamePending}
+                dailyRewardNotificationsSupported={dailyRewardNotificationsSupported}
+                dailyRewardNotificationsEnabled={dailyRewardNotificationsEnabled}
+                dailyRewardNotificationPermission={dailyRewardNotificationPermission}
+                dailyRewardNotificationPermissionPending={dailyRewardNotificationPermissionPending}
                 usernameDraft={usernameDraft}
                 usernameError={usernameError}
                 usernameSuccess={usernameSuccess}
@@ -1502,6 +1502,7 @@ export function AppShell() {
                 onUpgradeFormChange={(field, value) => setUpgradeForm((prev) => ({ ...prev, [field]: value }))}
                 onUpgrade={onUpgrade}
                 onLogout={onLogout}
+                onToggleDailyRewardNotifications={onToggleDailyRewardNotifications}
                 onNavigateLogin={() => navigate("/login")}
                 renderAuthButtons={renderUpgradeAuthButtons}
               />

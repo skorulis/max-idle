@@ -9,6 +9,10 @@ type AccountPageProps = {
   token: string | null;
   authPending: boolean;
   usernamePending: boolean;
+  dailyRewardNotificationsSupported: boolean;
+  dailyRewardNotificationsEnabled: boolean;
+  dailyRewardNotificationPermission: NotificationPermission | "unsupported";
+  dailyRewardNotificationPermissionPending: boolean;
   usernameDraft: string;
   usernameError: string | null;
   usernameSuccess: string | null;
@@ -18,6 +22,7 @@ type AccountPageProps = {
   onUpgradeFormChange: (field: "name" | "email" | "password", value: string) => void;
   onUpgrade: () => Promise<void>;
   onLogout: () => Promise<void>;
+  onToggleDailyRewardNotifications: (enabled: boolean) => Promise<void>;
   onNavigateLogin: () => void;
   renderAuthButtons: () => ReactNode;
 };
@@ -27,6 +32,10 @@ export function AccountPage({
   token,
   authPending,
   usernamePending,
+  dailyRewardNotificationsSupported,
+  dailyRewardNotificationsEnabled,
+  dailyRewardNotificationPermission,
+  dailyRewardNotificationPermissionPending,
   usernameDraft,
   usernameError,
   usernameSuccess,
@@ -36,6 +45,7 @@ export function AccountPage({
   onUpgradeFormChange,
   onUpgrade,
   onLogout,
+  onToggleDailyRewardNotifications,
   onNavigateLogin,
   renderAuthButtons
 }: AccountPageProps) {
@@ -79,6 +89,31 @@ export function AccountPage({
       </button>
       {usernameError ? <p className="error">{usernameError}</p> : null}
       {usernameSuccess ? <p className="success">{usernameSuccess}</p> : null}
+      <div className="panel" style={{ marginTop: "0.75rem" }}>
+        <h3>Notifications</h3>
+        {dailyRewardNotificationsSupported ? (
+          <label
+            className="subtle"
+            style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 8, width: "100%", textAlign: "left" }}
+          >
+            <input
+              type="checkbox"
+              style={{ width: "auto", margin: 0 }}
+              checked={dailyRewardNotificationsEnabled}
+              disabled={dailyRewardNotificationPermissionPending}
+              onChange={(event) => {
+                void onToggleDailyRewardNotifications(event.target.checked);
+              }}
+            />
+            Notify me when daily reward is ready
+          </label>
+        ) : (
+          <p className="subtle">Push notifications are not supported on this device.</p>
+        )}
+        {dailyRewardNotificationPermission === "denied" ? (
+          <p className="subtle">Notifications are blocked in browser settings.</p>
+        ) : null}
+      </div>
       {account.isAnonymous ? (
         <>
           <div className="panel" style={{ marginTop: "0.75rem" }}>

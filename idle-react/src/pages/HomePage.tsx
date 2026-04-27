@@ -23,17 +23,12 @@ type HomePageProps = {
   effectiveIdleSecondsRate: number;
   dailyRewardAvailable: boolean;
   dailyRewardSecondsUntilAvailable: number;
-  dailyRewardNotificationsSupported: boolean;
-  dailyRewardNotificationsEnabled: boolean;
-  dailyRewardNotificationPermission: NotificationPermission | "unsupported";
-  dailyRewardNotificationPermissionPending: boolean;
   tournamentHasEntered: boolean;
   tournamentSecondsUntilDraw: number;
   enteringTournament: boolean;
   onStartIdling: () => Promise<void>;
   onCollect: () => Promise<void>;
   onCollectDailyReward: () => Promise<void>;
-  onToggleDailyRewardNotifications: (enabled: boolean) => Promise<void>;
   onEnterTournament: () => Promise<void>;
   onNavigateTournament: () => void;
   onNavigateLogin: () => void;
@@ -50,17 +45,12 @@ export function HomePage({
   effectiveIdleSecondsRate,
   dailyRewardAvailable,
   dailyRewardSecondsUntilAvailable,
-  dailyRewardNotificationsSupported,
-  dailyRewardNotificationsEnabled,
-  dailyRewardNotificationPermission,
-  dailyRewardNotificationPermissionPending,
   tournamentHasEntered,
   tournamentSecondsUntilDraw,
   enteringTournament,
   onStartIdling,
   onCollect,
   onCollectDailyReward,
-  onToggleDailyRewardNotifications,
   onEnterTournament,
   onNavigateTournament,
   onNavigateLogin
@@ -164,24 +154,6 @@ export function HomePage({
             <p className="subtle">Resets in {formatSeconds(dailyRewardSecondsUntilAvailable)}</p>
           </>
         )}
-        {dailyRewardNotificationsSupported ? (
-          <label className="subtle" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
-            <input
-              type="checkbox"
-              checked={dailyRewardNotificationsEnabled}
-              disabled={dailyRewardNotificationPermissionPending}
-              onChange={(event) => {
-                void onToggleDailyRewardNotifications(event.target.checked);
-              }}
-            />
-            Notify me when this reward is ready
-          </label>
-        ) : (
-          <p className="subtle">Browser notifications are not supported on this device.</p>
-        )}
-        {dailyRewardNotificationPermission === "denied" ? (
-          <p className="subtle">Notifications are blocked in browser settings.</p>
-        ) : null}
       </div>
       <TournamentPanel
         hasEntered={tournamentHasEntered}
