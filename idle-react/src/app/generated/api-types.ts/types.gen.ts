@@ -62,7 +62,12 @@ export type Achievement = {
     name: string;
     description: string;
     icon: string;
+    clientDriven: boolean;
     completed: boolean;
+};
+
+export type GrantAchievementRequest = {
+    achievementId: string;
 };
 
 export type AchievementsResponse = {
@@ -105,7 +110,7 @@ export type LeaderboardResponse = {
         rank: number;
         totalIdleSeconds: number;
         inTop: boolean;
-    };
+    } | null;
 };
 
 export type ShopPurchaseRequest = {
@@ -595,6 +600,35 @@ export type PostAchievementsSeenResponses = {
 };
 
 export type PostAchievementsSeenResponse = PostAchievementsSeenResponses[keyof PostAchievementsSeenResponses];
+
+export type PostAchievementsGrantData = {
+    body: GrantAchievementRequest;
+    path?: never;
+    query?: never;
+    url: '/achievements/grant';
+};
+
+export type PostAchievementsGrantErrors = {
+    /**
+     * Invalid achievement payload
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+};
+
+export type PostAchievementsGrantError = PostAchievementsGrantErrors[keyof PostAchievementsGrantErrors];
+
+export type PostAchievementsGrantResponses = {
+    /**
+     * Achievement granted
+     */
+    204: void;
+};
+
+export type PostAchievementsGrantResponse = PostAchievementsGrantResponses[keyof PostAchievementsGrantResponses];
 
 export type GetLeaderboardData = {
     body?: never;

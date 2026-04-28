@@ -245,6 +245,9 @@
           "icon": {
             "type": "string"
           },
+          "clientDriven": {
+            "type": "boolean"
+          },
           "completed": {
             "type": "boolean"
           }
@@ -254,7 +257,19 @@
           "name",
           "description",
           "icon",
+          "clientDriven",
           "completed"
+        ]
+      },
+      "GrantAchievementRequest": {
+        "type": "object",
+        "properties": {
+          "achievementId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "achievementId"
         ]
       },
       "AchievementsResponse": {
@@ -405,6 +420,7 @@
           },
           "currentPlayer": {
             "type": "object",
+            "nullable": true,
             "properties": {
               "userId": {
                 "type": "string",
@@ -1501,12 +1517,12 @@
         }
       }
     },
-    "/leaderboard": {
-      "get": {
+    "/achievements/grant": {
+      "post": {
         "tags": [
-          "Leaderboard"
+          "Achievements"
         ],
-        "summary": "Get leaderboard data",
+        "summary": "Grant a client-driven achievement",
         "security": [
           {
             "cookieAuth": []
@@ -1515,6 +1531,49 @@
             "bearerAuth": []
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrantAchievementRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Achievement granted"
+          },
+          "400": {
+            "description": "Invalid achievement payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/leaderboard": {
+      "get": {
+        "tags": [
+          "Leaderboard"
+        ],
+        "summary": "Get leaderboard data",
         "parameters": [
           {
             "schema": {

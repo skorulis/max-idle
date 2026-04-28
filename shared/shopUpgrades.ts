@@ -158,9 +158,9 @@ export const RESTRAINT_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
 
 export const IDLE_HOARDER_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.IDLE_HOARDER,
-  name: "Idle hoarder",
+  name: "Real hoarder",
   icon: "archive",
-  description: "Gain an idle time bonus based on how much idle time is available",
+  description: "Gain an idle time bonus based on how much real time is available",
   valueDescription: "Max multiplier %sx",
   levels: [
     { cost: 1 * SECONDS_PER_HOUR, value: 1.5 },
@@ -179,11 +179,11 @@ export const LUCK_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   description: "Chance to keep timer when collecting",
   valueDescription: "%s",
   levels: [
-    { cost: 7 * 24 * 60 * 60, value: 0.1 },
-    { cost: 14 * 24 * 60 * 60, value: 0.2 },
-    { cost: 28 * 24 * 60 * 60, value: 0.3 },
-    { cost: 56 * 24 * 60 * 60, value: 0.4 },
-    { cost: 365 * 24 * 60 * 60, value: 0.5 }
+    { cost: 7 * 24 * 60 * 60, value: 0.05 },
+    { cost: 14 * 24 * 60 * 60, value: 0.1 },
+    { cost: 28 * 24 * 60 * 60, value: 0.15 },
+    { cost: 56 * 24 * 60 * 60, value: 0.2 },
+    { cost: 365 * 24 * 60 * 60, value: 0.25 }
   ],
   currencyType: SHOP_CURRENCY_TYPES.IDLE
 });

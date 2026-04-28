@@ -83,7 +83,15 @@ const achievementSchema = registry.register(
     name: z.string(),
     description: z.string(),
     icon: z.string(),
+    clientDriven: z.boolean(),
     completed: z.boolean()
+  })
+);
+
+const grantAchievementRequestSchema = registry.register(
+  "GrantAchievementRequest",
+  z.object({
+    achievementId: z.string()
   })
 );
 
@@ -674,6 +682,39 @@ registry.registerPath({
   responses: {
     204: {
       description: "Marked as seen"
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    }
+  }
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/achievements/grant",
+  tags: ["Achievements"],
+  summary: "Grant a client-driven achievement",
+  security: authViaCookieOrBearer,
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": { schema: grantAchievementRequestSchema }
+      }
+    }
+  },
+  responses: {
+    204: {
+      description: "Achievement granted"
+    },
+    400: {
+      description: "Invalid achievement payload",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
     },
     401: {
       description: "Unauthorized",

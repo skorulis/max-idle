@@ -30,6 +30,7 @@ import {
   getAchievements,
   getLeaderboard,
   getPlayer,
+  grantClientDrivenAchievement,
   getPushConfig,
   getCurrentTournament,
   getPublicPlayerProfile,
@@ -50,6 +51,7 @@ import {
   updateUsername,
   upgradeAnonymous
 } from "./api";
+import { ACHIEVEMENT_IDS } from "../achievements";
 import { authClient } from "./authClient.ts";
 import { alignClientClock, useClientNowMs } from "./clientClock";
 import { getTournamentSecondsUntilDraw, toSyncedState, toSyncedTournamentState } from "./playerState";
@@ -67,6 +69,7 @@ import type {
 const TOKEN_KEY = "max-idle-token";
 const UPGRADE_SOCIAL_INTENT_KEY = "max-idle-upgrade-social-intent";
 const DAILY_REWARD_NOTIFICATIONS_ENABLED_KEY = "max-idle-daily-reward-notifications-enabled";
+const CONTEMPLATION_ACHIEVEMENT_HOME_TIME_MS = 10 * 60 * 1000;
 const FALLBACK_MESSAGE = "The message board is taking a snack break.";
 const WELCOME_MESSAGE = "Welcome to the world of competitive waiting.";
 const HUMOROUS_MESSAGES = [
@@ -340,6 +343,40 @@ export function AppShell() {
       cancelled = true;
     };
   }, [location.pathname, token, playerState?.hasUnseenAchievements]);
+
+  useEffect(() => {
+    if (!isAuthenticated || location.pathname !== "/") {
+      return;
+    }
+
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      if (cancelled) {
+        return;
+      }
+      void grantClientDrivenAchievement(token, ACHIEVEMENT_IDS.CONTEMPLATION)
+        .then(async () => {
+          if (cancelled) {
+            return;
+          }
+          const nextPlayer = await getPlayer(token);
+          if (cancelled) {
+            return;
+          }
+          const synced = toSyncedState(nextPlayer);
+          alignClientClock();
+          setPlayerState(synced);
+        })
+        .catch(() => {
+          // Ignore errors here to avoid interrupting normal home-page flow.
+        });
+    }, CONTEMPLATION_ACHIEVEMENT_HOME_TIME_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [isAuthenticated, location.pathname, token]);
 
   useEffect(() => {
     if (!routePlayerId) {

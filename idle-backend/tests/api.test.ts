@@ -678,9 +678,9 @@ describe("auth + player lifecycle", () => {
     const response = await request(app).get("/achievements").set("Authorization", `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(response.body.completedCount).toBe(0);
-    expect(response.body.totalCount).toBe(8);
+    expect(response.body.totalCount).toBe(9);
     expect(response.body.earningsBonusMultiplier).toBe(1);
-    expect(response.body.achievements).toHaveLength(8);
+    expect(response.body.achievements).toHaveLength(9);
     expect(response.body.achievements[0].id).toBe("account_creation");
     expect(response.body.achievements[1].id).toBe("username_selected");
     expect(response.body.achievements[2].id).toBe("beginner_shopper");
@@ -689,6 +689,46 @@ describe("auth + player lifecycle", () => {
     expect(response.body.achievements[5].id).toBe("real_time_streak_59_minutes");
     expect(response.body.achievements[6].id).toBe("real_time_streak_2d_14h");
     expect(response.body.achievements[7].id).toBe("collection_count_15");
+    expect(response.body.achievements[8].id).toBe("contemplation");
+    expect(response.body.achievements[8].clientDriven).toBe(true);
+  });
+
+  it("grants client-driven achievements from the achievements endpoint", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    const grantResponse = await request(app)
+      .post("/achievements/grant")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ achievementId: "contemplation" });
+    expect(grantResponse.status).toBe(204);
+
+    const achievementState = await pool.query<{
+      achievement_count: string | number;
+      completed_achievements: unknown;
+      has_unseen_achievements: boolean;
+    }>(
+      `SELECT achievement_count, completed_achievements, has_unseen_achievements FROM player_states WHERE user_id = $1`,
+      [userId]
+    );
+    expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);
+    expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toEqual(["contemplation"]);
+    expect(achievementState.rows[0]?.has_unseen_achievements).toBe(true);
+  });
+
+  it("rejects non-client-driven achievements from the grant endpoint", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+
+    const grantResponse = await request(app)
+      .post("/achievements/grant")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ achievementId: "account_creation" });
+    expect(grantResponse.status).toBe(400);
+    expect(grantResponse.body.code).toBe("ACHIEVEMENT_NOT_CLIENT_DRIVEN");
   });
 
   it("clears unseen achievements when achievements are marked seen", async () => {

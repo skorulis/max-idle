@@ -252,6 +252,37 @@ export async function markAchievementsSeen(token: string | null): Promise<void> 
   }
 }
 
+export async function grantClientDrivenAchievement(token: string | null, achievementId: string): Promise<void> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json"
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/achievements/grant`, {
+    method: "POST",
+    credentials: "include",
+    headers,
+    body: JSON.stringify({ achievementId })
+  });
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (response.status === 400) {
+    const payload = (await response.json().catch(() => null)) as { code?: string } | null;
+    if (payload?.code === "INVALID_ACHIEVEMENT_ID") {
+      throw new Error("INVALID_ACHIEVEMENT_ID");
+    }
+    if (payload?.code === "ACHIEVEMENT_NOT_CLIENT_DRIVEN") {
+      throw new Error("ACHIEVEMENT_NOT_CLIENT_DRIVEN");
+    }
+  }
+  if (!response.ok) {
+    throw new Error("Failed to grant achievement");
+  }
+}
+
 export async function getPublicPlayerProfile(playerId: string): Promise<PlayerProfileResponse> {
   const response = await fetch(`${API_BASE_URL}/players/${encodeURIComponent(playerId)}`, {
     credentials: "include"

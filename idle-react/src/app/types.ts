@@ -79,6 +79,7 @@ export type Achievement = {
   name: string;
   description: string;
   icon: string;
+  clientDriven: boolean;
   completed: boolean;
 };
 
