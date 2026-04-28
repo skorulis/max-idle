@@ -10,6 +10,7 @@ import {
   withCollectGemBoostLevel,
   withIdleHoarderLevel,
   withLuckLevel,
+  withPatienceLevel,
   withRestraintLevel,
   withSecondsMultiplier,
   withWorthwhileAchievementsLevel
@@ -19,6 +20,7 @@ import {
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
   IDLE_HOARDER_SHOP_UPGRADE,
   LUCK_SHOP_UPGRADE,
+  PATIENCE_SHOP_UPGRADE,
   RESTRAINT_SHOP_UPGRADE,
   SECONDS_MULTIPLIER_SHOP_UPGRADE,
   WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
@@ -156,6 +158,7 @@ export function registerShopRoutes({
       const isCollectGemTimeBoost = upgradeType === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST;
       const isPurchaseRefund = upgradeType === SHOP_UPGRADE_IDS.PURCHASE_REFUND;
       const isIdleHoarder = upgradeType === SHOP_UPGRADE_IDS.IDLE_HOARDER;
+      const isPatience = upgradeType === SHOP_UPGRADE_IDS.PATIENCE;
       const isWorthwhileAchievements = upgradeType === SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS;
       const worthwhileAchievementsLevel = WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.currentLevel(row.shop);
       const isGemPurchase = boundedUpgrade.currencyType === SHOP_CURRENCY_TYPES.GEM;
@@ -168,6 +171,7 @@ export function registerShopRoutes({
           : 1;
       const restraintLevel = RESTRAINT_SHOP_UPGRADE.currentLevel(row.shop);
       const idleHoarderLevel = IDLE_HOARDER_SHOP_UPGRADE.currentLevel(row.shop);
+      const patienceLevel = PATIENCE_SHOP_UPGRADE.currentLevel(row.shop);
       const luckLevel = LUCK_SHOP_UPGRADE.currentLevel(row.shop);
 
       const currentLevel = SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(row.shop);
@@ -215,6 +219,8 @@ export function registerShopRoutes({
               ? withRestraintLevel(row.shop, restraintLevel + quantity)
               : isIdleHoarder
                 ? withIdleHoarderLevel(row.shop, idleHoarderLevel + quantity)
+                : isPatience
+                  ? withPatienceLevel(row.shop, patienceLevel + quantity)
                 : isWorthwhileAchievements
                   ? withWorthwhileAchievementsLevel(row.shop, worthwhileAchievementsLevel + quantity)
                   : withLuckLevel(row.shop, luckLevel + quantity);

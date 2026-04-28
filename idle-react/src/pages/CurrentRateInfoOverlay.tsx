@@ -44,8 +44,9 @@ export function CurrentRateInfoOverlay({
   }, [open, onClose]);
 
   const factors = useMemo(() => {
-    const baseRate = getIdleSecondsRate({
-      secondsSinceLastCollection: Math.max(0, secondsSinceLastCollection)
+    const patienceRate = getIdleSecondsRate({
+      secondsSinceLastCollection: Math.max(0, secondsSinceLastCollection),
+      shop
     });
     const secondsMultiplier = getSecondsMultiplier(shop);
     const shopBonusMultiplier = getRestraintBonusMultiplier(shop);
@@ -53,7 +54,7 @@ export function CurrentRateInfoOverlay({
       shop,
       safeNumber(achievementCount, 0)
     );
-    const rateBeforeIdleHoarder = baseRate * secondsMultiplier * shopBonusMultiplier * worthwhileAchievementsMultiplier;
+    const rateBeforeIdleHoarder = patienceRate * secondsMultiplier * shopBonusMultiplier * worthwhileAchievementsMultiplier;
     const idleHoarderMultiplier = getIdleHoarderMultiplier(
       IDLE_HOARDER_SHOP_UPGRADE.currentLevel(shop),
       realTimeAvailable,
@@ -61,7 +62,7 @@ export function CurrentRateInfoOverlay({
     );
 
     return {
-      baseRate,
+      patienceRate,
       secondsMultiplier,
       shopBonusMultiplier,
       worthwhileAchievementsMultiplier,
@@ -92,7 +93,7 @@ export function CurrentRateInfoOverlay({
         <p className="subtle">Your current rate is multiplied from these values:</p>
         <p className="rate-factor-row">
           <span>Patience bonus</span>
-          <span>{factors.baseRate.toFixed(2)}x</span>
+          <span>{factors.patienceRate.toFixed(2)}x</span>
         </p>
         {shouldShowFactor(factors.secondsMultiplier) ? (
           <p className="rate-factor-row">

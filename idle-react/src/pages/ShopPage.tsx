@@ -41,6 +41,7 @@ type ShopPageProps = {
   playerState: SyncedPlayerState | null;
   shopPendingQuantity:
     | "seconds_multiplier"
+    | "patience"
     | "restraint"
     | "idle_hoarder"
     | "worthwhile_achievements"
@@ -55,6 +56,8 @@ type ShopPageProps = {
   onPurchase: (upgradeId: ShopUpgradeId) => Promise<void>;
   restraintLevel: number;
   restraintMaxLevel: number;
+  patienceLevel: number;
+  patienceMaxLevel: number;
   luckLevel: number;
   luckMaxLevel: number;
   idleHoarderLevel: number;
@@ -160,6 +163,8 @@ export function ShopPage({
   onPurchase,
   restraintLevel,
   restraintMaxLevel,
+  patienceLevel,
+  patienceMaxLevel,
   luckLevel,
   luckMaxLevel,
   idleHoarderLevel,
@@ -283,11 +288,14 @@ export function ShopPage({
     }
 
     const isRestraint = upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT;
+    const isPatience = upgrade.id === SHOP_UPGRADE_IDS.PATIENCE;
     const isIdleHoarder = upgrade.id === SHOP_UPGRADE_IDS.IDLE_HOARDER;
     const isLuck = upgrade.id === SHOP_UPGRADE_IDS.LUCK;
     const isWorthwhileAchievements = upgrade.id === SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS;
     const currentLevel = isRestraint
       ? restraintLevel
+      : isPatience
+        ? patienceLevel
       : isIdleHoarder
         ? idleHoarderLevel
         : isLuck
@@ -297,6 +305,8 @@ export function ShopPage({
             : 0;
     const maxLevel = isRestraint
       ? restraintMaxLevel
+      : isPatience
+        ? patienceMaxLevel
       : isIdleHoarder
         ? idleHoarderMaxLevel
         : isLuck
@@ -305,7 +315,7 @@ export function ShopPage({
             ? worthwhileAchievementsMaxLevel
             : 0;
     const isOwned =
-      isRestraint || isIdleHoarder || isLuck || isWorthwhileAchievements ? currentLevel >= maxLevel : false;
+      isRestraint || isPatience || isIdleHoarder || isLuck || isWorthwhileAchievements ? currentLevel >= maxLevel : false;
     const isPending = shopPendingQuantity === upgrade.id;
     const nextLevel = upgrade.levels[currentLevel] ?? null;
     return {
@@ -316,7 +326,7 @@ export function ShopPage({
       currentValueDescription,
       nextValueDescription,
       cost:
-        isRestraint || isIdleHoarder || isLuck || isWorthwhileAchievements
+        isRestraint || isPatience || isIdleHoarder || isLuck || isWorthwhileAchievements
           ? nextLevel?.cost ?? null
           : upgrade.levels[0]?.cost ?? null,
       isPending,
@@ -334,6 +344,9 @@ export function ShopPage({
     }
     if (upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT) {
       return restraintLevel;
+    }
+    if (upgrade.id === SHOP_UPGRADE_IDS.PATIENCE) {
+      return patienceLevel;
     }
     if (upgrade.id === SHOP_UPGRADE_IDS.LUCK) {
       return luckLevel;

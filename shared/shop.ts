@@ -2,6 +2,7 @@ import {
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
   IDLE_HOARDER_SHOP_UPGRADE,
   LUCK_SHOP_UPGRADE,
+  PATIENCE_SHOP_UPGRADE,
   RESTRAINT_SHOP_UPGRADE,
   SECONDS_MULTIPLIER_SHOP_UPGRADE,
   WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
@@ -18,6 +19,7 @@ const DEFAULT_SECONDS_MULTIPLIER_VALUE = 1;
 
 export type ShopState = {
   seconds_multiplier: number;
+  patience?: number;
   restraint: number;
   idle_hoarder?: number;
   luck: number;
@@ -29,6 +31,7 @@ export type ShopState = {
 
 export const DEFAULT_SHOP_STATE: ShopState = {
   [SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER]: 0,
+  [SHOP_UPGRADE_IDS.PATIENCE]: 0,
   [SHOP_UPGRADE_IDS.RESTRAINT]: 0,
   [SHOP_UPGRADE_IDS.IDLE_HOARDER]: 0,
   [SHOP_UPGRADE_IDS.LUCK]: 0,
@@ -99,6 +102,16 @@ export function withRestraintLevel(shop: ShopState, restraintLevel: number): Sho
   return {
     ...shop,
     restraint: safeLevel
+  };
+}
+
+export function withPatienceLevel(shop: ShopState, patienceLevel: number): ShopState {
+  const safeLevel = Number.isFinite(patienceLevel)
+    ? Math.max(0, Math.min(PATIENCE_SHOP_UPGRADE.maxLevel(), Math.floor(patienceLevel)))
+    : 0;
+  return {
+    ...shop,
+    [SHOP_UPGRADE_IDS.PATIENCE]: safeLevel
   };
 }
 

@@ -3,6 +3,7 @@ export {
   EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
   formatShopUpgradeDescription,
   IDLE_HOARDER_SHOP_UPGRADE,
+  PATIENCE_SHOP_UPGRADE,
   getIdleHoarderMultiplier,
   getCollectGemIdleSecondsMultiplier,
   getCollectGemTimeBoostMaxLevel,

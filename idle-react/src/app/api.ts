@@ -335,6 +335,7 @@ async function purchaseUpgrade(
   token: string | null,
   body:
     | { upgradeType: "seconds_multiplier"; quantity: 1 | 5 | 10 }
+    | { upgradeType: "patience" }
     | { upgradeType: "restraint" }
     | { upgradeType: "idle_hoarder" }
     | { upgradeType: "worthwhile_achievements" }
@@ -380,6 +381,10 @@ export async function purchaseSecondsMultiplier(token: string | null, quantity: 
 
 export async function purchaseRestraint(token: string | null): Promise<PlayerResponse> {
   return purchaseUpgrade(token, { upgradeType: "restraint" });
+}
+
+export async function purchasePatience(token: string | null): Promise<PlayerResponse> {
+  return purchaseUpgrade(token, { upgradeType: "patience" });
 }
 
 export async function purchaseIdleHoarder(token: string | null): Promise<PlayerResponse> {

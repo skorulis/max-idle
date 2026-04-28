@@ -20,9 +20,11 @@ export const COLLECT_GEM_TIME_PER_LEVEL_WAIT_FACTOR = 0.5;
 
 const SECONDS_PER_HOUR = 60 * 60;
 const SECONDS_PER_DAY = 24 * 60 * 60;
+const SECONDS_PER_WEEK = 7 * 24 * 60 * 60;
 
 export const SHOP_UPGRADE_IDS = {
   SECONDS_MULTIPLIER: "seconds_multiplier",
+  PATIENCE: "patience",
   RESTRAINT: "restraint",
   IDLE_HOARDER: "idle_hoarder",
   LUCK: "luck",
@@ -115,6 +117,25 @@ export const SECONDS_MULTIPLIER_SHOP_UPGRADE: ShopUpgradeDefinition = defineShop
     { cost: 7 * 24 * 3600, value: 2.3 },
     { cost: 14 * 24 * 3600, value: 2.4 },
     { cost: 28 * 24 * 3600, value: 2.5 },
+  ],
+  currencyType: SHOP_CURRENCY_TYPES.IDLE
+});
+
+export const PATIENCE_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
+  id: SHOP_UPGRADE_IDS.PATIENCE,
+  name: "Patience",
+  icon: "hourglass",
+  description: "Unlock one additional patience bonus step for idle rate scaling",
+  valueDescription: "Unlocked steps: %s",
+  levels: [
+    { cost: 60, value: 2 },
+    { cost: 5 * 60, value: 3 },
+    { cost: SECONDS_PER_HOUR, value: 4 },
+    { cost: 5 * SECONDS_PER_HOUR, value: 5 },
+    { cost: SECONDS_PER_DAY, value: 6 },
+    { cost: 4 * SECONDS_PER_DAY, value: 7 },
+    { cost: 14 * SECONDS_PER_DAY, value: 8 },
+    { cost: 52 * SECONDS_PER_WEEK, value: 9 }
   ],
   currencyType: SHOP_CURRENCY_TYPES.IDLE
 });
@@ -223,6 +244,7 @@ export const WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE: ShopUpgradeDefinition = defin
 
 export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   SECONDS_MULTIPLIER_SHOP_UPGRADE,
+  PATIENCE_SHOP_UPGRADE,
   RESTRAINT_SHOP_UPGRADE,
   IDLE_HOARDER_SHOP_UPGRADE,
   LUCK_SHOP_UPGRADE,
@@ -234,6 +256,7 @@ export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
 
 export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> = {
   [SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER]: SECONDS_MULTIPLIER_SHOP_UPGRADE,
+  [SHOP_UPGRADE_IDS.PATIENCE]: PATIENCE_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.RESTRAINT]: RESTRAINT_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.IDLE_HOARDER]: IDLE_HOARDER_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.LUCK]: LUCK_SHOP_UPGRADE,

@@ -5,42 +5,60 @@ import {
   getIdleSecondsRate,
   shouldPreserveIdleTimerOnCollect
 } from "./idleRate.js";
+import type { ShopState } from "./shop.js";
+
+function shopWithPatience(patience: number): ShopState {
+  return {
+    seconds_multiplier: 0,
+    restraint: 0,
+    idle_hoarder: 0,
+    luck: 0,
+    patience
+  };
+}
 
 describe("getIdleSecondsRate", () => {
-  it("matches all configured step values", () => {
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 0 })).toBe(1);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 60 })).toBe(2);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 10 * 60 })).toBe(3);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 60 * 60 })).toBe(5);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 6 * 60 * 60 })).toBe(8);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 24 * 60 * 60 })).toBe(12);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 7 * 24 * 60 * 60 })).toBe(15);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 4 * 7 * 24 * 60 * 60 })).toBe(20);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 365 * 24 * 60 * 60 })).toBe(30);
+  it("starts with only the first rate step unlocked", () => {
+    expect(getIdleSecondsRate({ secondsSinceLastCollection: 0, shop: shopWithPatience(0) })).toBe(1);
+    expect(getIdleSecondsRate({ secondsSinceLastCollection: 60, shop: shopWithPatience(0) })).toBe(1);
+    expect(getIdleSecondsRate({ secondsSinceLastCollection: 365 * 24 * 60 * 60, shop: shopWithPatience(0) })).toBe(1);
   });
 
-  it("interpolates linearly between steps and caps at max", () => {
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 30 })).toBeCloseTo(1.5, 6);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 330 })).toBeCloseTo(2.5, 6);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 2 * 365 * 24 * 60 * 60 })).toBe(30);
+  it("unlocks one additional step per patience level", () => {
+    expect(getIdleSecondsRate({ secondsSinceLastCollection: 60, shop: shopWithPatience(1) })).toBe(2);
+    expect(getIdleSecondsRate({ secondsSinceLastCollection: 10 * 60, shop: shopWithPatience(2) })).toBe(3);
+    expect(getIdleSecondsRate({ secondsSinceLastCollection: 60 * 60, shop: shopWithPatience(3) })).toBe(5);
+    expect(getIdleSecondsRate({ secondsSinceLastCollection: 6 * 60 * 60, shop: shopWithPatience(4) })).toBe(8);
+    expect(getIdleSecondsRate({ secondsSinceLastCollection: 24 * 60 * 60, shop: shopWithPatience(5) })).toBe(12);
+    expect(getIdleSecondsRate({ secondsSinceLastCollection: 7 * 24 * 60 * 60, shop: shopWithPatience(6) })).toBe(15);
+    expect(getIdleSecondsRate({ secondsSinceLastCollection: 4 * 7 * 24 * 60 * 60, shop: shopWithPatience(7) })).toBe(20);
+    expect(getIdleSecondsRate({ secondsSinceLastCollection: 365 * 24 * 60 * 60, shop: shopWithPatience(8) })).toBe(30);
+  });
+
+  it("interpolates linearly within unlocked steps and caps at unlocked max", () => {
+    expect(getIdleSecondsRate({ secondsSinceLastCollection: 30, shop: shopWithPatience(1) })).toBeCloseTo(1.5, 6);
+    expect(getIdleSecondsRate({ secondsSinceLastCollection: 330, shop: shopWithPatience(2) })).toBeCloseTo(2.5, 6);
+    expect(getIdleSecondsRate({ secondsSinceLastCollection: 2 * 365 * 24 * 60 * 60, shop: shopWithPatience(8) })).toBe(30);
+    expect(getIdleSecondsRate({ secondsSinceLastCollection: 2 * 365 * 24 * 60 * 60, shop: shopWithPatience(3) })).toBe(5);
   });
 });
 
 describe("calculateIdleSecondsGain", () => {
   it("integrates linearly changing rate", () => {
+    const fullPatienceShop = shopWithPatience(8);
     // 0 -> 60s ramps 1x -> 2x, average 1.5x => 90 gained seconds.
-    expect(calculateIdleSecondsGain(60)).toBe(90);
+    expect(calculateIdleSecondsGain(60, fullPatienceShop)).toBe(90);
 
     // 60 -> 600s ramps 2x -> 3x, average 2.5x across 540s => +1350, total 1440.
-    expect(calculateIdleSecondsGain(10 * 60)).toBe(1440);
+    expect(calculateIdleSecondsGain(10 * 60, fullPatienceShop)).toBe(1440);
   });
 });
 
 describe("luck + boosted gain", () => {
   it("preserves timer only when luck is enabled and roll succeeds", () => {
-    expect(shouldPreserveIdleTimerOnCollect({ luck: 0 }, 0.1)).toBe(false);
-    expect(shouldPreserveIdleTimerOnCollect({ luck: 1 }, 0.1)).toBe(true);
-    expect(shouldPreserveIdleTimerOnCollect({ luck: 1 }, 0.9)).toBe(false);
+    expect(shouldPreserveIdleTimerOnCollect({ seconds_multiplier: 0, restraint: 0, luck: 0 }, 0.1)).toBe(false);
+    expect(shouldPreserveIdleTimerOnCollect({ seconds_multiplier: 0, restraint: 0, luck: 1 }, 0.1)).toBe(true);
+    expect(shouldPreserveIdleTimerOnCollect({ seconds_multiplier: 0, restraint: 0, luck: 1 }, 0.9)).toBe(false);
   });
 
   it("applies restraint/luck-aware boosted gain", () => {

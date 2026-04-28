@@ -4,7 +4,7 @@ import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "rea
 import GameIcon from "../GameIcon";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
 import { getCollectGemIdleSecondsMultiplier, SECONDS_MULTIPLIER_SHOP_UPGRADE } from "../shopUpgrades";
-import { COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE, IDLE_HOARDER_SHOP_UPGRADE, LUCK_SHOP_UPGRADE, RESTRAINT_SHOP_UPGRADE, WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE } from "../shopUpgrades";
+import { COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE, IDLE_HOARDER_SHOP_UPGRADE, LUCK_SHOP_UPGRADE, PATIENCE_SHOP_UPGRADE, RESTRAINT_SHOP_UPGRADE, WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE } from "../shopUpgrades";
 import {
   type ShopUpgradeId
 } from "../shopUpgrades";
@@ -40,6 +40,7 @@ import {
   purchaseCollectGemTimeBoost,
   purchaseIdleHoarder,
   purchaseLuck,
+  purchasePatience,
   purchaseWorthwhileAchievements,
   purchaseRefund,
   purchaseRestraint,
@@ -177,6 +178,7 @@ export function AppShell() {
   const [usernameSuccess, setUsernameSuccess] = useState<string | null>(null);
   const [shopPendingQuantity, setShopPendingQuantity] = useState<
     | "seconds_multiplier"
+    | "patience"
     | "restraint"
     | "idle_hoarder"
     | "luck"
@@ -652,6 +654,8 @@ export function AppShell() {
   }, [secondsMultiplierLevel]);
   const restraintLevel = playerState ? RESTRAINT_SHOP_UPGRADE.currentLevel(playerState.shop) : 0;
   const restraintMaxLevel = RESTRAINT_SHOP_UPGRADE.maxLevel();
+  const patienceLevel = playerState ? PATIENCE_SHOP_UPGRADE.currentLevel(playerState.shop) : 0;
+  const patienceMaxLevel = PATIENCE_SHOP_UPGRADE.maxLevel();
   const luckLevel = playerState ? LUCK_SHOP_UPGRADE.currentLevel(playerState.shop) : 0;
   const luckMaxLevel = LUCK_SHOP_UPGRADE.maxLevel();
   const idleHoarderLevel = playerState ? IDLE_HOARDER_SHOP_UPGRADE.currentLevel(playerState.shop) : 0;
@@ -856,6 +860,14 @@ export function AppShell() {
         successStatus: () => "Restraint upgraded.",
         insufficientFundsError: "Not enough spendable idle seconds for that purchase.",
         alreadyOwnedError: "Restraint is already active."
+      },
+      patience: {
+        isUnavailable: patienceLevel >= patienceMaxLevel,
+        startStatus: "Purchasing Patience...",
+        purchase: () => purchasePatience(token),
+        successStatus: () => "Patience upgraded.",
+        insufficientFundsError: "Not enough spendable idle seconds for that purchase.",
+        alreadyOwnedError: "Patience is already maxed."
       },
       luck: {
         isUnavailable: luckLevel >= luckMaxLevel,
@@ -1331,6 +1343,8 @@ export function AppShell() {
                 onPurchase={onPurchaseUpgrade}
                 restraintLevel={restraintLevel}
                 restraintMaxLevel={restraintMaxLevel}
+                patienceLevel={patienceLevel}
+                patienceMaxLevel={patienceMaxLevel}
                 luckLevel={luckLevel}
                 luckMaxLevel={luckMaxLevel}
                 idleHoarderLevel={idleHoarderLevel}

@@ -6,7 +6,7 @@ import {
   withLuck,
   withRestraint
 } from "../src/shop.js";
-import { LUCK_SHOP_UPGRADE, RESTRAINT_SHOP_UPGRADE, SECONDS_MULTIPLIER_SHOP_UPGRADE } from "@maxidle/shared/shopUpgrades";
+import { LUCK_SHOP_UPGRADE, PATIENCE_SHOP_UPGRADE, RESTRAINT_SHOP_UPGRADE, SECONDS_MULTIPLIER_SHOP_UPGRADE } from "@maxidle/shared/shopUpgrades";
 
 function getTotalUpgradeCost(upgradeLevel: number, quantity: number): number {
   const safeLevel = Math.max(0, Math.floor(Number(upgradeLevel) || 0));
@@ -47,5 +47,10 @@ describe("shop pricing", () => {
 
   it("uses fixed luck upgrade cost", () => {
     expect(LUCK_SHOP_UPGRADE.costAtLevel(0)).toBe(7 * 24 * 60 * 60);
+  });
+
+  it("uses escalating patience upgrade costs", () => {
+    expect(PATIENCE_SHOP_UPGRADE.costAtLevel(0)).toBe(60);
+    expect(PATIENCE_SHOP_UPGRADE.costAtLevel(1)).toBe(3 * 60);
   });
 });

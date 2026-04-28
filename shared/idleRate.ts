@@ -1,6 +1,7 @@
 import {
   getLuckEnabled,
   getLuckPreserveChance,
+  getDefaultShopState,
   getRestraintBonusMultiplier,
   getRestraintEnabled,
   getSecondsMultiplier,
@@ -30,6 +31,7 @@ const RESTRAINT_MIN_REALTIME_SECONDS = 60 * 60;
 
 export type IdleRatePlayer = {
   secondsSinceLastCollection: number;
+  shop?: ShopState;
 };
 
 export type IdleCollectionPlayer = {
@@ -55,32 +57,40 @@ function interpolateRate(start: IdleRateStep, end: IdleRateStep, elapsedSeconds:
   return start.rate + (end.rate - start.rate) * progress;
 }
 
+function getAccessibleIdleRateSteps(shop: ShopState): IdleRateStep[] {
+  const patienceLevel = Math.max(0, Math.floor(Number(shop.patience) || 0));
+  const unlockedSteps = Math.max(1, Math.min(IDLE_RATE_STEPS.length, patienceLevel + 1));
+  return IDLE_RATE_STEPS.slice(0, unlockedSteps);
+}
+
 export function getIdleSecondsRate(player: IdleRatePlayer): number {
   const elapsedSeconds = clampElapsedSeconds(player.secondsSinceLastCollection);
+  const accessibleSteps = getAccessibleIdleRateSteps(player.shop ?? getDefaultShopState());
   if (elapsedSeconds <= 0) {
-    return IDLE_RATE_STEPS[0].rate;
+    return accessibleSteps[0].rate;
   }
 
-  for (let i = 1; i < IDLE_RATE_STEPS.length; i += 1) {
-    const end = IDLE_RATE_STEPS[i];
+  for (let i = 1; i < accessibleSteps.length; i += 1) {
+    const end = accessibleSteps[i];
     if (elapsedSeconds <= end.seconds) {
-      return interpolateRate(IDLE_RATE_STEPS[i - 1], end, elapsedSeconds);
+      return interpolateRate(accessibleSteps[i - 1], end, elapsedSeconds);
     }
   }
 
-  return IDLE_RATE_STEPS[IDLE_RATE_STEPS.length - 1].rate;
+  return accessibleSteps[accessibleSteps.length - 1].rate;
 }
 
-export function calculateIdleSecondsGain(secondsSinceLastCollection: number): number {
+export function calculateIdleSecondsGain(secondsSinceLastCollection: number, shop: ShopState = getDefaultShopState()): number {
   const elapsedSeconds = clampElapsedSeconds(secondsSinceLastCollection);
+  const accessibleSteps = getAccessibleIdleRateSteps(shop);
   if (elapsedSeconds <= 0) {
     return 0;
   }
 
   let total = 0;
-  for (let i = 1; i < IDLE_RATE_STEPS.length; i += 1) {
-    const start = IDLE_RATE_STEPS[i - 1];
-    const end = IDLE_RATE_STEPS[i];
+  for (let i = 1; i < accessibleSteps.length; i += 1) {
+    const start = accessibleSteps[i - 1];
+    const end = accessibleSteps[i];
     if (elapsedSeconds <= start.seconds) {
       break;
     }
@@ -95,7 +105,7 @@ export function calculateIdleSecondsGain(secondsSinceLastCollection: number): nu
     total += start.rate * delta + 0.5 * slope * delta * delta;
   }
 
-  const lastStep = IDLE_RATE_STEPS[IDLE_RATE_STEPS.length - 1];
+  const lastStep = accessibleSteps[accessibleSteps.length - 1];
   if (elapsedSeconds > lastStep.seconds) {
     total += (elapsedSeconds - lastStep.seconds) * lastStep.rate;
   }
@@ -113,7 +123,7 @@ export function isIdleCollectionBlockedByRestraint(player: {
 
 export function calculateBoostedIdleSecondsGain(player: IdleCollectionPlayer): number {
   const elapsedSeconds = clampElapsedSeconds(player.secondsSinceLastCollection);
-  const baseGain = calculateIdleSecondsGain(elapsedSeconds);
+  const baseGain = calculateIdleSecondsGain(elapsedSeconds, player.shop);
   const secondsMultiplier = getSecondsMultiplier(player.shop);
   const worthwhileAchievementsMultiplier = getWorthwhileAchievementsMultiplier(
     player.shop,
@@ -136,7 +146,7 @@ export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): numbe
     safeNumber(player.achievementCount, 0)
   );
   const rateBeforeIdleHoarder =
-    getIdleSecondsRate({ secondsSinceLastCollection: player.secondsSinceLastCollection }) *
+    getIdleSecondsRate({ secondsSinceLastCollection: player.secondsSinceLastCollection, shop: player.shop }) *
     getSecondsMultiplier(player.shop) *
     getRestraintBonusMultiplier(player.shop) *
     worthwhileAchievementsMultiplier;
