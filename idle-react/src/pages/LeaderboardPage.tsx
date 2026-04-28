@@ -7,7 +7,9 @@ type LeaderboardPageProps = {
   leaderboardLoading: boolean;
   leaderboard: LeaderboardResponse | null;
   hasError: boolean;
+  showStartJourneyButton: boolean;
   onTypeChange: (type: LeaderboardType) => void;
+  onStartJourney: () => Promise<void>;
 };
 
 export function LeaderboardPage({
@@ -15,11 +17,18 @@ export function LeaderboardPage({
   leaderboardLoading,
   leaderboard,
   hasError,
-  onTypeChange
+  showStartJourneyButton,
+  onTypeChange,
+  onStartJourney
 }: LeaderboardPageProps) {
   return (
     <>
       <h2>Leaderboard</h2>
+      {showStartJourneyButton ? (
+        <button type="button" className="collect leaderboard-start-journey-button" onClick={() => void onStartJourney()}>
+          Start your idle journey
+        </button>
+      ) : null}
       <div className="leaderboard-type-toggle">
         <button
           type="button"
@@ -54,7 +63,7 @@ export function LeaderboardPage({
               </div>
             ))}
           </div>
-          {!leaderboard.currentPlayer.inTop ? (
+          {leaderboard.currentPlayer && !leaderboard.currentPlayer.inTop ? (
             <p className="subtle">
               Your rank is #{leaderboard.currentPlayer.rank} with {formatSeconds(leaderboard.currentPlayer.totalIdleSeconds)}.
             </p>

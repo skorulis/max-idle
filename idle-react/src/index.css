@@ -422,6 +422,10 @@ input {
   margin-bottom: 10px;
 }
 
+.leaderboard-start-journey-button {
+  margin-bottom: 14px;
+}
+
 .leaderboard-type-toggle .secondary {
   margin-top: 0;
 }

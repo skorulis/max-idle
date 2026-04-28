@@ -956,6 +956,20 @@ describe("auth + player lifecycle", () => {
     expect(leaderboardResponse.body.currentPlayer.rank).toBeGreaterThan(200);
   });
 
+  it("returns public leaderboard without current player when unauthenticated", async () => {
+    const app = createApp(pool, config);
+    for (let i = 0; i < 3; i += 1) {
+      await insertLeaderboardPlayer(1000 - i);
+    }
+
+    const leaderboardResponse = await request(app).get("/leaderboard").query({ type: "collected" });
+    expect(leaderboardResponse.status).toBe(200);
+    expect(leaderboardResponse.body.entries.length).toBeGreaterThan(0);
+    expect(leaderboardResponse.body.entries.length).toBeLessThanOrEqual(200);
+    expect(leaderboardResponse.body.currentPlayer).toBeNull();
+    expect(leaderboardResponse.body.entries.every((entry: { isCurrentPlayer: boolean }) => entry.isCurrentPlayer === false)).toBe(true);
+  });
+
   it("uses current seconds as default leaderboard type", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");

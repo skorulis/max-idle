@@ -133,12 +133,14 @@ const leaderboardResponseSchema = registry.register(
   z.object({
     type: z.enum(["current", "collected"]),
     entries: z.array(leaderboardEntrySchema),
-    currentPlayer: z.object({
-      userId: z.string().uuid(),
-      rank: z.number().int().positive(),
-      totalIdleSeconds: z.number().int().nonnegative(),
-      inTop: z.boolean()
-    })
+    currentPlayer: z
+      .object({
+        userId: z.string().uuid(),
+        rank: z.number().int().positive(),
+        totalIdleSeconds: z.number().int().nonnegative(),
+        inTop: z.boolean()
+      })
+      .nullable()
   })
 );
 
@@ -687,7 +689,6 @@ registry.registerPath({
   path: "/leaderboard",
   tags: ["Leaderboard"],
   summary: "Get leaderboard data",
-  security: authViaCookieOrBearer,
   request: {
     query: z.object({
       type: z.enum(["current", "collected"]).optional()

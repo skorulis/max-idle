@@ -30,15 +30,13 @@ export function registerLeaderboardRoutes({
 
       const metricExpression = leaderboardType === "collected" ? "ps.idle_time_total" : "ps.current_seconds";
 
-      let identity: LeaderboardRouteIdentity;
+      let identity: LeaderboardRouteIdentity | null = null;
       try {
         identity = await resolveIdentity(req);
       } catch (error) {
-        if (error instanceof Error && error.message === "MISSING_IDENTITY") {
-          res.status(401).json({ error: "Authentication required" });
-          return;
+        if (!(error instanceof Error && error.message === "MISSING_IDENTITY")) {
+          throw error;
         }
-        throw error;
       }
 
       const leaderboardResult = await pool.query<{
@@ -58,31 +56,45 @@ export function registerLeaderboardRoutes({
         `
       );
 
-      const currentPlayerResult = await pool.query<{
-        user_id: string;
-        leaderboard_seconds: string;
-      }>(
-        `
-        SELECT
-          ps.user_id,
-          ${metricExpression} AS leaderboard_seconds
-        FROM player_states ps
-        WHERE ps.user_id = $1
-        `,
-        [identity.claims.sub]
-      );
+      let currentPlayer: {
+        userId: string;
+        rank: number;
+        totalIdleSeconds: number;
+        inTop: boolean;
+      } | null = null;
+      if (identity) {
+        const currentPlayerResult = await pool.query<{
+          user_id: string;
+          leaderboard_seconds: string;
+        }>(
+          `
+          SELECT
+            ps.user_id,
+            ${metricExpression} AS leaderboard_seconds
+          FROM player_states ps
+          WHERE ps.user_id = $1
+          `,
+          [identity.claims.sub]
+        );
 
-      const currentPlayerRow = currentPlayerResult.rows[0];
-      if (!currentPlayerRow) {
-        res.status(404).json({ error: "Player state not found" });
-        return;
+        const currentPlayerRow = currentPlayerResult.rows[0];
+        if (!currentPlayerRow) {
+          res.status(404).json({ error: "Player state not found" });
+          return;
+        }
+
+        const higherRankCountResult = await pool.query<{ higher_count: string }>(
+          `SELECT COUNT(*) AS higher_count FROM player_states ps WHERE ${metricExpression} > $1`,
+          [currentPlayerRow.leaderboard_seconds]
+        );
+        const currentPlayerRank = toNumber(higherRankCountResult.rows[0]?.higher_count ?? 0) + 1;
+        currentPlayer = {
+          userId: currentPlayerRow.user_id,
+          rank: currentPlayerRank,
+          totalIdleSeconds: toNumber(currentPlayerRow.leaderboard_seconds),
+          inTop: false
+        };
       }
-
-      const higherRankCountResult = await pool.query<{ higher_count: string }>(
-        `SELECT COUNT(*) AS higher_count FROM player_states ps WHERE ${metricExpression} > $1`,
-        [currentPlayerRow.leaderboard_seconds]
-      );
-      const currentPlayerRank = toNumber(higherRankCountResult.rows[0]?.higher_count ?? 0) + 1;
 
       let previousTotalIdleSeconds: number | null = null;
       let previousRank = 0;
@@ -102,19 +114,18 @@ export function registerLeaderboardRoutes({
         return {
           ...entry,
           rank,
-          isCurrentPlayer: entry.userId === identity.claims.sub
+          isCurrentPlayer: identity ? entry.userId === identity.claims.sub : false
         };
       });
+
+      if (currentPlayer) {
+        currentPlayer.inTop = rankedEntries.some((entry) => entry.isCurrentPlayer);
+      }
 
       res.json({
         type: leaderboardType,
         entries: rankedEntries,
-        currentPlayer: {
-          userId: currentPlayerRow.user_id,
-          rank: currentPlayerRank,
-          totalIdleSeconds: toNumber(currentPlayerRow.leaderboard_seconds),
-          inTop: rankedEntries.some((entry) => entry.isCurrentPlayer)
-        }
+        currentPlayer
       });
     } catch (error) {
       next(error);

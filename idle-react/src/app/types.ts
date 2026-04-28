@@ -71,7 +71,7 @@ export type LeaderboardResponse = {
     rank: number;
     totalIdleSeconds: number;
     inTop: boolean;
-  };
+  } | null;
 };
 
 export type Achievement = {

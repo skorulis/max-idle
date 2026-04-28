@@ -1040,6 +1040,13 @@ export function AppShell() {
     }
   };
 
+  const onStartJourneyFromLeaderboard = async () => {
+    await onStartIdling();
+    if (localStorage.getItem(TOKEN_KEY)) {
+      navigate("/");
+    }
+  };
+
   const onLogin = async () => {
     setAuthPending(true);
     setError(null);
@@ -1244,11 +1251,11 @@ export function AppShell() {
           <GameIcon icon={Hourglass} />
         </button>
         <div className="actions">
+          <button type="button" className="link" onClick={() => navigate("/leaderboard")}>
+            <GameIcon icon={Medal} />
+          </button>
           {isAuthenticated ? (
             <>
-              <button type="button" className="link" onClick={() => navigate("/leaderboard")}>
-                <GameIcon icon={Medal} />
-              </button>
               <button type="button" className="link" onClick={() => navigate("/shop")}>
                 <GameIcon icon={ShoppingCart} />
               </button>
@@ -1398,7 +1405,9 @@ export function AppShell() {
                 leaderboardLoading={leaderboardLoading}
                 leaderboard={leaderboard}
                 hasError={Boolean(error)}
+                showStartJourneyButton={!isAuthenticated}
                 onTypeChange={setLeaderboardType}
+                onStartJourney={onStartJourneyFromLeaderboard}
               />
             }
           />
