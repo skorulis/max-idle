@@ -3,7 +3,9 @@ import { betterAuth } from "better-auth";
 import { fromNodeHeaders } from "better-auth/node";
 import type { Request } from "express";
 import type { PoolClient, Pool } from "pg";
+import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import type { AppConfig } from "./types.js";
+import { grantAchievement } from "./achievementUpdates.js";
 import { generateAnonymousUsername, isUsernameTakenError } from "./username.js";
 
 function buildSocialProviders(config: AppConfig) {
@@ -122,6 +124,7 @@ export async function ensureGameIdentityForAuthUser(
         existingEmailGameUserId,
         normalizedEmail
       ]);
+      await grantAchievement(db, existingEmailGameUserId, ACHIEVEMENT_IDS.ACCOUNT_CREATION);
       return existingEmailGameUserId;
     }
   }
@@ -141,6 +144,7 @@ export async function ensureGameIdentityForAuthUser(
         [gameUserId, JSON.stringify({ seconds_multiplier: 0, restraint: 0, idle_hoarder: 0, luck: 0, worthwhile_achievements: 0, collect_gem_time_boost: 0 })]
       );
       await db.query(`INSERT INTO auth_identities (auth_user_id, game_user_id) VALUES ($1, $2)`, [authUserId, gameUserId]);
+      await grantAchievement(db, gameUserId, ACHIEVEMENT_IDS.ACCOUNT_CREATION);
       await db.query("COMMIT");
       return gameUserId;
     } catch (error) {
