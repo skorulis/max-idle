@@ -25,7 +25,7 @@ export type AchievementDefinition = {
 export const ACHIEVEMENTS: AchievementDefinition[] = [
   {
     id: ACHIEVEMENT_IDS.ACCOUNT_CREATION,
-    name: "Account creation",
+    name: "Saved account",
     description: "Upgrade from an anonymous account.",
     icon: "user-plus",
     clientDriven: false
