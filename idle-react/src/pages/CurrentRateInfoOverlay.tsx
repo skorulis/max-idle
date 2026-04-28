@@ -46,7 +46,9 @@ export function CurrentRateInfoOverlay({
   const factors = useMemo(() => {
     const patienceRate = getIdleSecondsRate({
       secondsSinceLastCollection: Math.max(0, secondsSinceLastCollection),
-      shop
+      shop,
+      achievementCount,
+      realTimeAvailable
     });
     const secondsMultiplier = getSecondsMultiplier(shop);
     const shopBonusMultiplier = getRestraintBonusMultiplier(shop);

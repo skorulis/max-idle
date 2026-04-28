@@ -17,29 +17,38 @@ function shopWithPatience(patience: number): ShopState {
   };
 }
 
+function idleCollectionPlayer(secondsSinceLastCollection: number, shop: ShopState) {
+  return {
+    secondsSinceLastCollection,
+    shop,
+    achievementCount: 0,
+    realTimeAvailable: 0
+  };
+}
+
 describe("getIdleSecondsRate", () => {
   it("starts with only the first rate step unlocked", () => {
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 0, shop: shopWithPatience(0) })).toBe(1);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 60, shop: shopWithPatience(0) })).toBe(1);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 365 * 24 * 60 * 60, shop: shopWithPatience(0) })).toBe(1);
+    expect(getIdleSecondsRate(idleCollectionPlayer(0, shopWithPatience(0)))).toBe(1);
+    expect(getIdleSecondsRate(idleCollectionPlayer(60, shopWithPatience(0)))).toBe(1);
+    expect(getIdleSecondsRate(idleCollectionPlayer(365 * 24 * 60 * 60, shopWithPatience(0)))).toBe(1);
   });
 
   it("unlocks one additional step per patience level", () => {
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 60, shop: shopWithPatience(1) })).toBe(2);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 10 * 60, shop: shopWithPatience(2) })).toBe(3);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 60 * 60, shop: shopWithPatience(3) })).toBe(5);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 6 * 60 * 60, shop: shopWithPatience(4) })).toBe(8);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 24 * 60 * 60, shop: shopWithPatience(5) })).toBe(12);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 7 * 24 * 60 * 60, shop: shopWithPatience(6) })).toBe(15);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 4 * 7 * 24 * 60 * 60, shop: shopWithPatience(7) })).toBe(20);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 365 * 24 * 60 * 60, shop: shopWithPatience(8) })).toBe(30);
+    expect(getIdleSecondsRate(idleCollectionPlayer(60, shopWithPatience(1)))).toBe(2);
+    expect(getIdleSecondsRate(idleCollectionPlayer(10 * 60, shopWithPatience(2)))).toBe(3);
+    expect(getIdleSecondsRate(idleCollectionPlayer(60 * 60, shopWithPatience(3)))).toBe(5);
+    expect(getIdleSecondsRate(idleCollectionPlayer(6 * 60 * 60, shopWithPatience(4)))).toBe(8);
+    expect(getIdleSecondsRate(idleCollectionPlayer(24 * 60 * 60, shopWithPatience(5)))).toBe(12);
+    expect(getIdleSecondsRate(idleCollectionPlayer(7 * 24 * 60 * 60, shopWithPatience(6)))).toBe(15);
+    expect(getIdleSecondsRate(idleCollectionPlayer(4 * 7 * 24 * 60 * 60, shopWithPatience(7)))).toBe(20);
+    expect(getIdleSecondsRate(idleCollectionPlayer(365 * 24 * 60 * 60, shopWithPatience(8)))).toBe(30);
   });
 
   it("interpolates linearly within unlocked steps and caps at unlocked max", () => {
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 30, shop: shopWithPatience(1) })).toBeCloseTo(1.5, 6);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 330, shop: shopWithPatience(2) })).toBeCloseTo(2.5, 6);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 2 * 365 * 24 * 60 * 60, shop: shopWithPatience(8) })).toBe(30);
-    expect(getIdleSecondsRate({ secondsSinceLastCollection: 2 * 365 * 24 * 60 * 60, shop: shopWithPatience(3) })).toBe(5);
+    expect(getIdleSecondsRate(idleCollectionPlayer(30, shopWithPatience(1)))).toBeCloseTo(1.5, 6);
+    expect(getIdleSecondsRate(idleCollectionPlayer(330, shopWithPatience(2)))).toBeCloseTo(2.5, 6);
+    expect(getIdleSecondsRate(idleCollectionPlayer(2 * 365 * 24 * 60 * 60, shopWithPatience(8)))).toBe(30);
+    expect(getIdleSecondsRate(idleCollectionPlayer(2 * 365 * 24 * 60 * 60, shopWithPatience(3)))).toBe(5);
   });
 });
 

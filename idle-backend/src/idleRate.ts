@@ -1,4 +1,4 @@
-export type { IdleRatePlayer } from "@maxidle/shared/idleRate";
+export type { IdleCollectionPlayer } from "@maxidle/shared/idleRate";
 export {
   calculateBoostedIdleSecondsGain,
   calculateIdleSecondsGain,

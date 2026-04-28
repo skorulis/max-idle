@@ -29,11 +29,6 @@ const IDLE_RATE_STEPS: IdleRateStep[] = [
 ];
 const RESTRAINT_MIN_REALTIME_SECONDS = 60 * 60;
 
-export type IdleRatePlayer = {
-  secondsSinceLastCollection: number;
-  shop?: ShopState;
-};
-
 export type IdleCollectionPlayer = {
   secondsSinceLastCollection: number;
   shop: ShopState;
@@ -56,9 +51,9 @@ function getAccessibleIdleRateSteps(shop: ShopState): IdleRateStep[] {
   return IDLE_RATE_STEPS.slice(0, unlockedSteps);
 }
 
-export function getIdleSecondsRate(player: IdleRatePlayer): number {
+export function getIdleSecondsRate(player: IdleCollectionPlayer): number {
   const elapsedSeconds = safeNaturalNumber(player.secondsSinceLastCollection);
-  const accessibleSteps = getAccessibleIdleRateSteps(player.shop ?? getDefaultShopState());
+  const accessibleSteps = getAccessibleIdleRateSteps(player.shop);
   if (elapsedSeconds <= 0) {
     return accessibleSteps[0].rate;
   }
@@ -139,7 +134,7 @@ export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): numbe
     safeNumber(player.achievementCount, 0)
   );
   const rateBeforeIdleHoarder =
-    getIdleSecondsRate({ secondsSinceLastCollection: player.secondsSinceLastCollection, shop: player.shop }) *
+    getIdleSecondsRate(player) *
     getSecondsMultiplier(player.shop) *
     getRestraintBonusMultiplier(player.shop) *
     worthwhileAchievementsMultiplier;
