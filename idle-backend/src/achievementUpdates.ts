@@ -5,36 +5,88 @@ type Queryable = Pick<Pool, "query">;
 
 const KNOWN_ACHIEVEMENT_IDS: ReadonlySet<string> = new Set(ACHIEVEMENTS.map((achievement) => achievement.id));
 
-export function parseCompletedAchievementIds(value: unknown): string[] {
+export type CompletedAchievementEntry = {
+  id: AchievementId;
+  grantedAt: string;
+};
+
+type LegacyCompletedAchievementEntry = {
+  id?: unknown;
+  grantedAt?: unknown;
+};
+
+function isKnownAchievementId(value: string): value is AchievementId {
+  return KNOWN_ACHIEVEMENT_IDS.has(value);
+}
+
+function parseCompletedAchievementEntries(value: unknown): CompletedAchievementEntry[] {
+  const parsed: LegacyCompletedAchievementEntry[] = [];
   if (Array.isArray(value)) {
-    return value.filter((item): item is string => typeof item === "string");
-  }
-  if (typeof value === "string") {
+    parsed.push(...value);
+  } else if (typeof value === "string") {
     try {
-      const parsed = JSON.parse(value) as unknown;
-      if (Array.isArray(parsed)) {
-        return parsed.filter((item): item is string => typeof item === "string");
+      const json = JSON.parse(value) as unknown;
+      if (Array.isArray(json)) {
+        parsed.push(...json);
       }
     } catch {
       return [];
     }
+  } else {
+    return [];
   }
-  return [];
+
+  const entries: CompletedAchievementEntry[] = [];
+  const seenIds = new Set<AchievementId>();
+  for (const item of parsed) {
+    if (typeof item === "string") {
+      if (isKnownAchievementId(item) && !seenIds.has(item)) {
+        seenIds.add(item);
+        entries.push({ id: item, grantedAt: "" });
+      }
+      continue;
+    }
+    if (!item || typeof item !== "object") {
+      continue;
+    }
+    const id = item.id;
+    if (typeof id !== "string" || !isKnownAchievementId(id) || seenIds.has(id)) {
+      continue;
+    }
+    seenIds.add(id);
+    entries.push({
+      id,
+      grantedAt: typeof item.grantedAt === "string" ? item.grantedAt : ""
+    });
+  }
+  return entries;
 }
 
-export function normalizeCompletedAchievementIds(currentValue: unknown, idsToAdd: string[] = []): string[] {
-  const ordered: string[] = [];
-  const seen = new Set<string>();
-  const addIfKnown = (id: string) => {
-    if (!KNOWN_ACHIEVEMENT_IDS.has(id) || seen.has(id)) {
+export function parseCompletedAchievementIds(value: unknown): string[] {
+  return parseCompletedAchievementEntries(value).map((entry) => entry.id);
+}
+
+export function normalizeCompletedAchievements(
+  currentValue: unknown,
+  idsToAdd: string[] = [],
+  grantedAt: Date = new Date()
+): CompletedAchievementEntry[] {
+  const grantedAtIso = grantedAt.toISOString();
+  const ordered: CompletedAchievementEntry[] = [];
+  const seen = new Set<AchievementId>();
+  const addIfKnown = (id: string, existingGrantedAt = "") => {
+    if (!isKnownAchievementId(id) || seen.has(id)) {
       return;
     }
     seen.add(id);
-    ordered.push(id);
+    ordered.push({
+      id,
+      grantedAt: existingGrantedAt || grantedAtIso
+    });
   };
 
-  for (const existingId of parseCompletedAchievementIds(currentValue)) {
-    addIfKnown(existingId);
+  for (const existing of parseCompletedAchievementEntries(currentValue)) {
+    addIfKnown(existing.id, existing.grantedAt);
   }
   for (const idToAdd of idsToAdd) {
     addIfKnown(idToAdd);
@@ -43,7 +95,11 @@ export function normalizeCompletedAchievementIds(currentValue: unknown, idsToAdd
   return ordered;
 }
 
-export async function updateCompletedAchievements(db: Queryable, userId: string, completedAchievementIds: string[]): Promise<void> {
+export async function updateCompletedAchievements(
+  db: Queryable,
+  userId: string,
+  completedAchievements: CompletedAchievementEntry[]
+): Promise<void> {
   await db.query(
     `
     UPDATE player_states
@@ -53,7 +109,7 @@ export async function updateCompletedAchievements(db: Queryable, userId: string,
       has_unseen_achievements = TRUE
     WHERE user_id = $1
     `,
-    [userId, JSON.stringify(completedAchievementIds), completedAchievementIds.length]
+    [userId, JSON.stringify(completedAchievements), completedAchievements.length]
   );
 }
 
@@ -67,6 +123,6 @@ export async function grantAchievement(db: Queryable, userId: string, achievemen
     throw new Error("PLAYER_STATE_NOT_FOUND");
   }
 
-  const completedAchievementIds = normalizeCompletedAchievementIds(playerStateRow.completed_achievements, [achievementId]);
-  await updateCompletedAchievements(db, userId, completedAchievementIds);
+  const completedAchievements = normalizeCompletedAchievements(playerStateRow.completed_achievements, [achievementId]);
+  await updateCompletedAchievements(db, userId, completedAchievements);
 }

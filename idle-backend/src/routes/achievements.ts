@@ -14,6 +14,34 @@ type RegisterAchievementsRoutesOptions = {
   parseCompletedAchievementIds: (value: unknown) => string[];
 };
 
+function parseGrantedAtByAchievementId(value: unknown): Map<string, string> {
+  const entries: unknown[] =
+    typeof value === "string"
+      ? (() => {
+          try {
+            const parsed = JSON.parse(value) as unknown;
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [];
+          }
+        })()
+      : Array.isArray(value)
+        ? value
+        : [];
+  const grantedAtById = new Map<string, string>();
+  for (const entry of entries) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+      continue;
+    }
+    const item = entry as { id?: unknown; grantedAt?: unknown };
+    if (typeof item.id !== "string" || typeof item.grantedAt !== "string" || item.grantedAt.length === 0) {
+      continue;
+    }
+    grantedAtById.set(item.id, item.grantedAt);
+  }
+  return grantedAtById;
+}
+
 export function registerAchievementsRoutes({
   app,
   pool,
@@ -58,6 +86,7 @@ export function registerAchievementsRoutes({
       }
 
       const completedAchievementIds = new Set(parseCompletedAchievementIds(playerStateRow.completed_achievements));
+      const grantedAtById = parseGrantedAtByAchievementId(playerStateRow.completed_achievements);
       const completedCount = toNumber(playerStateRow.achievement_count);
       const earningsBonusMultiplier = getWorthwhileAchievementsMultiplier(playerStateRow.shop, completedCount);
       res.json({
@@ -66,7 +95,8 @@ export function registerAchievementsRoutes({
         earningsBonusMultiplier,
         achievements: ACHIEVEMENTS.map((achievement) => ({
           ...achievement,
-          completed: completedAchievementIds.has(achievement.id)
+          completed: completedAchievementIds.has(achievement.id),
+          grantedAt: grantedAtById.get(achievement.id) ?? null
         }))
       });
     } catch (error) {

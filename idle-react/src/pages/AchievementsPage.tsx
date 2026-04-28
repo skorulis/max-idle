@@ -11,7 +11,23 @@ type AchievementsPageProps = {
 
 export function AchievementsPage({ achievements, achievementsLoading, hasError }: AchievementsPageProps) {
   const inProgressAchievements = achievements?.achievements.filter((achievement) => !achievement.completed) ?? [];
-  const collectedAchievements = achievements?.achievements.filter((achievement) => achievement.completed) ?? [];
+  const collectedAchievements = (achievements?.achievements.filter((achievement) => achievement.completed) ?? []).sort(
+    (left, right) => {
+      const leftGrantedAtMs = left.grantedAt ? new Date(left.grantedAt).getTime() : Number.NEGATIVE_INFINITY;
+      const rightGrantedAtMs = right.grantedAt ? new Date(right.grantedAt).getTime() : Number.NEGATIVE_INFINITY;
+      return rightGrantedAtMs - leftGrantedAtMs;
+    }
+  );
+  const formatGrantedDate = (grantedAt: string | null): string | null => {
+    if (!grantedAt) {
+      return null;
+    }
+    const parsed = new Date(grantedAt);
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+    return parsed.toLocaleDateString();
+  };
 
   return (
     <>
@@ -43,18 +59,24 @@ export function AchievementsPage({ achievements, achievementsLoading, hasError }
           </div>
           <h3>Collected</h3>
           <div className="achievements-list">
-            {collectedAchievements.map((achievement) => (
+            {collectedAchievements.map((achievement) => {
+              const grantedDate = formatGrantedDate(achievement.grantedAt);
+              return (
               <div key={achievement.id} className="achievement-row achievement-row-completed">
                 <GameIcon icon={getLucidIcon(achievement.icon)} className="achievement-icon" />
                 <div className="achievement-copy">
                   <p className="achievement-name">{achievement.name}</p>
                   <p className="achievement-description">{achievement.description}</p>
+                  {grantedDate ? (
+                    <p className="achievement-description">Granted {grantedDate}</p>
+                  ) : null}
                 </div>
                 <span className="achievement-status" aria-label="Complete">
                   <GameIcon icon={Check} />
                 </span>
               </div>
-            ))}
+            );
+            })}
           </div>
         </>
       ) : null}

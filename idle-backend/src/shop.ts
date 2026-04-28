@@ -20,7 +20,7 @@ import {
 import type { ShopUpgradeDefinition } from "@maxidle/shared/shopUpgrades";
 import { safeNaturalNumber } from "@maxidle/shared/safeNumber";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
-import { normalizeCompletedAchievementIds } from "./achievementUpdates.js";
+import { normalizeCompletedAchievements } from "./achievementUpdates.js";
 import { calculateElapsedSeconds } from "./time.js";
 import { getEffectiveIdleSecondsRate } from "./idleRate.js";
 import type { AuthClaims } from "./types.js";
@@ -193,12 +193,12 @@ export function registerShopRoutes({
         ? new Date(row.last_collected_at.getTime() - REALTIME_WAIT_EXTENSION_SECONDS * 1000)
         : row.last_collected_at;
       const nextUpgradesPurchased = toNumber(row.upgrades_purchased) + quantity;
-      const nextCompletedAchievementIds =
+      const nextCompletedAchievements =
         nextUpgradesPurchased >= 4
-          ? normalizeCompletedAchievementIds(row.completed_achievements, [ACHIEVEMENT_IDS.BEGINNER_SHOPPER])
-          : normalizeCompletedAchievementIds(row.completed_achievements);
-      const hasNewAchievement = nextCompletedAchievementIds.length > toNumber(row.achievement_count);
-      const nextAchievementCount = nextCompletedAchievementIds.length;
+          ? normalizeCompletedAchievements(row.completed_achievements, [ACHIEVEMENT_IDS.BEGINNER_SHOPPER], now)
+          : normalizeCompletedAchievements(row.completed_achievements);
+      const hasNewAchievement = nextCompletedAchievements.length > toNumber(row.achievement_count);
+      const nextAchievementCount = nextCompletedAchievements.length;
       const nextAchievementBonusMultiplier = getWorthwhileAchievementsMultiplier(nextShopState, nextAchievementCount);
       const nextIdleTimeAvailable =
         boundedUpgrade.currencyType === SHOP_CURRENCY_TYPES.IDLE ? idleTimeAvailable - totalCost : idleTimeAvailable;
@@ -269,7 +269,7 @@ export function registerShopRoutes({
           now,
           JSON.stringify(nextShopState),
           nextUpgradesPurchased,
-          JSON.stringify(nextCompletedAchievementIds),
+          JSON.stringify(nextCompletedAchievements),
           nextAchievementCount,
           hasNewAchievement,
           nextRealTimeAvailable

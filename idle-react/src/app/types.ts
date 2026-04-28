@@ -81,6 +81,7 @@ export type Achievement = {
   icon: string;
   clientDriven: boolean;
   completed: boolean;
+  grantedAt: string | null;
 };
 
 export type AchievementsResponse = {

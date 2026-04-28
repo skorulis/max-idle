@@ -30,10 +30,21 @@ describe("auth + player lifecycle", () => {
   }
 
   function parseAchievementIds(value: unknown): string[] {
-    if (typeof value === "string") {
-      return JSON.parse(value) as string[];
+    const parsedValue = typeof value === "string" ? (JSON.parse(value) as unknown) : value;
+    if (!Array.isArray(parsedValue)) {
+      return [];
     }
-    return Array.isArray(value) ? (value as string[]) : [];
+    const ids: string[] = [];
+    for (const entry of parsedValue) {
+      if (typeof entry === "string") {
+        ids.push(entry);
+        continue;
+      }
+      if (entry && typeof entry === "object" && typeof entry.id === "string") {
+        ids.push(entry.id);
+      }
+    }
+    return ids;
   }
 
   async function insertLeaderboardPlayer(totalSecondsCollected: number, currentSeconds = 0): Promise<string> {
@@ -1465,7 +1476,7 @@ describe("auth + player lifecycle", () => {
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
-    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.1);
+    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.01);
 
     try {
       await pool.query(

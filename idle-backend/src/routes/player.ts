@@ -7,7 +7,7 @@ import { SHOP_UPGRADE_IDS } from "@maxidle/shared/shopUpgrades";
 import { boostedUncollectedIdleSeconds } from "../boostedUncollectedIdle.js";
 import { calculateElapsedSeconds } from "../time.js";
 import { getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint, shouldPreserveIdleTimerOnCollect } from "../idleRate.js";
-import { normalizeCompletedAchievementIds, updateCompletedAchievements } from "../achievementUpdates.js";
+import { normalizeCompletedAchievements, parseCompletedAchievementIds, updateCompletedAchievements } from "../achievementUpdates.js";
 import type { AuthClaims } from "../types.js";
 
 const REAL_TIME_COLLECT_65_MINUTES_SECONDS = 65 * 60;
@@ -291,44 +291,55 @@ export function registerPlayerRoutes({
       );
       const collectionCount = toNumber(collectionCountResult.rows[0]?.collection_count ?? 0);
 
-      const completedAchievementIds = normalizeCompletedAchievementIds(lockedRow.completed_achievements);
+      const completedAchievements = normalizeCompletedAchievements(lockedRow.completed_achievements);
+      const completedAchievementIds = new Set(parseCompletedAchievementIds(completedAchievements));
+      const idsToGrant: string[] = [];
       if (
         toNumber(row.real_time_total) >= REAL_TIME_COLLECT_65_MINUTES_SECONDS &&
-        !completedAchievementIds.includes(ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES)
+        !completedAchievementIds.has(ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES)
       ) {
-        completedAchievementIds.push(ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES);
+        completedAchievementIds.add(ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES);
+        idsToGrant.push(ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES);
       }
       if (
         toNumber(row.idle_time_total) >= IDLE_TIME_COLLECT_3H_7M_SECONDS &&
-        !completedAchievementIds.includes(ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR_3H_7M)
+        !completedAchievementIds.has(ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR_3H_7M)
       ) {
-        completedAchievementIds.push(ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR_3H_7M);
+        completedAchievementIds.add(ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR_3H_7M);
+        idsToGrant.push(ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR_3H_7M);
       }
       if (
         realSecondsCollected >= REAL_TIME_STREAK_59_MINUTES_SECONDS &&
-        !completedAchievementIds.includes(ACHIEVEMENT_IDS.REAL_TIME_STREAK_59_MINUTES)
+        !completedAchievementIds.has(ACHIEVEMENT_IDS.REAL_TIME_STREAK_59_MINUTES)
       ) {
-        completedAchievementIds.push(ACHIEVEMENT_IDS.REAL_TIME_STREAK_59_MINUTES);
+        completedAchievementIds.add(ACHIEVEMENT_IDS.REAL_TIME_STREAK_59_MINUTES);
+        idsToGrant.push(ACHIEVEMENT_IDS.REAL_TIME_STREAK_59_MINUTES);
       }
       if (
         realSecondsCollected >= REAL_TIME_STREAK_2D_14H_SECONDS &&
-        !completedAchievementIds.includes(ACHIEVEMENT_IDS.REAL_TIME_STREAK_2D_14H)
+        !completedAchievementIds.has(ACHIEVEMENT_IDS.REAL_TIME_STREAK_2D_14H)
       ) {
-        completedAchievementIds.push(ACHIEVEMENT_IDS.REAL_TIME_STREAK_2D_14H);
+        completedAchievementIds.add(ACHIEVEMENT_IDS.REAL_TIME_STREAK_2D_14H);
+        idsToGrant.push(ACHIEVEMENT_IDS.REAL_TIME_STREAK_2D_14H);
       }
       if (
         collectionCount >= 15 &&
-        !completedAchievementIds.includes(ACHIEVEMENT_IDS.COLLECTION_COUNT_15)
+        !completedAchievementIds.has(ACHIEVEMENT_IDS.COLLECTION_COUNT_15)
       ) {
-        completedAchievementIds.push(ACHIEVEMENT_IDS.COLLECTION_COUNT_15);
+        completedAchievementIds.add(ACHIEVEMENT_IDS.COLLECTION_COUNT_15);
+        idsToGrant.push(ACHIEVEMENT_IDS.COLLECTION_COUNT_15);
       }
-      if (completedAchievementIds.length !== toNumber(lockedRow.achievement_count)) {
-        await updateCompletedAchievements(client, userId, completedAchievementIds);
+      const nextCompletedAchievements =
+        idsToGrant.length > 0
+          ? normalizeCompletedAchievements(completedAchievements, idsToGrant, collectedAt)
+          : completedAchievements;
+      if (nextCompletedAchievements.length !== toNumber(lockedRow.achievement_count)) {
+        await updateCompletedAchievements(client, userId, nextCompletedAchievements);
       }
       const hasUnseenAchievements =
-        lockedRow.has_unseen_achievements || completedAchievementIds.length !== toNumber(lockedRow.achievement_count);
+        lockedRow.has_unseen_achievements || nextCompletedAchievements.length !== toNumber(lockedRow.achievement_count);
 
-      const achievementCountAfter = completedAchievementIds.length;
+      const achievementCountAfter = nextCompletedAchievements.length;
       const achievementBonusMultiplier = getWorthwhileAchievementsMultiplier(row.shop, achievementCountAfter);
       const elapsedSinceLastCollectionAfterCollect = calculateElapsedSeconds(nextLastCollectedAt, collectedAt);
       const idleSecondsRate = getEffectiveIdleSecondsRate({
