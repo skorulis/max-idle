@@ -29,7 +29,7 @@ export function LeaderboardPage({
   const shareDuration = currentPlayer ? formatSeconds(currentPlayer.totalIdleSeconds) : null;
   const shareText =
     currentPlayer && shareDuration
-      ? `I'm rank #${currentPlayer.rank} in the worlds most pointless game after waiting for ${shareDuration}`
+      ? `I'm rank #${currentPlayer.rank} in the worlds most pointless game after earning ${shareDuration} of idle time`
       : null;
   const shareUrl = "https://max-idle.com/leaderboard";
 
