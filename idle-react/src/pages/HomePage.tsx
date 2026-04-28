@@ -2,6 +2,7 @@ import { useState } from "react";
 import { formatSeconds } from "../formatSeconds";
 import { Atom, CircleHelp, Clock3, Gem, Gift } from "lucide-react";
 import type { SyncedPlayerState } from "../app/types";
+import { FlipDurationDisplay } from "../components/FlipDurationDisplay";
 import { CurrentRateInfoOverlay } from "./CurrentRateInfoOverlay";
 import { TournamentPanel } from "./TournamentPanel";
 
@@ -90,7 +91,7 @@ export function HomePage({
   return (
     <>
       <p className="label">Current idle time</p>
-      <p className="counter">{formatSeconds(uncollectedIdleSeconds)}</p>
+      <FlipDurationDisplay totalSeconds={uncollectedIdleSeconds} />
       <p className="subtle">Realtime: {formatSeconds(realtimeElapsedSeconds)}</p>
       <div className="current-rate-row">
         <p className="subtle">Current rate: {effectiveIdleSecondsRate.toFixed(2)}x</p>

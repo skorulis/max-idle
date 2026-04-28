@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatSeconds } from "./formatSeconds";
+import { breakDownSeconds, formatSeconds } from "./formatSeconds";
 
 describe("formatSeconds", () => {
   it("formats zero and negative values as 0s", () => {
@@ -41,5 +41,36 @@ describe("formatSeconds", () => {
     expect(formatSeconds(59.6, undefined, "ceil")).toBe("1m");
     expect(formatSeconds(59.6, undefined, "round")).toBe("1m");
     expect(formatSeconds(59.6, undefined, "trunc")).toBe("59s");
+  });
+});
+
+describe("breakDownSeconds", () => {
+  it("decomposes zero", () => {
+    expect(breakDownSeconds(0)).toEqual({
+      years: 0,
+      weeks: 0,
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0
+    });
+  });
+
+  it("matches the units implied by formatSeconds for a mixed duration", () => {
+    const oneYearOneWeekOneDayOneHourOneMinuteOneSecond =
+      365 * 24 * 60 * 60 + 7 * 24 * 60 * 60 + 24 * 60 * 60 + 3600 + 60 + 1;
+    expect(breakDownSeconds(oneYearOneWeekOneDayOneHourOneMinuteOneSecond)).toEqual({
+      years: 1,
+      weeks: 1,
+      days: 1,
+      hours: 1,
+      minutes: 1,
+      seconds: 1
+    });
+  });
+
+  it("uses floor for fractional input like formatSeconds", () => {
+    expect(breakDownSeconds(59.9).seconds).toBe(59);
+    expect(breakDownSeconds(59.9, "ceil").minutes).toBe(1);
   });
 });
