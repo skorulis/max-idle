@@ -1,8 +1,9 @@
 import express from "express";
 import type { Pool } from "pg";
 import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
-import { getSecondsMultiplier, getWorthwhileAchievementsMultiplier, withCollectGemBoostLevel } from "@maxidle/shared/shop";
+import { getSecondsMultiplier, getWorthwhileAchievementsMultiplier, withShopUpgradeLevel } from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
+import { SHOP_UPGRADE_IDS } from "@maxidle/shared/shopUpgrades";
 import { boostedUncollectedIdleSeconds } from "../boostedUncollectedIdle.js";
 import { calculateElapsedSeconds } from "../time.js";
 import { getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint, shouldPreserveIdleTimerOnCollect } from "../idleRate.js";
@@ -216,7 +217,7 @@ export function registerPlayerRoutes({
       const preserveTimer = shouldPreserveIdleTimerOnCollect(lockedRow.shop);
       const nextCurrentSeconds = preserveTimer ? collectedSeconds : 0;
       const nextLastCollectedAt = preserveTimer ? lockedRow.last_collected_at : collectedAt;
-      const nextShop = withCollectGemBoostLevel(lockedRow.shop, 0);
+      const nextShop = withShopUpgradeLevel(lockedRow.shop, SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST, 0);
       const updateResult = await client.query<{
         idle_time_total: number | string;
         idle_time_available: number | string;

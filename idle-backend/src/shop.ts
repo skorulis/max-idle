@@ -7,13 +7,8 @@ import {
   hasRefundableShopPurchases,
   getSecondsMultiplier,
   getWorthwhileAchievementsMultiplier,
-  withCollectGemBoostLevel,
-  withIdleHoarderLevel,
-  withLuckLevel,
-  withPatienceLevel,
-  withRestraintLevel,
+  withShopUpgradeLevel,
   withSecondsMultiplier,
-  withWorthwhileAchievementsLevel
 } from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
 import {
@@ -45,10 +40,9 @@ export {
   getSecondsMultiplier,
   levelToMultiplier,
   multiplierToLevel,
-  withCollectGemBoostLevel,
+  withShopUpgradeLevel,
   withLuck,
   withRestraint,
-  withRestraintLevel,
   withSecondsMultiplier
 } from "@maxidle/shared/shop";
 
@@ -210,20 +204,20 @@ export function registerShopRoutes({
       const nextShopState = isExtraRealtimeWait
         ? row.shop
         : isCollectGemTimeBoost
-          ? withCollectGemBoostLevel(row.shop, collectGemLevel + quantity)
+          ? withShopUpgradeLevel(row.shop, SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST, collectGemLevel + quantity)
           : isPurchaseRefund
             ? getDefaultShopState()
             : upgradeType === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER
             ? withSecondsMultiplier(row.shop, nextLevel)
             : upgradeType === SHOP_UPGRADE_IDS.RESTRAINT
-              ? withRestraintLevel(row.shop, restraintLevel + quantity)
+              ? withShopUpgradeLevel(row.shop, SHOP_UPGRADE_IDS.RESTRAINT, restraintLevel + quantity)
               : isIdleHoarder
-                ? withIdleHoarderLevel(row.shop, idleHoarderLevel + quantity)
+                ? withShopUpgradeLevel(row.shop, SHOP_UPGRADE_IDS.IDLE_HOARDER, idleHoarderLevel + quantity)
                 : isPatience
-                  ? withPatienceLevel(row.shop, patienceLevel + quantity)
+                  ? withShopUpgradeLevel(row.shop, SHOP_UPGRADE_IDS.PATIENCE, patienceLevel + quantity)
                 : isWorthwhileAchievements
-                  ? withWorthwhileAchievementsLevel(row.shop, worthwhileAchievementsLevel + quantity)
-                  : withLuckLevel(row.shop, luckLevel + quantity);
+                  ? withShopUpgradeLevel(row.shop, SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS, worthwhileAchievementsLevel + quantity)
+                  : withShopUpgradeLevel(row.shop, SHOP_UPGRADE_IDS.LUCK, luckLevel + quantity);
       const nextLastCollectedAt = isExtraRealtimeWait
         ? new Date(row.last_collected_at.getTime() - REALTIME_WAIT_EXTENSION_SECONDS * 1000)
         : row.last_collected_at;

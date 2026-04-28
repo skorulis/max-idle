@@ -81,6 +81,7 @@ const HUMOROUS_MESSAGES = [
   "Your goal is simple.  Be idle for longer than anyone else.",
   "To catch up, try doing nothing faster.",
   "If you keep going, you’ll waste a full day in only 24 hours.",
+  "If you're wondering what the point of this is, you're not alone.",
   "Who has time? But then if we do not ever take time, how can we ever have time? -Merovingian",
 ];
 

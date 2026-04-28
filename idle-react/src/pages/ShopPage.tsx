@@ -33,7 +33,7 @@ import type { ShopCurrencyType } from "../shopUpgrades";
 import {
   getWorthwhileAchievementsMultiplier,
   hasRefundableShopPurchases,
-  withWorthwhileAchievementsLevel
+  withShopUpgradeLevel
 } from "../shop";
 import GameIcon from "../GameIcon";
 
@@ -112,19 +112,6 @@ function formatUpgradeValue(upgrade: ShopUpgradeDefinition, value: number): stri
   return value.toString();
 }
 
-function getUpgradeBaseValue(upgrade: ShopUpgradeDefinition): number | null {
-  if (upgrade.id === SHOP_UPGRADE_IDS.LUCK) {
-    return 0;
-  }
-  if (upgrade.id === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST) {
-    return 0;
-  }
-  if (upgrade.id === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER || upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT) {
-    return 1;
-  }
-  return null;
-}
-
 function formatValueDescription(upgrade: ShopUpgradeDefinition, value: number): string {
   const valueDescription = (upgrade as ShopUpgradeDefinition & { valueDescription?: string | null }).valueDescription;
   if (!valueDescription) {
@@ -195,6 +182,25 @@ export function ShopPage({
   const maxCollectGemBoostLevel = getCollectGemTimeBoostMaxLevel();
   const hasRefundablePurchases = hasRefundableShopPurchases(playerState.shop);
 
+  function getValueDesciptionValue(upgrade: ShopUpgradeDefinition, playerState: SyncedPlayerState, level: number): number | null {
+    const valueDescription = upgrade.valueDescription;
+    if (typeof valueDescription !== "string" || valueDescription.length === 0) {
+      return null;
+    }
+    if (level <= 0 || level > upgrade.maxLevel()) {
+      return null;
+    }
+    if (upgrade.id === SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS) {
+      const achievementCount = safeNaturalNumber(playerState.achievementCount);
+      return getWorthwhileAchievementsMultiplier(
+        withShopUpgradeLevel(playerState.shop, SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS, level),
+        achievementCount
+      );
+    }
+    
+    return upgrade.levels[level - 1]?.value ?? null
+  }
+
   function getUpgradeRowState(upgrade: ShopUpgradeDefinition): {
     description: string;
     currentValueDescription: string | null;
@@ -205,33 +211,15 @@ export function ShopPage({
     onPurchase: () => Promise<void>;
   } {
     const purchasedLevel = getUpgradeCurrentLevel(upgrade) ?? 0;
-    const valueDescription = (upgrade as ShopUpgradeDefinition & { valueDescription?: string | null }).valueDescription;
-    const hasValueDescription = typeof valueDescription === "string" && valueDescription.length > 0;
-    const currentLevelValue =
-      purchasedLevel > 0 ? (upgrade.levels[purchasedLevel - 1]?.value ?? null) : getUpgradeBaseValue(upgrade);
-    const nextLevelValue = upgrade.levels[purchasedLevel]?.value ?? null;
-    let currentValueForDescription = currentLevelValue;
-    let nextValueForDescription = nextLevelValue;
-    if (upgrade.id === SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS) {
-      const achievementCount = safeNaturalNumber(playerState.achievementCount);
-      currentValueForDescription = getWorthwhileAchievementsMultiplier(
-        withWorthwhileAchievementsLevel(playerState.shop, purchasedLevel),
-        achievementCount
-      );
-      nextValueForDescription =
-        nextLevelValue === null
-          ? null
-          : getWorthwhileAchievementsMultiplier(
-              withWorthwhileAchievementsLevel(playerState.shop, purchasedLevel + 1),
-              achievementCount
-            );
-    }
+    const currentValueForDescription = getValueDesciptionValue(upgrade, playerState, purchasedLevel);
+    const nextValueForDescription = getValueDesciptionValue(upgrade, playerState, purchasedLevel + 1);
+    
     const currentValueDescription =
-      hasValueDescription && currentValueForDescription !== null
+      currentValueForDescription !== null
         ? formatValueDescription(upgrade, currentValueForDescription)
         : null;
     const nextValueDescription =
-      hasValueDescription && nextValueForDescription !== null
+      nextValueForDescription !== null
         ? formatValueDescription(upgrade, nextValueForDescription)
         : null;
 

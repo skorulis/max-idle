@@ -51,6 +51,6 @@ describe("shop pricing", () => {
 
   it("uses escalating patience upgrade costs", () => {
     expect(PATIENCE_SHOP_UPGRADE.costAtLevel(0)).toBe(60);
-    expect(PATIENCE_SHOP_UPGRADE.costAtLevel(1)).toBe(3 * 60);
+    expect(PATIENCE_SHOP_UPGRADE.costAtLevel(1)).toBe(5 * 60);
   });
 });

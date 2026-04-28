@@ -1,8 +1,7 @@
 export type { ShopState } from "@maxidle/shared/shop";
 export {
   hasRefundableShopPurchases,
-  withIdleHoarderLevel,
-  withCollectGemBoostLevel,
+  withShopUpgradeLevel,
   getLuckEnabled,
   getRestraintBonusMultiplier,
   getSecondsMultiplier,
@@ -10,6 +9,5 @@ export {
   getShopPurchaseRefundTotals,
   getDefaultShopState,
   getWorthwhileAchievementsMultiplier,
-  withWorthwhileAchievementsLevel,
   multiplierToLevel
 } from "@maxidle/shared/shop";
