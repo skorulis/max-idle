@@ -16,7 +16,8 @@ import {
   IDLE_HOARDER_SHOP_UPGRADE,
   LUCK_SHOP_UPGRADE,
   RESTRAINT_SHOP_UPGRADE,
-  WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE
+  WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
+  type ShopUpgradeId
 } from "../shopUpgrades";
 import { AccountPage } from "../pages/AccountPage";
 import { AchievementsPage } from "../pages/AchievementsPage";
@@ -842,17 +843,7 @@ export function AppShell() {
     }
   };
 
-  const onPurchaseUpgrade = async (
-    upgradeId:
-      | "seconds_multiplier"
-      | "restraint"
-      | "luck"
-      | "idle_hoarder"
-      | "worthwhile_achievements"
-      | "extra_realtime_wait"
-      | "collect_gem_time_boost"
-      | "purchase_refund"
-  ) => {
+  const onPurchaseUpgrade = async (upgradeId: ShopUpgradeId) => {
     if (!playerState) {
       return;
     }
@@ -1337,22 +1328,15 @@ export function AppShell() {
                 playerState={playerState}
                 shopPendingQuantity={shopPendingQuantity}
                 secondsMultiplierCost={secondsMultiplierCost}
-                onPurchaseUpgrade={() => onPurchaseUpgrade("seconds_multiplier")}
+                onPurchase={onPurchaseUpgrade}
                 restraintLevel={restraintLevel}
                 restraintMaxLevel={restraintMaxLevel}
-                onPurchaseRestraint={() => onPurchaseUpgrade("restraint")}
                 luckLevel={luckLevel}
                 luckMaxLevel={luckMaxLevel}
-                onPurchaseLuck={() => onPurchaseUpgrade("luck")}
                 idleHoarderLevel={idleHoarderLevel}
                 idleHoarderMaxLevel={idleHoarderMaxLevel}
-                onPurchaseIdleHoarder={() => onPurchaseUpgrade("idle_hoarder")}
                 worthwhileAchievementsLevel={worthwhileAchievementsLevel}
                 worthwhileAchievementsMaxLevel={worthwhileAchievementsMaxLevel}
-                onPurchaseWorthwhileAchievements={() => onPurchaseUpgrade("worthwhile_achievements")}
-                onPurchaseExtraRealtimeWait={() => onPurchaseUpgrade("extra_realtime_wait")}
-                onPurchaseCollectGemTimeBoost={() => onPurchaseUpgrade("collect_gem_time_boost")}
-                onPurchaseRefund={() => onPurchaseUpgrade("purchase_refund")}
                 showDebugAddGemsButton={import.meta.env.DEV}
                 onDebugAddGems={onDebugAddGems}
                 collectGemBoostLevel={playerState ? getCollectGemBoostLevel(playerState.shop) : 0}

@@ -95,7 +95,7 @@ export function CurrentRateInfoOverlay({
         </p>
         {shouldShowFactor(factors.secondsMultiplier) ? (
           <p className="rate-factor-row">
-            <span>Seconds multiplier upgrade</span>
+            <span>Basic multiplier</span>
             <span>{factors.secondsMultiplier.toFixed(2)}x</span>
           </p>
         ) : null}
@@ -107,7 +107,7 @@ export function CurrentRateInfoOverlay({
         ) : null}
         {shouldShowFactor(factors.worthwhileAchievementsMultiplier) ? (
           <p className="rate-factor-row">
-            <span>Worthwile Achivements</span>
+            <span>Achivement multiplier</span>
             <span>{factors.worthwhileAchievementsMultiplier.toFixed(2)}x</span>
           </p>
         ) : null}

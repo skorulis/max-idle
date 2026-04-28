@@ -25,7 +25,8 @@ import {
   SHOP_CURRENCY_TYPES,
   SHOP_UPGRADE_IDS,
   SHOP_UPGRADES,
-  type ShopUpgradeDefinition
+  type ShopUpgradeDefinition,
+  type ShopUpgradeId
 } from "../shopUpgrades";
 import type { ShopCurrencyType } from "../shopUpgrades";
 import { getSecondsMultiplierLevel, hasRefundableShopPurchases } from "../shop";
@@ -45,22 +46,16 @@ type ShopPageProps = {
     | "debug_add_gems"
     | null;
   secondsMultiplierCost: number | null;
-  onPurchaseUpgrade: () => Promise<void>;
+  /** Purchase flow for any shop upgrade row; `upgradeId` matches {@link SHOP_UPGRADE_IDS}. */
+  onPurchase: (upgradeId: ShopUpgradeId) => Promise<void>;
   restraintLevel: number;
   restraintMaxLevel: number;
-  onPurchaseRestraint: () => Promise<void>;
   luckLevel: number;
   luckMaxLevel: number;
-  onPurchaseLuck: () => Promise<void>;
   idleHoarderLevel: number;
   idleHoarderMaxLevel: number;
-  onPurchaseIdleHoarder: () => Promise<void>;
   worthwhileAchievementsLevel: number;
   worthwhileAchievementsMaxLevel: number;
-  onPurchaseWorthwhileAchievements: () => Promise<void>;
-  onPurchaseExtraRealtimeWait: () => Promise<void>;
-  onPurchaseCollectGemTimeBoost: () => Promise<void>;
-  onPurchaseRefund: () => Promise<void>;
   showDebugAddGemsButton: boolean;
   onDebugAddGems: () => Promise<void>;
   collectGemBoostLevel: number;
@@ -157,22 +152,15 @@ export function ShopPage({
   playerState,
   shopPendingQuantity,
   secondsMultiplierCost,
-  onPurchaseUpgrade,
+  onPurchase,
   restraintLevel,
   restraintMaxLevel,
-  onPurchaseRestraint,
   luckLevel,
   luckMaxLevel,
-  onPurchaseLuck,
   idleHoarderLevel,
   idleHoarderMaxLevel,
-  onPurchaseIdleHoarder,
   worthwhileAchievementsLevel,
   worthwhileAchievementsMaxLevel,
-  onPurchaseWorthwhileAchievements,
-  onPurchaseExtraRealtimeWait,
-  onPurchaseCollectGemTimeBoost,
-  onPurchaseRefund,
   showDebugAddGemsButton,
   onDebugAddGems,
   collectGemBoostLevel,
@@ -223,9 +211,9 @@ export function ShopPage({
         currentValueDescription,
         nextValueDescription,
         cost: secondsMultiplierCost,
-        isPending: shopPendingQuantity === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER,
+        isPending: shopPendingQuantity === upgrade.id,
         isOwned: secondsMultiplierLevel >= maxSecondsMultiplierLevel,
-        onPurchase: onPurchaseUpgrade
+        onPurchase: () => onPurchase(upgrade.id)
       };
     }
 
@@ -238,9 +226,9 @@ export function ShopPage({
         currentValueDescription,
         nextValueDescription,
         cost: level?.cost ?? null,
-        isPending: shopPendingQuantity === "extra_realtime_wait",
+        isPending: shopPendingQuantity === upgrade.id,
         isOwned: false,
-        onPurchase: onPurchaseExtraRealtimeWait
+        onPurchase: () => onPurchase(upgrade.id)
       };
     }
 
@@ -251,9 +239,9 @@ export function ShopPage({
         currentValueDescription,
         nextValueDescription,
         cost: getCollectGemTimeBoostUpgradeCostAtLevel(collectGemBoostLevel) || null,
-        isPending: shopPendingQuantity === "collect_gem_time_boost",
+        isPending: shopPendingQuantity === upgrade.id,
         isOwned: collectGemBoostLevel >= maxCollectGemBoostLevel,
-        onPurchase: onPurchaseCollectGemTimeBoost
+        onPurchase: () => onPurchase(upgrade.id)
       };
     }
 
@@ -263,9 +251,9 @@ export function ShopPage({
         currentValueDescription,
         nextValueDescription,
         cost: upgrade.levels[0]?.cost ?? null,
-        isPending: shopPendingQuantity === SHOP_UPGRADE_IDS.PURCHASE_REFUND,
+        isPending: shopPendingQuantity === upgrade.id,
         isOwned: false,
-        onPurchase: onPurchaseRefund
+        onPurchase: () => onPurchase(upgrade.id)
       };
     }
 
@@ -293,20 +281,7 @@ export function ShopPage({
             : 0;
     const isOwned =
       isRestraint || isIdleHoarder || isLuck || isWorthwhileAchievements ? currentLevel >= maxLevel : false;
-    const isPending = isRestraint
-      ? shopPendingQuantity === "restraint"
-      : isIdleHoarder
-        ? shopPendingQuantity === "idle_hoarder"
-        : isWorthwhileAchievements
-          ? shopPendingQuantity === "worthwhile_achievements"
-          : shopPendingQuantity === "luck";
-    const onPurchase = isRestraint
-      ? onPurchaseRestraint
-      : isIdleHoarder
-        ? onPurchaseIdleHoarder
-        : isWorthwhileAchievements
-          ? onPurchaseWorthwhileAchievements
-          : onPurchaseLuck;
+    const isPending = shopPendingQuantity === upgrade.id;
     const nextLevel = upgrade.levels[currentLevel] ?? null;
     return {
       description:
@@ -321,7 +296,7 @@ export function ShopPage({
           : upgrade.levels[0]?.cost ?? null,
       isPending,
       isOwned,
-      onPurchase
+      onPurchase: () => onPurchase(upgrade.id)
     };
   }
 
