@@ -219,6 +219,17 @@ const tournamentEntrySchema = registry.register(
   })
 );
 
+const tournamentRankedEntrySchema = registry.register(
+  "TournamentRankedEntry",
+  z.object({
+    rank: z.number().int().positive(),
+    userId: z.string().uuid(),
+    username: z.string(),
+    timeScoreSeconds: z.number().int().nonnegative(),
+    isCurrentPlayer: z.boolean()
+  })
+);
+
 const tournamentCurrentResponseSchema = registry.register(
   "TournamentCurrentResponse",
   z.object({
@@ -228,6 +239,7 @@ const tournamentCurrentResponseSchema = registry.register(
     playerCount: z.number().int().nonnegative(),
     currentRank: z.number().int().positive().nullable(),
     expectedRewardGems: z.number().int().min(1).max(5).nullable(),
+    nearbyEntries: z.array(tournamentRankedEntrySchema),
     entry: tournamentEntrySchema.nullable()
   })
 );

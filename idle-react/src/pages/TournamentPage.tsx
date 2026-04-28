@@ -1,5 +1,6 @@
 import type { SyncedTournamentState } from "../app/types";
 import { TournamentPanel } from "./TournamentPanel";
+import { RankedPlayerRow } from "./RankedPlayerRow";
 
 type TournamentPageProps = {
   tournamentState: SyncedTournamentState | null;
@@ -28,14 +29,27 @@ export function TournamentPage({
       />
       <div className="panel tournament-details-panel">
         <p className="shop-currency-title">Current Tournament Details</p>
-        <p className="subtle">Players entered: {tournamentState.playerCount}</p>
-        <p className="subtle">
-          Current rank: {tournamentState.currentRank === null ? "Enter the tournament to see your rank" : `#${tournamentState.currentRank}`}
-        </p>
+        <p className="subtle">Total Players: {tournamentState.playerCount}</p>
         <p className="subtle">
           Expected reward:{" "}
           {tournamentState.expectedRewardGems === null ? "Enter the tournament to estimate your reward" : `${tournamentState.expectedRewardGems} Time Gem${tournamentState.expectedRewardGems === 1 ? "" : "s"}`}
         </p>
+        {tournamentState.nearbyEntries.length > 0 ? (
+          <div className="leaderboard-list">
+            {tournamentState.nearbyEntries.map((entry) => (
+              <RankedPlayerRow
+                key={entry.userId}
+                rank={entry.rank}
+                userId={entry.userId}
+                username={entry.username}
+                totalIdleSeconds={entry.timeScoreSeconds}
+                isCurrentPlayer={entry.isCurrentPlayer}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="subtle">Enter the tournament to see nearby ranked players.</p>
+        )}
       </div>
     </>
   );

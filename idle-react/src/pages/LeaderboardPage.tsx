@@ -1,10 +1,10 @@
-import { Link } from "react-router-dom";
 import { XIcon, XShareButton } from "react-share";
 import { BlueskyShareButton, BlueskyIcon } from "react-share";
 import { FacebookShareButton, FacebookIcon } from "react-share";
 import { RedditShareButton, RedditIcon } from "react-share";
 import { formatSeconds } from "../formatSeconds";
 import type { LeaderboardResponse, LeaderboardType } from "../app/types";
+import { RankedPlayerRow } from "./RankedPlayerRow";
 
 type LeaderboardPageProps = {
   leaderboardType: LeaderboardType;
@@ -64,15 +64,14 @@ export function LeaderboardPage({
         <>
           <div className="leaderboard-list">
             {leaderboard.entries.map((entry) => (
-              <div key={entry.userId} className={`leaderboard-row${entry.isCurrentPlayer ? " leaderboard-row-current" : ""}`}>
-                <p>#{entry.rank}</p>
-                <p>
-                  <Link className="leaderboard-player-link" to={`/player/${encodeURIComponent(entry.userId)}`}>
-                    {entry.username}
-                  </Link>
-                </p>
-                <p>{formatSeconds(entry.totalIdleSeconds)}</p>
-              </div>
+              <RankedPlayerRow
+                key={entry.userId}
+                rank={entry.rank}
+                userId={entry.userId}
+                username={entry.username}
+                totalIdleSeconds={entry.totalIdleSeconds}
+                isCurrentPlayer={entry.isCurrentPlayer}
+              />
             ))}
           </div>
           {leaderboard.currentPlayer && !leaderboard.currentPlayer.inTop ? (

@@ -219,6 +219,7 @@ describe("auth + player lifecycle", () => {
     expect(currentBeforeEntry.body.playerCount).toBe(0);
     expect(currentBeforeEntry.body.currentRank).toBeNull();
     expect(currentBeforeEntry.body.expectedRewardGems).toBeNull();
+    expect(currentBeforeEntry.body.nearbyEntries).toEqual([]);
     expect(currentBeforeEntry.body.entry).toBeNull();
     expect(typeof currentBeforeEntry.body.drawAt).toBe("string");
     expect(currentBeforeEntry.body.isActive).toBe(true);
@@ -230,6 +231,10 @@ describe("auth + player lifecycle", () => {
     expect(firstEnter.body.tournament.playerCount).toBe(1);
     expect(firstEnter.body.tournament.currentRank).toBe(1);
     expect(firstEnter.body.tournament.expectedRewardGems).toBe(5);
+    expect(firstEnter.body.tournament.nearbyEntries).toHaveLength(1);
+    expect(firstEnter.body.tournament.nearbyEntries[0].rank).toBe(1);
+    expect(firstEnter.body.tournament.nearbyEntries[0].userId).toBe(userId);
+    expect(firstEnter.body.tournament.nearbyEntries[0].isCurrentPlayer).toBe(true);
     expect(firstEnter.body.tournament.entry.enteredAt).toBeTypeOf("string");
 
     const secondEnter = await request(app).post("/tournament/enter").set("Authorization", `Bearer ${token}`);
@@ -246,6 +251,35 @@ describe("auth + player lifecycle", () => {
       [userId]
     );
     expect(Number(entryCountResult.rows[0]?.entry_count ?? 0)).toBe(1);
+  });
+
+  it("returns 20 tournament players above and below the current player rank", async () => {
+    const app = createApp(pool, config);
+    await pool.query("DELETE FROM tournament_entries");
+    await pool.query("DELETE FROM tournaments");
+
+    const entrants: Array<{ userId: string; token: string }> = [];
+    for (let i = 0; i < 45; i += 1) {
+      entrants.push(await createTournamentEntrant(app, 5000 - i * 10));
+    }
+    const middleEntrant = entrants[22];
+
+    const currentTournamentResponse = await request(app)
+      .get("/tournament/current")
+      .set("Authorization", `Bearer ${middleEntrant.token}`);
+    expect(currentTournamentResponse.status).toBe(200);
+    expect(currentTournamentResponse.body.currentRank).toBe(23);
+    expect(currentTournamentResponse.body.nearbyEntries).toHaveLength(41);
+    expect(currentTournamentResponse.body.nearbyEntries[0].rank).toBe(3);
+    expect(currentTournamentResponse.body.nearbyEntries[40].rank).toBe(43);
+
+    const currentPlayerEntry = currentTournamentResponse.body.nearbyEntries.find(
+      (entry: { isCurrentPlayer: boolean }) => entry.isCurrentPlayer
+    );
+    expect(currentPlayerEntry).toBeDefined();
+    expect(currentPlayerEntry.rank).toBe(23);
+    expect(currentPlayerEntry.userId).toBe(middleEntrant.userId);
+    expect(typeof currentPlayerEntry.username).toBe("string");
   });
 
   it("finalizes tournament rankings with NTILE rewards and avoids double-awarding", async () => {

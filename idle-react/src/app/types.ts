@@ -38,6 +38,14 @@ export type LeaderboardEntry = {
   isCurrentPlayer: boolean;
 };
 
+export type TournamentRankedEntry = {
+  rank: number;
+  userId: string;
+  username: string;
+  timeScoreSeconds: number;
+  isCurrentPlayer: boolean;
+};
+
 export type TournamentEntryResponse = {
   enteredAt: string;
   finalRank: number | null;
@@ -53,6 +61,7 @@ export type TournamentCurrentResponse = {
   playerCount: number;
   currentRank: number | null;
   expectedRewardGems: number | null;
+  nearbyEntries: TournamentRankedEntry[];
   entry: TournamentEntryResponse | null;
 };
 
@@ -136,6 +145,7 @@ export type SyncedTournamentState = {
   playerCount: number;
   currentRank: number | null;
   expectedRewardGems: number | null;
+  nearbyEntries: TournamentRankedEntry[];
   entry: SyncedTournamentEntry | null;
   syncedAtClientMs: number;
 };

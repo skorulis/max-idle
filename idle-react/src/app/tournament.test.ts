@@ -11,6 +11,15 @@ describe("tournament state helpers", () => {
       playerCount: 12,
       currentRank: 3,
       expectedRewardGems: 4,
+      nearbyEntries: [
+        {
+          rank: 3,
+          userId: "00000000-0000-0000-0000-000000000001",
+          username: "PlayerOne",
+          timeScoreSeconds: 1234,
+          isCurrentPlayer: true
+        }
+      ],
       entry: {
         enteredAt: "2026-04-22T12:00:00.000Z",
         finalRank: null,
