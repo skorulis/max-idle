@@ -3,15 +3,9 @@ import type { Pool } from "pg";
 import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import {
   getDefaultShopState,
-  getIdleHoarderLevel,
-  getLuckLevel,
   getShopPurchaseRefundTotals,
   hasRefundableShopPurchases,
-  getRestraintLevel,
-  getSecondsMultiplierLevel,
   getSecondsMultiplier,
-  getCollectGemBoostLevel,
-  getWorthwhileAchievementsLevel,
   getWorthwhileAchievementsMultiplier,
   withCollectGemBoostLevel,
   withIdleHoarderLevel,
@@ -22,6 +16,12 @@ import {
 } from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
 import {
+  COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
+  IDLE_HOARDER_SHOP_UPGRADE,
+  LUCK_SHOP_UPGRADE,
+  RESTRAINT_SHOP_UPGRADE,
+  SECONDS_MULTIPLIER_SHOP_UPGRADE,
+  WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
   getShopUpgradeDefinition,
   REALTIME_WAIT_EXTENSION_SECONDS,
   SHOP_CURRENCY_TYPES,
@@ -36,7 +36,6 @@ import type { AuthClaims } from "./types.js";
 
 export {
   getDefaultShopState,
-  getCollectGemBoostLevel,
   getLuckEnabled,
   getShopPurchaseRefundTotals,
   hasRefundableShopPurchases,
@@ -157,20 +156,20 @@ export function registerShopRoutes({
       const isPurchaseRefund = upgradeType === SHOP_UPGRADE_IDS.PURCHASE_REFUND;
       const isIdleHoarder = upgradeType === SHOP_UPGRADE_IDS.IDLE_HOARDER;
       const isWorthwhileAchievements = upgradeType === SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS;
-      const worthwhileAchievementsLevel = getWorthwhileAchievementsLevel(row.shop);
+      const worthwhileAchievementsLevel = WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.currentLevel(row.shop);
       const isGemPurchase = boundedUpgrade.currencyType === SHOP_CURRENCY_TYPES.GEM;
       const isMaxLevelBoundedUpgrade = !isExtraRealtimeWait && !isPurchaseRefund;
-      const collectGemLevel = getCollectGemBoostLevel(row.shop);
+      const collectGemLevel = COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.currentLevel(row.shop);
       const quantity = isGemPurchase
         ? 1
         : upgradeType === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER
           ? requestedQuantity
           : 1;
-      const restraintLevel = getRestraintLevel(row.shop);
-      const idleHoarderLevel = getIdleHoarderLevel(row.shop);
-      const luckLevel = getLuckLevel(row.shop);
+      const restraintLevel = RESTRAINT_SHOP_UPGRADE.currentLevel(row.shop);
+      const idleHoarderLevel = IDLE_HOARDER_SHOP_UPGRADE.currentLevel(row.shop);
+      const luckLevel = LUCK_SHOP_UPGRADE.currentLevel(row.shop);
 
-      const currentLevel = getSecondsMultiplierLevel(row.shop);
+      const currentLevel = SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(row.shop);
       if (isPurchaseRefund && !hasRefundableShopPurchases(row.shop)) {
         await client.query("ROLLBACK");
         res.status(400).json({ error: "No idle or real purchases to refund", code: "NO_REFUNDABLE_PURCHASES" });

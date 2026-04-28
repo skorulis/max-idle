@@ -1,5 +1,4 @@
 import {
-  getIdleHoarderLevel,
   getLuckEnabled,
   getLuckPreserveChance,
   getRestraintBonusMultiplier,
@@ -8,7 +7,7 @@ import {
   getWorthwhileAchievementsMultiplier
 } from "./shop.js";
 import type { ShopState } from "./shop.js";
-import { getIdleHoarderMultiplier } from "./shopUpgrades.js";
+import { getIdleHoarderMultiplier, IDLE_HOARDER_SHOP_UPGRADE } from "./shopUpgrades.js";
 
 type IdleRateStep = {
   seconds: number;
@@ -123,7 +122,7 @@ export function calculateBoostedIdleSecondsGain(player: IdleCollectionPlayer): n
   const boostedGainBeforeIdleHoarder =
     baseGain * secondsMultiplier * shopBonusMultiplier * worthwhileAchievementsMultiplier;
   const idleHoarderMultiplier = getIdleHoarderMultiplier(
-    getIdleHoarderLevel(player.shop),
+    IDLE_HOARDER_SHOP_UPGRADE.currentLevel(player.shop),
     Number.isFinite(player.realTimeAvailable) ? Number(player.realTimeAvailable) : 0,
     elapsedSeconds
   );
@@ -141,7 +140,7 @@ export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): numbe
     getRestraintBonusMultiplier(player.shop) *
     worthwhileAchievementsMultiplier;
   const idleHoarderMultiplier = getIdleHoarderMultiplier(
-    getIdleHoarderLevel(player.shop),
+    IDLE_HOARDER_SHOP_UPGRADE.currentLevel(player.shop),
     Number.isFinite(player.realTimeAvailable) ? Number(player.realTimeAvailable) : 0,
     clampElapsedSeconds(player.secondsSinceLastCollection)
   );

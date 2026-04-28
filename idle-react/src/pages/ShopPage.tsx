@@ -29,7 +29,7 @@ import {
   type ShopUpgradeId
 } from "../shopUpgrades";
 import type { ShopCurrencyType } from "../shopUpgrades";
-import { getSecondsMultiplierLevel, hasRefundableShopPurchases } from "../shop";
+import { hasRefundableShopPurchases } from "../shop";
 import GameIcon from "../GameIcon";
 
 type ShopPageProps = {
@@ -180,7 +180,7 @@ export function ShopPage({
   }
 
   const visibleUpgrades = SHOP_UPGRADES.filter((upgrade) => upgrade.currencyType === selectedCurrencyType);
-  const secondsMultiplierLevel = getSecondsMultiplierLevel(playerState.shop);
+  const secondsMultiplierLevel = SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(playerState.shop);
   const maxSecondsMultiplierLevel = SECONDS_MULTIPLIER_SHOP_UPGRADE.maxLevel();
   const maxCollectGemBoostLevel = getCollectGemTimeBoostMaxLevel();
   const hasRefundablePurchases = hasRefundableShopPurchases(playerState.shop);

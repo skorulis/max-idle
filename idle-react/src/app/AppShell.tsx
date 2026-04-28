@@ -3,20 +3,9 @@ import { CircleHelp, CircleUserRound, Hourglass, Medal, ShoppingCart, Star } fro
 import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "react-router-dom";
 import GameIcon from "../GameIcon";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
-import { getCollectGemBoostLevel } from "../shop";
 import { getCollectGemIdleSecondsMultiplier, SECONDS_MULTIPLIER_SHOP_UPGRADE } from "../shopUpgrades";
+import { COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE, IDLE_HOARDER_SHOP_UPGRADE, LUCK_SHOP_UPGRADE, RESTRAINT_SHOP_UPGRADE, WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE } from "../shopUpgrades";
 import {
-  getIdleHoarderLevel,
-  getLuckLevel,
-  getRestraintLevel,
-  getSecondsMultiplierLevel,
-  getWorthwhileAchievementsLevel
-} from "../shop";
-import {
-  IDLE_HOARDER_SHOP_UPGRADE,
-  LUCK_SHOP_UPGRADE,
-  RESTRAINT_SHOP_UPGRADE,
-  WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
   type ShopUpgradeId
 } from "../shopUpgrades";
 import { AccountPage } from "../pages/AccountPage";
@@ -572,7 +561,9 @@ export function AppShell() {
       achievementCount: playerState.achievementCount,
       realTimeAvailable: playerState.realTime.available
     });
-    return Math.floor(base * getCollectGemIdleSecondsMultiplier(getCollectGemBoostLevel(playerState.shop)));
+    return Math.floor(
+      base * getCollectGemIdleSecondsMultiplier(COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.currentLevel(playerState.shop))
+    );
   }, [estimatedServerNowMs, playerState]);
 
   const realtimeElapsedSeconds = useMemo(() => {
@@ -649,7 +640,7 @@ export function AppShell() {
   }, [estimatedServerNowMs, playerState, tournamentState]);
 
   const secondsMultiplierLevel = useMemo(() => {
-    return playerState ? getSecondsMultiplierLevel(playerState.shop) : 0;
+    return playerState ? SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(playerState.shop) : 0;
   }, [playerState]);
 
   const secondsMultiplierCost = useMemo(() => {
@@ -659,13 +650,15 @@ export function AppShell() {
     }
     return SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(secondsMultiplierLevel);
   }, [secondsMultiplierLevel]);
-  const restraintLevel = playerState ? getRestraintLevel(playerState.shop) : 0;
+  const restraintLevel = playerState ? RESTRAINT_SHOP_UPGRADE.currentLevel(playerState.shop) : 0;
   const restraintMaxLevel = RESTRAINT_SHOP_UPGRADE.maxLevel();
-  const luckLevel = playerState ? getLuckLevel(playerState.shop) : 0;
+  const luckLevel = playerState ? LUCK_SHOP_UPGRADE.currentLevel(playerState.shop) : 0;
   const luckMaxLevel = LUCK_SHOP_UPGRADE.maxLevel();
-  const idleHoarderLevel = playerState ? getIdleHoarderLevel(playerState.shop) : 0;
+  const idleHoarderLevel = playerState ? IDLE_HOARDER_SHOP_UPGRADE.currentLevel(playerState.shop) : 0;
   const idleHoarderMaxLevel = IDLE_HOARDER_SHOP_UPGRADE.maxLevel();
-  const worthwhileAchievementsLevel = playerState ? getWorthwhileAchievementsLevel(playerState.shop) : 0;
+  const worthwhileAchievementsLevel = playerState
+    ? WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.currentLevel(playerState.shop)
+    : 0;
   const worthwhileAchievementsMaxLevel = WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.maxLevel();
 
   const activeMessageCardText = isAuthenticated
@@ -1339,7 +1332,7 @@ export function AppShell() {
                 worthwhileAchievementsMaxLevel={worthwhileAchievementsMaxLevel}
                 showDebugAddGemsButton={import.meta.env.DEV}
                 onDebugAddGems={onDebugAddGems}
-                collectGemBoostLevel={playerState ? getCollectGemBoostLevel(playerState.shop) : 0}
+                collectGemBoostLevel={playerState ? COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.currentLevel(playerState.shop) : 0}
                 onNavigateHome={() => navigate("/")}
               />
             }

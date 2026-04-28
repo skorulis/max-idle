@@ -1,9 +1,9 @@
 import { useEffect, useMemo } from "react";
 import { CircleX } from "lucide-react";
 import type { ShopState } from "../shop";
-import { getIdleHoarderLevel, getRestraintBonusMultiplier, getSecondsMultiplier, getWorthwhileAchievementsMultiplier } from "../shop";
+import { getRestraintBonusMultiplier, getSecondsMultiplier, getWorthwhileAchievementsMultiplier } from "../shop";
 import { getIdleSecondsRate } from "../idleRate";
-import { getIdleHoarderMultiplier } from "../shopUpgrades";
+import { getIdleHoarderMultiplier, IDLE_HOARDER_SHOP_UPGRADE } from "../shopUpgrades";
 
 type CurrentRateInfoOverlayProps = {
   open: boolean;
@@ -54,7 +54,7 @@ export function CurrentRateInfoOverlay({
     );
     const rateBeforeIdleHoarder = baseRate * secondsMultiplier * shopBonusMultiplier * worthwhileAchievementsMultiplier;
     const idleHoarderMultiplier = getIdleHoarderMultiplier(
-      getIdleHoarderLevel(shop),
+      IDLE_HOARDER_SHOP_UPGRADE.currentLevel(shop),
       realTimeAvailable,
       Math.max(0, secondsSinceLastCollection)
     );

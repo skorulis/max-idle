@@ -49,10 +49,6 @@ function clampSecondsMultiplierLevel(level: number): number {
   );
 }
 
-export function getCollectGemBoostLevel(shop: ShopState): number {
-  return COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.currentLevel(shop);
-}
-
 export function withCollectGemBoostLevel(shop: ShopState, level: number): ShopState {
   const safe = Number.isFinite(level)
     ? Math.max(0, Math.min(COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.maxLevel(), Math.floor(level)))
@@ -72,12 +68,8 @@ export function getSecondsMultiplierUpgradeValue(level: number): number {
   return definition?.value ?? DEFAULT_SECONDS_MULTIPLIER_VALUE;
 }
 
-export function getSecondsMultiplierLevel(shop: ShopState): number {
-  return SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(shop);
-}
-
 export function getSecondsMultiplier(shop: ShopState): number {
-  return getSecondsMultiplierUpgradeValue(getSecondsMultiplierLevel(shop));
+  return getSecondsMultiplierUpgradeValue(SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(shop));
 }
 
 export function withSecondsMultiplier(shop: ShopState, secondsMultiplierLevel: number): ShopState {
@@ -88,15 +80,11 @@ export function withSecondsMultiplier(shop: ShopState, secondsMultiplierLevel: n
 }
 
 export function getRestraintEnabled(shop: ShopState): boolean {
-  return getRestraintLevel(shop) > 0;
-}
-
-export function getRestraintLevel(shop: ShopState): number {
-  return RESTRAINT_SHOP_UPGRADE.currentLevel(shop);
+  return RESTRAINT_SHOP_UPGRADE.currentLevel(shop) > 0;
 }
 
 export function getRestraintBonusMultiplier(shop: ShopState): number {
-  const restraintLevel = getRestraintLevel(shop);
+  const restraintLevel = RESTRAINT_SHOP_UPGRADE.currentLevel(shop);
   if (restraintLevel <= 0) {
     return 1;
   }
@@ -117,10 +105,6 @@ export function withRestraint(shop: ShopState, enabled: boolean): ShopState {
   return withRestraintLevel(shop, enabled ? 1 : 0);
 }
 
-export function getIdleHoarderLevel(shop: ShopState): number {
-  return IDLE_HOARDER_SHOP_UPGRADE.currentLevel(shop);
-}
-
 export function withIdleHoarderLevel(shop: ShopState, idleHoarderLevel: number): ShopState {
   const safeLevel = Number.isFinite(idleHoarderLevel)
     ? Math.max(0, Math.min(IDLE_HOARDER_SHOP_UPGRADE.maxLevel(), Math.floor(idleHoarderLevel)))
@@ -129,10 +113,6 @@ export function withIdleHoarderLevel(shop: ShopState, idleHoarderLevel: number):
     ...shop,
     [SHOP_UPGRADE_IDS.IDLE_HOARDER]: safeLevel
   };
-}
-
-export function getWorthwhileAchievementsLevel(shop: ShopState): number {
-  return WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.currentLevel(shop);
 }
 
 export function withWorthwhileAchievementsLevel(shop: ShopState, worthwhileAchievementsLevel: number): ShopState {
@@ -147,21 +127,17 @@ export function withWorthwhileAchievementsLevel(shop: ShopState, worthwhileAchie
 
 /** ×(1 + bonusPerAchievement × achievementCount), from Worthwhile Achievements tier and unlock count. */
 export function getWorthwhileAchievementsMultiplier(shop: ShopState, achievementCount: number): number {
-  const bonusPer = getWorthwhileAchievementsBonusPerAchievement(getWorthwhileAchievementsLevel(shop));
+  const bonusPer = getWorthwhileAchievementsBonusPerAchievement(WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.currentLevel(shop));
   const count = Number.isFinite(achievementCount) ? Math.max(0, Math.floor(achievementCount)) : 0;
   return 1 + bonusPer * count;
 }
 
 export function getLuckEnabled(shop: ShopState): boolean {
-  return getLuckLevel(shop) > 0;
-}
-
-export function getLuckLevel(shop: ShopState): number {
-  return LUCK_SHOP_UPGRADE.currentLevel(shop);
+  return LUCK_SHOP_UPGRADE.currentLevel(shop) > 0;
 }
 
 export function getLuckPreserveChance(shop: ShopState): number {
-  const luckLevel = getLuckLevel(shop);
+  const luckLevel = LUCK_SHOP_UPGRADE.currentLevel(shop);
   if (luckLevel <= 0) {
     return 0;
   }
