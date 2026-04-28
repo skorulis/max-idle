@@ -646,13 +646,6 @@ export function AppShell() {
     return playerState ? SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(playerState.shop) : 0;
   }, [playerState]);
 
-  const secondsMultiplierCost = useMemo(() => {
-    const maxLevel = SECONDS_MULTIPLIER_SHOP_UPGRADE.maxLevel();
-    if (secondsMultiplierLevel >= maxLevel) {
-      return null;
-    }
-    return SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(secondsMultiplierLevel);
-  }, [secondsMultiplierLevel]);
   const restraintLevel = playerState ? RESTRAINT_SHOP_UPGRADE.currentLevel(playerState.shop) : 0;
   const restraintMaxLevel = RESTRAINT_SHOP_UPGRADE.maxLevel();
   const patienceLevel = playerState ? PATIENCE_SHOP_UPGRADE.currentLevel(playerState.shop) : 0;
@@ -1340,21 +1333,9 @@ export function AppShell() {
               <ShopPage
                 playerState={playerState}
                 shopPendingQuantity={shopPendingQuantity}
-                secondsMultiplierCost={secondsMultiplierCost}
                 onPurchase={onPurchaseUpgrade}
-                restraintLevel={restraintLevel}
-                restraintMaxLevel={restraintMaxLevel}
-                patienceLevel={patienceLevel}
-                patienceMaxLevel={patienceMaxLevel}
-                luckLevel={luckLevel}
-                luckMaxLevel={luckMaxLevel}
-                idleHoarderLevel={idleHoarderLevel}
-                idleHoarderMaxLevel={idleHoarderMaxLevel}
-                worthwhileAchievementsLevel={worthwhileAchievementsLevel}
-                worthwhileAchievementsMaxLevel={worthwhileAchievementsMaxLevel}
                 showDebugAddGemsButton={import.meta.env.DEV}
                 onDebugAddGems={onDebugAddGems}
-                collectGemBoostLevel={playerState ? COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.currentLevel(playerState.shop) : 0}
                 onNavigateHome={() => navigate("/")}
               />
             }

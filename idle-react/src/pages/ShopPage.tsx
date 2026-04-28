@@ -51,22 +51,10 @@ type ShopPageProps = {
     | "purchase_refund"
     | "debug_add_gems"
     | null;
-  secondsMultiplierCost: number | null;
   /** Purchase flow for any shop upgrade row; `upgradeId` matches {@link SHOP_UPGRADE_IDS}. */
   onPurchase: (upgradeId: ShopUpgradeId) => Promise<void>;
-  restraintLevel: number;
-  restraintMaxLevel: number;
-  patienceLevel: number;
-  patienceMaxLevel: number;
-  luckLevel: number;
-  luckMaxLevel: number;
-  idleHoarderLevel: number;
-  idleHoarderMaxLevel: number;
-  worthwhileAchievementsLevel: number;
-  worthwhileAchievementsMaxLevel: number;
   showDebugAddGemsButton: boolean;
   onDebugAddGems: () => Promise<void>;
-  collectGemBoostLevel: number;
   onNavigateHome: () => void;
 };
 
@@ -146,21 +134,9 @@ function getShopUpgradeIcon(iconName: string): LucideIcon {
 export function ShopPage({
   playerState,
   shopPendingQuantity,
-  secondsMultiplierCost,
   onPurchase,
-  restraintLevel,
-  restraintMaxLevel,
-  patienceLevel,
-  patienceMaxLevel,
-  luckLevel,
-  luckMaxLevel,
-  idleHoarderLevel,
-  idleHoarderMaxLevel,
-  worthwhileAchievementsLevel,
-  worthwhileAchievementsMaxLevel,
   showDebugAddGemsButton,
   onDebugAddGems,
-  collectGemBoostLevel,
   onNavigateHome
 }: ShopPageProps) {
   const [selectedCurrencyType, setSelectedCurrencyType] = useState<ShopCurrencyType>(SHOP_CURRENCY_TYPES.IDLE);
@@ -178,8 +154,6 @@ export function ShopPage({
 
   const visibleUpgrades = SHOP_UPGRADES.filter((upgrade) => upgrade.currencyType === selectedCurrencyType);
   const secondsMultiplierLevel = SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(playerState.shop);
-  const maxSecondsMultiplierLevel = SECONDS_MULTIPLIER_SHOP_UPGRADE.maxLevel();
-  const maxCollectGemBoostLevel = getCollectGemTimeBoostMaxLevel();
   const hasRefundablePurchases = hasRefundableShopPurchases(playerState.shop);
 
   function getValueDesciptionValue(upgrade: ShopUpgradeDefinition, playerState: SyncedPlayerState, level: number): number | null {
@@ -228,9 +202,9 @@ export function ShopPage({
         description: upgrade.description,
         currentValueDescription,
         nextValueDescription,
-        cost: secondsMultiplierCost,
+        cost: upgrade.costAtLevel(secondsMultiplierLevel),
         isPending: shopPendingQuantity === upgrade.id,
-        isOwned: secondsMultiplierLevel >= maxSecondsMultiplierLevel,
+        isOwned: secondsMultiplierLevel >= upgrade.maxLevel(),
         onPurchase: () => onPurchase(upgrade.id)
       };
     }
@@ -251,6 +225,8 @@ export function ShopPage({
     }
 
     if (upgrade.id === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST) {
+      const collectGemBoostLevel = upgrade.currentLevel(playerState.shop);
+      const maxCollectGemBoostLevel = getCollectGemTimeBoostMaxLevel();
       const nextLevelDef = upgrade.levels[collectGemBoostLevel] ?? null;
       return {
         description: nextLevelDef ? upgrade.description : "Maximum level reached.",
@@ -275,35 +251,9 @@ export function ShopPage({
       };
     }
 
-    const isRestraint = upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT;
-    const isPatience = upgrade.id === SHOP_UPGRADE_IDS.PATIENCE;
-    const isIdleHoarder = upgrade.id === SHOP_UPGRADE_IDS.IDLE_HOARDER;
-    const isLuck = upgrade.id === SHOP_UPGRADE_IDS.LUCK;
-    const isWorthwhileAchievements = upgrade.id === SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS;
-    const currentLevel = isRestraint
-      ? restraintLevel
-      : isPatience
-        ? patienceLevel
-      : isIdleHoarder
-        ? idleHoarderLevel
-        : isLuck
-          ? luckLevel
-          : isWorthwhileAchievements
-            ? worthwhileAchievementsLevel
-            : 0;
-    const maxLevel = isRestraint
-      ? restraintMaxLevel
-      : isPatience
-        ? patienceMaxLevel
-      : isIdleHoarder
-        ? idleHoarderMaxLevel
-        : isLuck
-          ? luckMaxLevel
-          : isWorthwhileAchievements
-            ? worthwhileAchievementsMaxLevel
-            : 0;
-    const isOwned =
-      isRestraint || isPatience || isIdleHoarder || isLuck || isWorthwhileAchievements ? currentLevel >= maxLevel : false;
+    const currentLevel = upgrade.currentLevel(playerState.shop);
+    const maxLevel = upgrade.maxLevel();
+    const isOwned = currentLevel >= maxLevel;
     const isPending = shopPendingQuantity === upgrade.id;
     const nextLevel = upgrade.levels[currentLevel] ?? null;
     return {
@@ -313,10 +263,7 @@ export function ShopPage({
             : upgrade.description,
       currentValueDescription,
       nextValueDescription,
-      cost:
-        isRestraint || isPatience || isIdleHoarder || isLuck || isWorthwhileAchievements
-          ? nextLevel?.cost ?? null
-          : upgrade.levels[0]?.cost ?? null,
+      cost: nextLevel?.cost ?? null,
       isPending,
       isOwned,
       onPurchase: () => onPurchase(upgrade.id)
@@ -327,32 +274,7 @@ export function ShopPage({
     if (upgrade.levels.length <= 1) {
       return null;
     }
-    if (upgrade.id === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER) {
-      return secondsMultiplierLevel;
-    }
-    if (upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT) {
-      return restraintLevel;
-    }
-    if (upgrade.id === SHOP_UPGRADE_IDS.PATIENCE) {
-      return patienceLevel;
-    }
-    if (upgrade.id === SHOP_UPGRADE_IDS.LUCK) {
-      return luckLevel;
-    }
-    if (upgrade.id === SHOP_UPGRADE_IDS.IDLE_HOARDER) {
-      return idleHoarderLevel;
-    }
-    if (upgrade.id === SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS) {
-      return worthwhileAchievementsLevel;
-    }
-    if (upgrade.id === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST) {
-      return collectGemBoostLevel;
-    }
-    const maybeLevel = playerState?.shop[upgrade.id];
-    if (typeof maybeLevel === "number" && Number.isFinite(maybeLevel) && maybeLevel >= 0) {
-      return Math.floor(maybeLevel);
-    }
-    return 0;
+    return upgrade.currentLevel(playerState.shop);
   }
 
   return (
