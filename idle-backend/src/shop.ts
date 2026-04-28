@@ -8,17 +8,10 @@ import {
   getSecondsMultiplier,
   getWorthwhileAchievementsMultiplier,
   withShopUpgradeLevel,
-  withSecondsMultiplier,
 } from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
 import {
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
-  IDLE_HOARDER_SHOP_UPGRADE,
-  LUCK_SHOP_UPGRADE,
-  PATIENCE_SHOP_UPGRADE,
-  RESTRAINT_SHOP_UPGRADE,
-  SECONDS_MULTIPLIER_SHOP_UPGRADE,
-  WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
   getShopUpgradeDefinition,
   REALTIME_WAIT_EXTENSION_SECONDS,
   SHOP_CURRENCY_TYPES,
@@ -40,10 +33,7 @@ export {
   getSecondsMultiplier,
   levelToMultiplier,
   multiplierToLevel,
-  withShopUpgradeLevel,
-  withLuck,
-  withRestraint,
-  withSecondsMultiplier
+  withShopUpgradeLevel
 } from "@maxidle/shared/shop";
 
 type ShopRouteIdentity = {
@@ -151,10 +141,6 @@ export function registerShopRoutes({
       const isExtraRealtimeWait = upgradeType === SHOP_UPGRADE_IDS.EXTRA_REALTIME_WAIT;
       const isCollectGemTimeBoost = upgradeType === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST;
       const isPurchaseRefund = upgradeType === SHOP_UPGRADE_IDS.PURCHASE_REFUND;
-      const isIdleHoarder = upgradeType === SHOP_UPGRADE_IDS.IDLE_HOARDER;
-      const isPatience = upgradeType === SHOP_UPGRADE_IDS.PATIENCE;
-      const isWorthwhileAchievements = upgradeType === SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS;
-      const worthwhileAchievementsLevel = WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.currentLevel(row.shop);
       const isGemPurchase = boundedUpgrade.currencyType === SHOP_CURRENCY_TYPES.GEM;
       const isMaxLevelBoundedUpgrade = !isExtraRealtimeWait && !isPurchaseRefund;
       const collectGemLevel = COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.currentLevel(row.shop);
@@ -163,12 +149,8 @@ export function registerShopRoutes({
         : upgradeType === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER
           ? requestedQuantity
           : 1;
-      const restraintLevel = RESTRAINT_SHOP_UPGRADE.currentLevel(row.shop);
-      const idleHoarderLevel = IDLE_HOARDER_SHOP_UPGRADE.currentLevel(row.shop);
-      const patienceLevel = PATIENCE_SHOP_UPGRADE.currentLevel(row.shop);
-      const luckLevel = LUCK_SHOP_UPGRADE.currentLevel(row.shop);
 
-      const currentLevel = SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(row.shop);
+      const currentLevel = boundedUpgrade.currentLevel(row.shop);
       if (isPurchaseRefund && !hasRefundableShopPurchases(row.shop)) {
         await client.query("ROLLBACK");
         res.status(400).json({ error: "No idle or real purchases to refund", code: "NO_REFUNDABLE_PURCHASES" });
@@ -180,7 +162,7 @@ export function registerShopRoutes({
         res.status(400).json({ error: "Upgrade already maxed", code: "ALREADY_OWNED" });
         return;
       }
-      const totalCost = getUpgradePurchaseCost(boundedUpgrade, boundedUpgrade.currentLevel(row.shop), quantity);
+      const totalCost = getUpgradePurchaseCost(boundedUpgrade, currentLevel, quantity);
       const idleTimeAvailable = toNumber(row.idle_time_available);
       const realTimeAvailable = toNumber(row.real_time_available);
       const timeGemsAvailable = toNumber(row.time_gems_available);
@@ -200,24 +182,13 @@ export function registerShopRoutes({
       }
 
       const refundTotals = isPurchaseRefund ? getShopPurchaseRefundTotals(row.shop) : { idle: 0, real: 0 };
-      const nextLevel = upgradeType === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER ? currentLevel + quantity : currentLevel;
       const nextShopState = isExtraRealtimeWait
         ? row.shop
         : isCollectGemTimeBoost
           ? withShopUpgradeLevel(row.shop, SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST, collectGemLevel + quantity)
           : isPurchaseRefund
             ? getDefaultShopState()
-            : upgradeType === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER
-            ? withSecondsMultiplier(row.shop, nextLevel)
-            : upgradeType === SHOP_UPGRADE_IDS.RESTRAINT
-              ? withShopUpgradeLevel(row.shop, SHOP_UPGRADE_IDS.RESTRAINT, restraintLevel + quantity)
-              : isIdleHoarder
-                ? withShopUpgradeLevel(row.shop, SHOP_UPGRADE_IDS.IDLE_HOARDER, idleHoarderLevel + quantity)
-                : isPatience
-                  ? withShopUpgradeLevel(row.shop, SHOP_UPGRADE_IDS.PATIENCE, patienceLevel + quantity)
-                : isWorthwhileAchievements
-                  ? withShopUpgradeLevel(row.shop, SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS, worthwhileAchievementsLevel + quantity)
-                  : withShopUpgradeLevel(row.shop, SHOP_UPGRADE_IDS.LUCK, luckLevel + quantity);
+            : withShopUpgradeLevel(row.shop, boundedUpgrade.id, currentLevel + quantity)            
       const nextLastCollectedAt = isExtraRealtimeWait
         ? new Date(row.last_collected_at.getTime() - REALTIME_WAIT_EXTENSION_SECONDS * 1000)
         : row.last_collected_at;

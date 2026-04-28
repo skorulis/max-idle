@@ -75,14 +75,6 @@ export function getSecondsMultiplier(shop: ShopState): number {
   return getSecondsMultiplierUpgradeValue(SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(shop));
 }
 
-export function withSecondsMultiplier(shop: ShopState, secondsMultiplierLevel: number): ShopState {
-  return withShopUpgradeLevel(
-    shop,
-    SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER,
-    clampSecondsMultiplierLevel(secondsMultiplierLevel)
-  );
-}
-
 export function getRestraintEnabled(shop: ShopState): boolean {
   return RESTRAINT_SHOP_UPGRADE.currentLevel(shop) > 0;
 }
@@ -93,10 +85,6 @@ export function getRestraintBonusMultiplier(shop: ShopState): number {
     return 1;
   }
   return RESTRAINT_SHOP_UPGRADE.levels[restraintLevel - 1]?.value ?? 1;
-}
-
-export function withRestraint(shop: ShopState, enabled: boolean): ShopState {
-  return withShopUpgradeLevel(shop, SHOP_UPGRADE_IDS.RESTRAINT, enabled ? 1 : 0);
 }
 
 /** ×(1 + bonusPerAchievement × achievementCount), from Worthwhile Achievements tier and unlock count. */
@@ -116,10 +104,6 @@ export function getLuckPreserveChance(shop: ShopState): number {
     return 0;
   }
   return LUCK_SHOP_UPGRADE.levels[luckLevel - 1]?.value ?? 0;
-}
-
-export function withLuck(shop: ShopState, enabled: boolean): ShopState {
-  return withShopUpgradeLevel(shop, SHOP_UPGRADE_IDS.LUCK, enabled ? 1 : 0);
 }
 
 export function multiplierToLevel(secondsMultiplier: number): number {

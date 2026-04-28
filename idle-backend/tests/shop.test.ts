@@ -2,9 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getLuckEnabled,
   levelToMultiplier,
-  multiplierToLevel,
-  withLuck,
-  withRestraint
+  multiplierToLevel
 } from "../src/shop.js";
 import { LUCK_SHOP_UPGRADE, PATIENCE_SHOP_UPGRADE, RESTRAINT_SHOP_UPGRADE, SECONDS_MULTIPLIER_SHOP_UPGRADE } from "@maxidle/shared/shopUpgrades";
 
