@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
 import { CircleHelp, CircleUserRound, Hourglass, Medal, ShoppingCart, Star } from "lucide-react";
 import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "react-router-dom";
 import GameIcon from "../GameIcon";
@@ -1273,6 +1273,13 @@ export function AppShell() {
     </div>
   );
 
+  const requireAuthenticatedRoute = (element: ReactElement) => {
+    if (!isAuthenticated) {
+      return <Navigate to="/" replace />;
+    }
+    return element;
+  };
+
   if (loading) {
     return (
       <main className="app">
@@ -1355,18 +1362,18 @@ export function AppShell() {
           />
           <Route
             path="/tournament"
-            element={
+            element={requireAuthenticatedRoute(
               <TournamentPage
                 tournamentState={tournamentState}
                 tournamentSecondsUntilDraw={tournamentSecondsUntilDraw}
                 enteringTournament={enteringTournament}
                 onEnterTournament={onEnterTournament}
               />
-            }
+            )}
           />
           <Route
             path="/shop"
-            element={
+            element={requireAuthenticatedRoute(
               <ShopPage
                 playerState={playerState}
                 shopPendingQuantity={shopPendingQuantity}
@@ -1375,7 +1382,7 @@ export function AppShell() {
                 onDebugAddGems={onDebugAddGems}
                 onNavigateHome={() => navigate("/")}
               />
-            }
+            )}
           />
           <Route
             path="/login"
@@ -1405,7 +1412,7 @@ export function AppShell() {
           />
           <Route
             path="/account"
-            element={
+            element={requireAuthenticatedRoute(
               <AccountPage
                 account={account}
                 token={token}
@@ -1428,7 +1435,7 @@ export function AppShell() {
                 onNavigateLogin={() => navigate("/login")}
                 renderAuthButtons={renderUpgradeAuthButtons}
               />
-            }
+            )}
           />
           <Route
             path="/leaderboard"
@@ -1446,13 +1453,13 @@ export function AppShell() {
           />
           <Route
             path="/achievements"
-            element={
+            element={requireAuthenticatedRoute(
               <AchievementsPage
                 achievements={achievements}
                 achievementsLoading={achievementsLoading}
                 hasError={Boolean(error)}
               />
-            }
+            )}
           />
           <Route
             path="/player/:playerId"
