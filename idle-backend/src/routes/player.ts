@@ -14,6 +14,7 @@ const REAL_TIME_COLLECT_65_MINUTES_SECONDS = 65 * 60;
 const IDLE_TIME_COLLECT_3H_7M_SECONDS = 3 * 60 * 60 + 7 * 60;
 const REAL_TIME_STREAK_59_MINUTES_SECONDS = 59 * 60;
 const REAL_TIME_STREAK_2D_14H_SECONDS = (2 * 24 + 14) * 60 * 60;
+const REWARD_SKIPPER_GAP_MS = 48 * 60 * 60 * 1000;
 
 function getUtcDayStartMs(date: Date): number {
   return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
@@ -404,6 +405,7 @@ export function registerPlayerRoutes({
         current_seconds_last_updated: Date;
         shop: ShopState;
         achievement_count: number | string;
+        completed_achievements: unknown;
         has_unseen_achievements: boolean;
         last_collected_at: Date;
         last_daily_reward_collected_at: Date | null;
@@ -421,6 +423,7 @@ export function registerPlayerRoutes({
           current_seconds_last_updated,
           shop,
           achievement_count,
+          completed_achievements,
           has_unseen_achievements,
           last_collected_at,
           last_daily_reward_collected_at
@@ -496,16 +499,36 @@ export function registerPlayerRoutes({
         return;
       }
 
+      const completedAchievements = normalizeCompletedAchievements(player.completed_achievements);
+      const completedAchievementIds = new Set(parseCompletedAchievementIds(completedAchievements));
+      const idsToGrant: string[] = [];
+      const previousDailyRewardAt = player.last_daily_reward_collected_at;
+      if (
+        previousDailyRewardAt !== null &&
+        now.getTime() - previousDailyRewardAt.getTime() > REWARD_SKIPPER_GAP_MS &&
+        !completedAchievementIds.has(ACHIEVEMENT_IDS.REWARD_SKIPPER)
+      ) {
+        completedAchievementIds.add(ACHIEVEMENT_IDS.REWARD_SKIPPER);
+        idsToGrant.push(ACHIEVEMENT_IDS.REWARD_SKIPPER);
+      }
+      const nextCompletedAchievements =
+        idsToGrant.length > 0
+          ? normalizeCompletedAchievements(completedAchievements, idsToGrant, now)
+          : completedAchievements;
+      if (nextCompletedAchievements.length !== toNumber(player.achievement_count)) {
+        await updateCompletedAchievements(client, userId, nextCompletedAchievements);
+      }
+      const hasUnseenAchievements =
+        player.has_unseen_achievements ||
+        nextCompletedAchievements.length !== toNumber(player.achievement_count);
+
       const elapsedSinceLastCollection = calculateElapsedSeconds(updatedPlayer.last_collected_at, now);
-      const achievementCountForRate = toNumber(updatedPlayer.achievement_count);
-      const achievementBonusMultiplier = getWorthwhileAchievementsMultiplier(
-        updatedPlayer.shop,
-        achievementCountForRate
-      );
+      const achievementCountAfter = nextCompletedAchievements.length;
+      const achievementBonusMultiplier = getWorthwhileAchievementsMultiplier(updatedPlayer.shop, achievementCountAfter);
       const idleSecondsRate = getEffectiveIdleSecondsRate({
         secondsSinceLastCollection: elapsedSinceLastCollection,
         shop: updatedPlayer.shop,
-        achievementCount: achievementCountForRate,
+        achievementCount: achievementCountAfter,
         realTimeAvailable: toNumber(updatedPlayer.real_time_available)
       });
       await client.query("COMMIT");
@@ -527,9 +550,9 @@ export function registerPlayerRoutes({
         currentSeconds: toNumber(updatedPlayer.current_seconds),
         secondsMultiplier: getSecondsMultiplier(updatedPlayer.shop),
         shop: updatedPlayer.shop,
-        achievementCount: achievementCountForRate,
+        achievementCount: achievementCountAfter,
         achievementBonusMultiplier,
-        hasUnseenAchievements: updatedPlayer.has_unseen_achievements,
+        hasUnseenAchievements,
         idleSecondsRate,
         currentSecondsLastUpdated: updatedPlayer.current_seconds_last_updated.toISOString(),
         lastCollectedAt: updatedPlayer.last_collected_at.toISOString(),

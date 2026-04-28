@@ -205,6 +205,31 @@ describe("auth + player lifecycle", () => {
     expect(state.rows[0]?.last_daily_reward_collected_at).toBeTruthy();
   });
 
+  it("grants reward skipper when collecting daily reward more than 48 hours after the last one", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(
+      `
+      UPDATE player_states
+      SET last_daily_reward_collected_at = NOW() - INTERVAL '49 hours'
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+
+    const collect = await request(app).post("/player/daily-reward/collect").set("Authorization", `Bearer ${token}`);
+    expect(collect.status).toBe(200);
+    expect(collect.body.hasUnseenAchievements).toBe(true);
+
+    const achievementsResponse = await request(app).get("/achievements").set("Authorization", `Bearer ${token}`);
+    expect(achievementsResponse.status).toBe(200);
+    const rewardSkipper = achievementsResponse.body.achievements.find((a: { id: string }) => a.id === "reward_skipper");
+    expect(rewardSkipper?.completed).toBe(true);
+  });
+
   it("returns current weekly tournament state and allows entering once", async () => {
     const app = createApp(pool, config);
     await pool.query("DELETE FROM tournament_entries");
@@ -723,9 +748,9 @@ describe("auth + player lifecycle", () => {
     const response = await request(app).get("/achievements").set("Authorization", `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(response.body.completedCount).toBe(0);
-    expect(response.body.totalCount).toBe(9);
+    expect(response.body.totalCount).toBe(10);
     expect(response.body.earningsBonusMultiplier).toBe(1);
-    expect(response.body.achievements).toHaveLength(9);
+    expect(response.body.achievements).toHaveLength(10);
     expect(response.body.achievements[0].id).toBe("account_creation");
     expect(response.body.achievements[1].id).toBe("username_selected");
     expect(response.body.achievements[2].id).toBe("beginner_shopper");
@@ -736,6 +761,8 @@ describe("auth + player lifecycle", () => {
     expect(response.body.achievements[7].id).toBe("collection_count_15");
     expect(response.body.achievements[8].id).toBe("contemplation");
     expect(response.body.achievements[8].clientDriven).toBe(true);
+    expect(response.body.achievements[9].id).toBe("reward_skipper");
+    expect(response.body.achievements[9].clientDriven).toBe(false);
   });
 
   it("grants client-driven achievements from the achievements endpoint", async () => {

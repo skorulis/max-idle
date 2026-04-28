@@ -1,6 +1,7 @@
 import {
   Archive,
   BadgeCheck,
+  CalendarX,
   CircleHelp,
   Clock3,
   Dice5,
@@ -33,6 +34,8 @@ export function getLucidIcon(iconName: string): LucideIcon {
       return Dice5;
     case "hourglass":
       return Hourglass;
+    case "calendar-x":
+      return CalendarX;
     case "archive":
       return Archive;
     case "timer":

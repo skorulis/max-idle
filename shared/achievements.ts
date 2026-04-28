@@ -8,7 +8,8 @@ export const ACHIEVEMENT_IDS = {
   REAL_TIME_STREAK_59_MINUTES: "real_time_streak_59_minutes",
   REAL_TIME_STREAK_2D_14H: "real_time_streak_2d_14h",
   COLLECTION_COUNT_15: "collection_count_15",
-  CONTEMPLATION: "contemplation"
+  CONTEMPLATION: "contemplation",
+  REWARD_SKIPPER: "reward_skipper"
 } as const;
 
 export type AchievementId = (typeof ACHIEVEMENT_IDS)[keyof typeof ACHIEVEMENT_IDS];
@@ -85,5 +86,12 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: "Spend 10 minutes being idle",
     icon: "clock",
     clientDriven: true
+  },
+  {
+    id: ACHIEVEMENT_IDS.REWARD_SKIPPER,
+    name: "Reward skipper",
+    description: "Wait 48 hours before collecting the daily reward.",
+    icon: "calendar-x",
+    clientDriven: false
   }
 ];
