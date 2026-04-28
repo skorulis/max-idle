@@ -29,7 +29,11 @@ import {
   type ShopUpgradeId
 } from "../shopUpgrades";
 import type { ShopCurrencyType } from "../shopUpgrades";
-import { hasRefundableShopPurchases } from "../shop";
+import {
+  getWorthwhileAchievementsMultiplier,
+  hasRefundableShopPurchases,
+  withWorthwhileAchievementsLevel
+} from "../shop";
 import GameIcon from "../GameIcon";
 
 type ShopPageProps = {
@@ -200,10 +204,32 @@ export function ShopPage({
     const currentLevelValue =
       purchasedLevel > 0 ? (upgrade.levels[purchasedLevel - 1]?.value ?? null) : getUpgradeBaseValue(upgrade);
     const nextLevelValue = upgrade.levels[purchasedLevel]?.value ?? null;
+    let currentValueForDescription = currentLevelValue;
+    let nextValueForDescription = nextLevelValue;
+    if (upgrade.id === SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS) {
+      const achievementCount = Number.isFinite(playerState.achievementCount)
+        ? Math.max(0, Math.floor(playerState.achievementCount))
+        : 0;
+      currentValueForDescription = getWorthwhileAchievementsMultiplier(
+        withWorthwhileAchievementsLevel(playerState.shop, purchasedLevel),
+        achievementCount
+      );
+      nextValueForDescription =
+        nextLevelValue === null
+          ? null
+          : getWorthwhileAchievementsMultiplier(
+              withWorthwhileAchievementsLevel(playerState.shop, purchasedLevel + 1),
+              achievementCount
+            );
+    }
     const currentValueDescription =
-      hasValueDescription && currentLevelValue !== null ? formatValueDescription(upgrade, currentLevelValue) : null;
+      hasValueDescription && currentValueForDescription !== null
+        ? formatValueDescription(upgrade, currentValueForDescription)
+        : null;
     const nextValueDescription =
-      hasValueDescription && nextLevelValue !== null ? formatValueDescription(upgrade, nextLevelValue) : null;
+      hasValueDescription && nextValueForDescription !== null
+        ? formatValueDescription(upgrade, nextValueForDescription)
+        : null;
 
     if (upgrade.id === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER) {
       return {

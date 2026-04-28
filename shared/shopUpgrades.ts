@@ -209,7 +209,7 @@ export const WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE: ShopUpgradeDefinition = defin
   name: "Worthwile Achivements",
   icon: "trophy",
   description: "Gain a bonus based on number of achievements unlocked",
-  valueDescription: "+ %s per achievements",
+  valueDescription: "%s",
   levels: [
     { cost: 5 * SECONDS_PER_HOUR, value: 0.05 },
     { cost: SECONDS_PER_DAY, value: 0.1 },
