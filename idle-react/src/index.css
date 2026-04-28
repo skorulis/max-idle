@@ -435,6 +435,37 @@ input {
   background: #eff6ff;
 }
 
+.leaderboard-share {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.leaderboard-share .subtle {
+  margin: 0;
+}
+
+.leaderboard-share-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.leaderboard-share-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #eff6ff;
+  padding: 6px 10px;
+  text-decoration: none;
+}
+
 .shop-actions {
   display: grid;
   gap: 8px;

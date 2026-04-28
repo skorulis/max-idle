@@ -1,4 +1,8 @@
 import { Link } from "react-router-dom";
+import { XIcon, XShareButton } from "react-share";
+import { BlueskyShareButton, BlueskyIcon } from "react-share";
+import { FacebookShareButton, FacebookIcon } from "react-share";
+import { RedditShareButton, RedditIcon } from "react-share";
 import { formatSeconds } from "../formatSeconds";
 import type { LeaderboardResponse, LeaderboardType } from "../app/types";
 
@@ -21,6 +25,14 @@ export function LeaderboardPage({
   onTypeChange,
   onStartJourney
 }: LeaderboardPageProps) {
+  const currentPlayer = leaderboard?.currentPlayer ?? null;
+  const shareDuration = currentPlayer ? formatSeconds(currentPlayer.totalIdleSeconds) : null;
+  const shareText =
+    currentPlayer && shareDuration
+      ? `I'm rank #${currentPlayer.rank} in the worlds most pointless game after waiting for ${shareDuration}`
+      : null;
+  const shareUrl = "https://max-idle.com/leaderboard";
+
   return (
     <>
       <h2>Leaderboard</h2>
@@ -67,6 +79,25 @@ export function LeaderboardPage({
             <p className="subtle">
               Your rank is #{leaderboard.currentPlayer.rank} with {formatSeconds(leaderboard.currentPlayer.totalIdleSeconds)}.
             </p>
+          ) : null}
+          {shareText ? (
+            <div className="leaderboard-share">
+              <p className="subtle">Share your rank:</p>
+              <div className="leaderboard-share-actions">
+                <XShareButton title={shareText} url={shareUrl}>
+                  <XIcon size={32} round />
+                </XShareButton>
+                <FacebookShareButton hashtag="#idle" title={shareText} url={shareUrl} aria-label="Share on Facebook">
+                  <FacebookIcon size={32} round />
+                </FacebookShareButton>
+                <BlueskyShareButton title={shareText} url={shareUrl} aria-label="Share on Bluesky">
+                  <BlueskyIcon size={32} round />
+                </BlueskyShareButton>
+                <RedditShareButton title={shareText} url={shareUrl} aria-label="Share on Reddit">
+                  <RedditIcon size={32} round />
+                </RedditShareButton>
+              </div>
+            </div>
           ) : null}
         </>
       ) : null}
