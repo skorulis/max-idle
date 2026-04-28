@@ -9,7 +9,7 @@ import {
 } from "./shop.js";
 import type { ShopState } from "./shop.js";
 import { getIdleHoarderMultiplier, IDLE_HOARDER_SHOP_UPGRADE } from "./shopUpgrades.js";
-import { safeNumber } from "./safeNumber.js";
+import { safeNaturalNumber, safeNumber } from "./safeNumber.js";
 
 type IdleRateStep = {
   seconds: number;
@@ -41,13 +41,6 @@ export type IdleCollectionPlayer = {
   realTimeAvailable?: number;
 };
 
-function clampElapsedSeconds(value: number): number {
-  if (!Number.isFinite(value) || value <= 0) {
-    return 0;
-  }
-  return value;
-}
-
 function interpolateRate(start: IdleRateStep, end: IdleRateStep, elapsedSeconds: number): number {
   const range = end.seconds - start.seconds;
   if (range <= 0) {
@@ -58,13 +51,13 @@ function interpolateRate(start: IdleRateStep, end: IdleRateStep, elapsedSeconds:
 }
 
 function getAccessibleIdleRateSteps(shop: ShopState): IdleRateStep[] {
-  const patienceLevel = Math.max(0, Math.floor(Number(shop.patience) || 0));
+  const patienceLevel = safeNaturalNumber(shop.patience);
   const unlockedSteps = Math.max(1, Math.min(IDLE_RATE_STEPS.length, patienceLevel + 1));
   return IDLE_RATE_STEPS.slice(0, unlockedSteps);
 }
 
 export function getIdleSecondsRate(player: IdleRatePlayer): number {
-  const elapsedSeconds = clampElapsedSeconds(player.secondsSinceLastCollection);
+  const elapsedSeconds = safeNaturalNumber(player.secondsSinceLastCollection);
   const accessibleSteps = getAccessibleIdleRateSteps(player.shop ?? getDefaultShopState());
   if (elapsedSeconds <= 0) {
     return accessibleSteps[0].rate;
@@ -81,7 +74,7 @@ export function getIdleSecondsRate(player: IdleRatePlayer): number {
 }
 
 export function calculateIdleSecondsGain(secondsSinceLastCollection: number, shop: ShopState = getDefaultShopState()): number {
-  const elapsedSeconds = clampElapsedSeconds(secondsSinceLastCollection);
+  const elapsedSeconds = safeNaturalNumber(secondsSinceLastCollection);
   const accessibleSteps = getAccessibleIdleRateSteps(shop);
   if (elapsedSeconds <= 0) {
     return 0;
@@ -117,12 +110,12 @@ export function isIdleCollectionBlockedByRestraint(player: {
   secondsSinceLastCollection: number;
   shop: ShopState;
 }): boolean {
-  const elapsedSeconds = clampElapsedSeconds(player.secondsSinceLastCollection);
+  const elapsedSeconds = safeNaturalNumber(player.secondsSinceLastCollection);
   return getRestraintEnabled(player.shop) && elapsedSeconds < RESTRAINT_MIN_REALTIME_SECONDS;
 }
 
 export function calculateBoostedIdleSecondsGain(player: IdleCollectionPlayer): number {
-  const elapsedSeconds = clampElapsedSeconds(player.secondsSinceLastCollection);
+  const elapsedSeconds = safeNaturalNumber(player.secondsSinceLastCollection);
   const baseGain = calculateIdleSecondsGain(elapsedSeconds, player.shop);
   const secondsMultiplier = getSecondsMultiplier(player.shop);
   const worthwhileAchievementsMultiplier = getWorthwhileAchievementsMultiplier(
@@ -153,7 +146,7 @@ export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): numbe
   const idleHoarderMultiplier = getIdleHoarderMultiplier(
     IDLE_HOARDER_SHOP_UPGRADE.currentLevel(player.shop),
     safeNumber(player.realTimeAvailable, 0),
-    clampElapsedSeconds(player.secondsSinceLastCollection)
+    safeNaturalNumber(player.secondsSinceLastCollection)
   );
   return (
     rateBeforeIdleHoarder * idleHoarderMultiplier
