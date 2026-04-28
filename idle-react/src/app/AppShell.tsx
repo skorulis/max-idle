@@ -13,7 +13,9 @@ import {
   getRestraintLevel,
   getRestraintMaxLevel,
   getSecondsMultiplierLevel,
-  getSecondsMultiplierMaxLevel
+  getSecondsMultiplierMaxLevel,
+  getWorthwhileAchievementsLevel,
+  getWorthwhileAchievementsMaxLevel
 } from "../shop";
 import { AccountPage } from "../pages/AccountPage";
 import { AchievementsPage } from "../pages/AchievementsPage";
@@ -47,6 +49,7 @@ import {
   purchaseCollectGemTimeBoost,
   purchaseIdleHoarder,
   purchaseLuck,
+  purchaseWorthwhileAchievements,
   purchaseRefund,
   purchaseRestraint,
   purchaseSecondsMultiplier,
@@ -220,6 +223,7 @@ export function AppShell() {
     | "restraint"
     | "idle_hoarder"
     | "luck"
+    | "worthwhile_achievements"
     | "extra_realtime_wait"
     | "collect_gem_time_boost"
     | "purchase_refund"
@@ -597,7 +601,7 @@ export function AppShell() {
     const base = calculateBoostedIdleSecondsGain({
       secondsSinceLastCollection: Math.max(0, elapsedSinceLastCollection),
       shop: playerState.shop,
-      achievementBonusMultiplier: playerState.achievementBonusMultiplier,
+      achievementCount: playerState.achievementCount,
       realTimeAvailable: playerState.realTime.available
     });
     return Math.floor(base * getCollectGemIdleSecondsMultiplier(getCollectGemBoostLevel(playerState.shop)));
@@ -620,7 +624,7 @@ export function AppShell() {
     return getEffectiveIdleSecondsRate({
       secondsSinceLastCollection: Math.max(0, elapsed),
       shop: playerState.shop,
-      achievementBonusMultiplier: playerState.achievementBonusMultiplier,
+      achievementCount: playerState.achievementCount,
       realTimeAvailable: playerState.realTime.available
     });
   }, [estimatedServerNowMs, playerState]);
@@ -693,6 +697,8 @@ export function AppShell() {
   const luckMaxLevel = getLuckMaxLevel();
   const idleHoarderLevel = playerState ? getIdleHoarderLevel(playerState.shop) : 0;
   const idleHoarderMaxLevel = getIdleHoarderMaxLevel();
+  const worthwhileAchievementsLevel = playerState ? getWorthwhileAchievementsLevel(playerState.shop) : 0;
+  const worthwhileAchievementsMaxLevel = getWorthwhileAchievementsMaxLevel();
 
   const activeMessageCardText = isAuthenticated
     ? getMessageFromIndex(messageCardRandomIndex)
@@ -970,6 +976,34 @@ export function AppShell() {
         setError("Not enough spendable real time for that purchase.");
       } else if (purchaseError instanceof Error && purchaseError.message === "ALREADY_OWNED") {
         setError("Idle hoarder is already maxed.");
+      } else {
+        setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
+      }
+      setStatus("Could not complete shop purchase.");
+    } finally {
+      setShopPendingQuantity(null);
+    }
+  };
+
+  const onPurchaseWorthwhileAchievements = async () => {
+    if (!playerState || worthwhileAchievementsLevel >= worthwhileAchievementsMaxLevel) {
+      return;
+    }
+
+    setShopPendingQuantity("worthwhile_achievements");
+    setError(null);
+    setStatus("Purchasing Worthwhile Achievements...");
+    try {
+      const updatedPlayer = await purchaseWorthwhileAchievements(token);
+      const synced = toSyncedState(updatedPlayer);
+      alignClientClock();
+      setPlayerState(synced);
+      setStatus("Worthwhile Achievements upgraded.");
+    } catch (purchaseError) {
+      if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
+        setError("Not enough spendable idle seconds for that purchase.");
+      } else if (purchaseError instanceof Error && purchaseError.message === "ALREADY_OWNED") {
+        setError("Worthwhile Achievements is already maxed.");
       } else {
         setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
       }
@@ -1455,6 +1489,9 @@ export function AppShell() {
                 idleHoarderLevel={idleHoarderLevel}
                 idleHoarderMaxLevel={idleHoarderMaxLevel}
                 onPurchaseIdleHoarder={onPurchaseIdleHoarder}
+                worthwhileAchievementsLevel={worthwhileAchievementsLevel}
+                worthwhileAchievementsMaxLevel={worthwhileAchievementsMaxLevel}
+                onPurchaseWorthwhileAchievements={onPurchaseWorthwhileAchievements}
                 onPurchaseExtraRealtimeWait={onPurchaseExtraRealtimeWait}
                 onPurchaseCollectGemTimeBoost={onPurchaseCollectGemTimeBoost}
                 onPurchaseRefund={onPurchaseRefund}

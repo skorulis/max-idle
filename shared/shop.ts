@@ -4,9 +4,11 @@ import {
   LUCK_SHOP_UPGRADE,
   RESTRAINT_SHOP_UPGRADE,
   SECONDS_MULTIPLIER_SHOP_UPGRADE,
+  WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
   SHOP_UPGRADES,
   SHOP_CURRENCY_TYPES,
-  SHOP_UPGRADE_IDS
+  SHOP_UPGRADE_IDS,
+  getWorthwhileAchievementsBonusPerAchievement
 } from "./shopUpgrades.js";
 import type { ShopUpgradeDefinition } from "./shopUpgrades.js";
 
@@ -20,6 +22,7 @@ export type ShopState = {
   luck: number;
   /** Resets to 0 on collect. Same key as {@link SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST}. */
   collect_gem_time_boost?: number;
+  worthwhile_achievements?: number;
   [key: string]: unknown;
 };
 
@@ -28,6 +31,7 @@ export const DEFAULT_SHOP_STATE: ShopState = {
   [SHOP_UPGRADE_IDS.RESTRAINT]: 0,
   [SHOP_UPGRADE_IDS.IDLE_HOARDER]: 0,
   [SHOP_UPGRADE_IDS.LUCK]: 0,
+  [SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS]: 0,
   [SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST]: 0
 };
 
@@ -134,6 +138,31 @@ export function withIdleHoarderLevel(shop: ShopState, idleHoarderLevel: number):
 
 export function getIdleHoarderMaxLevel(): number {
   return IDLE_HOARDER_SHOP_UPGRADE.maxLevel();
+}
+
+export function getWorthwhileAchievementsLevel(shop: ShopState): number {
+  return WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.currentLevel(shop);
+}
+
+export function getWorthwhileAchievementsMaxLevel(): number {
+  return WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.maxLevel();
+}
+
+export function withWorthwhileAchievementsLevel(shop: ShopState, worthwhileAchievementsLevel: number): ShopState {
+  const safeLevel = Number.isFinite(worthwhileAchievementsLevel)
+    ? Math.max(0, Math.min(getWorthwhileAchievementsMaxLevel(), Math.floor(worthwhileAchievementsLevel)))
+    : 0;
+  return {
+    ...shop,
+    [SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS]: safeLevel
+  };
+}
+
+/** ×(1 + bonusPerAchievement × achievementCount), from Worthwhile Achievements tier and unlock count. */
+export function getWorthwhileAchievementsMultiplier(shop: ShopState, achievementCount: number): number {
+  const bonusPer = getWorthwhileAchievementsBonusPerAchievement(getWorthwhileAchievementsLevel(shop));
+  const count = Number.isFinite(achievementCount) ? Math.max(0, Math.floor(achievementCount)) : 0;
+  return 1 + bonusPer * count;
 }
 
 export function getLuckEnabled(shop: ShopState): boolean {

@@ -11,11 +11,14 @@ import {
   getSecondsMultiplierLevel,
   getSecondsMultiplier,
   getCollectGemBoostLevel,
+  getWorthwhileAchievementsLevel,
+  getWorthwhileAchievementsMultiplier,
   withCollectGemBoostLevel,
   withIdleHoarderLevel,
   withLuckLevel,
   withRestraintLevel,
-  withSecondsMultiplier
+  withSecondsMultiplier,
+  withWorthwhileAchievementsLevel
 } from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
 import {
@@ -56,7 +59,6 @@ type RegisterShopRoutesOptions = {
   pool: Pool;
   resolveIdentity: (req: express.Request) => Promise<ShopRouteIdentity>;
   toNumber: (value: unknown) => number;
-  getAchievementBonusMultiplier: (achievementCount: number) => number;
   isProduction: boolean;
 };
 
@@ -79,7 +81,6 @@ export function registerShopRoutes({
   pool,
   resolveIdentity,
   toNumber,
-  getAchievementBonusMultiplier,
   isProduction
 }: RegisterShopRoutesOptions): void {
   app.post("/shop/purchase", async (req, res, next) => {
@@ -155,6 +156,8 @@ export function registerShopRoutes({
       const isCollectGemTimeBoost = upgradeType === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST;
       const isPurchaseRefund = upgradeType === SHOP_UPGRADE_IDS.PURCHASE_REFUND;
       const isIdleHoarder = upgradeType === SHOP_UPGRADE_IDS.IDLE_HOARDER;
+      const isWorthwhileAchievements = upgradeType === SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS;
+      const worthwhileAchievementsLevel = getWorthwhileAchievementsLevel(row.shop);
       const isGemPurchase = boundedUpgrade.currencyType === SHOP_CURRENCY_TYPES.GEM;
       const isMaxLevelBoundedUpgrade = !isExtraRealtimeWait && !isPurchaseRefund;
       const collectGemLevel = getCollectGemBoostLevel(row.shop);
@@ -212,7 +215,9 @@ export function registerShopRoutes({
               ? withRestraintLevel(row.shop, restraintLevel + quantity)
               : isIdleHoarder
                 ? withIdleHoarderLevel(row.shop, idleHoarderLevel + quantity)
-              : withLuckLevel(row.shop, luckLevel + quantity);
+                : isWorthwhileAchievements
+                  ? withWorthwhileAchievementsLevel(row.shop, worthwhileAchievementsLevel + quantity)
+                  : withLuckLevel(row.shop, luckLevel + quantity);
       const nextLastCollectedAt = isExtraRealtimeWait
         ? new Date(row.last_collected_at.getTime() - REALTIME_WAIT_EXTENSION_SECONDS * 1000)
         : row.last_collected_at;
@@ -223,7 +228,7 @@ export function registerShopRoutes({
           : normalizeCompletedAchievementIds(row.completed_achievements);
       const hasNewAchievement = nextCompletedAchievementIds.length > toNumber(row.achievement_count);
       const nextAchievementCount = nextCompletedAchievementIds.length;
-      const nextAchievementBonusMultiplier = getAchievementBonusMultiplier(nextAchievementCount);
+      const nextAchievementBonusMultiplier = getWorthwhileAchievementsMultiplier(nextShopState, nextAchievementCount);
       const nextIdleTimeAvailable =
         boundedUpgrade.currencyType === SHOP_CURRENCY_TYPES.IDLE ? idleTimeAvailable - totalCost : idleTimeAvailable;
       const nextIdleTimeAvailableWithRefund = nextIdleTimeAvailable + refundTotals.idle;
@@ -236,7 +241,7 @@ export function registerShopRoutes({
         nextLastCollectedAt,
         now,
         nextShopState,
-        nextAchievementBonusMultiplier,
+        nextAchievementCount,
         nextRealTimeAvailable
       );
       const updateResult = await client.query<{
@@ -311,7 +316,7 @@ export function registerShopRoutes({
       const idleSecondsRate = getEffectiveIdleSecondsRate({
         secondsSinceLastCollection: elapsedSinceLastCollection,
         shop: updated.shop,
-        achievementBonusMultiplier: nextAchievementBonusMultiplier,
+        achievementCount: nextAchievementCount,
         realTimeAvailable: toNumber(updated.real_time_available)
       });
       res.json({
@@ -331,6 +336,7 @@ export function registerShopRoutes({
         currentSeconds: toNumber(updated.current_seconds),
         secondsMultiplier: getSecondsMultiplier(updated.shop),
         shop: updated.shop,
+        achievementCount: nextAchievementCount,
         achievementBonusMultiplier: nextAchievementBonusMultiplier,
         hasUnseenAchievements: updated.has_unseen_achievements,
         idleSecondsRate,
@@ -402,12 +408,11 @@ export function registerShopRoutes({
       }
 
       const now = new Date();
-      const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
       const syncedCurrentSeconds = boostedUncollectedIdleSeconds(
         row.last_collected_at,
         now,
         row.shop,
-        achievementBonusMultiplier,
+        toNumber(row.achievement_count),
         toNumber(row.real_time_available)
       );
       const updateResult = await client.query<{
@@ -459,10 +464,14 @@ export function registerShopRoutes({
       }
 
       const elapsedSinceLastCollection = calculateElapsedSeconds(updated.last_collected_at, now);
+      const achievementBonusMultiplier = getWorthwhileAchievementsMultiplier(
+        updated.shop,
+        toNumber(row.achievement_count)
+      );
       const idleSecondsRate = getEffectiveIdleSecondsRate({
         secondsSinceLastCollection: elapsedSinceLastCollection,
         shop: updated.shop,
-        achievementBonusMultiplier,
+        achievementCount: toNumber(row.achievement_count),
         realTimeAvailable: toNumber(updated.real_time_available)
       });
       res.json({
@@ -482,6 +491,7 @@ export function registerShopRoutes({
         currentSeconds: toNumber(updated.current_seconds),
         secondsMultiplier: getSecondsMultiplier(updated.shop),
         shop: updated.shop,
+        achievementCount: toNumber(row.achievement_count),
         achievementBonusMultiplier,
         hasUnseenAchievements: updated.has_unseen_achievements,
         idleSecondsRate,

@@ -18,5 +18,9 @@ export {
   getSecondsMultiplierUpgradeValue,
   getShopPurchaseRefundTotals,
   getDefaultShopState,
+  getWorthwhileAchievementsLevel,
+  getWorthwhileAchievementsMaxLevel,
+  getWorthwhileAchievementsMultiplier,
+  withWorthwhileAchievementsLevel,
   multiplierToLevel
 } from "@maxidle/shared/shop";

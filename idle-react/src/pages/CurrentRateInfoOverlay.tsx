@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { CircleX } from "lucide-react";
 import type { ShopState } from "../shop";
-import { getIdleHoarderLevel, getRestraintBonusMultiplier, getSecondsMultiplier } from "../shop";
+import { getIdleHoarderLevel, getRestraintBonusMultiplier, getSecondsMultiplier, getWorthwhileAchievementsMultiplier } from "../shop";
 import { getIdleSecondsRate } from "../idleRate";
 import { getIdleHoarderMultiplier } from "../shopUpgrades";
 
@@ -11,7 +11,7 @@ type CurrentRateInfoOverlayProps = {
   secondsSinceLastCollection: number;
   effectiveIdleSecondsRate: number;
   shop: ShopState;
-  achievementBonusMultiplier: number;
+  achievementCount: number;
   realTimeAvailable: number;
 };
 
@@ -21,7 +21,7 @@ export function CurrentRateInfoOverlay({
   secondsSinceLastCollection,
   effectiveIdleSecondsRate,
   shop,
-  achievementBonusMultiplier,
+  achievementCount,
   realTimeAvailable
 }: CurrentRateInfoOverlayProps) {
   const shouldShowFactor = (value: number): boolean => Math.abs(value - 1) > Number.EPSILON;
@@ -48,8 +48,11 @@ export function CurrentRateInfoOverlay({
     });
     const secondsMultiplier = getSecondsMultiplier(shop);
     const shopBonusMultiplier = getRestraintBonusMultiplier(shop);
-    const safeAchievementBonusMultiplier = Number.isFinite(achievementBonusMultiplier) ? achievementBonusMultiplier : 1;
-    const rateBeforeIdleHoarder = baseRate * secondsMultiplier * shopBonusMultiplier * safeAchievementBonusMultiplier;
+    const worthwhileAchievementsMultiplier = getWorthwhileAchievementsMultiplier(
+      shop,
+      Number.isFinite(achievementCount) ? achievementCount : 0
+    );
+    const rateBeforeIdleHoarder = baseRate * secondsMultiplier * shopBonusMultiplier * worthwhileAchievementsMultiplier;
     const idleHoarderMultiplier = getIdleHoarderMultiplier(
       getIdleHoarderLevel(shop),
       realTimeAvailable,
@@ -60,11 +63,11 @@ export function CurrentRateInfoOverlay({
       baseRate,
       secondsMultiplier,
       shopBonusMultiplier,
-      safeAchievementBonusMultiplier,
+      worthwhileAchievementsMultiplier,
       idleHoarderMultiplier,
       calculatedRate: rateBeforeIdleHoarder * idleHoarderMultiplier
     };
-  }, [achievementBonusMultiplier, realTimeAvailable, secondsSinceLastCollection, shop]);
+  }, [achievementCount, realTimeAvailable, secondsSinceLastCollection, shop]);
 
   if (!open) {
     return null;
@@ -102,10 +105,10 @@ export function CurrentRateInfoOverlay({
             <span>{factors.shopBonusMultiplier.toFixed(2)}x</span>
           </p>
         ) : null}
-        {shouldShowFactor(factors.safeAchievementBonusMultiplier) ? (
+        {shouldShowFactor(factors.worthwhileAchievementsMultiplier) ? (
           <p className="rate-factor-row">
-            <span>Achievements bonus</span>
-            <span>{factors.safeAchievementBonusMultiplier.toFixed(2)}x</span>
+            <span>Worthwile Achivements</span>
+            <span>{factors.worthwhileAchievementsMultiplier.toFixed(2)}x</span>
           </p>
         ) : null}
         {shouldShowFactor(factors.idleHoarderMultiplier) ? (

@@ -13,7 +13,6 @@ import {
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 import { calculateElapsedSeconds } from "./time.js";
 import { parseCompletedAchievementIds } from "./achievementUpdates.js";
-import { ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION } from "@maxidle/shared/achievements";
 import { registerShopRoutes } from "./shop.js";
 import { registerLeaderboardRoutes } from "./leaderboard.js";
 import { registerApiDocumentation } from "./apiContract.js";
@@ -41,10 +40,6 @@ function toNumber(value: unknown): number {
 
 function isValidUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
-}
-
-function getAchievementBonusMultiplier(achievementCount: number): number {
-  return 1 + Math.max(0, achievementCount) * ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION;
 }
 
 type PlayerCurrentSecondsSyncRow = {
@@ -82,12 +77,12 @@ export async function syncStalePlayerCurrentSeconds(pool: Pool, limit = 100): Pr
     );
 
     for (const row of stalePlayersResult.rows) {
-      const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
+      const achievementCount = toNumber(row.achievement_count);
       const nextCurrentSeconds = boostedUncollectedIdleSeconds(
         row.last_collected_at,
         row.server_time,
         row.shop,
-        achievementBonusMultiplier,
+        achievementCount,
         toNumber(row.real_time_available)
       );
 
@@ -289,7 +284,6 @@ export function createApp(pool: Pool, config: AppConfig) {
     pool,
     resolveIdentity: resolveIdentityForRequest,
     toNumber,
-    getAchievementBonusMultiplier,
     parseCompletedAchievementIds
   });
 
@@ -351,12 +345,12 @@ export function createApp(pool: Pool, config: AppConfig) {
       }
 
       const accountAgeSeconds = calculateElapsedSeconds(row.created_at, row.server_time);
-      const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
+      const achievementCount = toNumber(row.achievement_count);
       const currentIdleSeconds = boostedUncollectedIdleSeconds(
         row.last_collected_at,
         row.server_time,
         row.shop,
-        achievementBonusMultiplier,
+        achievementCount,
         toNumber(row.real_time_available)
       );
 
@@ -394,8 +388,7 @@ export function createApp(pool: Pool, config: AppConfig) {
     app,
     pool,
     resolveIdentity: resolveIdentityForRequest,
-    toNumber,
-    getAchievementBonusMultiplier
+    toNumber
   });
 
   registerTournamentRoutes({
@@ -416,7 +409,6 @@ export function createApp(pool: Pool, config: AppConfig) {
     pool,
     resolveIdentity: resolveIdentityForRequest,
     toNumber,
-    getAchievementBonusMultiplier,
     isProduction: config.isProduction
   });
 

@@ -18,6 +18,7 @@ export const REALTIME_WAIT_EXTENSION_SECONDS = 6 * 60 * 60;
 export const COLLECT_GEM_TIME_PER_LEVEL_WAIT_FACTOR = 0.5;
 
 const SECONDS_PER_HOUR = 60 * 60;
+const SECONDS_PER_DAY = 24 * 60 * 60;
 
 export const SHOP_UPGRADE_IDS = {
   SECONDS_MULTIPLIER: "seconds_multiplier",
@@ -32,7 +33,9 @@ export const SHOP_UPGRADE_IDS = {
    */
   COLLECT_GEM_TIME_BOOST: "collect_gem_time_boost",
   /** Spend 1 gem to reset purchased idle/real shop upgrades and refund their spent time. */
-  PURCHASE_REFUND: "purchase_refund"
+  PURCHASE_REFUND: "purchase_refund",
+  /** Idle multiplier bonus per unlocked achievement: ×(1 + value × achievementCount). */
+  WORTHWHILE_ACHIEVEMENTS: "worthwhile_achievements"
 } as const;
 
 export type ShopUpgradeId = (typeof SHOP_UPGRADE_IDS)[keyof typeof SHOP_UPGRADE_IDS];
@@ -200,11 +203,29 @@ export const PURCHASE_REFUND_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpg
   currencyType: SHOP_CURRENCY_TYPES.GEM
 });
 
+/** Five levels: bonus per achievement scales from 0.05 to 0.25; multiplier is 1 + value × achievementCount. */
+export const WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
+  id: SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS,
+  name: "Worthwile Achivements",
+  icon: "trophy",
+  description: "Gain a bonus based on number of achievements unlocked",
+  valueDescription: "+ %s per achievements",
+  levels: [
+    { cost: 5 * SECONDS_PER_HOUR, value: 0.05 },
+    { cost: SECONDS_PER_DAY, value: 0.1 },
+    { cost: 2 * SECONDS_PER_DAY, value: 0.15 },
+    { cost: 7 * SECONDS_PER_DAY, value: 0.2 },
+    { cost: 28 * SECONDS_PER_DAY, value: 0.25 }
+  ],
+  currencyType: SHOP_CURRENCY_TYPES.IDLE
+});
+
 export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   SECONDS_MULTIPLIER_SHOP_UPGRADE,
   RESTRAINT_SHOP_UPGRADE,
   IDLE_HOARDER_SHOP_UPGRADE,
   LUCK_SHOP_UPGRADE,
+  WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
   EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
   PURCHASE_REFUND_SHOP_UPGRADE
@@ -217,7 +238,8 @@ export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> =
   [SHOP_UPGRADE_IDS.LUCK]: LUCK_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.EXTRA_REALTIME_WAIT]: EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST]: COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
-  [SHOP_UPGRADE_IDS.PURCHASE_REFUND]: PURCHASE_REFUND_SHOP_UPGRADE
+  [SHOP_UPGRADE_IDS.PURCHASE_REFUND]: PURCHASE_REFUND_SHOP_UPGRADE,
+  [SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS]: WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE
 };
 
 export function getShopUpgradeDefinition(upgradeType: string): ShopUpgradeDefinition | null {
@@ -287,4 +309,13 @@ export function getCollectGemIdleSecondsMultiplier(collectGemBoostLevel: number)
 
 export function formatShopUpgradeDescription(upgrade: ShopUpgradeDefinition, value: string): string {
   return upgrade.description.replace(SHOP_UPGRADE_DESCRIPTION_VALUE_PLACEHOLDER, value);
+}
+
+export function getWorthwhileAchievementsBonusPerAchievement(level: number): number {
+  const maxLevel = WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.maxLevel();
+  const L = Math.max(0, Math.min(maxLevel, Math.floor(Number(level) || 0)));
+  if (L <= 0) {
+    return 0;
+  }
+  return WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.levels[L - 1]?.value ?? 0;
 }

@@ -1,6 +1,8 @@
 import express from "express";
 import type { Pool } from "pg";
 import { ACHIEVEMENTS } from "@maxidle/shared/achievements";
+import { getWorthwhileAchievementsMultiplier } from "@maxidle/shared/shop";
+import type { ShopState } from "@maxidle/shared/shop";
 import type { AuthClaims } from "../types.js";
 
 type RegisterAchievementsRoutesOptions = {
@@ -8,7 +10,6 @@ type RegisterAchievementsRoutesOptions = {
   pool: Pool;
   resolveIdentity: (req: express.Request) => Promise<{ claims: AuthClaims }>;
   toNumber: (value: unknown) => number;
-  getAchievementBonusMultiplier: (achievementCount: number) => number;
   parseCompletedAchievementIds: (value: unknown) => string[];
 };
 
@@ -17,7 +18,6 @@ export function registerAchievementsRoutes({
   pool,
   resolveIdentity,
   toNumber,
-  getAchievementBonusMultiplier,
   parseCompletedAchievementIds
 }: RegisterAchievementsRoutesOptions): void {
   app.get("/achievements", async (req, res, next) => {
@@ -36,11 +36,13 @@ export function registerAchievementsRoutes({
       const playerStateResult = await pool.query<{
         achievement_count: number | string;
         completed_achievements: unknown;
+        shop: ShopState;
       }>(
         `
         SELECT
           achievement_count,
-          completed_achievements
+          completed_achievements,
+          shop
         FROM player_states
         WHERE user_id = $1
         `,
@@ -54,10 +56,11 @@ export function registerAchievementsRoutes({
 
       const completedAchievementIds = new Set(parseCompletedAchievementIds(playerStateRow.completed_achievements));
       const completedCount = toNumber(playerStateRow.achievement_count);
+      const earningsBonusMultiplier = getWorthwhileAchievementsMultiplier(playerStateRow.shop, completedCount);
       res.json({
         completedCount,
         totalCount: ACHIEVEMENTS.length,
-        earningsBonusMultiplier: getAchievementBonusMultiplier(completedCount),
+        earningsBonusMultiplier,
         achievements: ACHIEVEMENTS.map((achievement) => ({
           ...achievement,
           completed: completedAchievementIds.has(achievement.id)

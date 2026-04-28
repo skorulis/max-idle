@@ -10,6 +10,7 @@ export function toSyncedState(data: PlayerResponse): SyncedPlayerState {
     currentSecondsLastUpdatedMs: Date.parse(data.currentSecondsLastUpdated),
     secondsMultiplier: data.secondsMultiplier,
     shop: data.shop,
+    achievementCount: data.achievementCount,
     achievementBonusMultiplier: data.achievementBonusMultiplier,
     hasUnseenAchievements: data.hasUnseenAchievements,
     lastCollectedAtMs: Date.parse(data.lastCollectedAt),

@@ -1,6 +1,5 @@
 import type { Pool, PoolClient } from "pg";
 import type { ShopState } from "@maxidle/shared/shop";
-import { ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION } from "@maxidle/shared/achievements";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 
 const WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000;
@@ -46,10 +45,6 @@ export type TournamentEnterResult = {
 
 function toNumber(value: string | number): number {
   return typeof value === "number" ? value : Number(value);
-}
-
-function getAchievementBonusMultiplier(achievementCount: number): number {
-  return 1 + Math.max(0, achievementCount) * ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION;
 }
 
 function isUniqueViolation(error: unknown): boolean {
@@ -232,12 +227,12 @@ async function buildTournamentSummary(
   const entriesForScoring = await getTournamentEntriesForScoring(client, tournament.id);
   const scoredEntries = entriesForScoring
     .map((row) => {
-      const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
+      const achievementCount = toNumber(row.achievement_count);
       const score = boostedUncollectedIdleSeconds(
         row.last_collected_at,
         now,
         row.shop,
-        achievementBonusMultiplier,
+        achievementCount,
         toNumber(row.real_time_available)
       );
       return {
@@ -366,12 +361,12 @@ async function finalizeOneDueTournament(pool: Pool, now: Date): Promise<number> 
     );
 
     for (const row of entriesResult.rows) {
-      const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
+      const achievementCount = toNumber(row.achievement_count);
       const score = boostedUncollectedIdleSeconds(
         row.last_collected_at,
         now,
         row.shop,
-        achievementBonusMultiplier,
+        achievementCount,
         toNumber(row.real_time_available)
       );
       await client.query(

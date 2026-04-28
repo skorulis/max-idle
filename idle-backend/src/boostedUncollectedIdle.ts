@@ -9,14 +9,14 @@ export function boostedUncollectedIdleSeconds(
   lastCollectedAt: Date,
   refTime: Date,
   shop: ShopState,
-  achievementBonusMultiplier: number,
+  achievementCount: number,
   realTimeAvailable = 0
 ): number {
   const elapsedSinceLastCollection = calculateElapsedSeconds(lastCollectedAt, refTime);
   const base = calculateBoostedIdleSecondsGain({
     secondsSinceLastCollection: elapsedSinceLastCollection,
     shop,
-    achievementBonusMultiplier,
+    achievementCount,
     realTimeAvailable
   });
   return Math.floor(base * getCollectGemIdleSecondsMultiplier(getCollectGemBoostLevel(shop)));

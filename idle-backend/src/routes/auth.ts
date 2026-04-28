@@ -42,7 +42,7 @@ export function registerAuthRoutes({
           ]);
           await client.query(
             `INSERT INTO player_states (user_id, achievement_count, completed_achievements, shop, seconds_multiplier) VALUES ($1, 0, '[]'::jsonb, $2::jsonb, 0)`,
-            [userId, JSON.stringify({ seconds_multiplier: 0, restraint: 0, luck: 0 })]
+            [userId, JSON.stringify({ seconds_multiplier: 0, restraint: 0, idle_hoarder: 0, luck: 0, worthwhile_achievements: 0, collect_gem_time_boost: 0 })]
           );
           await client.query("COMMIT");
           created = true;

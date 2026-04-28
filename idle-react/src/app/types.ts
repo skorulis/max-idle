@@ -21,6 +21,7 @@ export type PlayerResponse = {
   idleSecondsRate: number;
   secondsMultiplier: number;
   shop: ShopState;
+  achievementCount: number;
   achievementBonusMultiplier: number;
   hasUnseenAchievements: boolean;
   currentSecondsLastUpdated: string;
@@ -109,6 +110,7 @@ export type SyncedPlayerState = {
   currentSecondsLastUpdatedMs: number;
   secondsMultiplier: number;
   shop: ShopState;
+  achievementCount: number;
   achievementBonusMultiplier: number;
   hasUnseenAchievements: boolean;
   lastCollectedAtMs: number;

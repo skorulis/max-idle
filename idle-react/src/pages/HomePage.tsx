@@ -169,7 +169,7 @@ export function HomePage({
         secondsSinceLastCollection={realtimeElapsedSeconds}
         effectiveIdleSecondsRate={effectiveIdleSecondsRate}
         shop={playerState.shop}
-        achievementBonusMultiplier={playerState.achievementBonusMultiplier}
+        achievementCount={playerState.achievementCount}
         realTimeAvailable={playerState.realTime.available}
       />
     </>

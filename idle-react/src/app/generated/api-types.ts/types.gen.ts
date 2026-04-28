@@ -33,8 +33,10 @@ export type PlayerState = {
         idle_hoarder?: number;
         luck: number;
         collect_gem_time_boost?: number;
+        worthwhile_achievements?: number;
         [key: string]: unknown;
     };
+    achievementCount: number;
     achievementBonusMultiplier: number;
     hasUnseenAchievements: boolean;
     currentSecondsLastUpdated: string;

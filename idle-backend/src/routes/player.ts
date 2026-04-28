@@ -1,7 +1,7 @@
 import express from "express";
 import type { Pool } from "pg";
 import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
-import { getSecondsMultiplier, withCollectGemBoostLevel } from "@maxidle/shared/shop";
+import { getSecondsMultiplier, getWorthwhileAchievementsMultiplier, withCollectGemBoostLevel } from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
 import { boostedUncollectedIdleSeconds } from "../boostedUncollectedIdle.js";
 import { calculateElapsedSeconds } from "../time.js";
@@ -30,15 +30,13 @@ type RegisterPlayerRoutesOptions = {
   pool: Pool;
   resolveIdentity: (req: express.Request) => Promise<{ claims: AuthClaims }>;
   toNumber: (value: unknown) => number;
-  getAchievementBonusMultiplier: (achievementCount: number) => number;
 };
 
 export function registerPlayerRoutes({
   app,
   pool,
   resolveIdentity,
-  toNumber,
-  getAchievementBonusMultiplier
+  toNumber
 }: RegisterPlayerRoutesOptions): void {
   app.get("/player", async (req, res, next) => {
     try {
@@ -92,12 +90,13 @@ export function registerPlayerRoutes({
         return;
       }
 
-      const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(row.achievement_count));
+      const achievementCount = toNumber(row.achievement_count);
+      const achievementBonusMultiplier = getWorthwhileAchievementsMultiplier(row.shop, achievementCount);
       const currentIdleSeconds = boostedUncollectedIdleSeconds(
         row.last_collected_at,
         row.server_time,
         row.shop,
-        achievementBonusMultiplier,
+        achievementCount,
         toNumber(row.real_time_available)
       );
       await pool.query(
@@ -114,7 +113,7 @@ export function registerPlayerRoutes({
       const idleSecondsRate = getEffectiveIdleSecondsRate({
         secondsSinceLastCollection: elapsedSinceLastCollection,
         shop: row.shop,
-        achievementBonusMultiplier,
+        achievementCount,
         realTimeAvailable: toNumber(row.real_time_available)
       });
 
@@ -136,6 +135,7 @@ export function registerPlayerRoutes({
         idleSecondsRate,
         secondsMultiplier: getSecondsMultiplier(row.shop),
         shop: row.shop,
+        achievementCount,
         achievementBonusMultiplier,
         hasUnseenAchievements: row.has_unseen_achievements,
         currentSecondsLastUpdated: row.server_time.toISOString(),
@@ -196,12 +196,12 @@ export function registerPlayerRoutes({
       }
 
       const collectedAt = new Date();
-      const collectionAchievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(lockedRow.achievement_count));
+      const collectionAchievementCount = toNumber(lockedRow.achievement_count);
       const collectedSeconds = boostedUncollectedIdleSeconds(
         lockedRow.last_collected_at,
         collectedAt,
         lockedRow.shop,
-        collectionAchievementBonusMultiplier,
+        collectionAchievementCount,
         toNumber(lockedRow.real_time_available)
       );
       const realSecondsCollected = calculateElapsedSeconds(lockedRow.last_collected_at, collectedAt);
@@ -327,12 +327,13 @@ export function registerPlayerRoutes({
       const hasUnseenAchievements =
         lockedRow.has_unseen_achievements || completedAchievementIds.length !== toNumber(lockedRow.achievement_count);
 
-      const achievementBonusMultiplier = getAchievementBonusMultiplier(completedAchievementIds.length);
+      const achievementCountAfter = completedAchievementIds.length;
+      const achievementBonusMultiplier = getWorthwhileAchievementsMultiplier(row.shop, achievementCountAfter);
       const elapsedSinceLastCollectionAfterCollect = calculateElapsedSeconds(nextLastCollectedAt, collectedAt);
       const idleSecondsRate = getEffectiveIdleSecondsRate({
         secondsSinceLastCollection: elapsedSinceLastCollectionAfterCollect,
         shop: row.shop,
-        achievementBonusMultiplier,
+        achievementCount: achievementCountAfter,
         realTimeAvailable: toNumber(row.real_time_available)
       });
       await client.query("COMMIT");
@@ -355,6 +356,7 @@ export function registerPlayerRoutes({
         currentSeconds: toNumber(row.current_seconds),
         secondsMultiplier: getSecondsMultiplier(row.shop),
         shop: row.shop,
+        achievementCount: achievementCountAfter,
         achievementBonusMultiplier,
         hasUnseenAchievements,
         idleSecondsRate,
@@ -483,11 +485,15 @@ export function registerPlayerRoutes({
       }
 
       const elapsedSinceLastCollection = calculateElapsedSeconds(updatedPlayer.last_collected_at, now);
-      const achievementBonusMultiplier = getAchievementBonusMultiplier(toNumber(updatedPlayer.achievement_count));
+      const achievementCountForRate = toNumber(updatedPlayer.achievement_count);
+      const achievementBonusMultiplier = getWorthwhileAchievementsMultiplier(
+        updatedPlayer.shop,
+        achievementCountForRate
+      );
       const idleSecondsRate = getEffectiveIdleSecondsRate({
         secondsSinceLastCollection: elapsedSinceLastCollection,
         shop: updatedPlayer.shop,
-        achievementBonusMultiplier,
+        achievementCount: achievementCountForRate,
         realTimeAvailable: toNumber(updatedPlayer.real_time_available)
       });
       await client.query("COMMIT");
@@ -509,6 +515,7 @@ export function registerPlayerRoutes({
         currentSeconds: toNumber(updatedPlayer.current_seconds),
         secondsMultiplier: getSecondsMultiplier(updatedPlayer.shop),
         shop: updatedPlayer.shop,
+        achievementCount: achievementCountForRate,
         achievementBonusMultiplier,
         hasUnseenAchievements: updatedPlayer.has_unseen_achievements,
         idleSecondsRate,

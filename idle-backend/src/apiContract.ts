@@ -47,9 +47,11 @@ const playerStateSchema = registry.register(
         restraint: z.number().int().nonnegative(),
         idle_hoarder: z.number().int().min(0).max(5).optional(),
         luck: z.number().int().nonnegative(),
-        collect_gem_time_boost: z.number().int().min(0).max(5).optional()
+        collect_gem_time_boost: z.number().int().min(0).max(5).optional(),
+        worthwhile_achievements: z.number().int().min(0).max(5).optional()
       })
       .catchall(z.unknown()),
+    achievementCount: z.number().int().nonnegative(),
     achievementBonusMultiplier: z.number().positive(),
     hasUnseenAchievements: z.boolean(),
     currentSecondsLastUpdated: z.string().datetime(),

@@ -119,6 +119,11 @@
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 5
+              },
+              "worthwhile_achievements": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 5
               }
             },
             "required": [
@@ -129,6 +134,10 @@
             "additionalProperties": {
               "nullable": true
             }
+          },
+          "achievementCount": {
+            "type": "integer",
+            "minimum": 0
           },
           "achievementBonusMultiplier": {
             "type": "number",
@@ -165,6 +174,7 @@
           "idleSecondsRate",
           "secondsMultiplier",
           "shop",
+          "achievementCount",
           "achievementBonusMultiplier",
           "hasUnseenAchievements",
           "currentSecondsLastUpdated",

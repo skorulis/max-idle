@@ -337,6 +337,7 @@ async function purchaseUpgrade(
     | { upgradeType: "seconds_multiplier"; quantity: 1 | 5 | 10 }
     | { upgradeType: "restraint" }
     | { upgradeType: "idle_hoarder" }
+    | { upgradeType: "worthwhile_achievements" }
     | { upgradeType: "luck" }
     | { upgradeType: "extra_realtime_wait" }
     | { upgradeType: "collect_gem_time_boost" }
@@ -383,6 +384,10 @@ export async function purchaseRestraint(token: string | null): Promise<PlayerRes
 
 export async function purchaseIdleHoarder(token: string | null): Promise<PlayerResponse> {
   return purchaseUpgrade(token, { upgradeType: "idle_hoarder" });
+}
+
+export async function purchaseWorthwhileAchievements(token: string | null): Promise<PlayerResponse> {
+  return purchaseUpgrade(token, { upgradeType: "worthwhile_achievements" });
 }
 
 export async function purchaseLuck(token: string | null): Promise<PlayerResponse> {

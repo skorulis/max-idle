@@ -895,7 +895,7 @@ describe("auth + player lifecycle", () => {
     const response = await request(app).get("/achievements").set("Authorization", `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(response.body.completedCount).toBe(1);
-    expect(response.body.earningsBonusMultiplier).toBe(1.25);
+    expect(response.body.earningsBonusMultiplier).toBe(1);
     const accountCreation = response.body.achievements.find((achievement: { id: string }) => achievement.id === "account_creation");
     const usernameSelected = response.body.achievements.find((achievement: { id: string }) => achievement.id === "username_selected");
     expect(accountCreation?.completed).toBe(true);
@@ -1048,7 +1048,7 @@ describe("auth + player lifecycle", () => {
     expect(playerResponse.body.achievementBonusMultiplier).toBe(1);
   });
 
-  it("applies achievement multiplier to generated idle gain", async () => {
+  it("applies worthwhile achievements multiplier when shop tier and achievement count are set", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
@@ -1059,19 +1059,20 @@ describe("auth + player lifecycle", () => {
       UPDATE player_states
       SET
         achievement_count = 2,
+        shop = $2::jsonb,
         current_seconds = 0,
         current_seconds_last_updated = NOW() - INTERVAL '120 seconds',
         last_collected_at = NOW() - INTERVAL '120 seconds'
       WHERE user_id = $1
       `,
-      [userId]
+      [userId, JSON.stringify({ seconds_multiplier: 0, restraint: 0, idle_hoarder: 0, luck: 0, worthwhile_achievements: 1 })]
     );
 
     const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
     expect(playerResponse.status).toBe(200);
-    const expectedCurrent = Math.floor(calculateIdleSecondsGain(120) * 1.5);
+    const expectedCurrent = Math.floor(calculateIdleSecondsGain(120) * (1 + 0.05 * 2));
     expect(playerResponse.body.currentSeconds).toBe(expectedCurrent);
-    expect(playerResponse.body.achievementBonusMultiplier).toBe(1.5);
+    expect(playerResponse.body.achievementBonusMultiplier).toBeCloseTo(1.1, 5);
   });
 
   it("continues idle generation under 1 hour when restraint is enabled", async () => {
@@ -1168,7 +1169,7 @@ describe("auth + player lifecycle", () => {
     expect(purchaseResponse.body.idleTime.available).toBe(2000 - (20 + 60 + 120 + 300 + 600));
     expect(purchaseResponse.body.upgradesPurchased).toBe(5);
     expect(purchaseResponse.body.secondsMultiplier).toBe(1.5);
-    expect(purchaseResponse.body.achievementBonusMultiplier).toBe(1.25);
+    expect(purchaseResponse.body.achievementBonusMultiplier).toBe(1);
 
     const achievementState = await pool.query<{
       upgrades_purchased: string;
@@ -1272,7 +1273,7 @@ describe("auth + player lifecycle", () => {
     const expectedCurrent = calculateBoostedIdleSecondsGain({
       secondsSinceLastCollection: 1000 + 6 * 60 * 60,
       shop: { seconds_multiplier: 0, restraint: 0, luck: 0 },
-      achievementBonusMultiplier: purchaseResponse.body.achievementBonusMultiplier
+      achievementCount: purchaseResponse.body.achievementCount
     });
     expect(purchaseResponse.body.currentSeconds).toBe(expectedCurrent);
 
@@ -1349,6 +1350,7 @@ describe("auth + player lifecycle", () => {
       restraint: 0,
       idle_hoarder: 0,
       luck: 0,
+      worthwhile_achievements: 0,
       collect_gem_time_boost: 0
     });
   });

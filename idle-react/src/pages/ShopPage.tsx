@@ -11,6 +11,7 @@ import {
   Plus,
   ShieldAlert,
   Timer,
+  Trophy,
   Undo2,
   type LucideIcon
 } from "lucide-react";
@@ -35,6 +36,7 @@ type ShopPageProps = {
     | "seconds_multiplier"
     | "restraint"
     | "idle_hoarder"
+    | "worthwhile_achievements"
     | "luck"
     | "extra_realtime_wait"
     | "collect_gem_time_boost"
@@ -52,6 +54,9 @@ type ShopPageProps = {
   idleHoarderLevel: number;
   idleHoarderMaxLevel: number;
   onPurchaseIdleHoarder: () => Promise<void>;
+  worthwhileAchievementsLevel: number;
+  worthwhileAchievementsMaxLevel: number;
+  onPurchaseWorthwhileAchievements: () => Promise<void>;
   onPurchaseExtraRealtimeWait: () => Promise<void>;
   onPurchaseCollectGemTimeBoost: () => Promise<void>;
   onPurchaseRefund: () => Promise<void>;
@@ -97,6 +102,9 @@ function formatUpgradeValue(upgrade: ShopUpgradeDefinition, value: number): stri
   ) {
     return formatMultiplier(value);
   }
+  if (upgrade.id === SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS) {
+    return `${value.toFixed(2)}×`;
+  }
   return value.toString();
 }
 
@@ -137,6 +145,8 @@ function getShopUpgradeIcon(iconName: string): LucideIcon {
       return Timer;
     case "undo-2":
       return Undo2;
+    case "trophy":
+      return Trophy;
     default:
       return CircleHelp;
   }
@@ -156,6 +166,9 @@ export function ShopPage({
   idleHoarderLevel,
   idleHoarderMaxLevel,
   onPurchaseIdleHoarder,
+  worthwhileAchievementsLevel,
+  worthwhileAchievementsMaxLevel,
+  onPurchaseWorthwhileAchievements,
   onPurchaseExtraRealtimeWait,
   onPurchaseCollectGemTimeBoost,
   onPurchaseRefund,
@@ -258,15 +271,41 @@ export function ShopPage({
     const isRestraint = upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT;
     const isIdleHoarder = upgrade.id === SHOP_UPGRADE_IDS.IDLE_HOARDER;
     const isLuck = upgrade.id === SHOP_UPGRADE_IDS.LUCK;
-    const currentLevel = isRestraint ? restraintLevel : isIdleHoarder ? idleHoarderLevel : isLuck ? luckLevel : 0;
-    const maxLevel = isRestraint ? restraintMaxLevel : isIdleHoarder ? idleHoarderMaxLevel : isLuck ? luckMaxLevel : 0;
-    const isOwned = isRestraint || isIdleHoarder || isLuck ? currentLevel >= maxLevel : false;
+    const isWorthwhileAchievements = upgrade.id === SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS;
+    const currentLevel = isRestraint
+      ? restraintLevel
+      : isIdleHoarder
+        ? idleHoarderLevel
+        : isLuck
+          ? luckLevel
+          : isWorthwhileAchievements
+            ? worthwhileAchievementsLevel
+            : 0;
+    const maxLevel = isRestraint
+      ? restraintMaxLevel
+      : isIdleHoarder
+        ? idleHoarderMaxLevel
+        : isLuck
+          ? luckMaxLevel
+          : isWorthwhileAchievements
+            ? worthwhileAchievementsMaxLevel
+            : 0;
+    const isOwned =
+      isRestraint || isIdleHoarder || isLuck || isWorthwhileAchievements ? currentLevel >= maxLevel : false;
     const isPending = isRestraint
       ? shopPendingQuantity === "restraint"
       : isIdleHoarder
         ? shopPendingQuantity === "idle_hoarder"
-        : shopPendingQuantity === "luck";
-    const onPurchase = isRestraint ? onPurchaseRestraint : isIdleHoarder ? onPurchaseIdleHoarder : onPurchaseLuck;
+        : isWorthwhileAchievements
+          ? shopPendingQuantity === "worthwhile_achievements"
+          : shopPendingQuantity === "luck";
+    const onPurchase = isRestraint
+      ? onPurchaseRestraint
+      : isIdleHoarder
+        ? onPurchaseIdleHoarder
+        : isWorthwhileAchievements
+          ? onPurchaseWorthwhileAchievements
+          : onPurchaseLuck;
     const nextLevel = upgrade.levels[currentLevel] ?? null;
     return {
       description:
@@ -275,7 +314,10 @@ export function ShopPage({
             : upgrade.description,
       currentValueDescription,
       nextValueDescription,
-      cost: isRestraint || isIdleHoarder || isLuck ? nextLevel?.cost ?? null : upgrade.levels[0]?.cost ?? null,
+      cost:
+        isRestraint || isIdleHoarder || isLuck || isWorthwhileAchievements
+          ? nextLevel?.cost ?? null
+          : upgrade.levels[0]?.cost ?? null,
       isPending,
       isOwned,
       onPurchase
@@ -297,6 +339,9 @@ export function ShopPage({
     }
     if (upgrade.id === SHOP_UPGRADE_IDS.IDLE_HOARDER) {
       return idleHoarderLevel;
+    }
+    if (upgrade.id === SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS) {
+      return worthwhileAchievementsLevel;
     }
     if (upgrade.id === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST) {
       return collectGemBoostLevel;
