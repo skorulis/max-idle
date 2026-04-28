@@ -1,19 +1,9 @@
 import { formatSeconds } from "../formatSeconds";
 import {
-  Archive,
   Atom,
-  CircleHelp,
   Clock3,
-  Dice5,
-  Gauge,
   Gem,
-  Hourglass,
   Plus,
-  ShieldAlert,
-  Timer,
-  Trophy,
-  Undo2,
-  type LucideIcon
 } from "lucide-react";
 import { useState } from "react";
 import type { SyncedPlayerState } from "../app/types";
@@ -36,6 +26,7 @@ import {
   withShopUpgradeLevel
 } from "../shop";
 import GameIcon from "../GameIcon";
+import { getLucidIcon } from "../getLucidIcon";
 
 type ShopPageProps = {
   playerState: SyncedPlayerState | null;
@@ -106,29 +97,6 @@ function formatValueDescription(upgrade: ShopUpgradeDefinition, value: number): 
     return "";
   }
   return valueDescription.replace("%s", formatUpgradeValue(upgrade, value));
-}
-
-function getShopUpgradeIcon(iconName: string): LucideIcon {
-  switch (iconName) {
-    case "gauge":
-      return Gauge;
-    case "shield-alert":
-      return ShieldAlert;
-    case "dice-5":
-      return Dice5;
-    case "hourglass":
-      return Hourglass;
-    case "archive":
-      return Archive;
-    case "timer":
-      return Timer;
-    case "undo-2":
-      return Undo2;
-    case "trophy":
-      return Trophy;
-    default:
-      return CircleHelp;
-  }
 }
 
 export function ShopPage({
@@ -357,7 +325,7 @@ export function ShopPage({
             return (
               <div key={upgrade.id} className={`shop-upgrade-row${upgradeState.isOwned ? " shop-upgrade-row-owned" : ""}`}>
                 <div className="shop-upgrade-main">
-                  <GameIcon icon={getShopUpgradeIcon(upgrade.icon)} className="shop-upgrade-icon" />
+                  <GameIcon icon={getLucidIcon(upgrade.icon)} className="shop-upgrade-icon" />
                   <div className="shop-upgrade-copy">
                     <p className="shop-upgrade-name">
                       {upgrade.name}

@@ -1,27 +1,13 @@
-import { BadgeCheck, Check, CircleHelp, Clock3, Lock, UserPlus, Repeat, type LucideIcon } from "lucide-react";
+import { Check, Lock } from "lucide-react";
 import type { AchievementsResponse } from "../app/types";
 import GameIcon from "../GameIcon";
+import { getLucidIcon } from "../getLucidIcon";
 
 type AchievementsPageProps = {
   achievements: AchievementsResponse | null;
   achievementsLoading: boolean;
   hasError: boolean;
 };
-
-function getAchievementIcon(iconName: string): LucideIcon {
-  switch (iconName) {
-    case "user-plus":
-      return UserPlus;
-    case "badge-check":
-      return BadgeCheck;
-    case "clock":
-      return Clock3;
-    case "repeat":
-      return Repeat;
-    default:
-      return CircleHelp;
-  }
-}
 
 export function AchievementsPage({ achievements, achievementsLoading, hasError }: AchievementsPageProps) {
   return (
@@ -40,7 +26,7 @@ export function AchievementsPage({ achievements, achievementsLoading, hasError }
                 key={achievement.id}
                 className={`achievement-row${achievement.completed ? " achievement-row-completed" : ""}`}
               >
-                <GameIcon icon={getAchievementIcon(achievement.icon)} className="achievement-icon" />
+                <GameIcon icon={getLucidIcon(achievement.icon)} className="achievement-icon" />
                 <div className="achievement-copy">
                   <p className="achievement-name">{achievement.name}</p>
                   <p className="achievement-description">{achievement.description}</p>
