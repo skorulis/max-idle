@@ -842,215 +842,107 @@ export function AppShell() {
     }
   };
 
-  const onPurchaseUpgrade = async () => {
+  const onPurchaseUpgrade = async (
+    upgradeId:
+      | "seconds_multiplier"
+      | "restraint"
+      | "luck"
+      | "idle_hoarder"
+      | "worthwhile_achievements"
+      | "extra_realtime_wait"
+      | "collect_gem_time_boost"
+      | "purchase_refund"
+  ) => {
     if (!playerState) {
       return;
     }
 
-    setShopPendingQuantity("seconds_multiplier");
-    setError(null);
-    setStatus("Purchasing seconds multiplier...");
-    try {
-      const updatedPlayer = await purchaseSecondsMultiplier(token, 1);
-      const synced = toSyncedState(updatedPlayer);
-      alignClientClock();
-      setPlayerState(synced);
-      setStatus(`Seconds multiplier upgraded to ${synced.secondsMultiplier.toFixed(1)}x.`);
-    } catch (purchaseError) {
-      if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
-        setError("Not enough spendable idle seconds for that purchase.");
-      } else {
-        setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
+    const purchaseConfig = {
+      seconds_multiplier: {
+        isUnavailable: secondsMultiplierLevel >= SECONDS_MULTIPLIER_SHOP_UPGRADE.maxLevel(),
+        startStatus: "Purchasing seconds multiplier...",
+        purchase: () => purchaseSecondsMultiplier(token, 1),
+        successStatus: (synced: SyncedPlayerState) => `Seconds multiplier upgraded to ${synced.secondsMultiplier.toFixed(1)}x.`,
+        insufficientFundsError: "Not enough spendable idle seconds for that purchase."
+      },
+      restraint: {
+        isUnavailable: restraintLevel >= restraintMaxLevel,
+        startStatus: "Purchasing Restraint...",
+        purchase: () => purchaseRestraint(token),
+        successStatus: () => "Restraint upgraded.",
+        insufficientFundsError: "Not enough spendable idle seconds for that purchase.",
+        alreadyOwnedError: "Restraint is already active."
+      },
+      luck: {
+        isUnavailable: luckLevel >= luckMaxLevel,
+        startStatus: "Purchasing Luck...",
+        purchase: () => purchaseLuck(token),
+        successStatus: () => "Luck upgraded.",
+        insufficientFundsError: "Not enough spendable idle seconds for that purchase.",
+        alreadyOwnedError: "Luck is already active."
+      },
+      idle_hoarder: {
+        isUnavailable: idleHoarderLevel >= idleHoarderMaxLevel,
+        startStatus: "Purchasing Idle hoarder...",
+        purchase: () => purchaseIdleHoarder(token),
+        successStatus: () => "Idle hoarder upgraded.",
+        insufficientFundsError: "Not enough spendable real time for that purchase.",
+        alreadyOwnedError: "Idle hoarder is already maxed."
+      },
+      worthwhile_achievements: {
+        isUnavailable: worthwhileAchievementsLevel >= worthwhileAchievementsMaxLevel,
+        startStatus: "Purchasing Worthwhile Achievements...",
+        purchase: () => purchaseWorthwhileAchievements(token),
+        successStatus: () => "Worthwhile Achievements upgraded.",
+        insufficientFundsError: "Not enough spendable idle seconds for that purchase.",
+        alreadyOwnedError: "Worthwhile Achievements is already maxed."
+      },
+      extra_realtime_wait: {
+        isUnavailable: false,
+        startStatus: "Applying extra realtime wait...",
+        purchase: () => purchaseExtraRealtimeWait(token),
+        successStatus: () => "Extra realtime wait applied.",
+        insufficientFundsError: "Not enough time gems for that purchase."
+      },
+      collect_gem_time_boost: {
+        isUnavailable: false,
+        startStatus: "Upgrading hasty collection...",
+        purchase: () => purchaseCollectGemTimeBoost(token),
+        successStatus: () => "Hasty collection upgraded.",
+        insufficientFundsError: "Not enough time gems for that purchase.",
+        alreadyOwnedError: "Hasty collection is already maxed."
+      },
+      purchase_refund: {
+        isUnavailable: false,
+        startStatus: "Refunding purchases...",
+        purchase: () => purchaseRefund(token),
+        successStatus: () => "Shop purchases refunded.",
+        insufficientFundsError: "Not enough time gems for that purchase."
       }
-      setStatus("Could not complete shop purchase.");
-    } finally {
-      setShopPendingQuantity(null);
-    }
-  };
+    }[upgradeId];
 
-  const onPurchaseRestraint = async () => {
-    if (!playerState || restraintLevel >= restraintMaxLevel) {
+    if (purchaseConfig.isUnavailable) {
       return;
     }
 
-    setShopPendingQuantity("restraint");
+    setShopPendingQuantity(upgradeId);
     setError(null);
-    setStatus("Purchasing Restraint...");
+    setStatus(purchaseConfig.startStatus);
     try {
-      const updatedPlayer = await purchaseRestraint(token);
+      const updatedPlayer = await purchaseConfig.purchase();
       const synced = toSyncedState(updatedPlayer);
       alignClientClock();
       setPlayerState(synced);
-      setStatus("Restraint upgraded.");
+      setStatus(purchaseConfig.successStatus(synced));
     } catch (purchaseError) {
       if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
-        setError("Not enough spendable idle seconds for that purchase.");
-      } else if (purchaseError instanceof Error && purchaseError.message === "ALREADY_OWNED") {
-        setError("Restraint is already active.");
-      } else {
-        setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
-      }
-      setStatus("Could not complete shop purchase.");
-    } finally {
-      setShopPendingQuantity(null);
-    }
-  };
-
-  const onPurchaseLuck = async () => {
-    if (!playerState || luckLevel >= luckMaxLevel) {
-      return;
-    }
-
-    setShopPendingQuantity("luck");
-    setError(null);
-    setStatus("Purchasing Luck...");
-    try {
-      const updatedPlayer = await purchaseLuck(token);
-      const synced = toSyncedState(updatedPlayer);
-      alignClientClock();
-      setPlayerState(synced);
-      setStatus("Luck upgraded.");
-    } catch (purchaseError) {
-      if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
-        setError("Not enough spendable idle seconds for that purchase.");
-      } else if (purchaseError instanceof Error && purchaseError.message === "ALREADY_OWNED") {
-        setError("Luck is already active.");
-      } else {
-        setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
-      }
-      setStatus("Could not complete shop purchase.");
-    } finally {
-      setShopPendingQuantity(null);
-    }
-  };
-
-  const onPurchaseIdleHoarder = async () => {
-    if (!playerState || idleHoarderLevel >= idleHoarderMaxLevel) {
-      return;
-    }
-
-    setShopPendingQuantity("idle_hoarder");
-    setError(null);
-    setStatus("Purchasing Idle hoarder...");
-    try {
-      const updatedPlayer = await purchaseIdleHoarder(token);
-      const synced = toSyncedState(updatedPlayer);
-      alignClientClock();
-      setPlayerState(synced);
-      setStatus("Idle hoarder upgraded.");
-    } catch (purchaseError) {
-      if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
-        setError("Not enough spendable real time for that purchase.");
-      } else if (purchaseError instanceof Error && purchaseError.message === "ALREADY_OWNED") {
-        setError("Idle hoarder is already maxed.");
-      } else {
-        setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
-      }
-      setStatus("Could not complete shop purchase.");
-    } finally {
-      setShopPendingQuantity(null);
-    }
-  };
-
-  const onPurchaseWorthwhileAchievements = async () => {
-    if (!playerState || worthwhileAchievementsLevel >= worthwhileAchievementsMaxLevel) {
-      return;
-    }
-
-    setShopPendingQuantity("worthwhile_achievements");
-    setError(null);
-    setStatus("Purchasing Worthwhile Achievements...");
-    try {
-      const updatedPlayer = await purchaseWorthwhileAchievements(token);
-      const synced = toSyncedState(updatedPlayer);
-      alignClientClock();
-      setPlayerState(synced);
-      setStatus("Worthwhile Achievements upgraded.");
-    } catch (purchaseError) {
-      if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
-        setError("Not enough spendable idle seconds for that purchase.");
-      } else if (purchaseError instanceof Error && purchaseError.message === "ALREADY_OWNED") {
-        setError("Worthwhile Achievements is already maxed.");
-      } else {
-        setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
-      }
-      setStatus("Could not complete shop purchase.");
-    } finally {
-      setShopPendingQuantity(null);
-    }
-  };
-
-  const onPurchaseExtraRealtimeWait = async () => {
-    if (!playerState) {
-      return;
-    }
-
-    setShopPendingQuantity("extra_realtime_wait");
-    setError(null);
-    setStatus("Applying extra realtime wait...");
-    try {
-      const updatedPlayer = await purchaseExtraRealtimeWait(token);
-      const synced = toSyncedState(updatedPlayer);
-      alignClientClock();
-      setPlayerState(synced);
-      setStatus("Extra realtime wait applied.");
-    } catch (purchaseError) {
-      if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
-        setError("Not enough time gems for that purchase.");
-      } else {
-        setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
-      }
-      setStatus("Could not complete shop purchase.");
-    } finally {
-      setShopPendingQuantity(null);
-    }
-  };
-
-  const onPurchaseCollectGemTimeBoost = async () => {
-    if (!playerState) {
-      return;
-    }
-
-    setShopPendingQuantity("collect_gem_time_boost");
-    setError(null);
-    setStatus("Upgrading hasty collection...");
-    try {
-      const updatedPlayer = await purchaseCollectGemTimeBoost(token);
-      const synced = toSyncedState(updatedPlayer);
-      alignClientClock();
-      setPlayerState(synced);
-      setStatus("Hasty collection upgraded.");
-    } catch (purchaseError) {
-      if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
-        setError("Not enough time gems for that purchase.");
-      } else if (purchaseError instanceof Error && purchaseError.message === "ALREADY_OWNED") {
-        setError("Hasty collection is already maxed.");
-      } else {
-        setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
-      }
-      setStatus("Could not complete shop purchase.");
-    } finally {
-      setShopPendingQuantity(null);
-    }
-  };
-
-  const onPurchaseRefund = async () => {
-    if (!playerState) {
-      return;
-    }
-
-    setShopPendingQuantity("purchase_refund");
-    setError(null);
-    setStatus("Refunding purchases...");
-    try {
-      const updatedPlayer = await purchaseRefund(token);
-      const synced = toSyncedState(updatedPlayer);
-      alignClientClock();
-      setPlayerState(synced);
-      setStatus("Shop purchases refunded.");
-    } catch (purchaseError) {
-      if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
-        setError("Not enough time gems for that purchase.");
+        setError(purchaseConfig.insufficientFundsError);
+      } else if (
+        purchaseError instanceof Error &&
+        purchaseError.message === "ALREADY_OWNED" &&
+        purchaseConfig.alreadyOwnedError
+      ) {
+        setError(purchaseConfig.alreadyOwnedError);
       } else {
         setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
       }
@@ -1445,22 +1337,22 @@ export function AppShell() {
                 playerState={playerState}
                 shopPendingQuantity={shopPendingQuantity}
                 secondsMultiplierCost={secondsMultiplierCost}
-                onPurchaseUpgrade={onPurchaseUpgrade}
+                onPurchaseUpgrade={() => onPurchaseUpgrade("seconds_multiplier")}
                 restraintLevel={restraintLevel}
                 restraintMaxLevel={restraintMaxLevel}
-                onPurchaseRestraint={onPurchaseRestraint}
+                onPurchaseRestraint={() => onPurchaseUpgrade("restraint")}
                 luckLevel={luckLevel}
                 luckMaxLevel={luckMaxLevel}
-                onPurchaseLuck={onPurchaseLuck}
+                onPurchaseLuck={() => onPurchaseUpgrade("luck")}
                 idleHoarderLevel={idleHoarderLevel}
                 idleHoarderMaxLevel={idleHoarderMaxLevel}
-                onPurchaseIdleHoarder={onPurchaseIdleHoarder}
+                onPurchaseIdleHoarder={() => onPurchaseUpgrade("idle_hoarder")}
                 worthwhileAchievementsLevel={worthwhileAchievementsLevel}
                 worthwhileAchievementsMaxLevel={worthwhileAchievementsMaxLevel}
-                onPurchaseWorthwhileAchievements={onPurchaseWorthwhileAchievements}
-                onPurchaseExtraRealtimeWait={onPurchaseExtraRealtimeWait}
-                onPurchaseCollectGemTimeBoost={onPurchaseCollectGemTimeBoost}
-                onPurchaseRefund={onPurchaseRefund}
+                onPurchaseWorthwhileAchievements={() => onPurchaseUpgrade("worthwhile_achievements")}
+                onPurchaseExtraRealtimeWait={() => onPurchaseUpgrade("extra_realtime_wait")}
+                onPurchaseCollectGemTimeBoost={() => onPurchaseUpgrade("collect_gem_time_boost")}
+                onPurchaseRefund={() => onPurchaseUpgrade("purchase_refund")}
                 showDebugAddGemsButton={import.meta.env.DEV}
                 onDebugAddGems={onDebugAddGems}
                 collectGemBoostLevel={playerState ? getCollectGemBoostLevel(playerState.shop) : 0}
