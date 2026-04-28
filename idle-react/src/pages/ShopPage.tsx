@@ -25,6 +25,7 @@ import {
   hasRefundableShopPurchases,
   withShopUpgradeLevel
 } from "../shop";
+import { getIdleSecondsRate } from "../idleRate";
 import GameIcon from "../GameIcon";
 import { getLucidIcon } from "../getLucidIcon";
 
@@ -138,6 +139,15 @@ export function ShopPage({
         withShopUpgradeLevel(playerState.shop, SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS, level),
         achievementCount
       );
+    }
+    if (upgrade.id === SHOP_UPGRADE_IDS.PATIENCE) {
+      const patienceShop = withShopUpgradeLevel(playerState.shop, SHOP_UPGRADE_IDS.PATIENCE, level);
+      return getIdleSecondsRate({
+        secondsSinceLastCollection: Number.MAX_SAFE_INTEGER,
+        shop: patienceShop,
+        achievementCount: playerState.achievementCount,
+        realTimeAvailable: playerState.realTime.available
+      });
     }
     
     return upgrade.levels[level - 1]?.value ?? null

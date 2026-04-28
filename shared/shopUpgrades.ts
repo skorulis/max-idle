@@ -126,7 +126,7 @@ export const PATIENCE_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   name: "Patience",
   icon: "hourglass",
   description: "Unlock one additional patience bonus step for idle rate scaling",
-  valueDescription: "Unlocked steps: %s",
+  valueDescription: "Maximum multiplier %sx",
   levels: [
     { cost: 60, value: 2 },
     { cost: 5 * 60, value: 3 },
