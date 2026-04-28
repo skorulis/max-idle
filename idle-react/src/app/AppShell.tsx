@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CircleHelp, CircleUserRound, House, Medal, ShoppingCart, Star } from "lucide-react";
+import { CircleHelp, CircleUserRound, Hourglass, Medal, ShoppingCart, Star } from "lucide-react";
 import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "react-router-dom";
 import GameIcon from "../GameIcon";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
@@ -108,40 +108,6 @@ function getRandomMessageIndex(excludeIndex?: number): number {
 
 function getMessageFromIndex(index: number): string {
   return HUMOROUS_MESSAGES[index] ?? FALLBACK_MESSAGE;
-}
-
-function getCurrentPageTitle(pathname: string): string {
-  if (pathname === "/") {
-    return "Home";
-  }
-  if (pathname === "/login") {
-    return "Login";
-  }
-  if (pathname === "/help") {
-    return "Help";
-  }
-  if (pathname === "/register") {
-    return "Create account";
-  }
-  if (pathname === "/account") {
-    return "Account";
-  }
-  if (pathname === "/leaderboard") {
-    return "Leaderboard";
-  }
-  if (pathname === "/achievements") {
-    return "Achievements";
-  }
-  if (pathname === "/shop") {
-    return "Shop";
-  }
-  if (pathname === "/tournament") {
-    return "Tournament";
-  }
-  if (pathname.startsWith("/player/")) {
-    return "Player";
-  }
-  return "Home";
 }
 
 function isDailyRewardNotificationsEnabledStored(): boolean {
@@ -1397,11 +1363,10 @@ export function AppShell() {
   return (
     <main className="app">
       <header className="page-nav">
-        <p className="page-title">{getCurrentPageTitle(location.pathname)}</p>
+        <button type="button" className="link" onClick={() => navigate("/")}>
+          <GameIcon icon={Hourglass} />
+        </button>
         <div className="actions">
-          <button type="button" className="link" onClick={() => navigate("/")}>
-            <GameIcon icon={House} />
-          </button>
           {isAuthenticated ? (
             <>
               <button type="button" className="link" onClick={() => navigate("/leaderboard")}>

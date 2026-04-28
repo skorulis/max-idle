@@ -437,7 +437,7 @@ export function ShopPage({
                   <div className="shop-upgrade-copy">
                     <p className="shop-upgrade-name">
                       {upgrade.name}
-                      {currentLevel !== null ? ` (Lv ${currentLevel})` : ""}
+                      {currentLevel !== null ? ` (Lvl ${currentLevel})` : ""}
                     </p>
                     <p className="shop-upgrade-description">{upgradeState.description}</p>
                     {upgradeState.currentValueDescription ? (

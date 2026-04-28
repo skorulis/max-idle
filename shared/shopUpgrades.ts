@@ -94,7 +94,7 @@ function defineShopUpgrade(upgrade: ShopUpgradeDefinitionConfig): ShopUpgradeDef
 
 export const SECONDS_MULTIPLIER_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER,
-  name: "Seconds Multiplier",
+  name: "Base Multiplier",
   icon: "gauge",
   description: "Base multiplier to idle time",
   valueDescription: "%s",
