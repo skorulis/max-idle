@@ -7,16 +7,17 @@ import { getCollectGemBoostLevel } from "../shop";
 import { getCollectGemIdleSecondsMultiplier, SECONDS_MULTIPLIER_SHOP_UPGRADE } from "../shopUpgrades";
 import {
   getIdleHoarderLevel,
-  getIdleHoarderMaxLevel,
   getLuckLevel,
-  getLuckMaxLevel,
   getRestraintLevel,
-  getRestraintMaxLevel,
   getSecondsMultiplierLevel,
-  getSecondsMultiplierMaxLevel,
-  getWorthwhileAchievementsLevel,
-  getWorthwhileAchievementsMaxLevel
+  getWorthwhileAchievementsLevel
 } from "../shop";
+import {
+  IDLE_HOARDER_SHOP_UPGRADE,
+  LUCK_SHOP_UPGRADE,
+  RESTRAINT_SHOP_UPGRADE,
+  WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE
+} from "../shopUpgrades";
 import { AccountPage } from "../pages/AccountPage";
 import { AchievementsPage } from "../pages/AchievementsPage";
 import { HomePage } from "../pages/HomePage";
@@ -651,20 +652,20 @@ export function AppShell() {
   }, [playerState]);
 
   const secondsMultiplierCost = useMemo(() => {
-    const maxLevel = getSecondsMultiplierMaxLevel();
+    const maxLevel = SECONDS_MULTIPLIER_SHOP_UPGRADE.maxLevel();
     if (secondsMultiplierLevel >= maxLevel) {
       return null;
     }
     return SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(secondsMultiplierLevel);
   }, [secondsMultiplierLevel]);
   const restraintLevel = playerState ? getRestraintLevel(playerState.shop) : 0;
-  const restraintMaxLevel = getRestraintMaxLevel();
+  const restraintMaxLevel = RESTRAINT_SHOP_UPGRADE.maxLevel();
   const luckLevel = playerState ? getLuckLevel(playerState.shop) : 0;
-  const luckMaxLevel = getLuckMaxLevel();
+  const luckMaxLevel = LUCK_SHOP_UPGRADE.maxLevel();
   const idleHoarderLevel = playerState ? getIdleHoarderLevel(playerState.shop) : 0;
-  const idleHoarderMaxLevel = getIdleHoarderMaxLevel();
+  const idleHoarderMaxLevel = IDLE_HOARDER_SHOP_UPGRADE.maxLevel();
   const worthwhileAchievementsLevel = playerState ? getWorthwhileAchievementsLevel(playerState.shop) : 0;
-  const worthwhileAchievementsMaxLevel = getWorthwhileAchievementsMaxLevel();
+  const worthwhileAchievementsMaxLevel = WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.maxLevel();
 
   const activeMessageCardText = isAuthenticated
     ? getMessageFromIndex(messageCardRandomIndex)

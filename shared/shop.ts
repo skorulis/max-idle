@@ -43,11 +43,10 @@ function clampSecondsMultiplierLevel(level: number): number {
   if (!Number.isFinite(level)) {
     return DEFAULT_SECONDS_MULTIPLIER_LEVEL;
   }
-  return Math.max(DEFAULT_SECONDS_MULTIPLIER_LEVEL, Math.min(getSecondsMultiplierMaxLevel(), Math.floor(level)));
-}
-
-export function getSecondsMultiplierMaxLevel(): number {
-  return SECONDS_MULTIPLIER_SHOP_UPGRADE.maxLevel();
+  return Math.max(
+    DEFAULT_SECONDS_MULTIPLIER_LEVEL,
+    Math.min(SECONDS_MULTIPLIER_SHOP_UPGRADE.maxLevel(), Math.floor(level))
+  );
 }
 
 export function getCollectGemBoostLevel(shop: ShopState): number {
@@ -92,10 +91,6 @@ export function getRestraintEnabled(shop: ShopState): boolean {
   return getRestraintLevel(shop) > 0;
 }
 
-export function getRestraintMaxLevel(): number {
-  return RESTRAINT_SHOP_UPGRADE.maxLevel();
-}
-
 export function getRestraintLevel(shop: ShopState): number {
   return RESTRAINT_SHOP_UPGRADE.currentLevel(shop);
 }
@@ -110,7 +105,7 @@ export function getRestraintBonusMultiplier(shop: ShopState): number {
 
 export function withRestraintLevel(shop: ShopState, restraintLevel: number): ShopState {
   const safeLevel = Number.isFinite(restraintLevel)
-    ? Math.max(0, Math.min(getRestraintMaxLevel(), Math.floor(restraintLevel)))
+    ? Math.max(0, Math.min(RESTRAINT_SHOP_UPGRADE.maxLevel(), Math.floor(restraintLevel)))
     : 0;
   return {
     ...shop,
@@ -128,7 +123,7 @@ export function getIdleHoarderLevel(shop: ShopState): number {
 
 export function withIdleHoarderLevel(shop: ShopState, idleHoarderLevel: number): ShopState {
   const safeLevel = Number.isFinite(idleHoarderLevel)
-    ? Math.max(0, Math.min(getIdleHoarderMaxLevel(), Math.floor(idleHoarderLevel)))
+    ? Math.max(0, Math.min(IDLE_HOARDER_SHOP_UPGRADE.maxLevel(), Math.floor(idleHoarderLevel)))
     : 0;
   return {
     ...shop,
@@ -136,21 +131,13 @@ export function withIdleHoarderLevel(shop: ShopState, idleHoarderLevel: number):
   };
 }
 
-export function getIdleHoarderMaxLevel(): number {
-  return IDLE_HOARDER_SHOP_UPGRADE.maxLevel();
-}
-
 export function getWorthwhileAchievementsLevel(shop: ShopState): number {
   return WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.currentLevel(shop);
 }
 
-export function getWorthwhileAchievementsMaxLevel(): number {
-  return WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.maxLevel();
-}
-
 export function withWorthwhileAchievementsLevel(shop: ShopState, worthwhileAchievementsLevel: number): ShopState {
   const safeLevel = Number.isFinite(worthwhileAchievementsLevel)
-    ? Math.max(0, Math.min(getWorthwhileAchievementsMaxLevel(), Math.floor(worthwhileAchievementsLevel)))
+    ? Math.max(0, Math.min(WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.maxLevel(), Math.floor(worthwhileAchievementsLevel)))
     : 0;
   return {
     ...shop,
@@ -169,10 +156,6 @@ export function getLuckEnabled(shop: ShopState): boolean {
   return getLuckLevel(shop) > 0;
 }
 
-export function getLuckMaxLevel(): number {
-  return LUCK_SHOP_UPGRADE.maxLevel();
-}
-
 export function getLuckLevel(shop: ShopState): number {
   return LUCK_SHOP_UPGRADE.currentLevel(shop);
 }
@@ -186,7 +169,7 @@ export function getLuckPreserveChance(shop: ShopState): number {
 }
 
 export function withLuckLevel(shop: ShopState, luckLevel: number): ShopState {
-  const safeLevel = Number.isFinite(luckLevel) ? Math.max(0, Math.min(getLuckMaxLevel(), Math.floor(luckLevel))) : 0;
+  const safeLevel = Number.isFinite(luckLevel) ? Math.max(0, Math.min(LUCK_SHOP_UPGRADE.maxLevel(), Math.floor(luckLevel))) : 0;
   return {
     ...shop,
     luck: safeLevel

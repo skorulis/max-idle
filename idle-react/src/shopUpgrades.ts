@@ -2,6 +2,7 @@ export {
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
   EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
   formatShopUpgradeDescription,
+  IDLE_HOARDER_SHOP_UPGRADE,
   getIdleHoarderMultiplier,
   getCollectGemIdleSecondsMultiplier,
   getCollectGemTimeBoostMaxLevel,
@@ -13,6 +14,7 @@ export {
   SHOP_UPGRADE_DESCRIPTION_VALUE_PLACEHOLDER,
   SHOP_CURRENCY_TYPES,
   SHOP_UPGRADE_IDS,
+  WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
   SHOP_UPGRADES_BY_ID,
   SHOP_UPGRADES
 } from "@maxidle/shared/shopUpgrades";
