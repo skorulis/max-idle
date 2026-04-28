@@ -4,6 +4,7 @@ import type { ShopState } from "../shop";
 import { getRestraintBonusMultiplier, getSecondsMultiplier, getWorthwhileAchievementsMultiplier } from "../shop";
 import { getIdleSecondsRate } from "../idleRate";
 import { getIdleHoarderMultiplier, IDLE_HOARDER_SHOP_UPGRADE } from "../shopUpgrades";
+import { safeNumber } from "@maxidle/shared/safeNumber";
 
 type CurrentRateInfoOverlayProps = {
   open: boolean;
@@ -50,7 +51,7 @@ export function CurrentRateInfoOverlay({
     const shopBonusMultiplier = getRestraintBonusMultiplier(shop);
     const worthwhileAchievementsMultiplier = getWorthwhileAchievementsMultiplier(
       shop,
-      Number.isFinite(achievementCount) ? achievementCount : 0
+      safeNumber(achievementCount, 0)
     );
     const rateBeforeIdleHoarder = baseRate * secondsMultiplier * shopBonusMultiplier * worthwhileAchievementsMultiplier;
     const idleHoarderMultiplier = getIdleHoarderMultiplier(

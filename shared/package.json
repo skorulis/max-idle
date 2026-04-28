@@ -35,6 +35,10 @@
     "./authValidation": {
       "types": "./dist/authValidation.d.ts",
       "default": "./dist/authValidation.js"
+    },
+    "./safeNumber": {
+      "types": "./dist/safeNumber.d.ts",
+      "default": "./dist/safeNumber.js"
     }
   }
 }

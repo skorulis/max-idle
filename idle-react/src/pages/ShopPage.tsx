@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import type { SyncedPlayerState } from "../app/types";
+import { safeNaturalNumber } from "@maxidle/shared/safeNumber";
 import {
   formatShopUpgradeDescription,
   getCollectGemTimeBoostMaxLevel,
@@ -207,9 +208,7 @@ export function ShopPage({
     let currentValueForDescription = currentLevelValue;
     let nextValueForDescription = nextLevelValue;
     if (upgrade.id === SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS) {
-      const achievementCount = Number.isFinite(playerState.achievementCount)
-        ? Math.max(0, Math.floor(playerState.achievementCount))
-        : 0;
+      const achievementCount = safeNaturalNumber(playerState.achievementCount);
       currentValueForDescription = getWorthwhileAchievementsMultiplier(
         withWorthwhileAchievementsLevel(playerState.shop, purchasedLevel),
         achievementCount

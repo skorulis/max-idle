@@ -1,4 +1,5 @@
 import type { ShopState } from "./shop.js";
+import { safeNumber } from "./safeNumber.js";
 
 export const SHOP_CURRENCY_TYPES = {
   IDLE: "idle",
@@ -284,8 +285,8 @@ export function getIdleHoarderMultiplier(level: number, realTimeAvailable: numbe
   if (maxMultiplier <= 1) {
     return 1;
   }
-  const safeAvailable = Number.isFinite(realTimeAvailable) ? Math.max(0, realTimeAvailable) : 0;
-  const safeRealtime = Number.isFinite(secondsSinceLastCollection) ? Math.max(0, secondsSinceLastCollection) : 0;
+  const safeAvailable = Math.max(0, safeNumber(realTimeAvailable, 0));
+  const safeRealtime = Math.max(0, safeNumber(secondsSinceLastCollection, 0));
   if (safeRealtime <= 0) {
     return safeAvailable > 0 ? maxMultiplier : IDLE_HOARDER_MIN_MULTIPLIER;
   }

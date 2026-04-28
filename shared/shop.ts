@@ -11,6 +11,7 @@ import {
   getWorthwhileAchievementsBonusPerAchievement
 } from "./shopUpgrades.js";
 import type { ShopUpgradeDefinition } from "./shopUpgrades.js";
+import { safeNumber } from "./safeNumber.js";
 
 const DEFAULT_SECONDS_MULTIPLIER_LEVEL = 0;
 const DEFAULT_SECONDS_MULTIPLIER_VALUE = 1;
@@ -128,7 +129,7 @@ export function withWorthwhileAchievementsLevel(shop: ShopState, worthwhileAchie
 /** ×(1 + bonusPerAchievement × achievementCount), from Worthwhile Achievements tier and unlock count. */
 export function getWorthwhileAchievementsMultiplier(shop: ShopState, achievementCount: number): number {
   const bonusPer = getWorthwhileAchievementsBonusPerAchievement(WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.currentLevel(shop));
-  const count = Number.isFinite(achievementCount) ? Math.max(0, Math.floor(achievementCount)) : 0;
+  const count = Math.max(0, Math.floor(safeNumber(achievementCount, 0)));
   return 1 + bonusPer * count;
 }
 

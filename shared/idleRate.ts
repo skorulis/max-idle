@@ -8,6 +8,7 @@ import {
 } from "./shop.js";
 import type { ShopState } from "./shop.js";
 import { getIdleHoarderMultiplier, IDLE_HOARDER_SHOP_UPGRADE } from "./shopUpgrades.js";
+import { safeNumber } from "./safeNumber.js";
 
 type IdleRateStep = {
   seconds: number;
@@ -116,14 +117,14 @@ export function calculateBoostedIdleSecondsGain(player: IdleCollectionPlayer): n
   const secondsMultiplier = getSecondsMultiplier(player.shop);
   const worthwhileAchievementsMultiplier = getWorthwhileAchievementsMultiplier(
     player.shop,
-    Number.isFinite(player.achievementCount) ? player.achievementCount : 0
+    safeNumber(player.achievementCount, 0)
   );
   const shopBonusMultiplier = getRestraintBonusMultiplier(player.shop);
   const boostedGainBeforeIdleHoarder =
     baseGain * secondsMultiplier * shopBonusMultiplier * worthwhileAchievementsMultiplier;
   const idleHoarderMultiplier = getIdleHoarderMultiplier(
     IDLE_HOARDER_SHOP_UPGRADE.currentLevel(player.shop),
-    Number.isFinite(player.realTimeAvailable) ? Number(player.realTimeAvailable) : 0,
+    safeNumber(player.realTimeAvailable, 0),
     elapsedSeconds
   );
   return Math.floor(boostedGainBeforeIdleHoarder * idleHoarderMultiplier);
@@ -132,7 +133,7 @@ export function calculateBoostedIdleSecondsGain(player: IdleCollectionPlayer): n
 export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): number {
   const worthwhileAchievementsMultiplier = getWorthwhileAchievementsMultiplier(
     player.shop,
-    Number.isFinite(player.achievementCount) ? player.achievementCount : 0
+    safeNumber(player.achievementCount, 0)
   );
   const rateBeforeIdleHoarder =
     getIdleSecondsRate({ secondsSinceLastCollection: player.secondsSinceLastCollection }) *
@@ -141,7 +142,7 @@ export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): numbe
     worthwhileAchievementsMultiplier;
   const idleHoarderMultiplier = getIdleHoarderMultiplier(
     IDLE_HOARDER_SHOP_UPGRADE.currentLevel(player.shop),
-    Number.isFinite(player.realTimeAvailable) ? Number(player.realTimeAvailable) : 0,
+    safeNumber(player.realTimeAvailable, 0),
     clampElapsedSeconds(player.secondsSinceLastCollection)
   );
   return (

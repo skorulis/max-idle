@@ -28,6 +28,7 @@ import {
   SHOP_UPGRADE_IDS
 } from "@maxidle/shared/shopUpgrades";
 import type { ShopUpgradeDefinition } from "@maxidle/shared/shopUpgrades";
+import { safeNaturalNumber } from "@maxidle/shared/safeNumber";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 import { normalizeCompletedAchievementIds } from "./achievementUpdates.js";
 import { calculateElapsedSeconds } from "./time.js";
@@ -62,12 +63,12 @@ type RegisterShopRoutesOptions = {
 };
 
 function wouldExceedUpgradeMaxLevel(upgrade: ShopUpgradeDefinition, shop: ShopState, quantity: number): boolean {
-  const safeQuantity = Number.isFinite(quantity) ? Math.max(0, Math.floor(quantity)) : 0;
+  const safeQuantity = safeNaturalNumber(quantity)
   return upgrade.currentLevel(shop) + safeQuantity > upgrade.maxLevel();
 }
 
 function getUpgradePurchaseCost(upgrade: ShopUpgradeDefinition, currentLevel: number, quantity: number): number {
-  const safeQuantity = Number.isFinite(quantity) ? Math.max(0, Math.floor(quantity)) : 0;
+  const safeQuantity = safeNaturalNumber(quantity)
   let totalCost = 0;
   for (let i = 0; i < safeQuantity; i += 1) {
     totalCost += upgrade.costAtLevel(currentLevel + i);
