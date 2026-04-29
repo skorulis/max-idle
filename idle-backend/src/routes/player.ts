@@ -1,6 +1,6 @@
 import express from "express";
 import type { Pool } from "pg";
-import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
+import { ACHIEVEMENT_IDS, GEM_HOARDER_MIN_AVAILABLE_GEMS } from "@maxidle/shared/achievements";
 import { getSecondsMultiplier, getWorthwhileAchievementsMultiplier, withShopUpgradeLevel } from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
 import { SHOP_UPGRADE_IDS } from "@maxidle/shared/shopUpgrades";
@@ -510,6 +510,14 @@ export function registerPlayerRoutes({
       ) {
         completedAchievementIds.add(ACHIEVEMENT_IDS.REWARD_SKIPPER);
         idsToGrant.push(ACHIEVEMENT_IDS.REWARD_SKIPPER);
+      }
+      const gemsAvailableAfterReward = toNumber(updatedPlayer.time_gems_available);
+      if (
+        gemsAvailableAfterReward >= GEM_HOARDER_MIN_AVAILABLE_GEMS &&
+        !completedAchievementIds.has(ACHIEVEMENT_IDS.GEM_HOARDER)
+      ) {
+        completedAchievementIds.add(ACHIEVEMENT_IDS.GEM_HOARDER);
+        idsToGrant.push(ACHIEVEMENT_IDS.GEM_HOARDER);
       }
       const nextCompletedAchievements =
         idsToGrant.length > 0

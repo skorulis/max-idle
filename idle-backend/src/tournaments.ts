@@ -1,5 +1,11 @@
 import type { Pool, PoolClient } from "pg";
+import { ACHIEVEMENT_IDS, GEM_HOARDER_MIN_AVAILABLE_GEMS } from "@maxidle/shared/achievements";
 import type { ShopState } from "@maxidle/shared/shop";
+import {
+  normalizeCompletedAchievements,
+  parseCompletedAchievementIds,
+  updateCompletedAchievements
+} from "./achievementUpdates.js";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 
 const WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000;
@@ -455,7 +461,12 @@ async function finalizeOneDueTournament(pool: Pool, now: Date): Promise<number> 
         `,
         [entry.id, rank, gemsAwarded, now]
       );
-      await client.query(
+      const gemUpdate = await client.query<{
+        time_gems_available: string | number;
+        completed_achievements: unknown;
+        achievement_count: string | number;
+        has_unseen_achievements: boolean;
+      }>(
         `
         UPDATE player_states
         SET
@@ -463,9 +474,27 @@ async function finalizeOneDueTournament(pool: Pool, now: Date): Promise<number> 
           time_gems_available = time_gems_available + $2,
           updated_at = $3
         WHERE user_id = $1
+        RETURNING
+          time_gems_available,
+          completed_achievements,
+          achievement_count,
+          has_unseen_achievements
         `,
         [entry.user_id, gemsAwarded, now]
       );
+      const afterGems = gemUpdate.rows[0];
+      if (afterGems && toNumber(afterGems.time_gems_available) >= GEM_HOARDER_MIN_AVAILABLE_GEMS) {
+        const completedAchievements = normalizeCompletedAchievements(afterGems.completed_achievements);
+        const completedAchievementIds = new Set(parseCompletedAchievementIds(completedAchievements));
+        if (!completedAchievementIds.has(ACHIEVEMENT_IDS.GEM_HOARDER)) {
+          const nextCompletedAchievements = normalizeCompletedAchievements(
+            completedAchievements,
+            [ACHIEVEMENT_IDS.GEM_HOARDER],
+            now
+          );
+          await updateCompletedAchievements(client, entry.user_id, nextCompletedAchievements);
+        }
+      }
     }
 
     await client.query(

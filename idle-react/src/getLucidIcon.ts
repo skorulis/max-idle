@@ -5,6 +5,7 @@ import {
   CircleHelp,
   Clock3,
   Dice5,
+  Gem,
   Gauge,
   Hourglass,
   Repeat,
@@ -32,6 +33,8 @@ export function getLucidIcon(iconName: string): LucideIcon {
       return ShieldAlert;
     case "dice-5":
       return Dice5;
+    case "gem":
+      return Gem;
     case "hourglass":
       return Hourglass;
     case "calendar-x":

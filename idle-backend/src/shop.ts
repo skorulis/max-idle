@@ -1,6 +1,6 @@
 import express from "express";
 import type { Pool } from "pg";
-import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
+import { ACHIEVEMENT_IDS, GEM_HOARDER_MIN_AVAILABLE_GEMS } from "@maxidle/shared/achievements";
 import {
   getDefaultShopState,
   getShopPurchaseRefundTotals,
@@ -20,7 +20,11 @@ import {
 import type { ShopUpgradeDefinition } from "@maxidle/shared/shopUpgrades";
 import { safeNaturalNumber } from "@maxidle/shared/safeNumber";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
-import { normalizeCompletedAchievements } from "./achievementUpdates.js";
+import {
+  normalizeCompletedAchievements,
+  parseCompletedAchievementIds,
+  updateCompletedAchievements
+} from "./achievementUpdates.js";
 import { calculateElapsedSeconds } from "./time.js";
 import { getEffectiveIdleSecondsRate } from "./idleRate.js";
 import type { AuthClaims } from "./types.js";
@@ -347,6 +351,7 @@ export function registerShopRoutes({
         time_gems_total: string;
         time_gems_available: string;
         achievement_count: string;
+        completed_achievements: unknown;
         has_unseen_achievements: boolean;
         shop: ShopState;
         last_collected_at: Date;
@@ -361,6 +366,7 @@ export function registerShopRoutes({
           time_gems_total,
           time_gems_available,
           achievement_count,
+          completed_achievements,
           has_unseen_achievements,
           shop,
           last_collected_at,
@@ -427,22 +433,39 @@ export function registerShopRoutes({
         [userId, syncedCurrentSeconds, now]
       );
       const updated = updateResult.rows[0];
-      await client.query("COMMIT");
-
       if (!updated) {
+        await client.query("ROLLBACK");
         res.status(404).json({ error: "Player state not found" });
         return;
       }
 
+      const completedAchievements = normalizeCompletedAchievements(row.completed_achievements);
+      const completedAchievementIds = new Set(parseCompletedAchievementIds(completedAchievements));
+      const idsToGrant: string[] = [];
+      if (
+        toNumber(updated.time_gems_available) >= GEM_HOARDER_MIN_AVAILABLE_GEMS &&
+        !completedAchievementIds.has(ACHIEVEMENT_IDS.GEM_HOARDER)
+      ) {
+        idsToGrant.push(ACHIEVEMENT_IDS.GEM_HOARDER);
+      }
+      let achievementCountAfter = toNumber(row.achievement_count);
+      let hasUnseenAchievements = updated.has_unseen_achievements;
+      if (idsToGrant.length > 0) {
+        const nextCompletedAchievements = normalizeCompletedAchievements(completedAchievements, idsToGrant, now);
+        await updateCompletedAchievements(client, userId, nextCompletedAchievements);
+        achievementCountAfter = nextCompletedAchievements.length;
+        hasUnseenAchievements =
+          row.has_unseen_achievements || nextCompletedAchievements.length !== toNumber(row.achievement_count);
+      }
+
+      await client.query("COMMIT");
+
       const elapsedSinceLastCollection = calculateElapsedSeconds(updated.last_collected_at, now);
-      const achievementBonusMultiplier = getWorthwhileAchievementsMultiplier(
-        updated.shop,
-        toNumber(row.achievement_count)
-      );
+      const achievementBonusMultiplier = getWorthwhileAchievementsMultiplier(updated.shop, achievementCountAfter);
       const idleSecondsRate = getEffectiveIdleSecondsRate({
         secondsSinceLastCollection: elapsedSinceLastCollection,
         shop: updated.shop,
-        achievementCount: toNumber(row.achievement_count),
+        achievementCount: achievementCountAfter,
         realTimeAvailable: toNumber(updated.real_time_available)
       });
       res.json({
@@ -462,9 +485,9 @@ export function registerShopRoutes({
         currentSeconds: toNumber(updated.current_seconds),
         secondsMultiplier: getSecondsMultiplier(updated.shop),
         shop: updated.shop,
-        achievementCount: toNumber(row.achievement_count),
+        achievementCount: achievementCountAfter,
         achievementBonusMultiplier,
-        hasUnseenAchievements: updated.has_unseen_achievements,
+        hasUnseenAchievements,
         idleSecondsRate,
         currentSecondsLastUpdated: updated.current_seconds_last_updated.toISOString(),
         lastCollectedAt: updated.last_collected_at.toISOString(),

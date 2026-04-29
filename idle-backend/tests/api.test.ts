@@ -230,6 +230,32 @@ describe("auth + player lifecycle", () => {
     expect(rewardSkipper?.completed).toBe(true);
   });
 
+  it("awards gem hoarder when daily reward brings time gems available to at least 20", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(
+      `
+      UPDATE player_states
+      SET time_gems_total = 19, time_gems_available = 19
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+
+    const collect = await request(app).post("/player/daily-reward/collect").set("Authorization", `Bearer ${token}`);
+    expect(collect.status).toBe(200);
+    expect(collect.body.timeGems.available).toBe(20);
+    expect(collect.body.hasUnseenAchievements).toBe(true);
+
+    const achievementsResponse = await request(app).get("/achievements").set("Authorization", `Bearer ${token}`);
+    expect(achievementsResponse.status).toBe(200);
+    const gemHoarder = achievementsResponse.body.achievements.find((a: { id: string }) => a.id === "gem_hoarder");
+    expect(gemHoarder?.completed).toBe(true);
+  });
+
   it("returns current weekly tournament state and allows entering once", async () => {
     const app = createApp(pool, config);
     await pool.query("DELETE FROM tournament_entries");
@@ -748,9 +774,9 @@ describe("auth + player lifecycle", () => {
     const response = await request(app).get("/achievements").set("Authorization", `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(response.body.completedCount).toBe(0);
-    expect(response.body.totalCount).toBe(10);
+    expect(response.body.totalCount).toBe(11);
     expect(response.body.earningsBonusMultiplier).toBe(1);
-    expect(response.body.achievements).toHaveLength(10);
+    expect(response.body.achievements).toHaveLength(11);
     expect(response.body.achievements[0].id).toBe("account_creation");
     expect(response.body.achievements[1].id).toBe("username_selected");
     expect(response.body.achievements[2].id).toBe("beginner_shopper");
@@ -763,6 +789,8 @@ describe("auth + player lifecycle", () => {
     expect(response.body.achievements[8].clientDriven).toBe(true);
     expect(response.body.achievements[9].id).toBe("reward_skipper");
     expect(response.body.achievements[9].clientDriven).toBe(false);
+    expect(response.body.achievements[10].id).toBe("gem_hoarder");
+    expect(response.body.achievements[10].clientDriven).toBe(false);
   });
 
   it("grants client-driven achievements from the achievements endpoint", async () => {

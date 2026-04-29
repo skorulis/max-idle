@@ -9,8 +9,12 @@ export const ACHIEVEMENT_IDS = {
   REAL_TIME_STREAK_2D_14H: "real_time_streak_2d_14h",
   COLLECTION_COUNT_15: "collection_count_15",
   CONTEMPLATION: "contemplation",
-  REWARD_SKIPPER: "reward_skipper"
+  REWARD_SKIPPER: "reward_skipper",
+  GEM_HOARDER: "gem_hoarder"
 } as const;
+
+/** Minimum `time_gems_available` to earn Gem Hoarder */
+export const GEM_HOARDER_MIN_AVAILABLE_GEMS = 20;
 
 export type AchievementId = (typeof ACHIEVEMENT_IDS)[keyof typeof ACHIEVEMENT_IDS];
 
@@ -92,6 +96,13 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     name: "Reward skipper",
     description: "Wait 48 hours before collecting the daily reward.",
     icon: "calendar-x",
+    clientDriven: false
+  },
+  {
+    id: ACHIEVEMENT_IDS.GEM_HOARDER,
+    name: "Gem Hoarder",
+    description: "Have 20 time gems available.",
+    icon: "gem",
     clientDriven: false
   }
 ];
