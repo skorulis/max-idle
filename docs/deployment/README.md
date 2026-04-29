@@ -70,47 +70,19 @@ IMAGE_TAG=release-0.1.0 docker compose --env-file .env.production -f compose.pro
 
 ## 7) Wipe production database (destructive)
 
-Use this only when you intentionally need to reset all production data.
-
-1. SSH to the VPS and move to deploy dir:
+If you want a full reset, the simplest approach is to remove the Postgres Docker volume.
 
 ```bash
 cd /opt/maxidle/deploy
-```
 
-2. Take a backup first (required):
-
-```bash
+# Optional but recommended
 ./scripts/backup-db.sh
-```
 
-3. Confirm `.env.production` points at production and deliberately opt in:
+# Stop services and remove only the DB volume
+docker compose --env-file .env.production -f compose.production.yml down
+docker volume rm deploy_max_idle_pg_data
 
-```bash
-export WIPE_PROD_DB=yes
-```
-
-4. Wipe all tables/data by recreating the `public` schema:
-
-```bash
-if [ "${WIPE_PROD_DB:-no}" != "yes" ]; then
-  echo "Refusing to wipe DB (set WIPE_PROD_DB=yes to continue)."
-  exit 1
-fi
-
-docker compose --env-file .env.production -f compose.production.yml exec -T postgres sh -lc \
-  'PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"'
-```
-
-5. Re-run migrations and restart app services:
-
-```bash
-IMAGE_TAG="${IMAGE_TAG:-latest}" docker compose --env-file .env.production -f compose.production.yml run --rm migrate
+# Start again (creates a fresh empty DB), then run migrations
 IMAGE_TAG="${IMAGE_TAG:-latest}" docker compose --env-file .env.production -f compose.production.yml up -d --remove-orphans
-```
-
-6. Verify API health and app availability:
-
-```bash
-curl -fsS https://api.your-domain.com/health
+IMAGE_TAG="${IMAGE_TAG:-latest}" docker compose --env-file .env.production -f compose.production.yml run --rm migrate
 ```
