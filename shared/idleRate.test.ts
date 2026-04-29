@@ -65,8 +65,8 @@ describe("calculateIdleSecondsGain", () => {
 
 describe("luck + boosted gain", () => {
   it("preserves timer only when luck is enabled and roll succeeds", () => {
-    expect(shouldPreserveIdleTimerOnCollect({ seconds_multiplier: 0, restraint: 0, luck: 0 }, 0.1)).toBe(false);
-    expect(shouldPreserveIdleTimerOnCollect({ seconds_multiplier: 0, restraint: 0, luck: 1 }, 0.1)).toBe(true);
+    expect(shouldPreserveIdleTimerOnCollect({ seconds_multiplier: 0, restraint: 0, luck: 0 }, 0.02)).toBe(false);
+    expect(shouldPreserveIdleTimerOnCollect({ seconds_multiplier: 0, restraint: 0, luck: 1 }, 0.02)).toBe(true);
     expect(shouldPreserveIdleTimerOnCollect({ seconds_multiplier: 0, restraint: 0, luck: 1 }, 0.9)).toBe(false);
   });
 
