@@ -30,6 +30,6 @@ describe("shop pricing", () => {
 
   it("derives level from multiplier", () => {
     expect(multiplierToLevel(1)).toBe(0);
-    expect(multiplierToLevel(1.4)).toBe(4);
+    expect(multiplierToLevel(1.4)).toBe(8);
   });
 });

@@ -1317,9 +1317,9 @@ describe("auth + player lifecycle", () => {
 
     const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
     expect(playerResponse.status).toBe(200);
-    const expectedCurrent = Math.floor(calculateIdleSecondsGain(120) * 2);
+    const expectedCurrent = Math.floor(calculateIdleSecondsGain(120) * 1.5);
     expect(playerResponse.body.currentSeconds).toBe(expectedCurrent);
-    expect(playerResponse.body.secondsMultiplier).toBe(2);
+    expect(playerResponse.body.secondsMultiplier).toBe(1.5);
     expect(playerResponse.body.achievementBonusMultiplier).toBe(1);
   });
 
@@ -1447,7 +1447,7 @@ describe("auth + player lifecycle", () => {
     expect(purchaseResponse.body.purchase.totalCost).toBe(fiveLevelCost);
     expect(purchaseResponse.body.idleTime.available).toBe(10000 - fiveLevelCost);
     expect(purchaseResponse.body.upgradesPurchased).toBe(5);
-    expect(purchaseResponse.body.secondsMultiplier).toBe(1.5);
+    expect(purchaseResponse.body.secondsMultiplier).toBe(1.25);
     expect(purchaseResponse.body.achievementBonusMultiplier).toBe(1);
 
     const achievementState = await pool.query<{

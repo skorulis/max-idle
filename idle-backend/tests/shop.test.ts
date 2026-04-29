@@ -36,9 +36,9 @@ describe("shop pricing", () => {
 
   it("maps levels and multipliers consistently", () => {
     expect(multiplierToLevel(1)).toBe(0);
-    expect(multiplierToLevel(1.3)).toBe(3);
+    expect(multiplierToLevel(1.3)).toBe(6);
     expect(levelToMultiplier(0)).toBe(1);
-    expect(levelToMultiplier(7)).toBe(1.7);
+    expect(levelToMultiplier(7)).toBe(1.35);
   });
 
   it("uses fixed restraint upgrade cost", () => {
