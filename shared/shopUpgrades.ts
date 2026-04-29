@@ -21,6 +21,7 @@ export const COLLECT_GEM_TIME_PER_LEVEL_WAIT_FACTOR = 0.5;
 const SECONDS_PER_HOUR = 60 * 60;
 const SECONDS_PER_DAY = 24 * 60 * 60;
 const SECONDS_PER_WEEK = 7 * 24 * 60 * 60;
+const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
 
 export const SHOP_UPGRADE_IDS = {
   SECONDS_MULTIPLIER: "seconds_multiplier",
@@ -162,7 +163,8 @@ export const PATIENCE_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
     { cost: SECONDS_PER_DAY, value: 6 },
     { cost: 4 * SECONDS_PER_DAY, value: 7 },
     { cost: 14 * SECONDS_PER_DAY, value: 8 },
-    { cost: 52 * SECONDS_PER_WEEK, value: 9 }
+    { cost: SECONDS_PER_YEAR, value: 9 },
+    { cost: 2 * SECONDS_PER_YEAR, value: 10 }
   ],
   currencyType: SHOP_CURRENCY_TYPES.IDLE
 });
@@ -174,11 +176,11 @@ export const RESTRAINT_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   description: "Increase idle multiplier but you must wait 1 hour before collecting.",
   valueDescription: "%s",
   levels: [
-    { cost: 2 * 60 * 60, value: 1.5 },
-    { cost: 4 * 60 * 60, value: 1.75 },
-    { cost: 8 * 60 * 60, value: 2.0 },
-    { cost: 12 * 60 * 60, value: 2.25 },
-    { cost: 16 * 60 * 60, value: 2.5 }
+    { cost: 2 * 60 * 60, value: 1.1 },
+    { cost: 4 * 60 * 60, value: 1.2 },
+    { cost: 8 * 60 * 60, value: 1.3 },
+    { cost: 12 * 60 * 60, value: 1.4 },
+    { cost: 16 * 60 * 60, value: 1.5 }
   ],
   currencyType: SHOP_CURRENCY_TYPES.REAL
 });
