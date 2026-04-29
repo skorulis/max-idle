@@ -396,7 +396,8 @@ export function createApp(pool: Pool, config: AppConfig) {
     app,
     pool,
     resolveIdentity: resolveIdentityForRequest,
-    toNumber
+    toNumber,
+    isProduction: config.isProduction
   });
 
   registerTournamentRoutes({

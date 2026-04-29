@@ -16,6 +16,7 @@ import { HelpPage } from "../pages/HelpPage";
 import { LeaderboardPage } from "../pages/LeaderboardPage";
 import { LoginPage } from "../pages/LoginPage";
 import { PlayerPage } from "../pages/PlayerPage";
+import { DebugPage } from "../pages/DebugPage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { ShopPage } from "../pages/ShopPage";
 import { TournamentPage } from "../pages/TournamentPage";
@@ -26,6 +27,7 @@ import {
   createAnonymousSession,
   deletePushSubscription,
   debugAddGems,
+  debugResetCurrentDailyBonus,
   completeSocialUpgrade,
   enterTournament,
   getAccount,
@@ -196,6 +198,7 @@ export function AppShell() {
     | "debug_add_gems"
     | null
   >(null);
+  const [resettingDailyBonus, setResettingDailyBonus] = useState(false);
   const [messageCardRandomIndex, setMessageCardRandomIndex] = useState(() => getRandomMessageIndex());
   const [displayedMessage, setDisplayedMessage] = useState(WELCOME_MESSAGE);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
@@ -208,6 +211,7 @@ export function AppShell() {
   const [signupForm, setSignupForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const [upgradeForm, setUpgradeForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const isAuthenticated = Boolean(playerState);
+  const showDebugFeatures = !import.meta.env.PROD;
   const clientNowMs = useClientNowMs();
 
   const routePlayerId = useMemo(() => {
@@ -1011,6 +1015,24 @@ export function AppShell() {
     }
   };
 
+  const onDebugResetDailyBonus = async () => {
+    if (!playerState) {
+      return;
+    }
+
+    setResettingDailyBonus(true);
+    setError(null);
+    try {
+      await debugResetCurrentDailyBonus(token);
+      await refreshPlayer(token);
+      toast.success("Reset current daily bonus.");
+    } catch (debugError) {
+      setError(debugError instanceof Error ? debugError.message : "Failed to reset daily bonus");
+    } finally {
+      setResettingDailyBonus(false);
+    }
+  };
+
   const onCollectDailyReward = async () => {
     if (!playerState) {
       return;
@@ -1366,6 +1388,11 @@ export function AppShell() {
           <button type="button" className="link" onClick={() => navigate("/help")}>
             <GameIcon icon={CircleHelp} />
           </button>
+          {showDebugFeatures ? (
+            <button type="button" className="link" onClick={() => navigate("/debug")}>
+              Debug
+            </button>
+          ) : null}
         </div>
       </header>
 
@@ -1427,6 +1454,17 @@ export function AppShell() {
               />
             )}
           />
+          {showDebugFeatures ? (
+            <Route
+              path="/debug"
+              element={requireAuthenticatedRoute(
+                <DebugPage
+                  resettingDailyBonus={resettingDailyBonus}
+                  onResetDailyBonus={onDebugResetDailyBonus}
+                />
+              )}
+            />
+          ) : null}
           <Route
             path="/login"
             element={

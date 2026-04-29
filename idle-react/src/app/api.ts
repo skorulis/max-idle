@@ -497,6 +497,27 @@ export async function debugAddGems(token: string | null): Promise<PlayerResponse
   return (await response.json()) as PlayerResponse;
 }
 
+export async function debugResetCurrentDailyBonus(token: string | null): Promise<void> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/player/daily-bonus/debug/reset-current`, {
+    method: "POST",
+    credentials: "include",
+    headers
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(payload?.error ?? "Failed to reset daily bonus");
+  }
+}
+
 export async function logoutSession(): Promise<void> {
   await apiRequest("/auth/logout", { method: "POST" });
 }

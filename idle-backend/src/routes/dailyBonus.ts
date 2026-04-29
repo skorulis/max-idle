@@ -37,6 +37,7 @@ type RegisterDailyBonusRoutesOptions = {
   pool: Pool;
   resolveIdentity: (req: express.Request) => Promise<{ claims: AuthClaims }>;
   toNumber: (value: unknown) => number;
+  isProduction: boolean;
 };
 
 function getUtcDayStartMs(date: Date): number {
@@ -146,7 +147,8 @@ export function registerDailyBonusRoutes({
   app,
   pool,
   resolveIdentity,
-  toNumber
+  toNumber,
+  isProduction
 }: RegisterDailyBonusRoutesOptions): void {
   app.post("/player/daily-bonus/collect", async (req, res, next) => {
     const client = await pool.connect();
@@ -313,6 +315,61 @@ export function registerDailyBonusRoutes({
         lastDailyRewardCollectedAt: updatedPlayer.last_daily_reward_collected_at?.toISOString() ?? null,
         dailyBonus: toDailyBonusResponse(currentDailyBonus, updatedPlayer.last_daily_bonus_claimed_at),
         serverTime: now.toISOString()
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      next(error);
+    } finally {
+      client.release();
+    }
+  });
+
+  if (isProduction) {
+    return;
+  }
+
+  app.post("/player/daily-bonus/debug/reset-current", async (req, res, next) => {
+    const client = await pool.connect();
+    try {
+      const identity = await resolveIdentity(req);
+      req.auth = identity.claims;
+      const userId = identity.claims.sub;
+      const now = new Date();
+      const currentUtcDayStart = getCurrentUtcDayStart(now);
+      await client.query("BEGIN");
+      const deletedResult = await client.query<{ bonus_date_utc: Date; bonus_type: DailyBonusType; bonus_value: number }>(
+        `
+        DELETE FROM daily_bonuses
+        WHERE bonus_date_utc = $1
+        RETURNING bonus_date_utc, bonus_type, bonus_value
+        `,
+        [currentUtcDayStart]
+      );
+
+      // Also clear caller's claim marker so this route can immediately re-test collection behavior today.
+      await client.query(
+        `
+        UPDATE player_states
+        SET
+          last_daily_bonus_claimed_at = NULL,
+          last_daily_bonus_claimed_type = NULL
+        WHERE user_id = $1
+        `,
+        [userId]
+      );
+      await client.query("COMMIT");
+
+      res.json({
+        ok: true,
+        resetDateUtc: currentUtcDayStart.toISOString(),
+        removedBonus:
+          deletedResult.rows[0] === undefined
+            ? null
+            : {
+                type: deletedResult.rows[0].bonus_type,
+                value: deletedResult.rows[0].bonus_value,
+                date: deletedResult.rows[0].bonus_date_utc.toISOString()
+              }
       });
     } catch (error) {
       await client.query("ROLLBACK");
