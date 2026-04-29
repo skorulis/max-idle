@@ -20,6 +20,7 @@ import type { AppConfig, AuthClaims } from "./types.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerAccountRoutes } from "./routes/account.js";
 import { registerAchievementsRoutes } from "./routes/achievements.js";
+import { registerDailyBonusRoutes } from "./routes/dailyBonus.js";
 import { registerPlayerRoutes } from "./routes/player.js";
 import { registerTournamentRoutes } from "./routes/tournament.js";
 import { registerNotificationRoutes } from "./routes/notifications.js";
@@ -385,6 +386,13 @@ export function createApp(pool: Pool, config: AppConfig) {
   });
 
   registerPlayerRoutes({
+    app,
+    pool,
+    resolveIdentity: resolveIdentityForRequest,
+    toNumber
+  });
+
+  registerDailyBonusRoutes({
     app,
     pool,
     resolveIdentity: resolveIdentityForRequest,
