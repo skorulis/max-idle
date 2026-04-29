@@ -34,6 +34,29 @@ function FlipDigitFlapper({ digitChar }: { digitChar: string }) {
   const [flipped, setFlipped] = useState(false);
   const [instant, setInstant] = useState(false);
 
+  /**
+   * When the tab is backgrounded, CSS transitions are often paused and `transitionend` may never fire.
+   * That leaves `flipped` stuck true and refs out of sync, so later updates don't animate. Resync from
+   * the current prop when we become visible again.
+   */
+  const wasDocumentHiddenRef = useRef(document.visibilityState === "hidden");
+  useEffect(() => {
+    function onVisibilityChange() {
+      const hidden = document.visibilityState === "hidden";
+      if (!hidden && wasDocumentHiddenRef.current) {
+        const latest = digitRef.current;
+        displayedRef.current = latest;
+        setFaceText(latest);
+        setIncomingText(latest);
+        setFlipped(false);
+        setInstant(false);
+      }
+      wasDocumentHiddenRef.current = hidden;
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, []);
+
   useEffect(() => {
     if (digitChar === displayedRef.current) return;
     setIncomingText(digitChar);
