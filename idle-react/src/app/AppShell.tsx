@@ -5,7 +5,7 @@ import GameIcon from "../GameIcon";
 import { toast, toastCollectIdle } from "../gameToast";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
 import { getCollectGemIdleSecondsMultiplier, SECONDS_MULTIPLIER_SHOP_UPGRADE } from "../shopUpgrades";
-import { COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE, IDLE_HOARDER_SHOP_UPGRADE, LUCK_SHOP_UPGRADE, PATIENCE_SHOP_UPGRADE, RESTRAINT_SHOP_UPGRADE, WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE } from "../shopUpgrades";
+import { COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE, IDLE_HOARDER_SHOP_UPGRADE, LUCK_SHOP_UPGRADE, PATIENCE_SHOP_UPGRADE, RESTRAINT_SHOP_UPGRADE, SHOP_UPGRADES_BY_ID, WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE } from "../shopUpgrades";
 import {
   type ShopUpgradeId
 } from "../shopUpgrades";
@@ -962,9 +962,13 @@ export function AppShell() {
       const synced = toSyncedState(updatedPlayer);
       alignClientClock();
       setPlayerState(synced);
-      const purchaseMessage = purchaseConfig.successStatus(synced);
-      setStatus(purchaseMessage);
-      toast.success(purchaseMessage);
+      const purchasedUpgrade = SHOP_UPGRADES_BY_ID[upgradeId];
+      const purchasedLevel = purchasedUpgrade.currentLevel(synced.shop);
+      const shopToastMessage =
+        purchasedLevel > 0
+          ? `Purchased ${purchasedUpgrade.name} level ${purchasedLevel}`
+          : `Purchased ${purchasedUpgrade.name}`;
+      toast.success(shopToastMessage);
     } catch (purchaseError) {
       if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
         setError(purchaseConfig.insufficientFundsError);
