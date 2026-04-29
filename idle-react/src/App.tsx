@@ -8,7 +8,7 @@ function App() {
     <BrowserRouter>
       <Toaster
         theme="light"
-        position="top-center"
+        position="bottom-center"
         richColors
         closeButton
       />

@@ -14,8 +14,6 @@ type AccountPageProps = {
   dailyRewardNotificationPermission: NotificationPermission | "unsupported";
   dailyRewardNotificationPermissionPending: boolean;
   usernameDraft: string;
-  usernameError: string | null;
-  usernameSuccess: string | null;
   upgradeForm: AuthFormState;
   onUsernameChange: (value: string) => void;
   onSaveUsername: () => Promise<void>;
@@ -37,8 +35,6 @@ export function AccountPage({
   dailyRewardNotificationPermission,
   dailyRewardNotificationPermissionPending,
   usernameDraft,
-  usernameError,
-  usernameSuccess,
   upgradeForm,
   onUsernameChange,
   onSaveUsername,
@@ -87,8 +83,6 @@ export function AccountPage({
       >
         {usernamePending ? "Saving..." : "Save username"}
       </button>
-      {usernameError ? <p className="error">{usernameError}</p> : null}
-      {usernameSuccess ? <p className="success">{usernameSuccess}</p> : null}
       <div className="panel" style={{ marginTop: "0.75rem" }}>
         <h3>Notifications</h3>
         {dailyRewardNotificationsSupported ? (

@@ -154,8 +154,6 @@ export function AppShell() {
   const [authPending, setAuthPending] = useState(false);
   const [usernamePending, setUsernamePending] = useState(false);
   const [usernameDraft, setUsernameDraft] = useState("");
-  const [usernameError, setUsernameError] = useState<string | null>(null);
-  const [usernameSuccess, setUsernameSuccess] = useState<string | null>(null);
   const [shopPendingQuantity, setShopPendingQuantity] = useState<
     | "seconds_multiplier"
     | "another_seconds_multiplier"
@@ -383,14 +381,10 @@ export function AppShell() {
       const accountResponse = await getAccount(currentToken);
       setAccount(accountResponse);
       setUsernameDraft(accountResponse.username ?? "");
-      setUsernameError(null);
-      setUsernameSuccess(null);
     } catch (accountError) {
       if (accountError instanceof Error && accountError.message === "UNAUTHORIZED") {
         setAccount(null);
         setUsernameDraft("");
-        setUsernameError(null);
-        setUsernameSuccess(null);
         return;
       }
       throw accountError;
@@ -425,8 +419,6 @@ export function AppShell() {
     setPlayerState(synced);
     setAccount(home.account);
     setUsernameDraft(home.account.username ?? "");
-    setUsernameError(null);
-    setUsernameSuccess(null);
     const tournamentSynced = toSyncedTournamentState(home.tournament);
     setTournamentState(tournamentSynced);
   }, []);
@@ -1141,8 +1133,6 @@ export function AppShell() {
 
   const onUsernameChange = (value: string) => {
     setUsernameDraft(value);
-    setUsernameError(null);
-    setUsernameSuccess(null);
   };
 
   const onSaveUsername = async () => {
@@ -1156,19 +1146,16 @@ export function AppShell() {
     }
 
     setUsernamePending(true);
-    setUsernameError(null);
-    setUsernameSuccess(null);
 
     try {
       await updateUsername(token, nextUsername);
       await refreshAccount(token);
-      setUsernameSuccess("Username updated successfully.");
-      setStatus("Username updated.");
+      toast.success("Username updated successfully.");
     } catch (usernameUpdateError) {
       if (usernameUpdateError instanceof Error && usernameUpdateError.message === "USERNAME_TAKEN") {
-        setUsernameError("That username is already taken.");
+        toast.error("That username is already taken.");
       } else {
-        setUsernameError(usernameUpdateError instanceof Error ? usernameUpdateError.message : "Could not update username.");
+        toast.error(usernameUpdateError instanceof Error ? usernameUpdateError.message : "Could not update username.");
       }
     } finally {
       setUsernamePending(false);
@@ -1363,8 +1350,6 @@ export function AppShell() {
                 dailyRewardNotificationPermission={dailyRewardNotificationPermission}
                 dailyRewardNotificationPermissionPending={dailyRewardNotificationPermissionPending}
                 usernameDraft={usernameDraft}
-                usernameError={usernameError}
-                usernameSuccess={usernameSuccess}
                 upgradeForm={upgradeForm}
                 onUsernameChange={onUsernameChange}
                 onSaveUsername={onSaveUsername}
