@@ -59,6 +59,7 @@ import { ACHIEVEMENT_IDS } from "../achievements";
 import { authClient } from "./authClient.ts";
 import { alignClientClock, useClientNowMs } from "./clientClock";
 import { getTournamentSecondsUntilDraw, toSyncedState, toSyncedTournamentState } from "./playerState";
+import { useReturnAfterAwayMessage } from "./useReturnAfterAwayMessage";
 import type {
   AccountResponse,
   AchievementsResponse,
@@ -213,6 +214,8 @@ export function AppShell() {
   const isAuthenticated = Boolean(playerState);
   const showDebugFeatures = !import.meta.env.PROD;
   const clientNowMs = useClientNowMs();
+
+  useReturnAfterAwayMessage();
 
   const routePlayerId = useMemo(() => {
     const rawPlayerId = playerRouteMatch?.params.playerId;
@@ -1006,10 +1009,10 @@ export function AppShell() {
       const synced = toSyncedState(updatedPlayer);
       alignClientClock();
       setPlayerState(synced);
-      setStatus("Added 5 debug gems.");
+      toast.success("Added 5 debug gems.");
     } catch (debugError) {
       setError(debugError instanceof Error ? debugError.message : "Failed to add debug gems");
-      setStatus("Could not add debug gems.");
+      toast.error("Could not add debug gems.");
     } finally {
       setShopPendingQuantity(null);
     }

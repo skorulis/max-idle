@@ -118,7 +118,7 @@ export function HomePage({
       <div className="idle-rate-meta">
         <div className="idle-rate-lines">
           <p className="subtle">Realtime: {formatSeconds(realtimeElapsedSeconds)}</p>
-          <p className="subtle">Current rate: {effectiveIdleSecondsRate.toFixed(2)}x</p>
+          <p className="subtle">Multiplier: {effectiveIdleSecondsRate.toFixed(2)}x</p>
         </div>
         <button
           type="button"
