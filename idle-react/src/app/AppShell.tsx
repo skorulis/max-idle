@@ -49,6 +49,7 @@ import {
   updateUsername,
   upgradeAnonymous
 } from "./api";
+import { hasAffordableIdleOrRealTimeShopPurchase } from "../shop";
 import { ACHIEVEMENT_IDS } from "../achievements";
 import { authClient } from "./authClient.ts";
 import { alignClientClock, useClientNowMs } from "./clientClock";
@@ -599,6 +600,17 @@ export function AppShell() {
       shop: playerState.shop
     });
   }, [playerState, realtimeElapsedSeconds]);
+
+  const showShopAffordableBadge = useMemo(() => {
+    if (!playerState) {
+      return false;
+    }
+    return hasAffordableIdleOrRealTimeShopPurchase(
+      playerState.shop,
+      playerState.idleTime.available,
+      playerState.realTime.available
+    );
+  }, [playerState]);
 
   const dailyRewardAvailable = useMemo(() => {
     if (!playerState) {
@@ -1205,6 +1217,7 @@ export function AppShell() {
       <AppNav
         isAuthenticated={isAuthenticated}
         hasUnseenAchievements={Boolean(playerState?.hasUnseenAchievements)}
+        showShopAffordableBadge={showShopAffordableBadge}
         showDebugFeatures={showDebugFeatures}
       />
 

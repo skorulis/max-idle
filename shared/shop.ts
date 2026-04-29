@@ -161,3 +161,31 @@ export function hasRefundableShopPurchases(shop: ShopState): boolean {
     refundTotals[SHOP_CURRENCY_TYPES.REAL] > 0
   );
 }
+
+/** True when the player can buy at least one upgrade priced in idle or real time (not gems). */
+export function hasAffordableIdleOrRealTimeShopPurchase(
+  shop: ShopState,
+  idleAvailable: number,
+  realAvailable: number
+): boolean {
+  const idle = safeNumber(idleAvailable, 0);
+  const real = safeNumber(realAvailable, 0);
+  for (const upgrade of SHOP_UPGRADES) {
+    if (upgrade.currencyType === SHOP_CURRENCY_TYPES.GEM) {
+      continue;
+    }
+    const currentLevel = upgrade.currentLevel(shop);
+    if (currentLevel >= upgrade.maxLevel()) {
+      continue;
+    }
+    const cost = upgrade.costAtLevel(currentLevel);
+    if (!(cost > 0)) {
+      continue;
+    }
+    const balance = upgrade.currencyType === SHOP_CURRENCY_TYPES.IDLE ? idle : real;
+    if (balance >= cost) {
+      return true;
+    }
+  }
+  return false;
+}

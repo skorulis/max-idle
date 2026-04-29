@@ -129,6 +129,10 @@ h3 {
   box-shadow: 0 0 0 1px #ffffff;
 }
 
+.nav-icon-dot-accent {
+  background: #16a34a;
+}
+
 .game-icon {
   flex-shrink: 0;
 }

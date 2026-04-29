@@ -5,10 +5,17 @@ import GameIcon from "../GameIcon";
 export type AppNavProps = {
   isAuthenticated: boolean;
   hasUnseenAchievements: boolean;
+  /** Idle- or real-time shop upgrade is affordable (navigation hint). */
+  showShopAffordableBadge: boolean;
   showDebugFeatures: boolean;
 };
 
-export function AppNav({ isAuthenticated, hasUnseenAchievements, showDebugFeatures }: AppNavProps) {
+export function AppNav({
+  isAuthenticated,
+  hasUnseenAchievements,
+  showShopAffordableBadge,
+  showDebugFeatures
+}: AppNavProps) {
   const navigate = useNavigate();
 
   return (
@@ -22,7 +29,12 @@ export function AppNav({ isAuthenticated, hasUnseenAchievements, showDebugFeatur
       {isAuthenticated ? (
         <>
           <button type="button" className="link" onClick={() => navigate("/shop")}>
-            <GameIcon icon={ShoppingCart} />
+            <span className="nav-icon-with-dot">
+              <GameIcon icon={ShoppingCart} />
+              {showShopAffordableBadge ? (
+                <span className="nav-icon-dot nav-icon-dot-accent" aria-label="Shop purchase available" role="status" />
+              ) : null}
+            </span>
           </button>
           <button type="button" className="link" onClick={() => navigate("/achievements")}>
             <span className="nav-icon-with-dot">

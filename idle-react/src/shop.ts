@@ -1,5 +1,6 @@
 export type { ShopState } from "@maxidle/shared/shop";
 export {
+  hasAffordableIdleOrRealTimeShopPurchase,
   hasRefundableShopPurchases,
   withShopUpgradeLevel,
   getLuckEnabled,
