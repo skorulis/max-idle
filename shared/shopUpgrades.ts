@@ -24,6 +24,7 @@ const SECONDS_PER_WEEK = 7 * 24 * 60 * 60;
 
 export const SHOP_UPGRADE_IDS = {
   SECONDS_MULTIPLIER: "seconds_multiplier",
+  ANOTHER_SECONDS_MULTIPLIER: "another_seconds_multiplier",
   PATIENCE: "patience",
   RESTRAINT: "restraint",
   IDLE_HOARDER: "idle_hoarder",
@@ -119,6 +120,32 @@ export const SECONDS_MULTIPLIER_SHOP_UPGRADE: ShopUpgradeDefinition = defineShop
     { cost: 28 * 24 * 3600, value: 2.5 },
   ],
   currencyType: SHOP_CURRENCY_TYPES.IDLE
+});
+
+export const ANOTHER_SECONDS_MULTIPLIER_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
+  id: SHOP_UPGRADE_IDS.ANOTHER_SECONDS_MULTIPLIER,
+  name: "Another Base Multiplier",
+  icon: "gauge",
+  description: "Base multiplier to real time",
+  valueDescription: "%s",
+  levels: [
+    { cost: 20, value: 1.1 },
+    { cost: 60, value: 1.2 },
+    { cost: 120, value: 1.3 },
+    { cost: 300, value: 1.4 },
+    { cost: 600, value: 1.5 },
+    { cost: 30 * 60, value: 1.6 },
+    { cost: 3600, value: 1.7 },
+    { cost: 2 * 3600, value: 1.8 },
+    { cost: 5 * 3600, value: 1.9 },
+    { cost: 10 * 3600, value: 2.0 },
+    { cost: 24 * 3600, value: 2.1 },
+    { cost: 48 * 3600, value: 2.2 },
+    { cost: 7 * 24 * 3600, value: 2.3 },
+    { cost: 14 * 24 * 3600, value: 2.4 },
+    { cost: 28 * 24 * 3600, value: 2.5 },
+  ],
+  currencyType: SHOP_CURRENCY_TYPES.REAL
 });
 
 export const PATIENCE_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
@@ -244,6 +271,7 @@ export const WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE: ShopUpgradeDefinition = defin
 
 export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   SECONDS_MULTIPLIER_SHOP_UPGRADE,
+  ANOTHER_SECONDS_MULTIPLIER_SHOP_UPGRADE,
   PATIENCE_SHOP_UPGRADE,
   RESTRAINT_SHOP_UPGRADE,
   IDLE_HOARDER_SHOP_UPGRADE,
@@ -256,6 +284,7 @@ export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
 
 export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> = {
   [SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER]: SECONDS_MULTIPLIER_SHOP_UPGRADE,
+  [SHOP_UPGRADE_IDS.ANOTHER_SECONDS_MULTIPLIER]: ANOTHER_SECONDS_MULTIPLIER_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.PATIENCE]: PATIENCE_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.RESTRAINT]: RESTRAINT_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.IDLE_HOARDER]: IDLE_HOARDER_SHOP_UPGRADE,

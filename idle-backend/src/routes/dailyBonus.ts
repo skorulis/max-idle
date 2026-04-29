@@ -69,7 +69,7 @@ function rollDailyBonus(now: Date): DailyBonusRow {
   switch (type) {
     case "collect_idle_percent":
     case "collect_real_percent":
-      value = getRandomIntInclusive(10, 50);
+      value = getRandomIntInclusive(10, 25);
       break;
     case "double_gems_daily_reward":
       value = 2;

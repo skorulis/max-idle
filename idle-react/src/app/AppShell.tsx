@@ -49,6 +49,7 @@ import {
   purchaseWorthwhileAchievements,
   purchaseRefund,
   purchaseRestraint,
+  purchaseAnotherSecondsMultiplier,
   purchaseSecondsMultiplier,
   registerWithEmail,
   upsertPushSubscription,
@@ -188,6 +189,7 @@ export function AppShell() {
   const [usernameSuccess, setUsernameSuccess] = useState<string | null>(null);
   const [shopPendingQuantity, setShopPendingQuantity] = useState<
     | "seconds_multiplier"
+    | "another_seconds_multiplier"
     | "patience"
     | "restraint"
     | "idle_hoarder"
@@ -894,6 +896,13 @@ export function AppShell() {
         purchase: () => purchaseSecondsMultiplier(token, 1),
         successStatus: (synced: SyncedPlayerState) => `Seconds multiplier upgraded to ${synced.secondsMultiplier.toFixed(1)}x.`,
         insufficientFundsError: "Not enough spendable idle seconds for that purchase."
+      },
+      another_seconds_multiplier: {
+        isUnavailable: false,
+        startStatus: "Purchasing Another Base Multiplier...",
+        purchase: () => purchaseAnotherSecondsMultiplier(token),
+        successStatus: () => "Another Base Multiplier upgraded.",
+        insufficientFundsError: "Not enough spendable real time for that purchase."
       },
       restraint: {
         isUnavailable: restraintLevel >= restraintMaxLevel,

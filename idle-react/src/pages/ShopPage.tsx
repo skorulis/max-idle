@@ -33,6 +33,7 @@ type ShopPageProps = {
   playerState: SyncedPlayerState | null;
   shopPendingQuantity:
     | "seconds_multiplier"
+    | "another_seconds_multiplier"
     | "patience"
     | "restraint"
     | "idle_hoarder"
@@ -81,6 +82,7 @@ function formatUpgradeValue(upgrade: ShopUpgradeDefinition, value: number): stri
   }
   if (
     upgrade.id === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER ||
+    (upgrade.id as string) === "another_seconds_multiplier" ||
     upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT ||
     upgrade.id === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST
   ) {

@@ -1,4 +1,5 @@
 import {
+  ANOTHER_SECONDS_MULTIPLIER_SHOP_UPGRADE,
   LUCK_SHOP_UPGRADE,
   RESTRAINT_SHOP_UPGRADE,
   SHOP_UPGRADES_BY_ID,
@@ -17,6 +18,7 @@ const DEFAULT_SECONDS_MULTIPLIER_VALUE = 1;
 
 export type ShopState = {
   seconds_multiplier: number;
+  another_seconds_multiplier?: number;
   patience?: number;
   restraint: number;
   idle_hoarder?: number;
@@ -29,6 +31,7 @@ export type ShopState = {
 
 export const DEFAULT_SHOP_STATE: ShopState = {
   [SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER]: 0,
+  [SHOP_UPGRADE_IDS.ANOTHER_SECONDS_MULTIPLIER]: 0,
   [SHOP_UPGRADE_IDS.PATIENCE]: 0,
   [SHOP_UPGRADE_IDS.RESTRAINT]: 0,
   [SHOP_UPGRADE_IDS.IDLE_HOARDER]: 0,
@@ -72,7 +75,11 @@ export function getSecondsMultiplierUpgradeValue(level: number): number {
 }
 
 export function getSecondsMultiplier(shop: ShopState): number {
-  return getSecondsMultiplierUpgradeValue(SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(shop));
+  const baseMultiplier = getSecondsMultiplierUpgradeValue(SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(shop));
+  const anotherBaseMultiplier = getSecondsMultiplierUpgradeValue(
+    ANOTHER_SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(shop)
+  );
+  return baseMultiplier * anotherBaseMultiplier;
 }
 
 export function getRestraintEnabled(shop: ShopState): boolean {
