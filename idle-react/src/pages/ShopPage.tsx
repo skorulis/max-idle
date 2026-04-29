@@ -336,6 +336,7 @@ export function ShopPage({
               upgradeState.cost === null ||
               cannotAfford ||
               refundUnavailable;
+            const isPurchasable = !isDisabled && !upgradeState.isPending;
             return (
               <div key={upgrade.id} className={`shop-upgrade-row${upgradeState.isOwned ? " shop-upgrade-row-owned" : ""}`}>
                 <div className="shop-upgrade-main">
@@ -357,7 +358,7 @@ export function ShopPage({
                 <div className="shop-upgrade-action">
                   <button
                     type="button"
-                    className="secondary shop-upgrade-buy-button"
+                    className={`secondary shop-upgrade-buy-button${isPurchasable ? " shop-upgrade-buy-button-purchasable" : ""}`}
                     onClick={() => void upgradeState.onPurchase()}
                     disabled={isDisabled}
                   >
@@ -369,7 +370,7 @@ export function ShopPage({
                       "Max level"
                     ) : (
                       <>
-                        <Plus size={22} aria-hidden="true" className="shop-upgrade-buy-plus" />
+                        <Plus size={18} aria-hidden="true" className="shop-upgrade-buy-plus" />
                         <span className="shop-upgrade-buy-cost">
                           {formatUpgradeCost(upgrade.currencyType, upgradeState.cost)}
                         </span>

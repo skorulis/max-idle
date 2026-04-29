@@ -544,7 +544,7 @@ input {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 10px;
-  align-items: center;
+  align-items: start;
   padding: 10px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
@@ -560,13 +560,16 @@ input {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 10px;
-  align-items: center;
+  align-items: start;
 }
 
 .shop-upgrade-icon {
+  display: block;
   color: #6b7280;
   width: 18px;
   height: 18px;
+  align-self: start;
+  margin-top: 2px;
 }
 
 .shop-upgrade-row-owned .shop-upgrade-icon {
@@ -591,18 +594,40 @@ input {
   display: grid;
   gap: 6px;
   justify-items: end;
-  align-items: center;
+  align-items: start;
+  align-self: start;
 }
 
 .shop-upgrade-buy-button {
-  min-width: 88px;
-  min-height: 52px;
+  box-sizing: border-box;
   display: inline-flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
   margin-top: 0;
+  /* Square: side length follows content, with a minimum touch target */
+  aspect-ratio: 1;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 6px;
+}
+
+.shop-upgrade-buy-button-purchasable {
+  border-color: #16a34a;
+  background: #dcfce7;
+  color: #14532d;
+}
+
+.shop-upgrade-buy-button-purchasable:hover:not(:disabled) {
+  background: #bbf7d0;
+}
+
+.shop-upgrade-buy-button-purchasable:focus-visible {
+  outline: 2px solid #16a34a;
+  outline-offset: 2px;
 }
 
 .shop-upgrade-buy-plus {
@@ -610,8 +635,8 @@ input {
 }
 
 .shop-upgrade-buy-cost {
-  font-size: 11px;
-  line-height: 1;
+  font-size: 13px;
+  line-height: 1.1;
 }
 
 .achievements-list {
