@@ -60,6 +60,7 @@ import { ACHIEVEMENT_IDS } from "../achievements";
 import { authClient } from "./authClient.ts";
 import { alignClientClock, useClientNowMs } from "./clientClock";
 import { getTournamentSecondsUntilDraw, toSyncedState, toSyncedTournamentState } from "./playerState";
+import { useBottomBulletinMessage } from "./useBottomBulletinMessage";
 import { useReturnAfterAwayMessage } from "./useReturnAfterAwayMessage";
 import type {
   AccountResponse,
@@ -76,41 +77,6 @@ const TOKEN_KEY = "max-idle-token";
 const UPGRADE_SOCIAL_INTENT_KEY = "max-idle-upgrade-social-intent";
 const DAILY_REWARD_NOTIFICATIONS_ENABLED_KEY = "max-idle-daily-reward-notifications-enabled";
 const CONTEMPLATION_ACHIEVEMENT_HOME_TIME_MS = 10 * 60 * 1000;
-const FALLBACK_MESSAGE = "The message board is taking a snack break.";
-const WELCOME_MESSAGE = "Welcome to the world of competitive waiting.";
-const HUMOROUS_MESSAGES = [
-  "Your productivity has entered low-power mode.",
-  "Another second has passed without incident",
-  "Your idle engine is purring like a very relaxed cat.",
-  "If you stare at the counter it will stare back.",
-  "Make sure to keep hydrated, you could be waiting a while.",
-  "Doing nothing remains unexpectedly effective.",
-  "Competitive idling isn't for the faint of heart.",
-  "What will you do with all of that time?",
-  "Your goal is simple.  Be idle for longer than anyone else.",
-  "To catch up, try doing nothing faster.",
-  "If you keep going, you’ll waste a full day in only 24 hours.",
-  "If you're wondering what the point of this is, you're not alone.",
-  "Who has time? But then if we do not ever take time, how can we ever have time? -Merovingian",
-];
-
-function getRandomMessageIndex(excludeIndex?: number): number {
-  if (HUMOROUS_MESSAGES.length === 0) {
-    return -1;
-  }
-  if (HUMOROUS_MESSAGES.length === 1) {
-    return 0;
-  }
-  let nextIndex = Math.floor(Math.random() * HUMOROUS_MESSAGES.length);
-  while (nextIndex === excludeIndex) {
-    nextIndex = Math.floor(Math.random() * HUMOROUS_MESSAGES.length);
-  }
-  return nextIndex;
-}
-
-function getMessageFromIndex(index: number): string {
-  return HUMOROUS_MESSAGES[index] ?? FALLBACK_MESSAGE;
-}
 
 function isDailyRewardNotificationsEnabledStored(): boolean {
   if (typeof window === "undefined") {
@@ -202,10 +168,6 @@ export function AppShell() {
     | null
   >(null);
   const [resettingDailyBonus, setResettingDailyBonus] = useState(false);
-  const [messageCardRandomIndex, setMessageCardRandomIndex] = useState(() => getRandomMessageIndex());
-  const [displayedMessage, setDisplayedMessage] = useState(WELCOME_MESSAGE);
-  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
-  const [messageFadeStage, setMessageFadeStage] = useState<"idle" | "fading-out" | "fading-in">("idle");
   const [dailyRewardNotificationsEnabled, setDailyRewardNotificationsEnabled] = useState(() =>
     isDailyRewardNotificationsEnabledStored()
   );
@@ -214,6 +176,7 @@ export function AppShell() {
   const [signupForm, setSignupForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const [upgradeForm, setUpgradeForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const isAuthenticated = Boolean(playerState);
+  const { displayedMessage, isFadingOutMessage, isFadingInMessage } = useBottomBulletinMessage(isAuthenticated);
   const showDebugFeatures = !import.meta.env.PROD;
   const clientNowMs = useClientNowMs();
 
@@ -230,20 +193,6 @@ export function AppShell() {
       return rawPlayerId;
     }
   }, [playerRouteMatch?.params.playerId]);
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      return;
-    }
-
-    const timer = window.setInterval(() => {
-      setMessageCardRandomIndex((previousIndex) => getRandomMessageIndex(previousIndex));
-    }, 20_000);
-
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [isAuthenticated]);
 
   useEffect(() => {
     if (location.pathname !== "/leaderboard") {
@@ -708,12 +657,6 @@ export function AppShell() {
     : 0;
   const worthwhileAchievementsMaxLevel = WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.maxLevel();
 
-  const activeMessageCardText = isAuthenticated
-    ? getMessageFromIndex(messageCardRandomIndex)
-    : WELCOME_MESSAGE;
-  const isFadingOutMessage = messageFadeStage === "fading-out";
-  const isFadingInMessage = messageFadeStage === "fading-in";
-
   useEffect(() => {
     if (!playerState || !tournamentState || tournamentSecondsUntilDraw > 0) {
       return;
@@ -727,45 +670,6 @@ export function AppShell() {
       window.clearTimeout(refreshTimer);
     };
   }, [playerState, refreshTournament, token, tournamentSecondsUntilDraw, tournamentState]);
-
-  useEffect(() => {
-    if (activeMessageCardText === displayedMessage || activeMessageCardText === pendingMessage) {
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      setPendingMessage(activeMessageCardText);
-      setMessageFadeStage("fading-out");
-    }, 0);
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [activeMessageCardText, displayedMessage, pendingMessage]);
-
-  useEffect(() => {
-    if (messageFadeStage !== "fading-out") {
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      setDisplayedMessage(pendingMessage ?? activeMessageCardText);
-      setMessageFadeStage("fading-in");
-    }, 220);
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [messageFadeStage, pendingMessage, activeMessageCardText]);
-
-  useEffect(() => {
-    if (messageFadeStage !== "fading-in") {
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      setPendingMessage(null);
-      setMessageFadeStage("idle");
-    }, 220);
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [messageFadeStage]);
 
   const onToggleDailyRewardNotifications = async (enabled: boolean) => {
     if (!dailyRewardNotificationsSupported) {
