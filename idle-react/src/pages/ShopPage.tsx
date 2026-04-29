@@ -121,9 +121,11 @@ export function ShopPage({
     );
   }
 
+  const syncedPlayer = playerState;
+
   const visibleUpgrades = SHOP_UPGRADES.filter((upgrade) => upgrade.currencyType === selectedCurrencyType);
-  const secondsMultiplierLevel = SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(playerState.shop);
-  const hasRefundablePurchases = hasRefundableShopPurchases(playerState.shop);
+  const secondsMultiplierLevel = SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(syncedPlayer.shop);
+  const hasRefundablePurchases = hasRefundableShopPurchases(syncedPlayer.shop);
 
   function getValueDesciptionValue(upgrade: ShopUpgradeDefinition, playerState: SyncedPlayerState, level: number): number | null {
     const valueDescription = upgrade.valueDescription;
@@ -163,8 +165,8 @@ export function ShopPage({
     onPurchase: () => Promise<void>;
   } {
     const purchasedLevel = getUpgradeCurrentLevel(upgrade) ?? 0;
-    const currentValueForDescription = getValueDesciptionValue(upgrade, playerState, purchasedLevel);
-    const nextValueForDescription = getValueDesciptionValue(upgrade, playerState, purchasedLevel + 1);
+    const currentValueForDescription = getValueDesciptionValue(upgrade, syncedPlayer, purchasedLevel);
+    const nextValueForDescription = getValueDesciptionValue(upgrade, syncedPlayer, purchasedLevel + 1);
     
     const currentValueDescription =
       currentValueForDescription !== null
@@ -203,7 +205,7 @@ export function ShopPage({
     }
 
     if (upgrade.id === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST) {
-      const collectGemBoostLevel = upgrade.currentLevel(playerState.shop);
+      const collectGemBoostLevel = upgrade.currentLevel(syncedPlayer.shop);
       const maxCollectGemBoostLevel = getCollectGemTimeBoostMaxLevel();
       const nextLevelDef = upgrade.levels[collectGemBoostLevel] ?? null;
       return {
@@ -229,7 +231,7 @@ export function ShopPage({
       };
     }
 
-    const currentLevel = upgrade.currentLevel(playerState.shop);
+    const currentLevel = upgrade.currentLevel(syncedPlayer.shop);
     const maxLevel = upgrade.maxLevel();
     const isOwned = currentLevel >= maxLevel;
     const isPending = shopPendingQuantity === upgrade.id;
@@ -252,7 +254,7 @@ export function ShopPage({
     if (upgrade.levels.length <= 1) {
       return null;
     }
-    return upgrade.currentLevel(playerState.shop);
+    return upgrade.currentLevel(syncedPlayer.shop);
   }
 
   return (
@@ -271,7 +273,7 @@ export function ShopPage({
             <Atom size={16} aria-hidden="true" />
             Idle Time
           </p>
-          <p className="shop-currency-value">{formatSeconds(playerState.idleTime.available, 2, "floor")}</p>
+          <p className="shop-currency-value">{formatSeconds(syncedPlayer.idleTime.available, 2, "floor")}</p>
         </button>
         <button
           type="button"
@@ -285,7 +287,7 @@ export function ShopPage({
             <Clock3 size={16} aria-hidden="true" />
             Real Time
           </p>
-          <p className="shop-currency-value">{formatSeconds(playerState.realTime.available, 2, "floor")}</p>
+          <p className="shop-currency-value">{formatSeconds(syncedPlayer.realTime.available, 2, "floor")}</p>
         </button>
         <button
           type="button"
@@ -299,11 +301,11 @@ export function ShopPage({
             <Gem size={16} aria-hidden="true" />
             Time Gems
           </p>
-          <p className="shop-currency-value">{playerState.timeGems.available}</p>
+          <p className="shop-currency-value">{syncedPlayer.timeGems.available}</p>
         </button>
       </div>
       {selectedCurrencyType === SHOP_CURRENCY_TYPES.IDLE ? (
-        <p className="subtle">Current multiplier: {playerState.secondsMultiplier.toFixed(1)}x</p>
+        <p className="subtle">Current multiplier: {syncedPlayer.secondsMultiplier.toFixed(1)}x</p>
       ) : null}
       {showDebugAddGemsButton && selectedCurrencyType === SHOP_CURRENCY_TYPES.GEM ? (
         <button
@@ -322,7 +324,7 @@ export function ShopPage({
           {visibleUpgrades.map((upgrade) => {
             const upgradeState = getUpgradeRowState(upgrade);
             const currentLevel = getUpgradeCurrentLevel(upgrade);
-            const upgradeAvailableBalance = getCurrencyAmount(playerState, upgrade.currencyType);
+            const upgradeAvailableBalance = getCurrencyAmount(syncedPlayer, upgrade.currencyType);
             const cannotAfford = upgradeState.cost !== null && upgradeAvailableBalance < upgradeState.cost;
             const refundUnavailable =
               upgrade.id === SHOP_UPGRADE_IDS.PURCHASE_REFUND && !hasRefundablePurchases;

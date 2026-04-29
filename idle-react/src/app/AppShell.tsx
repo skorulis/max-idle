@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactElement } from "re
 import { CircleHelp, CircleUserRound, Hourglass, Medal, ShoppingCart, Star } from "lucide-react";
 import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "react-router-dom";
 import GameIcon from "../GameIcon";
+import { toast, toastCollectIdle } from "../gameToast";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
 import { getCollectGemIdleSecondsMultiplier, SECONDS_MULTIPLIER_SHOP_UPGRADE } from "../shopUpgrades";
 import { COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE, IDLE_HOARDER_SHOP_UPGRADE, LUCK_SHOP_UPGRADE, PATIENCE_SHOP_UPGRADE, RESTRAINT_SHOP_UPGRADE, WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE } from "../shopUpgrades";
@@ -847,6 +848,7 @@ export function AppShell() {
 
     try {
       const nextPlayer = await collectIdleTime(token);
+      toastCollectIdle(nextPlayer.collectedSeconds ?? 0, nextPlayer.realSecondsCollected ?? 0);
       const synced = toSyncedState(nextPlayer);
       alignClientClock();
       setPlayerState(synced);
@@ -960,7 +962,9 @@ export function AppShell() {
       const synced = toSyncedState(updatedPlayer);
       alignClientClock();
       setPlayerState(synced);
-      setStatus(purchaseConfig.successStatus(synced));
+      const purchaseMessage = purchaseConfig.successStatus(synced);
+      setStatus(purchaseMessage);
+      toast.success(purchaseMessage);
     } catch (purchaseError) {
       if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
         setError(purchaseConfig.insufficientFundsError);
