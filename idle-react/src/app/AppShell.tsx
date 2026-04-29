@@ -20,6 +20,7 @@ import { RegisterPage } from "../pages/RegisterPage";
 import { ShopPage } from "../pages/ShopPage";
 import { TournamentPage } from "../pages/TournamentPage";
 import {
+  collectDailyBonus,
   collectDailyReward,
   collectIdleTime,
   createAnonymousSession,
@@ -175,6 +176,7 @@ export function AppShell() {
   const [starting, setStarting] = useState(false);
   const [collecting, setCollecting] = useState(false);
   const [collectingDailyReward, setCollectingDailyReward] = useState(false);
+  const [collectingDailyBonus, setCollectingDailyBonus] = useState(false);
   const [enteringTournament, setEnteringTournament] = useState(false);
   const [authPending, setAuthPending] = useState(false);
   const [usernamePending, setUsernamePending] = useState(false);
@@ -1039,6 +1041,37 @@ export function AppShell() {
     }
   };
 
+  const onCollectDailyBonus = async () => {
+    if (!playerState) {
+      return;
+    }
+    setCollectingDailyBonus(true);
+    setError(null);
+    try {
+      const nextPlayer = await collectDailyBonus(token);
+      const synced = toSyncedState(nextPlayer);
+      alignClientClock();
+      setPlayerState(synced);
+      setStatus("Daily bonus collected.");
+    } catch (dailyBonusError) {
+      if (dailyBonusError instanceof Error && dailyBonusError.message === "UNAUTHORIZED") {
+        localStorage.removeItem(TOKEN_KEY);
+        setToken(null);
+        setPlayerState(null);
+        setAccount(null);
+        setStatus("Press start when you are ready to do nothing.");
+      } else if (dailyBonusError instanceof Error && dailyBonusError.message === "DAILY_BONUS_NOT_COLLECTABLE") {
+        setError("Today's daily bonus cannot be collected manually.");
+      } else if (dailyBonusError instanceof Error && dailyBonusError.message === "DAILY_BONUS_ALREADY_CLAIMED") {
+        setError("Daily bonus already claimed today.");
+      } else {
+        setError(dailyBonusError instanceof Error ? dailyBonusError.message : "Daily bonus collection failed");
+      }
+    } finally {
+      setCollectingDailyBonus(false);
+    }
+  };
+
   const onEnterTournament = async () => {
     if (!playerState) {
       return;
@@ -1350,6 +1383,7 @@ export function AppShell() {
                 realtimeElapsedSeconds={realtimeElapsedSeconds}
                 effectiveIdleSecondsRate={effectiveIdleSecondsRate}
                 collectingDailyReward={collectingDailyReward}
+                collectingDailyBonus={collectingDailyBonus}
                 dailyRewardAvailable={dailyRewardAvailable}
                 dailyRewardSecondsUntilAvailable={dailyRewardSecondsUntilAvailable}
                 tournamentHasEntered={tournamentHasEntered}
@@ -1358,6 +1392,7 @@ export function AppShell() {
                 onStartIdling={onStartIdling}
                 onCollect={onCollect}
                 onCollectDailyReward={onCollectDailyReward}
+                onCollectDailyBonus={onCollectDailyBonus}
                 onEnterTournament={onEnterTournament}
                 onNavigateTournament={() => navigate("/tournament")}
                 onNavigateLogin={() => navigate("/login")}

@@ -127,6 +127,38 @@ export async function collectDailyReward(token: string | null): Promise<PlayerRe
   return (await response.json()) as PlayerResponse;
 }
 
+export async function collectDailyBonus(token: string | null): Promise<PlayerResponse> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/player/daily-bonus/collect`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      ...headers
+    }
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (response.status === 400) {
+    const payload = (await response.json().catch(() => null)) as { code?: string } | null;
+    if (payload?.code === "DAILY_BONUS_NOT_COLLECTABLE") {
+      throw new Error("DAILY_BONUS_NOT_COLLECTABLE");
+    }
+    if (payload?.code === "DAILY_BONUS_ALREADY_CLAIMED") {
+      throw new Error("DAILY_BONUS_ALREADY_CLAIMED");
+    }
+  }
+  if (!response.ok) {
+    throw new Error("Failed to collect daily bonus");
+  }
+  return (await response.json()) as PlayerResponse;
+}
+
 export async function getCurrentTournament(token: string | null): Promise<TournamentCurrentResponse> {
   const headers: Record<string, string> = {};
   if (token) {

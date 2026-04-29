@@ -47,6 +47,26 @@ describe("auth + player lifecycle", () => {
     return ids;
   }
 
+  function getCurrentUtcDayStart(): Date {
+    const now = new Date();
+    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  }
+
+  async function upsertTodayBonus(
+    type: "collect_idle_percent" | "collect_real_percent" | "double_gems_daily_reward" | "free_real_time_hours" | "free_idle_time_hours",
+    value: number
+  ): Promise<void> {
+    await pool.query(
+      `
+      INSERT INTO daily_bonuses (bonus_date_utc, bonus_type, bonus_value)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (bonus_date_utc)
+      DO UPDATE SET bonus_type = EXCLUDED.bonus_type, bonus_value = EXCLUDED.bonus_value
+      `,
+      [getCurrentUtcDayStart(), type, value]
+    );
+  }
+
   async function insertLeaderboardPlayer(totalSecondsCollected: number, currentSeconds = 0): Promise<string> {
     const userId = randomUUID();
     const username = `lb_${randomUUID().replace(/-/g, "").slice(0, 12)}`;
@@ -181,6 +201,7 @@ describe("auth + player lifecycle", () => {
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
+    await upsertTodayBonus("collect_idle_percent", 25);
 
     const firstCollect = await request(app).post("/player/daily-reward/collect").set("Authorization", `Bearer ${token}`);
     expect(firstCollect.status).toBe(200);
@@ -210,6 +231,7 @@ describe("auth + player lifecycle", () => {
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
+    await upsertTodayBonus("collect_real_percent", 20);
 
     await pool.query(
       `
@@ -235,6 +257,7 @@ describe("auth + player lifecycle", () => {
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
+    await upsertTodayBonus("collect_idle_percent", 15);
 
     await pool.query(
       `
@@ -254,6 +277,81 @@ describe("auth + player lifecycle", () => {
     expect(achievementsResponse.status).toBe(200);
     const gemHoarder = achievementsResponse.body.achievements.find((a: { id: string }) => a.id === "gem_hoarder");
     expect(gemHoarder?.completed).toBe(true);
+  });
+
+  it("returns and persists today's generated daily bonus in player payload", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+
+    const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
+    expect(playerResponse.status).toBe(200);
+    expect(playerResponse.body.dailyBonus).toBeTruthy();
+    expect(typeof playerResponse.body.dailyBonus.type).toBe("string");
+    expect(typeof playerResponse.body.dailyBonus.value).toBe("number");
+
+    const historyRow = await pool.query<{ bonus_type: string; bonus_value: string | number }>(
+      `
+      SELECT bonus_type, bonus_value
+      FROM daily_bonuses
+      WHERE bonus_date_utc = $1
+      LIMIT 1
+      `,
+      [getCurrentUtcDayStart()]
+    );
+    expect(historyRow.rows[0]).toBeTruthy();
+  });
+
+  it("doubles daily reward gems when daily bonus type is double_gems_daily_reward", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    await upsertTodayBonus("double_gems_daily_reward", 2);
+
+    const collect = await request(app).post("/player/daily-reward/collect").set("Authorization", `Bearer ${token}`);
+    expect(collect.status).toBe(200);
+    expect(collect.body.timeGems.total).toBe(2);
+    expect(collect.body.timeGems.available).toBe(2);
+  });
+
+  it("collects free real time daily bonus exactly once per UTC day", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+    await upsertTodayBonus("free_real_time_hours", 3);
+
+    const collect = await request(app).post("/player/daily-bonus/collect").set("Authorization", `Bearer ${token}`);
+    expect(collect.status).toBe(200);
+    expect(collect.body.realTime.total).toBe(3 * 60 * 60);
+    expect(collect.body.realTime.available).toBe(3 * 60 * 60);
+    expect(collect.body.dailyBonus.isClaimed).toBe(true);
+
+    const secondCollect = await request(app).post("/player/daily-bonus/collect").set("Authorization", `Bearer ${token}`);
+    expect(secondCollect.status).toBe(400);
+    expect(secondCollect.body.code).toBe("DAILY_BONUS_ALREADY_CLAIMED");
+
+    const claimState = await pool.query<{ last_daily_bonus_claimed_at: Date | null; last_daily_bonus_claimed_type: string | null }>(
+      `
+      SELECT last_daily_bonus_claimed_at, last_daily_bonus_claimed_type
+      FROM player_states
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+    expect(claimState.rows[0]?.last_daily_bonus_claimed_at).toBeTruthy();
+    expect(claimState.rows[0]?.last_daily_bonus_claimed_type).toBe("free_real_time_hours");
+  });
+
+  it("rejects daily bonus collect endpoint for non-collectable bonus types", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    await upsertTodayBonus("collect_idle_percent", 30);
+
+    const collect = await request(app).post("/player/daily-bonus/collect").set("Authorization", `Bearer ${token}`);
+    expect(collect.status).toBe(400);
+    expect(collect.body.code).toBe("DAILY_BONUS_NOT_COLLECTABLE");
   });
 
   it("returns current weekly tournament state and allows entering once", async () => {

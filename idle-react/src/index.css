@@ -221,6 +221,10 @@ h3 {
   background: #fafafa;
 }
 
+.panel + .panel {
+  margin-top: 14px;
+}
+
 .panel p {
   margin: 8px 0;
 }

@@ -36,8 +36,35 @@ CREATE TABLE IF NOT EXISTS player_states (
   current_seconds BIGINT NOT NULL DEFAULT 0,
   current_seconds_last_updated TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   last_daily_reward_collected_at TIMESTAMPTZ,
+  last_daily_bonus_claimed_at TIMESTAMPTZ,
+  last_daily_bonus_claimed_type TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS daily_bonuses (
+  id BIGSERIAL PRIMARY KEY,
+  bonus_date_utc TIMESTAMPTZ NOT NULL,
+  bonus_type TEXT NOT NULL,
+  bonus_value INTEGER NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT daily_bonuses_bonus_date_utc_unique UNIQUE (bonus_date_utc),
+  CONSTRAINT daily_bonuses_bonus_type_check CHECK (
+    bonus_type IN (
+      'collect_idle_percent',
+      'collect_real_percent',
+      'double_gems_daily_reward',
+      'free_real_time_hours',
+      'free_idle_time_hours'
+    )
+  ),
+  CONSTRAINT daily_bonuses_bonus_value_check CHECK (
+    (bonus_type = 'collect_idle_percent' AND bonus_value BETWEEN 10 AND 50)
+    OR (bonus_type = 'collect_real_percent' AND bonus_value BETWEEN 10 AND 50)
+    OR (bonus_type = 'double_gems_daily_reward' AND bonus_value = 2)
+    OR (bonus_type = 'free_real_time_hours' AND bonus_value BETWEEN 1 AND 5)
+    OR (bonus_type = 'free_idle_time_hours' AND bonus_value BETWEEN 6 AND 24)
+  )
 );
 
 CREATE TABLE IF NOT EXISTS auth_identities (

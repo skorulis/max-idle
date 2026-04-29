@@ -57,6 +57,19 @@ const playerStateSchema = registry.register(
     currentSecondsLastUpdated: z.string().datetime(),
     lastCollectedAt: z.string().datetime(),
     lastDailyRewardCollectedAt: z.string().datetime().nullable(),
+    dailyBonus: z.object({
+      type: z.enum([
+        "collect_idle_percent",
+        "collect_real_percent",
+        "double_gems_daily_reward",
+        "free_real_time_hours",
+        "free_idle_time_hours"
+      ]),
+      value: z.number().int().positive(),
+      date: z.string().datetime(),
+      isCollectable: z.boolean(),
+      isClaimed: z.boolean()
+    }),
     serverTime: z.string().datetime()
   })
 );
@@ -308,6 +321,34 @@ registry.registerPath({
     },
     500: {
       description: "Server error",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    }
+  }
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/player/daily-bonus/collect",
+  tags: ["Player"],
+  summary: "Collect today's collectable daily bonus",
+  security: authViaCookieOrBearer,
+  responses: {
+    200: {
+      description: "Updated player state after bonus claim",
+      content: {
+        "application/json": { schema: playerStateSchema }
+      }
+    },
+    400: {
+      description: "Daily bonus cannot be claimed",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    },
+    401: {
+      description: "Unauthorized",
       content: {
         "application/json": { schema: errorResponseSchema }
       }

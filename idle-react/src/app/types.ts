@@ -10,6 +10,19 @@ export type TimeCurrencyBalances = {
   available: number;
 };
 
+export type DailyBonus = {
+  type:
+    | "collect_idle_percent"
+    | "collect_real_percent"
+    | "double_gems_daily_reward"
+    | "free_real_time_hours"
+    | "free_idle_time_hours";
+  value: number;
+  date: string;
+  isCollectable: boolean;
+  isClaimed: boolean;
+};
+
 export type PlayerResponse = {
   idleTime: TimeCurrencyBalances;
   realTime: TimeCurrencyBalances;
@@ -27,6 +40,7 @@ export type PlayerResponse = {
   currentSecondsLastUpdated: string;
   lastCollectedAt: string;
   lastDailyRewardCollectedAt: string | null;
+  dailyBonus?: DailyBonus;
   serverTime: string;
 };
 
@@ -126,6 +140,7 @@ export type SyncedPlayerState = {
   hasUnseenAchievements: boolean;
   lastCollectedAtMs: number;
   lastDailyRewardCollectedAtMs: number | null;
+  dailyBonus: DailyBonus | null;
   serverTimeMs: number;
   syncedAtClientMs: number;
 };

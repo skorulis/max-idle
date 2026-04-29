@@ -19,6 +19,7 @@ type HomePageProps = {
   collecting: boolean;
   collectBlockedByRestraint: boolean;
   collectingDailyReward: boolean;
+  collectingDailyBonus: boolean;
   uncollectedIdleSeconds: number;
   realtimeElapsedSeconds: number;
   effectiveIdleSecondsRate: number;
@@ -30,6 +31,7 @@ type HomePageProps = {
   onStartIdling: () => Promise<void>;
   onCollect: () => Promise<void>;
   onCollectDailyReward: () => Promise<void>;
+  onCollectDailyBonus: () => Promise<void>;
   onEnterTournament: () => Promise<void>;
   onNavigateTournament: () => void;
   onNavigateLogin: () => void;
@@ -41,6 +43,7 @@ export function HomePage({
   collecting,
   collectBlockedByRestraint,
   collectingDailyReward,
+  collectingDailyBonus,
   uncollectedIdleSeconds,
   realtimeElapsedSeconds,
   effectiveIdleSecondsRate,
@@ -52,6 +55,7 @@ export function HomePage({
   onStartIdling,
   onCollect,
   onCollectDailyReward,
+  onCollectDailyBonus,
   onEnterTournament,
   onNavigateTournament,
   onNavigateLogin
@@ -87,6 +91,25 @@ export function HomePage({
       </>
     );
   }
+
+  const dailyBonus = playerState.dailyBonus;
+  const dailyBonusDescription = (() => {
+    if (!dailyBonus) {
+      return "Loading daily bonus...";
+    }
+    switch (dailyBonus.type) {
+      case "collect_idle_percent":
+        return `+${dailyBonus.value}% idle time on collect`;
+      case "collect_real_percent":
+        return `+${dailyBonus.value}% real time on collect`;
+      case "double_gems_daily_reward":
+        return "Double gems from daily reward collection";
+      case "free_real_time_hours":
+        return `Collect ${dailyBonus.value}h free real time`;
+      case "free_idle_time_hours":
+        return `Collect ${dailyBonus.value}h free idle time`;
+    }
+  })();
 
   return (
     <>
@@ -142,11 +165,13 @@ export function HomePage({
       <div className="panel">
         <p className="shop-currency-title">
           <Gift size={16} aria-hidden="true" />
-          Daily Reward
+          Daily Gem Reward
         </p>
         {dailyRewardAvailable ? (
           <>
-            <p className="shop-currency-value">Ready to collect (+1 Time Gem)</p>
+            <p className="shop-currency-value">
+              Ready to collect ({dailyBonus?.type === "double_gems_daily_reward" ? "+2 Time Gems" : "+1 Time Gem"})
+            </p>
             <button className="collect" onClick={() => void onCollectDailyReward()} disabled={collectingDailyReward}>
               {collectingDailyReward ? "Collecting daily reward..." : "Collect daily reward"}
             </button>
@@ -156,6 +181,28 @@ export function HomePage({
             <p className="shop-currency-value">+1 Time Gem</p>
             <p className="subtle">Resets in {formatSeconds(dailyRewardSecondsUntilAvailable)}</p>
           </>
+        )}
+      </div>
+      <div className="panel">
+        <p className="shop-currency-title">
+          <Gift size={16} aria-hidden="true" />
+          Daily Bonus
+        </p>
+        <p className="shop-currency-value">{dailyBonusDescription}</p>
+        {dailyBonus?.isCollectable ? (
+          <button
+            className="collect"
+            onClick={() => void onCollectDailyBonus()}
+            disabled={collectingDailyBonus || dailyBonus.isClaimed}
+          >
+            {dailyBonus.isClaimed
+              ? "Daily bonus claimed"
+              : collectingDailyBonus
+                ? "Collecting daily bonus..."
+                : "Collect daily bonus"}
+          </button>
+        ) : (
+          <p className="subtle">Applies automatically today.</p>
         )}
       </div>
       <TournamentPanel
