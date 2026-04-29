@@ -42,16 +42,7 @@ import {
   loginWithEmail,
   markAchievementsSeen,
   logoutSession,
-  purchaseExtraRealtimeWait,
-  purchaseCollectGemTimeBoost,
-  purchaseIdleHoarder,
-  purchaseLuck,
-  purchasePatience,
-  purchaseWorthwhileAchievements,
-  purchaseRefund,
-  purchaseRestraint,
-  purchaseAnotherSecondsMultiplier,
-  purchaseSecondsMultiplier,
+  purchaseUpgrade,
   registerWithEmail,
   upsertPushSubscription,
   updateUsername,
@@ -78,6 +69,15 @@ const TOKEN_KEY = "max-idle-token";
 const UPGRADE_SOCIAL_INTENT_KEY = "max-idle-upgrade-social-intent";
 const DAILY_REWARD_NOTIFICATIONS_ENABLED_KEY = "max-idle-daily-reward-notifications-enabled";
 const CONTEMPLATION_ACHIEVEMENT_HOME_TIME_MS = 10 * 60 * 1000;
+
+const SHOP_ALREADY_OWNED_MESSAGE: Partial<Record<ShopUpgradeId, string>> = {
+  restraint: "Restraint is already active.",
+  patience: "Patience is already maxed.",
+  luck: "Luck is already active.",
+  idle_hoarder: "Idle hoarder is already maxed.",
+  worthwhile_achievements: "Worthwhile Achievements is already maxed.",
+  collect_gem_time_boost: "Hasty collection is already maxed."
+};
 
 function isDailyRewardNotificationsEnabledStored(): boolean {
   if (typeof window === "undefined") {
@@ -648,23 +648,6 @@ export function AppShell() {
     return getTournamentSecondsUntilDraw(tournamentState.drawAtMs, estimatedServerNowMs);
   }, [estimatedServerNowMs, playerState, tournamentState]);
 
-  const secondsMultiplierLevel = useMemo(() => {
-    return playerState ? SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(playerState.shop) : 0;
-  }, [playerState]);
-
-  const restraintLevel = playerState ? RESTRAINT_SHOP_UPGRADE.currentLevel(playerState.shop) : 0;
-  const restraintMaxLevel = RESTRAINT_SHOP_UPGRADE.maxLevel();
-  const patienceLevel = playerState ? PATIENCE_SHOP_UPGRADE.currentLevel(playerState.shop) : 0;
-  const patienceMaxLevel = PATIENCE_SHOP_UPGRADE.maxLevel();
-  const luckLevel = playerState ? LUCK_SHOP_UPGRADE.currentLevel(playerState.shop) : 0;
-  const luckMaxLevel = LUCK_SHOP_UPGRADE.maxLevel();
-  const idleHoarderLevel = playerState ? IDLE_HOARDER_SHOP_UPGRADE.currentLevel(playerState.shop) : 0;
-  const idleHoarderMaxLevel = IDLE_HOARDER_SHOP_UPGRADE.maxLevel();
-  const worthwhileAchievementsLevel = playerState
-    ? WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.currentLevel(playerState.shop)
-    : 0;
-  const worthwhileAchievementsMaxLevel = WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.maxLevel();
-
   useEffect(() => {
     if (!playerState || !tournamentState || tournamentSecondsUntilDraw > 0) {
       return;
@@ -801,94 +784,10 @@ export function AppShell() {
       return;
     }
 
-    const purchaseConfig = {
-      seconds_multiplier: {
-        isUnavailable: secondsMultiplierLevel >= SECONDS_MULTIPLIER_SHOP_UPGRADE.maxLevel(),
-        startStatus: "Purchasing seconds multiplier...",
-        purchase: () => purchaseSecondsMultiplier(token, 1),
-        successStatus: (synced: SyncedPlayerState) => `Seconds multiplier upgraded to ${synced.secondsMultiplier.toFixed(1)}x.`,
-        insufficientFundsError: "Not enough spendable idle seconds for that purchase."
-      },
-      another_seconds_multiplier: {
-        isUnavailable: false,
-        startStatus: "Purchasing Another Base Multiplier...",
-        purchase: () => purchaseAnotherSecondsMultiplier(token),
-        successStatus: () => "Another Base Multiplier upgraded.",
-        insufficientFundsError: "Not enough spendable real time for that purchase."
-      },
-      restraint: {
-        isUnavailable: restraintLevel >= restraintMaxLevel,
-        startStatus: "Purchasing Restraint...",
-        purchase: () => purchaseRestraint(token),
-        successStatus: () => "Restraint upgraded.",
-        insufficientFundsError: "Not enough spendable idle seconds for that purchase.",
-        alreadyOwnedError: "Restraint is already active."
-      },
-      patience: {
-        isUnavailable: patienceLevel >= patienceMaxLevel,
-        startStatus: "Purchasing Patience...",
-        purchase: () => purchasePatience(token),
-        successStatus: () => "Patience upgraded.",
-        insufficientFundsError: "Not enough spendable idle seconds for that purchase.",
-        alreadyOwnedError: "Patience is already maxed."
-      },
-      luck: {
-        isUnavailable: luckLevel >= luckMaxLevel,
-        startStatus: "Purchasing Luck...",
-        purchase: () => purchaseLuck(token),
-        successStatus: () => "Luck upgraded.",
-        insufficientFundsError: "Not enough spendable idle seconds for that purchase.",
-        alreadyOwnedError: "Luck is already active."
-      },
-      idle_hoarder: {
-        isUnavailable: idleHoarderLevel >= idleHoarderMaxLevel,
-        startStatus: "Purchasing Idle hoarder...",
-        purchase: () => purchaseIdleHoarder(token),
-        successStatus: () => "Idle hoarder upgraded.",
-        insufficientFundsError: "Not enough spendable real time for that purchase.",
-        alreadyOwnedError: "Idle hoarder is already maxed."
-      },
-      worthwhile_achievements: {
-        isUnavailable: worthwhileAchievementsLevel >= worthwhileAchievementsMaxLevel,
-        startStatus: "Purchasing Worthwhile Achievements...",
-        purchase: () => purchaseWorthwhileAchievements(token),
-        successStatus: () => "Worthwhile Achievements upgraded.",
-        insufficientFundsError: "Not enough spendable idle seconds for that purchase.",
-        alreadyOwnedError: "Worthwhile Achievements is already maxed."
-      },
-      extra_realtime_wait: {
-        isUnavailable: false,
-        startStatus: "Applying extra realtime wait...",
-        purchase: () => purchaseExtraRealtimeWait(token),
-        successStatus: () => "Extra realtime wait applied.",
-        insufficientFundsError: "Not enough time gems for that purchase."
-      },
-      collect_gem_time_boost: {
-        isUnavailable: false,
-        startStatus: "Upgrading hasty collection...",
-        purchase: () => purchaseCollectGemTimeBoost(token),
-        successStatus: () => "Hasty collection upgraded.",
-        insufficientFundsError: "Not enough time gems for that purchase.",
-        alreadyOwnedError: "Hasty collection is already maxed."
-      },
-      purchase_refund: {
-        isUnavailable: false,
-        startStatus: "Refunding purchases...",
-        purchase: () => purchaseRefund(token),
-        successStatus: () => "Shop purchases refunded.",
-        insufficientFundsError: "Not enough time gems for that purchase."
-      }
-    }[upgradeId];
-
-    if (purchaseConfig.isUnavailable) {
-      return;
-    }
-
     setShopPendingQuantity(upgradeId);
     setError(null);
-    setStatus(purchaseConfig.startStatus);
     try {
-      const updatedPlayer = await purchaseConfig.purchase();
+      const updatedPlayer = await purchaseUpgrade(token, upgradeId);
       const synced = toSyncedState(updatedPlayer);
       alignClientClock();
       setPlayerState(synced);
@@ -901,13 +800,9 @@ export function AppShell() {
       toast.success(shopToastMessage);
     } catch (purchaseError) {
       if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
-        setError(purchaseConfig.insufficientFundsError);
-      } else if (
-        purchaseError instanceof Error &&
-        purchaseError.message === "ALREADY_OWNED" &&
-        purchaseConfig.alreadyOwnedError
-      ) {
-        setError(purchaseConfig.alreadyOwnedError);
+        setError("Not enough resources for that purchase.");
+      } else if (purchaseError instanceof Error && purchaseError.message === "ALREADY_OWNED") {
+        setError(SHOP_ALREADY_OWNED_MESSAGE[upgradeId] ?? purchaseError.message);
       } else {
         setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
       }

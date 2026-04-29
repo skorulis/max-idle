@@ -1,3 +1,4 @@
+import type { ShopUpgradeId } from "@maxidle/shared/shopUpgrades";
 import type {
   AccountResponse,
   AchievementsResponse,
@@ -416,26 +417,18 @@ export async function updateUsername(token: string | null, username: string): Pr
   return (payload ?? { username }) as { username: string };
 }
 
-async function purchaseUpgrade(
-  token: string | null,
-  body:
-    | { upgradeType: "seconds_multiplier"; quantity: 1 | 5 | 10 }
-    | { upgradeType: "another_seconds_multiplier" }
-    | { upgradeType: "patience" }
-    | { upgradeType: "restraint" }
-    | { upgradeType: "idle_hoarder" }
-    | { upgradeType: "worthwhile_achievements" }
-    | { upgradeType: "luck" }
-    | { upgradeType: "extra_realtime_wait" }
-    | { upgradeType: "collect_gem_time_boost" }
-    | { upgradeType: "purchase_refund" }
-): Promise<PlayerResponse> {
+/** Sent as JSON to POST `/shop/purchase`; `upgradeType` is always the purchased upgrade id; bulk buys are unused. */
+export type ShopPurchaseRequestBody = { upgradeType: ShopUpgradeId; quantity: 1 };
+
+export async function purchaseUpgrade(token: string | null, upgradeId: ShopUpgradeId): Promise<PlayerResponse> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json"
   };
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
+
+  const body: ShopPurchaseRequestBody = { upgradeType: upgradeId, quantity: 1 };
 
   const response = await fetch(`${API_BASE_URL}/shop/purchase`, {
     method: "POST",
@@ -459,46 +452,6 @@ async function purchaseUpgrade(
   }
 
   return payload as PlayerResponse;
-}
-
-export async function purchaseSecondsMultiplier(token: string | null, quantity: 1 | 5 | 10): Promise<PlayerResponse> {
-  return purchaseUpgrade(token, { upgradeType: "seconds_multiplier", quantity });
-}
-
-export async function purchaseAnotherSecondsMultiplier(token: string | null): Promise<PlayerResponse> {
-  return purchaseUpgrade(token, { upgradeType: "another_seconds_multiplier" });
-}
-
-export async function purchaseRestraint(token: string | null): Promise<PlayerResponse> {
-  return purchaseUpgrade(token, { upgradeType: "restraint" });
-}
-
-export async function purchasePatience(token: string | null): Promise<PlayerResponse> {
-  return purchaseUpgrade(token, { upgradeType: "patience" });
-}
-
-export async function purchaseIdleHoarder(token: string | null): Promise<PlayerResponse> {
-  return purchaseUpgrade(token, { upgradeType: "idle_hoarder" });
-}
-
-export async function purchaseWorthwhileAchievements(token: string | null): Promise<PlayerResponse> {
-  return purchaseUpgrade(token, { upgradeType: "worthwhile_achievements" });
-}
-
-export async function purchaseLuck(token: string | null): Promise<PlayerResponse> {
-  return purchaseUpgrade(token, { upgradeType: "luck" });
-}
-
-export async function purchaseExtraRealtimeWait(token: string | null): Promise<PlayerResponse> {
-  return purchaseUpgrade(token, { upgradeType: "extra_realtime_wait" });
-}
-
-export async function purchaseCollectGemTimeBoost(token: string | null): Promise<PlayerResponse> {
-  return purchaseUpgrade(token, { upgradeType: "collect_gem_time_boost" });
-}
-
-export async function purchaseRefund(token: string | null): Promise<PlayerResponse> {
-  return purchaseUpgrade(token, { upgradeType: "purchase_refund" });
 }
 
 export async function debugAddGems(token: string | null): Promise<PlayerResponse> {
