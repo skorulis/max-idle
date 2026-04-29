@@ -273,13 +273,22 @@ input {
   font-size: 14px;
 }
 
-.current-rate-row {
-  display: inline-flex;
+.idle-rate-meta {
+  display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  padding-bottom: 10px;
 }
 
-.current-rate-row .subtle {
+.idle-rate-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.idle-rate-lines .subtle {
   margin: 0;
 }
 

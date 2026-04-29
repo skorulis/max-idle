@@ -92,9 +92,11 @@ export function HomePage({
     <>
       <p className="label">Current idle time</p>
       <FlipDurationDisplay totalSeconds={uncollectedIdleSeconds} />
-      <p className="subtle">Realtime: {formatSeconds(realtimeElapsedSeconds)}</p>
-      <div className="current-rate-row">
-        <p className="subtle">Current rate: {effectiveIdleSecondsRate.toFixed(2)}x</p>
+      <div className="idle-rate-meta">
+        <div className="idle-rate-lines">
+          <p className="subtle">Realtime: {formatSeconds(realtimeElapsedSeconds)}</p>
+          <p className="subtle">Current rate: {effectiveIdleSecondsRate.toFixed(2)}x</p>
+        </div>
         <button
           type="button"
           className="info-icon-button"
