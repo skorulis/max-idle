@@ -11,13 +11,6 @@ function App() {
         position="top-center"
         richColors
         closeButton
-        offset={{ right: 16, bottom: 16 }}
-        mobileOffset={{ right: 16, bottom: 16, left: 16 }}
-        toastOptions={{
-          style: {
-            zIndex: 99999
-          }
-        }}
       />
       <AppShell />
     </BrowserRouter>
