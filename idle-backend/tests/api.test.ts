@@ -8,6 +8,8 @@ import { calculateBoostedIdleSecondsGain, calculateIdleSecondsGain } from "../sr
 import { finalizeDueTournaments, getNextTournamentDrawAt } from "../src/tournaments.js";
 import type { AppConfig } from "../src/types.js";
 import { createTestPool } from "./testDb.js";
+import { getRestraintBonusMultiplier } from "@maxidle/shared/shop";
+import { LUCK_SHOP_UPGRADE, RESTRAINT_SHOP_UPGRADE, SECONDS_MULTIPLIER_SHOP_UPGRADE } from "@maxidle/shared/shopUpgrades";
 
 describe("auth + player lifecycle", () => {
   const config: AppConfig = {
@@ -1349,7 +1351,9 @@ describe("auth + player lifecycle", () => {
 
     const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
     expect(playerResponse.status).toBe(200);
-    const minExpectedCurrent = Math.floor(calculateIdleSecondsGain(120) * 1.5);
+    const minExpectedCurrent = Math.floor(
+      calculateIdleSecondsGain(120) * getRestraintBonusMultiplier({ restraint: 1, seconds_multiplier: 0, idle_hoarder: 0, luck: 0 })
+    );
     expect(playerResponse.body.currentSeconds).toBeGreaterThanOrEqual(minExpectedCurrent);
     expect(playerResponse.body.idleSecondsRate).toBeGreaterThan(0);
   });
@@ -1378,7 +1382,7 @@ describe("auth + player lifecycle", () => {
     expect(collectResponse.body.code).toBe("RESTRAINT_BLOCKED");
   });
 
-  it("applies restraint 50% bonus after 1 hour realtime", async () => {
+  it("applies restraint bonus after 1 hour realtime", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
@@ -1399,9 +1403,10 @@ describe("auth + player lifecycle", () => {
 
     const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
     expect(playerResponse.status).toBe(200);
-    const expectedCurrent = Math.floor(calculateIdleSecondsGain(7200) * 1.5);
+    const restraintBonus = getRestraintBonusMultiplier({ restraint: 1, seconds_multiplier: 0, idle_hoarder: 0, luck: 0 });
+    const expectedCurrent = Math.floor(calculateIdleSecondsGain(7200) * restraintBonus);
     expect(playerResponse.body.currentSeconds).toBeGreaterThanOrEqual(expectedCurrent);
-    expect(playerResponse.body.currentSeconds).toBeLessThanOrEqual(Math.floor(calculateIdleSecondsGain(7220) * 1.5));
+    expect(playerResponse.body.currentSeconds).toBeLessThanOrEqual(Math.floor(calculateIdleSecondsGain(7220) * restraintBonus));
   });
 
   it("allows purchasing seconds multiplier upgrades", async () => {
@@ -1410,7 +1415,7 @@ describe("auth + player lifecycle", () => {
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
 
-    await pool.query(`UPDATE player_states SET idle_time_available = 2000 WHERE user_id = $1`, [userId]);
+    await pool.query(`UPDATE player_states SET idle_time_available = 10000 WHERE user_id = $1`, [userId]);
 
     const purchaseResponse = await request(app)
       .post("/shop/purchase")
@@ -1418,8 +1423,9 @@ describe("auth + player lifecycle", () => {
       .send({ upgradeType: "seconds_multiplier", quantity: 5 });
 
     expect(purchaseResponse.status).toBe(200);
-    expect(purchaseResponse.body.purchase.totalCost).toBe(20 + 60 + 120 + 300 + 600);
-    expect(purchaseResponse.body.idleTime.available).toBe(2000 - (20 + 60 + 120 + 300 + 600));
+    const fiveLevelCost = SECONDS_MULTIPLIER_SHOP_UPGRADE.levels.slice(0, 5).reduce((sum, level) => sum + level.cost, 0);
+    expect(purchaseResponse.body.purchase.totalCost).toBe(fiveLevelCost);
+    expect(purchaseResponse.body.idleTime.available).toBe(10000 - fiveLevelCost);
     expect(purchaseResponse.body.upgradesPurchased).toBe(5);
     expect(purchaseResponse.body.secondsMultiplier).toBe(1.5);
     expect(purchaseResponse.body.achievementBonusMultiplier).toBe(1);
@@ -1596,8 +1602,9 @@ describe("auth + player lifecycle", () => {
     expect(purchaseResponse.body.purchase.quantity).toBe(1);
     expect(purchaseResponse.body.purchase.totalCost).toBe(1);
     expect(purchaseResponse.body.timeGems.available).toBe(1);
-    expect(purchaseResponse.body.idleTime.available).toBe(100 + 20 + 60 + 7 * 24 * 60 * 60);
-    expect(purchaseResponse.body.realTime.available).toBe(200 + 2 * 60 * 60);
+    const refundedIdle = SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(0) + SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(1) + LUCK_SHOP_UPGRADE.costAtLevel(0);
+    expect(purchaseResponse.body.idleTime.available).toBe(100 + refundedIdle);
+    expect(purchaseResponse.body.realTime.available).toBe(200 + RESTRAINT_SHOP_UPGRADE.costAtLevel(0));
     expect(purchaseResponse.body.shop).toEqual({
       another_seconds_multiplier: 0,
       seconds_multiplier: 0,

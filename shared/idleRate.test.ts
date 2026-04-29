@@ -36,19 +36,19 @@ describe("getIdleSecondsRate", () => {
   it("unlocks one additional step per patience level", () => {
     expect(getIdleSecondsRate(idleCollectionPlayer(60, shopWithPatience(1)))).toBe(2);
     expect(getIdleSecondsRate(idleCollectionPlayer(10 * 60, shopWithPatience(2)))).toBe(3);
-    expect(getIdleSecondsRate(idleCollectionPlayer(60 * 60, shopWithPatience(3)))).toBe(5);
-    expect(getIdleSecondsRate(idleCollectionPlayer(6 * 60 * 60, shopWithPatience(4)))).toBe(8);
-    expect(getIdleSecondsRate(idleCollectionPlayer(24 * 60 * 60, shopWithPatience(5)))).toBe(12);
-    expect(getIdleSecondsRate(idleCollectionPlayer(7 * 24 * 60 * 60, shopWithPatience(6)))).toBe(15);
-    expect(getIdleSecondsRate(idleCollectionPlayer(4 * 7 * 24 * 60 * 60, shopWithPatience(7)))).toBe(20);
-    expect(getIdleSecondsRate(idleCollectionPlayer(365 * 24 * 60 * 60, shopWithPatience(8)))).toBe(30);
+    expect(getIdleSecondsRate(idleCollectionPlayer(60 * 60, shopWithPatience(3)))).toBe(4);
+    expect(getIdleSecondsRate(idleCollectionPlayer(6 * 60 * 60, shopWithPatience(4)))).toBe(5);
+    expect(getIdleSecondsRate(idleCollectionPlayer(24 * 60 * 60, shopWithPatience(5)))).toBe(8);
+    expect(getIdleSecondsRate(idleCollectionPlayer(7 * 24 * 60 * 60, shopWithPatience(6)))).toBe(12);
+    expect(getIdleSecondsRate(idleCollectionPlayer(4 * 7 * 24 * 60 * 60, shopWithPatience(7)))).toBe(15);
+    expect(getIdleSecondsRate(idleCollectionPlayer(365 * 24 * 60 * 60, shopWithPatience(8)))).toBe(20);
   });
 
   it("interpolates linearly within unlocked steps and caps at unlocked max", () => {
     expect(getIdleSecondsRate(idleCollectionPlayer(30, shopWithPatience(1)))).toBeCloseTo(1.5, 6);
     expect(getIdleSecondsRate(idleCollectionPlayer(330, shopWithPatience(2)))).toBeCloseTo(2.5, 6);
-    expect(getIdleSecondsRate(idleCollectionPlayer(2 * 365 * 24 * 60 * 60, shopWithPatience(8)))).toBe(30);
-    expect(getIdleSecondsRate(idleCollectionPlayer(2 * 365 * 24 * 60 * 60, shopWithPatience(3)))).toBe(5);
+    expect(getIdleSecondsRate(idleCollectionPlayer(2 * 365 * 24 * 60 * 60, shopWithPatience(8)))).toBe(20);
+    expect(getIdleSecondsRate(idleCollectionPlayer(2 * 365 * 24 * 60 * 60, shopWithPatience(3)))).toBe(4);
   });
 });
 
@@ -83,7 +83,7 @@ describe("luck + boosted gain", () => {
       shop: { seconds_multiplier: 0, restraint: 1, idle_hoarder: 0, luck: 0 },
       achievementCount: 0
     });
-    expect(gainWithRestraint).toBe(Math.floor(gainWithoutRestraint * 1.5));
+    expect(gainWithRestraint).toBe(Math.floor(gainWithoutRestraint * 1.1));
   });
 
   it("applies idle hoarder multiplier last", () => {

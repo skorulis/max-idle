@@ -20,16 +20,18 @@ describe("shop pricing", () => {
   const baseShop = { seconds_multiplier: 0, restraint: 0, luck: 0 };
 
   it("uses per-level costs from the seconds multiplier table", () => {
-    expect(SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(0)).toBe(20);
-    expect(SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(1)).toBe(60);
-    expect(SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(2)).toBe(120);
-    expect(SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(3)).toBe(300);
+    expect(SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(0)).toBe(60);
+    expect(SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(1)).toBe(120);
+    expect(SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(2)).toBe(300);
+    expect(SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(3)).toBe(30 * 60);
   });
 
   it("calculates cumulative bundle purchase cost", () => {
-    expect(getTotalUpgradeCost(0, 1)).toBe(20);
-    expect(getTotalUpgradeCost(0, 5)).toBe(20 + 60 + 120 + 300 + 600);
-    expect(getTotalUpgradeCost(3, 2)).toBe(300 + 600);
+    expect(getTotalUpgradeCost(0, 1)).toBe(SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(0));
+    expect(getTotalUpgradeCost(0, 5)).toBe(SECONDS_MULTIPLIER_SHOP_UPGRADE.levels.slice(0, 5).reduce((sum, level) => sum + level.cost, 0));
+    expect(getTotalUpgradeCost(3, 2)).toBe(
+      SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(3) + SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(4)
+    );
   });
 
   it("maps levels and multipliers consistently", () => {
