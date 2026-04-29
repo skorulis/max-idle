@@ -28,6 +28,7 @@ import {
 import { calculateElapsedSeconds } from "./time.js";
 import { getEffectiveIdleSecondsRate } from "./idleRate.js";
 import type { AuthClaims } from "./types.js";
+import type { AnalyticsService } from "./analytics.js";
 
 export {
   getDefaultShopState,
@@ -50,6 +51,7 @@ type RegisterShopRoutesOptions = {
   resolveIdentity: (req: express.Request) => Promise<ShopRouteIdentity>;
   toNumber: (value: unknown) => number;
   isProduction: boolean;
+  analytics: AnalyticsService;
 };
 
 function wouldExceedUpgradeMaxLevel(upgrade: ShopUpgradeDefinition, shop: ShopState, quantity: number): boolean {
@@ -71,7 +73,8 @@ export function registerShopRoutes({
   pool,
   resolveIdentity,
   toNumber,
-  isProduction
+  isProduction,
+  analytics
 }: RegisterShopRoutesOptions): void {
   app.post("/shop/purchase", async (req, res, next) => {
     const client = await pool.connect();
@@ -294,6 +297,14 @@ export function registerShopRoutes({
         achievementCount: nextAchievementCount,
         realTimeAvailable: toNumber(updated.real_time_available)
       });
+      analytics.trackShopPurchase(
+        { userId, isAnonymous: identity.claims.isAnonymous },
+        {
+          upgrade_type: upgradeType,
+          quantity,
+          total_cost: totalCost
+        }
+      );
       res.json({
         idleTime: {
           total: toNumber(updated.idle_time_total),

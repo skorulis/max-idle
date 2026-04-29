@@ -5,6 +5,7 @@ import type { ShopState } from "@maxidle/shared/shop";
 import { calculateElapsedSeconds } from "../time.js";
 import { getEffectiveIdleSecondsRate } from "../idleRate.js";
 import type { AuthClaims } from "../types.js";
+import type { AnalyticsService } from "../analytics.js";
 
 const DAILY_BONUS_TYPES = [
   "collect_idle_percent",
@@ -38,6 +39,7 @@ type RegisterDailyBonusRoutesOptions = {
   resolveIdentity: (req: express.Request) => Promise<{ claims: AuthClaims }>;
   toNumber: (value: unknown) => number;
   isProduction: boolean;
+  analytics: AnalyticsService;
 };
 
 function getUtcDayStartMs(date: Date): number {
@@ -148,7 +150,8 @@ export function registerDailyBonusRoutes({
   pool,
   resolveIdentity,
   toNumber,
-  isProduction
+  isProduction,
+  analytics
 }: RegisterDailyBonusRoutesOptions): void {
   app.post("/player/daily-bonus/collect", async (req, res, next) => {
     const client = await pool.connect();
@@ -288,6 +291,14 @@ export function registerDailyBonusRoutes({
         realTimeAvailable: toNumber(updatedPlayer.real_time_available)
       });
       await client.query("COMMIT");
+      analytics.trackDailyBonusCollect(
+        { userId, isAnonymous: identity.claims.isAnonymous },
+        {
+          bonus_type: currentDailyBonus.bonus_type,
+          bonus_value: currentDailyBonus.bonus_value,
+          awarded_seconds: bonusSeconds
+        }
+      );
 
       res.json({
         idleTime: {

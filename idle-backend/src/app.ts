@@ -17,6 +17,7 @@ import { registerShopRoutes } from "./shop.js";
 import { registerLeaderboardRoutes } from "./leaderboard.js";
 import { registerApiDocumentation } from "./apiContract.js";
 import type { AppConfig, AuthClaims } from "./types.js";
+import { noopAnalyticsService, type AnalyticsService } from "./analytics.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerAccountRoutes } from "./routes/account.js";
 import { registerAchievementsRoutes } from "./routes/achievements.js";
@@ -230,7 +231,7 @@ async function findGameUserIdByEmail(pool: Pool, email: string): Promise<string 
   return result.rows[0]?.id ?? null;
 }
 
-export function createApp(pool: Pool, config: AppConfig) {
+export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsService = noopAnalyticsService) {
   const auth = createBetterAuth(pool, config);
   const socialConfig = ensureSocialConfig(config);
   const app = express();
@@ -389,7 +390,8 @@ export function createApp(pool: Pool, config: AppConfig) {
     app,
     pool,
     resolveIdentity: resolveIdentityForRequest,
-    toNumber
+    toNumber,
+    analytics
   });
 
   registerDailyBonusRoutes({
@@ -397,7 +399,8 @@ export function createApp(pool: Pool, config: AppConfig) {
     pool,
     resolveIdentity: resolveIdentityForRequest,
     toNumber,
-    isProduction: config.isProduction
+    isProduction: config.isProduction,
+    analytics
   });
 
   registerTournamentRoutes({
@@ -418,7 +421,8 @@ export function createApp(pool: Pool, config: AppConfig) {
     pool,
     resolveIdentity: resolveIdentityForRequest,
     toNumber,
-    isProduction: config.isProduction
+    isProduction: config.isProduction,
+    analytics
   });
 
   registerLeaderboardRoutes({

@@ -15,6 +15,7 @@ describe("auth + player lifecycle", () => {
     isProduction: false,
     databaseUrl: "postgres://unused",
     jwtSecret: "test-secret",
+    amplitudeApiKey: "test-amplitude-api-key",
     corsOrigin: "http://localhost:5173",
     betterAuthSecret: "test-secret-test-secret-test-secret-32",
     betterAuthUrl: "http://localhost:3000",

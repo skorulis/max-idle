@@ -22,6 +22,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
+    "@amplitude/analytics-node": "^1.5.57",
     "@asteasolutions/zod-to-openapi": "^8.1.0",
     "@maxidle/shared": "file:../shared",
     "@opentelemetry/api": "^1.9.1",

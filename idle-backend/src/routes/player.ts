@@ -9,6 +9,7 @@ import { calculateElapsedSeconds } from "../time.js";
 import { getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint, shouldPreserveIdleTimerOnCollect } from "../idleRate.js";
 import { normalizeCompletedAchievements, parseCompletedAchievementIds, updateCompletedAchievements } from "../achievementUpdates.js";
 import type { AuthClaims } from "../types.js";
+import type { AnalyticsService } from "../analytics.js";
 import { canCollectDailyReward, getOrCreateCurrentDailyBonus, toDailyBonusResponse } from "./dailyBonus.js";
 
 const REAL_TIME_COLLECT_65_MINUTES_SECONDS = 65 * 60;
@@ -22,13 +23,15 @@ type RegisterPlayerRoutesOptions = {
   pool: Pool;
   resolveIdentity: (req: express.Request) => Promise<{ claims: AuthClaims }>;
   toNumber: (value: unknown) => number;
+  analytics: AnalyticsService;
 };
 
 export function registerPlayerRoutes({
   app,
   pool,
   resolveIdentity,
-  toNumber
+  toNumber,
+  analytics
 }: RegisterPlayerRoutesOptions): void {
   app.get("/player", async (req, res, next) => {
     try {
@@ -355,6 +358,13 @@ export function registerPlayerRoutes({
         realTimeAvailable: toNumber(row.real_time_available)
       });
       await client.query("COMMIT");
+      analytics.trackPlayerCollect(
+        { userId, isAnonymous: identity.claims.isAnonymous },
+        {
+          collected_seconds: collectedSeconds,
+          real_seconds_collected: realSecondsCollected
+        }
+      );
       res.json({
         collectedSeconds,
         realSecondsCollected,
@@ -551,6 +561,14 @@ export function registerPlayerRoutes({
         realTimeAvailable: toNumber(updatedPlayer.real_time_available)
       });
       await client.query("COMMIT");
+      const rewardMultiplier = currentDailyBonus.bonus_type === "double_gems_daily_reward" ? 2 : 1;
+      analytics.trackDailyRewardCollect(
+        { userId, isAnonymous: identity.claims.isAnonymous },
+        {
+          reward_multiplier: rewardMultiplier,
+          awarded_gems: rewardMultiplier
+        }
+      );
 
       res.json({
         idleTime: {

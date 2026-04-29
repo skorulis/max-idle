@@ -58,6 +58,7 @@ export function loadConfig(): AppConfig {
     isProduction: process.env.NODE_ENV === "production",
     databaseUrl: requiredEnv("DATABASE_URL"),
     jwtSecret: requiredEnv("JWT_SECRET"),
+    amplitudeApiKey: requiredEnv("AMPLITUDE_API_KEY"),
     corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:5173",
     betterAuthSecret: requiredEnv("BETTER_AUTH_SECRET"),
     betterAuthUrl: requiredEnv("BETTER_AUTH_URL"),

@@ -36,6 +36,7 @@ Edit `/opt/maxidle/deploy/.env.production` and set:
 - DB credentials and `DATABASE_URL`
 - Auth/CORS settings (`CORS_ORIGIN`, `BETTER_AUTH_URL`)
 - Strong secrets (`JWT_SECRET`, `BETTER_AUTH_SECRET`)
+- Analytics config (`AMPLITUDE_API_KEY`)
 
 ## 3) First deploy (manual)
 
@@ -59,6 +60,7 @@ IMAGE_TAG=release-0.1.0 docker compose --env-file .env.production -f compose.pro
 - `https://api.your-domain.com/health` returns `{"ok":true}`
 - Frontend loads at `https://app.your-domain.com`
 - Anonymous, login/register, and leaderboard flows work
+- Trigger a gameplay action (collect, purchase, daily reward/bonus) and confirm events appear in Amplitude
 - If enabling Google OAuth, set callback URL in provider config to:
   - `https://api.your-domain.com/api/auth/callback/google`
 

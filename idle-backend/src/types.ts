@@ -9,6 +9,7 @@ export type AppConfig = {
   isProduction: boolean;
   databaseUrl: string;
   jwtSecret: string;
+  amplitudeApiKey: string;
   corsOrigin: string;
   betterAuthSecret: string;
   betterAuthUrl: string;

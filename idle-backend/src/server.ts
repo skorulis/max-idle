@@ -1,4 +1,5 @@
 import { createApp, syncStalePlayerCurrentSeconds } from "./app.js";
+import { createAnalyticsService } from "./analytics.js";
 import { loadConfig } from "./config.js";
 import { createPool } from "./db.js";
 import { finalizeDueTournaments, getDelayUntilNextTournamentDrawMs } from "./tournaments.js";
@@ -10,9 +11,10 @@ const DAILY_REWARD_PUSH_SCAN_INTERVAL_MS = 60 * 1000;
 
 async function main(): Promise<void> {
   const config = loadConfig();
+  const analytics = createAnalyticsService(config.amplitudeApiKey);
   configureWebPush(config);
   const pool = createPool(config.databaseUrl);
-  const app = createApp(pool, config);
+  const app = createApp(pool, config, analytics);
   let isSyncRunning = false;
   let isTournamentFinalizationRunning = false;
   let isDailyRewardPushScanRunning = false;
@@ -104,6 +106,7 @@ async function main(): Promise<void> {
     }
     server.close();
     await pool.end();
+    await analytics.shutdown();
     process.exit(0);
   };
 
