@@ -282,6 +282,26 @@ describe("auth + player lifecycle", () => {
     expect(gemHoarder?.completed).toBe(true);
   });
 
+  it("returns aggregated player, account, and tournament on GET /home", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    const homeResponse = await request(app).get("/home").set("Authorization", `Bearer ${token}`);
+    expect(homeResponse.status).toBe(200);
+    expect(homeResponse.body.player.serverTime).toBeTruthy();
+    expect(homeResponse.body.account.isAnonymous).toBe(true);
+    expect(homeResponse.body.account.gameUserId).toBe(userId);
+    expect(typeof homeResponse.body.tournament.drawAt).toBe("string");
+  });
+
+  it("returns 401 from GET /home without credentials", async () => {
+    const app = createApp(pool, config);
+    const homeResponse = await request(app).get("/home");
+    expect(homeResponse.status).toBe(401);
+  });
+
   it("returns and persists today's generated daily bonus in player payload", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");

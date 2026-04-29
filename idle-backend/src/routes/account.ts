@@ -8,7 +8,7 @@ import { grantAchievement } from "../achievementUpdates.js";
 import type { AuthClaims } from "../types.js";
 import { containsProfanity, isValidUsername } from "../username.js";
 
-type BetterAuthSession = {
+export type BetterAuthSession = {
   session: {
     id: string;
   };
@@ -17,6 +17,54 @@ type BetterAuthSession = {
     email: string | null;
   };
 } | null;
+
+export async function buildAccountPayloadForIdentity(
+  pool: Pool,
+  socialConfig: { googleEnabled: boolean; appleEnabled: boolean },
+  identity: { claims: AuthClaims; session: BetterAuthSession }
+): Promise<{
+  isAnonymous: boolean;
+  email: string | null;
+  username: string | null;
+  gameUserId: string;
+  canUpgrade?: boolean;
+  socialProviders: { googleEnabled: boolean; appleEnabled: boolean };
+}> {
+  if (identity.session?.user.id) {
+    const client = await pool.connect();
+    try {
+      const gameUserId = identity.claims.sub;
+      const result = await client.query<{ email: string | null; username: string }>(
+        `SELECT email, username FROM users WHERE id = $1`,
+        [gameUserId]
+      );
+      const userRow = result.rows[0];
+
+      return {
+        isAnonymous: false,
+        email: userRow?.email ?? identity.session.user.email,
+        username: userRow?.username ?? null,
+        gameUserId,
+        socialProviders: socialConfig
+      };
+    } finally {
+      client.release();
+    }
+  }
+
+  const userResult = await pool.query<{ email: string | null; username: string | null }>(
+    `SELECT email, username FROM users WHERE id = $1`,
+    [identity.claims.sub]
+  );
+  return {
+    isAnonymous: true,
+    email: userResult.rows[0]?.email ?? null,
+    username: userResult.rows[0]?.username ?? null,
+    gameUserId: identity.claims.sub,
+    canUpgrade: true,
+    socialProviders: socialConfig
+  };
+}
 
 type RegisterAccountRoutesOptions = {
   app: express.Express;

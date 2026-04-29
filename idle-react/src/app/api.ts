@@ -2,6 +2,7 @@ import type {
   AccountResponse,
   AchievementsResponse,
   AuthResponse,
+  HomeResponse,
   LeaderboardResponse,
   LeaderboardType,
   PlayerProfileResponse,
@@ -67,6 +68,27 @@ export async function getPlayer(token: string | null): Promise<PlayerResponse> {
   }
 
   return (await response.json()) as PlayerResponse;
+}
+
+export async function getHome(token: string | null): Promise<HomeResponse> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/home`, {
+    credentials: "include",
+    headers
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response));
+  }
+
+  return (await response.json()) as HomeResponse;
 }
 
 export async function collectIdleTime(token: string | null): Promise<PlayerResponse> {

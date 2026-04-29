@@ -270,6 +270,15 @@ const tournamentEnterResponseSchema = registry.register(
   })
 );
 
+const homeResponseSchema = registry.register(
+  "HomeResponse",
+  z.object({
+    player: playerStateSchema,
+    account: accountResponseSchema,
+    tournament: tournamentCurrentResponseSchema
+  })
+);
+
 const emailAuthRequestSchema = registry.register(
   "EmailAuthRequest",
   z.object({
@@ -561,6 +570,34 @@ registry.registerPath({
       description: "Current player state",
       content: {
         "application/json": { schema: playerStateSchema }
+      }
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    },
+    404: {
+      description: "Player not found",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    }
+  }
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/home",
+  tags: ["Player"],
+  summary: "Player, account, and current tournament in one response",
+  security: authViaCookieOrBearer,
+  responses: {
+    200: {
+      description: "Aggregated home payload",
+      content: {
+        "application/json": { schema: homeResponseSchema }
       }
     },
     401: {

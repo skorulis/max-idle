@@ -102,6 +102,10 @@
                 "type": "integer",
                 "minimum": 0
               },
+              "another_seconds_multiplier": {
+                "type": "integer",
+                "minimum": 0
+              },
               "restraint": {
                 "type": "integer",
                 "minimum": 0
@@ -160,6 +164,43 @@
             "nullable": true,
             "format": "date-time"
           },
+          "dailyBonus": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "collect_idle_percent",
+                  "collect_real_percent",
+                  "double_gems_daily_reward",
+                  "free_real_time_hours",
+                  "free_idle_time_hours"
+                ]
+              },
+              "value": {
+                "type": "integer",
+                "minimum": 0,
+                "exclusiveMinimum": true
+              },
+              "date": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "isCollectable": {
+                "type": "boolean"
+              },
+              "isClaimed": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "type",
+              "value",
+              "date",
+              "isCollectable",
+              "isClaimed"
+            ]
+          },
           "serverTime": {
             "type": "string",
             "format": "date-time"
@@ -180,6 +221,7 @@
           "currentSecondsLastUpdated",
           "lastCollectedAt",
           "lastDailyRewardCollectedAt",
+          "dailyBonus",
           "serverTime"
         ]
       },
@@ -250,6 +292,11 @@
           },
           "completed": {
             "type": "boolean"
+          },
+          "grantedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
           }
         },
         "required": [
@@ -258,7 +305,8 @@
           "description",
           "icon",
           "clientDriven",
-          "completed"
+          "completed",
+          "grantedAt"
         ]
       },
       "GrantAchievementRequest": {
@@ -498,6 +546,20 @@
               "upgradeType": {
                 "type": "string",
                 "enum": [
+                  "another_seconds_multiplier"
+                ]
+              }
+            },
+            "required": [
+              "upgradeType"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "upgradeType": {
+                "type": "string",
+                "enum": [
                   "restraint"
                 ]
               }
@@ -595,6 +657,12 @@
                         "type": "string",
                         "enum": [
                           "seconds_multiplier"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "another_seconds_multiplier"
                         ]
                       },
                       {
@@ -720,6 +788,37 @@
           "finalizedAt"
         ]
       },
+      "TournamentRankedEntry": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "timeScoreSeconds": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "isCurrentPlayer": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "rank",
+          "userId",
+          "username",
+          "timeScoreSeconds",
+          "isCurrentPlayer"
+        ]
+      },
       "TournamentCurrentResponse": {
         "type": "object",
         "properties": {
@@ -749,6 +848,12 @@
             "minimum": 1,
             "maximum": 5
           },
+          "nearbyEntries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TournamentRankedEntry"
+            }
+          },
           "entry": {
             "allOf": [
               {
@@ -767,6 +872,7 @@
           "playerCount",
           "currentRank",
           "expectedRewardGems",
+          "nearbyEntries",
           "entry"
         ]
       },
@@ -783,6 +889,25 @@
         "required": [
           "tournament",
           "enteredNow"
+        ]
+      },
+      "HomeResponse": {
+        "type": "object",
+        "properties": {
+          "player": {
+            "$ref": "#/components/schemas/PlayerState"
+          },
+          "account": {
+            "$ref": "#/components/schemas/AccountResponse"
+          },
+          "tournament": {
+            "$ref": "#/components/schemas/TournamentCurrentResponse"
+          }
+        },
+        "required": [
+          "player",
+          "account",
+          "tournament"
         ]
       },
       "EmailAuthRequest": {
@@ -865,6 +990,54 @@
           },
           "500": {
             "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/player/daily-bonus/collect": {
+      "post": {
+        "tags": [
+          "Player"
+        ],
+        "summary": "Collect today's collectable daily bonus",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated player state after bonus claim",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Daily bonus cannot be claimed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
@@ -1198,6 +1371,54 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PlayerState"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Player not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/home": {
+      "get": {
+        "tags": [
+          "Player"
+        ],
+        "summary": "Player, account, and current tournament in one response",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Aggregated home payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomeResponse"
                 }
               }
             }

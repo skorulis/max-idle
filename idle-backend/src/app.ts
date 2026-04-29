@@ -23,6 +23,7 @@ import { registerAccountRoutes } from "./routes/account.js";
 import { registerAchievementsRoutes } from "./routes/achievements.js";
 import { registerDailyBonusRoutes } from "./routes/dailyBonus.js";
 import { registerPlayerRoutes } from "./routes/player.js";
+import { registerHomeRoutes } from "./routes/home.js";
 import { registerTournamentRoutes } from "./routes/tournament.js";
 import { registerNotificationRoutes } from "./routes/notifications.js";
 import type { ShopState } from "@maxidle/shared/shop";
@@ -392,6 +393,14 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
     resolveIdentity: resolveIdentityForRequest,
     toNumber,
     analytics
+  });
+
+  registerHomeRoutes({
+    app,
+    pool,
+    resolveIdentity: resolveIdentityForRequest,
+    toNumber,
+    socialConfig
   });
 
   registerDailyBonusRoutes({

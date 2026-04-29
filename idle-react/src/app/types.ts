@@ -126,6 +126,12 @@ export type AccountResponse = {
   };
 };
 
+export type HomeResponse = {
+  player: PlayerResponse;
+  account: AccountResponse;
+  tournament: TournamentCurrentResponse;
+};
+
 export type SyncedPlayerState = {
   idleTime: TimeCurrencyBalances;
   realTime: TimeCurrencyBalances;

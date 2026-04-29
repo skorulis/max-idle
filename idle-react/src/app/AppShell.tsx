@@ -32,6 +32,7 @@ import {
   enterTournament,
   getAccount,
   getAchievements,
+  getHome,
   getLeaderboard,
   getPlayer,
   grantClientDrivenAchievement,
@@ -415,6 +416,19 @@ export function AppShell() {
     }
   }, []);
 
+  const refreshHome = useCallback(async (currentToken: string | null) => {
+    const home = await getHome(currentToken);
+    const synced = toSyncedState(home.player);
+    alignClientClock();
+    setPlayerState(synced);
+    setAccount(home.account);
+    setUsernameDraft(home.account.username ?? "");
+    setUsernameError(null);
+    setUsernameSuccess(null);
+    const tournamentSynced = toSyncedTournamentState(home.tournament);
+    setTournamentState(tournamentSynced);
+  }, []);
+
   useEffect(() => {
     const bootstrap = async () => {
       setLoading(true);
@@ -424,10 +438,8 @@ export function AppShell() {
         let currentToken = localStorage.getItem(TOKEN_KEY);
 
         try {
-          await refreshPlayer(currentToken);
+          await refreshHome(currentToken);
           setToken(currentToken);
-          await refreshAccount(currentToken);
-          await refreshTournament(currentToken);
           setStatus("You are doing nothing. Excellent.");
           return;
         } catch (bootstrapError) {
@@ -436,9 +448,7 @@ export function AppShell() {
             currentToken = null;
             setToken(null);
             try {
-              await refreshPlayer(null);
-              await refreshAccount(null);
-              await refreshTournament(null);
+              await refreshHome(null);
               setStatus("You are doing nothing. Excellent.");
               return;
             } catch {
@@ -460,7 +470,7 @@ export function AppShell() {
     };
 
     void bootstrap();
-  }, [refreshTournament]);
+  }, [refreshHome]);
 
   useEffect(() => {
     if (location.pathname !== "/account") {
@@ -512,8 +522,7 @@ export function AppShell() {
         sessionStorage.removeItem(UPGRADE_SOCIAL_INTENT_KEY);
         localStorage.removeItem(TOKEN_KEY);
         setToken(null);
-        await refreshPlayer(null);
-        await refreshAccount(null);
+        await refreshHome(null);
         setStatus("Anonymous account upgraded.");
       } catch (upgradeError) {
         if (cancelled) {
@@ -524,8 +533,7 @@ export function AppShell() {
         setStatus("Could not upgrade account.");
         setToken(anonymousToken);
         try {
-          await refreshPlayer(anonymousToken);
-          await refreshAccount(anonymousToken);
+          await refreshHome(anonymousToken);
         } catch {
           // Keep existing state if refresh fails.
         }
@@ -541,7 +549,7 @@ export function AppShell() {
     return () => {
       cancelled = true;
     };
-  }, [location.pathname, location.search, navigate]);
+  }, [location.pathname, location.search, navigate, refreshHome]);
 
   const estimatedServerNowMs = useMemo(() => {
     if (!playerState) {
@@ -1050,9 +1058,7 @@ export function AppShell() {
       const auth = await createAnonymousSession();
       localStorage.setItem(TOKEN_KEY, auth.token);
       setToken(auth.token);
-      await refreshPlayer(auth.token);
-      await refreshAccount(auth.token);
-        await refreshTournament(auth.token);
+      await refreshHome(auth.token);
       setStatus("You are doing nothing. Excellent.");
     } catch (startError) {
       setError(startError instanceof Error ? startError.message : "Failed to start idling");
@@ -1077,9 +1083,7 @@ export function AppShell() {
       await loginWithEmail(loginForm.email, loginForm.password);
       localStorage.removeItem(TOKEN_KEY);
       setToken(null);
-      await refreshPlayer(null);
-      await refreshAccount(null);
-      await refreshTournament(null);
+      await refreshHome(null);
       setStatus("Welcome back. Nothing waits for you.");
       navigate("/");
     } catch (loginError) {
@@ -1098,9 +1102,7 @@ export function AppShell() {
       await registerWithEmail(signupForm.email, signupForm.password);
       localStorage.removeItem(TOKEN_KEY);
       setToken(null);
-      await refreshPlayer(null);
-      await refreshAccount(null);
-      await refreshTournament(null);
+      await refreshHome(null);
       setStatus("Account created. Continue doing nothing.");
       navigate("/");
     } catch (registerError) {
@@ -1165,9 +1167,7 @@ export function AppShell() {
       await upgradeAnonymous(token, upgradeForm.name, upgradeForm.email, upgradeForm.password);
       localStorage.removeItem(TOKEN_KEY);
       setToken(null);
-      await refreshPlayer(null);
-      await refreshAccount(null);
-        await refreshTournament(null);
+      await refreshHome(null);
       setStatus("Anonymous account upgraded.");
     } catch (upgradeError) {
       setError(upgradeError instanceof Error ? upgradeError.message : "Upgrade failed");

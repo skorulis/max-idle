@@ -26,6 +26,117 @@ type RegisterPlayerRoutesOptions = {
   analytics: AnalyticsService;
 };
 
+type PlayerStateRow = {
+  idle_time_total: string;
+  idle_time_available: string;
+  real_time_total: string;
+  real_time_available: string;
+  time_gems_total: string;
+  time_gems_available: string;
+  upgrades_purchased: string;
+  achievement_count: string;
+  has_unseen_achievements: boolean;
+  shop: ShopState;
+  last_collected_at: Date;
+  current_seconds: string;
+  current_seconds_last_updated: Date;
+  last_daily_reward_collected_at: Date | null;
+  last_daily_bonus_claimed_at: Date | null;
+  server_time: Date;
+};
+
+export async function buildPlayerStatePayload(
+  pool: Pool,
+  userId: string,
+  toNumber: (value: unknown) => number
+): Promise<Record<string, unknown> | null> {
+  const result = await pool.query<PlayerStateRow>(
+    `
+    SELECT
+      idle_time_total,
+      idle_time_available,
+      real_time_total,
+      real_time_available,
+      time_gems_total,
+      time_gems_available,
+      upgrades_purchased,
+      achievement_count,
+      has_unseen_achievements,
+      shop,
+      last_collected_at,
+      current_seconds,
+      current_seconds_last_updated,
+      last_daily_reward_collected_at,
+      last_daily_bonus_claimed_at,
+      NOW() AS server_time
+    FROM player_states
+    WHERE user_id = $1
+    `,
+    [userId]
+  );
+
+  const row = result.rows[0];
+  if (!row) {
+    return null;
+  }
+
+  const achievementCount = toNumber(row.achievement_count);
+  const achievementBonusMultiplier = getWorthwhileAchievementsMultiplier(row.shop, achievementCount);
+  const currentIdleSeconds = boostedUncollectedIdleSeconds(
+    row.last_collected_at,
+    row.server_time,
+    row.shop,
+    achievementCount,
+    toNumber(row.real_time_available)
+  );
+  await pool.query(
+    `
+    UPDATE player_states
+    SET
+      current_seconds = $2,
+      current_seconds_last_updated = $3
+    WHERE user_id = $1
+    `,
+    [userId, currentIdleSeconds, row.server_time]
+  );
+  const elapsedSinceLastCollection = calculateElapsedSeconds(row.last_collected_at, row.server_time);
+  const idleSecondsRate = getEffectiveIdleSecondsRate({
+    secondsSinceLastCollection: elapsedSinceLastCollection,
+    shop: row.shop,
+    achievementCount,
+    realTimeAvailable: toNumber(row.real_time_available)
+  });
+  const dailyBonus = await getOrCreateCurrentDailyBonus(pool, row.server_time);
+
+  return {
+    idleTime: {
+      total: toNumber(row.idle_time_total),
+      available: toNumber(row.idle_time_available)
+    },
+    realTime: {
+      total: toNumber(row.real_time_total),
+      available: toNumber(row.real_time_available)
+    },
+    timeGems: {
+      total: toNumber(row.time_gems_total),
+      available: toNumber(row.time_gems_available)
+    },
+    upgradesPurchased: toNumber(row.upgrades_purchased),
+    currentSeconds: currentIdleSeconds,
+    idleSecondsRate,
+    secondsMultiplier: getSecondsMultiplier(row.shop),
+    shop: row.shop,
+    achievementCount,
+    achievementBonusMultiplier,
+    hasUnseenAchievements: row.has_unseen_achievements,
+    currentSecondsLastUpdated: row.server_time.toISOString(),
+    lastCollectedAt: row.last_collected_at.toISOString(),
+    lastDailyRewardCollectedAt: row.last_daily_reward_collected_at?.toISOString() ?? null,
+    dailyBonus: toDailyBonusResponse(dailyBonus, row.last_daily_bonus_claimed_at),
+    serverTime: row.server_time.toISOString()
+  };
+}
+
 export function registerPlayerRoutes({
   app,
   pool,
@@ -39,109 +150,13 @@ export function registerPlayerRoutes({
       req.auth = identity.claims;
 
       const userId = identity.claims.sub;
-      const result = await pool.query<{
-        idle_time_total: string;
-        idle_time_available: string;
-        real_time_total: string;
-        real_time_available: string;
-        time_gems_total: string;
-        time_gems_available: string;
-        upgrades_purchased: string;
-        achievement_count: string;
-        has_unseen_achievements: boolean;
-        shop: ShopState;
-        last_collected_at: Date;
-        current_seconds: string;
-        current_seconds_last_updated: Date;
-        last_daily_reward_collected_at: Date | null;
-        last_daily_bonus_claimed_at: Date | null;
-        server_time: Date;
-      }>(
-        `
-        SELECT
-          idle_time_total,
-          idle_time_available,
-          real_time_total,
-          real_time_available,
-          time_gems_total,
-          time_gems_available,
-          upgrades_purchased,
-          achievement_count,
-          has_unseen_achievements,
-          shop,
-          last_collected_at,
-          current_seconds,
-          current_seconds_last_updated,
-          last_daily_reward_collected_at,
-          last_daily_bonus_claimed_at,
-          NOW() AS server_time
-        FROM player_states
-        WHERE user_id = $1
-        `,
-        [userId]
-      );
-
-      const row = result.rows[0];
-      if (!row) {
+      const payload = await buildPlayerStatePayload(pool, userId, toNumber);
+      if (!payload) {
         res.status(404).json({ error: "Player state not found" });
         return;
       }
 
-      const achievementCount = toNumber(row.achievement_count);
-      const achievementBonusMultiplier = getWorthwhileAchievementsMultiplier(row.shop, achievementCount);
-      const currentIdleSeconds = boostedUncollectedIdleSeconds(
-        row.last_collected_at,
-        row.server_time,
-        row.shop,
-        achievementCount,
-        toNumber(row.real_time_available)
-      );
-      await pool.query(
-        `
-        UPDATE player_states
-        SET
-          current_seconds = $2,
-          current_seconds_last_updated = $3
-        WHERE user_id = $1
-        `,
-        [userId, currentIdleSeconds, row.server_time]
-      );
-      const elapsedSinceLastCollection = calculateElapsedSeconds(row.last_collected_at, row.server_time);
-      const idleSecondsRate = getEffectiveIdleSecondsRate({
-        secondsSinceLastCollection: elapsedSinceLastCollection,
-        shop: row.shop,
-        achievementCount,
-        realTimeAvailable: toNumber(row.real_time_available)
-      });
-      const dailyBonus = await getOrCreateCurrentDailyBonus(pool, row.server_time);
-
-      res.json({
-        idleTime: {
-          total: toNumber(row.idle_time_total),
-          available: toNumber(row.idle_time_available)
-        },
-        realTime: {
-          total: toNumber(row.real_time_total),
-          available: toNumber(row.real_time_available)
-        },
-        timeGems: {
-          total: toNumber(row.time_gems_total),
-          available: toNumber(row.time_gems_available)
-        },
-        upgradesPurchased: toNumber(row.upgrades_purchased),
-        currentSeconds: currentIdleSeconds,
-        idleSecondsRate,
-        secondsMultiplier: getSecondsMultiplier(row.shop),
-        shop: row.shop,
-        achievementCount,
-        achievementBonusMultiplier,
-        hasUnseenAchievements: row.has_unseen_achievements,
-        currentSecondsLastUpdated: row.server_time.toISOString(),
-        lastCollectedAt: row.last_collected_at.toISOString(),
-        lastDailyRewardCollectedAt: row.last_daily_reward_collected_at?.toISOString() ?? null,
-        dailyBonus: toDailyBonusResponse(dailyBonus, row.last_daily_bonus_claimed_at),
-        serverTime: row.server_time.toISOString()
-      });
+      res.json(payload);
     } catch (error) {
       next(error);
     }
