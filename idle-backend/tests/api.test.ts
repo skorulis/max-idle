@@ -1598,6 +1598,7 @@ describe("auth + player lifecycle", () => {
     expect(purchaseResponse.body.idleTime.available).toBe(100 + 20 + 60 + 7 * 24 * 60 * 60);
     expect(purchaseResponse.body.realTime.available).toBe(200 + 2 * 60 * 60);
     expect(purchaseResponse.body.shop).toEqual({
+      another_seconds_multiplier: 0,
       seconds_multiplier: 0,
       patience: 0,
       restraint: 0,
