@@ -1678,6 +1678,42 @@ describe("auth + player lifecycle", () => {
     expect(debugResponse.body.timeGems.available).toBe(6);
   });
 
+  it("grants 12 hours of real time with debug endpoint in non-production config", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(
+      `UPDATE player_states SET real_time_total = 100, real_time_available = 100 WHERE user_id = $1`,
+      [userId]
+    );
+
+    const grantSeconds = 12 * 60 * 60;
+    const debugResponse = await request(app).post("/player/debug/add-real-time").set("Authorization", `Bearer ${token}`);
+    expect(debugResponse.status).toBe(200);
+    expect(debugResponse.body.realTime.total).toBe(100 + grantSeconds);
+    expect(debugResponse.body.realTime.available).toBe(100 + grantSeconds);
+  });
+
+  it("grants 12 hours of idle time with debug endpoint in non-production config", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(
+      `UPDATE player_states SET idle_time_total = 50, idle_time_available = 50 WHERE user_id = $1`,
+      [userId]
+    );
+
+    const grantSeconds = 12 * 60 * 60;
+    const debugResponse = await request(app).post("/player/debug/add-idle-time").set("Authorization", `Bearer ${token}`);
+    expect(debugResponse.status).toBe(200);
+    expect(debugResponse.body.idleTime.total).toBe(50 + grantSeconds);
+    expect(debugResponse.body.idleTime.available).toBe(50 + grantSeconds);
+  });
+
   it("does not register debug gems endpoint in production config", async () => {
     const app = createApp(pool, { ...config, isProduction: true });
     const authResponse = await request(app).post("/auth/anonymous");
@@ -1685,6 +1721,17 @@ describe("auth + player lifecycle", () => {
 
     const debugResponse = await request(app).post("/shop/debug/add-gems").set("Authorization", `Bearer ${token}`);
     expect(debugResponse.status).toBe(404);
+  });
+
+  it("does not register debug time grant endpoints in production config", async () => {
+    const app = createApp(pool, { ...config, isProduction: true });
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+
+    const realResponse = await request(app).post("/player/debug/add-real-time").set("Authorization", `Bearer ${token}`);
+    const idleResponse = await request(app).post("/player/debug/add-idle-time").set("Authorization", `Bearer ${token}`);
+    expect(realResponse.status).toBe(404);
+    expect(idleResponse.status).toBe(404);
   });
 
   it("preserves timer on collect when luck roll succeeds", async () => {

@@ -24,7 +24,10 @@ type RegisterPlayerRoutesOptions = {
   resolveIdentity: (req: express.Request) => Promise<{ claims: AuthClaims }>;
   toNumber: (value: unknown) => number;
   analytics: AnalyticsService;
+  isProduction: boolean;
 };
+
+const DEBUG_TIME_GRANT_SECONDS = 12 * 60 * 60;
 
 type PlayerStateRow = {
   idle_time_total: string;
@@ -142,7 +145,8 @@ export function registerPlayerRoutes({
   pool,
   resolveIdentity,
   toNumber,
-  analytics
+  analytics,
+  isProduction
 }: RegisterPlayerRoutesOptions): void {
   app.get("/player", async (req, res, next) => {
     try {
@@ -620,4 +624,67 @@ export function registerPlayerRoutes({
     }
   });
 
+  if (isProduction) {
+    return;
+  }
+
+  app.post("/player/debug/add-real-time", async (req, res, next) => {
+    try {
+      const identity = await resolveIdentity(req);
+      const userId = identity.claims.sub;
+      const updateResult = await pool.query(
+        `
+        UPDATE player_states
+        SET
+          real_time_total = real_time_total + $2::BIGINT,
+          real_time_available = real_time_available + $2::BIGINT,
+          updated_at = NOW()
+        WHERE user_id = $1
+        `,
+        [userId, DEBUG_TIME_GRANT_SECONDS]
+      );
+      if (updateResult.rowCount === 0) {
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+      const payload = await buildPlayerStatePayload(pool, userId, toNumber);
+      if (!payload) {
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+      res.json(payload);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/player/debug/add-idle-time", async (req, res, next) => {
+    try {
+      const identity = await resolveIdentity(req);
+      const userId = identity.claims.sub;
+      const updateResult = await pool.query(
+        `
+        UPDATE player_states
+        SET
+          idle_time_total = idle_time_total + $2::BIGINT,
+          idle_time_available = idle_time_available + $2::BIGINT,
+          updated_at = NOW()
+        WHERE user_id = $1
+        `,
+        [userId, DEBUG_TIME_GRANT_SECONDS]
+      );
+      if (updateResult.rowCount === 0) {
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+      const payload = await buildPlayerStatePayload(pool, userId, toNumber);
+      if (!payload) {
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+      res.json(payload);
+    } catch (error) {
+      next(error);
+    }
+  });
 }

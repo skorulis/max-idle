@@ -392,7 +392,8 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
     pool,
     resolveIdentity: resolveIdentityForRequest,
     toNumber,
-    analytics
+    analytics,
+    isProduction: config.isProduction
   });
 
   registerHomeRoutes({

@@ -498,6 +498,52 @@ export async function debugResetCurrentDailyBonus(token: string | null): Promise
   }
 }
 
+export async function debugAddRealTime(token: string | null): Promise<PlayerResponse> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/player/debug/add-real-time`, {
+    method: "POST",
+    credentials: "include",
+    headers
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(payload?.error ?? "Failed to add debug real time");
+  }
+
+  return (await response.json()) as PlayerResponse;
+}
+
+export async function debugAddIdleTime(token: string | null): Promise<PlayerResponse> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/player/debug/add-idle-time`, {
+    method: "POST",
+    credentials: "include",
+    headers
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(payload?.error ?? "Failed to add debug idle time");
+  }
+
+  return (await response.json()) as PlayerResponse;
+}
+
 export async function logoutSession(): Promise<void> {
   await apiRequest("/auth/logout", { method: "POST" });
 }

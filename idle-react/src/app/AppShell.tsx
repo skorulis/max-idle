@@ -4,8 +4,8 @@ import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "rea
 import GameIcon from "../GameIcon";
 import { toast, toastCollectIdle } from "../gameToast";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
-import { getCollectGemIdleSecondsMultiplier, SECONDS_MULTIPLIER_SHOP_UPGRADE } from "../shopUpgrades";
-import { COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE, IDLE_HOARDER_SHOP_UPGRADE, LUCK_SHOP_UPGRADE, PATIENCE_SHOP_UPGRADE, RESTRAINT_SHOP_UPGRADE, SHOP_UPGRADES_BY_ID, WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE } from "../shopUpgrades";
+import { getCollectGemIdleSecondsMultiplier } from "../shopUpgrades";
+import { COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE, SHOP_UPGRADES_BY_ID, } from "../shopUpgrades";
 import {
   type ShopUpgradeId
 } from "../shopUpgrades";
@@ -27,6 +27,8 @@ import {
   createAnonymousSession,
   deletePushSubscription,
   debugAddGems,
+  debugAddIdleTime,
+  debugAddRealTime,
   debugResetCurrentDailyBonus,
   completeSocialUpgrade,
   enterTournament,
@@ -165,10 +167,10 @@ export function AppShell() {
     | "extra_realtime_wait"
     | "collect_gem_time_boost"
     | "purchase_refund"
-    | "debug_add_gems"
     | null
   >(null);
   const [resettingDailyBonus, setResettingDailyBonus] = useState(false);
+  const [debugPendingAction, setDebugPendingAction] = useState<"real" | "idle" | "gems" | null>(null);
   const [dailyRewardNotificationsEnabled, setDailyRewardNotificationsEnabled] = useState(() =>
     isDailyRewardNotificationsEnabledStored()
   );
@@ -817,7 +819,7 @@ export function AppShell() {
       return;
     }
 
-    setShopPendingQuantity("debug_add_gems");
+    setDebugPendingAction("gems");
     setError(null);
     setStatus("Adding debug gems...");
     try {
@@ -830,7 +832,7 @@ export function AppShell() {
       setError(debugError instanceof Error ? debugError.message : "Failed to add debug gems");
       toast.error("Could not add debug gems.");
     } finally {
-      setShopPendingQuantity(null);
+      setDebugPendingAction(null);
     }
   };
 
@@ -849,6 +851,50 @@ export function AppShell() {
       setError(debugError instanceof Error ? debugError.message : "Failed to reset daily bonus");
     } finally {
       setResettingDailyBonus(false);
+    }
+  };
+
+  const onDebugAddRealTime = async () => {
+    if (!playerState) {
+      return;
+    }
+
+    setDebugPendingAction("real");
+    setError(null);
+    setStatus("Adding debug real time...");
+    try {
+      const updatedPlayer = await debugAddRealTime(token);
+      const synced = toSyncedState(updatedPlayer);
+      alignClientClock();
+      setPlayerState(synced);
+      toast.success("Added 12 hours of real time.");
+    } catch (debugError) {
+      setError(debugError instanceof Error ? debugError.message : "Failed to add debug real time");
+      toast.error("Could not add debug real time.");
+    } finally {
+      setDebugPendingAction(null);
+    }
+  };
+
+  const onDebugAddIdleTime = async () => {
+    if (!playerState) {
+      return;
+    }
+
+    setDebugPendingAction("idle");
+    setError(null);
+    setStatus("Adding debug idle time...");
+    try {
+      const updatedPlayer = await debugAddIdleTime(token);
+      const synced = toSyncedState(updatedPlayer);
+      alignClientClock();
+      setPlayerState(synced);
+      toast.success("Added 12 hours of idle time.");
+    } catch (debugError) {
+      setError(debugError instanceof Error ? debugError.message : "Failed to add debug idle time");
+      toast.error("Could not add debug idle time.");
+    } finally {
+      setDebugPendingAction(null);
     }
   };
 
@@ -1259,8 +1305,6 @@ export function AppShell() {
                 playerState={playerState}
                 shopPendingQuantity={shopPendingQuantity}
                 onPurchase={onPurchaseUpgrade}
-                showDebugAddGemsButton={import.meta.env.DEV}
-                onDebugAddGems={onDebugAddGems}
                 onNavigateHome={() => navigate("/")}
               />
             )}
@@ -1272,6 +1316,10 @@ export function AppShell() {
                 <DebugPage
                   resettingDailyBonus={resettingDailyBonus}
                   onResetDailyBonus={onDebugResetDailyBonus}
+                  debugPendingAction={debugPendingAction}
+                  onDebugAddRealTime={onDebugAddRealTime}
+                  onDebugAddIdleTime={onDebugAddIdleTime}
+                  onDebugAddGems={onDebugAddGems}
                 />
               )}
             />

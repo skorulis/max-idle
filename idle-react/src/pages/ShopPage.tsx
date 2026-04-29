@@ -42,12 +42,9 @@ type ShopPageProps = {
     | "extra_realtime_wait"
     | "collect_gem_time_boost"
     | "purchase_refund"
-    | "debug_add_gems"
     | null;
   /** Purchase flow for any shop upgrade row; `upgradeId` matches {@link SHOP_UPGRADE_IDS}. */
   onPurchase: (upgradeId: ShopUpgradeId) => Promise<void>;
-  showDebugAddGemsButton: boolean;
-  onDebugAddGems: () => Promise<void>;
   onNavigateHome: () => void;
 };
 
@@ -106,8 +103,6 @@ export function ShopPage({
   playerState,
   shopPendingQuantity,
   onPurchase,
-  showDebugAddGemsButton,
-  onDebugAddGems,
   onNavigateHome
 }: ShopPageProps) {
   const [selectedCurrencyType, setSelectedCurrencyType] = useState<ShopCurrencyType>(SHOP_CURRENCY_TYPES.IDLE);
@@ -308,16 +303,6 @@ export function ShopPage({
       </div>
       {selectedCurrencyType === SHOP_CURRENCY_TYPES.IDLE ? (
         <p className="subtle">Current multiplier: {syncedPlayer.secondsMultiplier.toFixed(1)}x</p>
-      ) : null}
-      {showDebugAddGemsButton && selectedCurrencyType === SHOP_CURRENCY_TYPES.GEM ? (
-        <button
-          type="button"
-          className="secondary"
-          onClick={() => void onDebugAddGems()}
-          disabled={shopPendingQuantity !== null}
-        >
-          {shopPendingQuantity === "debug_add_gems" ? "Adding gems..." : "Debug: Add 5 Time Gems"}
-        </button>
       ) : null}
       {visibleUpgrades.length === 0 ? (
         <p className="subtle">No upgrades currently available for this currency.</p>

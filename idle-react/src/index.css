@@ -225,6 +225,13 @@ h3 {
   margin-top: 14px;
 }
 
+.debug-time-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
 .panel p {
   margin: 8px 0;
 }

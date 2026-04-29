@@ -1,9 +1,22 @@
 type DebugPageProps = {
   resettingDailyBonus: boolean;
   onResetDailyBonus: () => Promise<void>;
+  debugPendingAction: "real" | "idle" | "gems" | null;
+  onDebugAddRealTime: () => Promise<void>;
+  onDebugAddIdleTime: () => Promise<void>;
+  onDebugAddGems: () => Promise<void>;
 };
 
-export function DebugPage({ resettingDailyBonus, onResetDailyBonus }: DebugPageProps) {
+export function DebugPage({
+  resettingDailyBonus,
+  onResetDailyBonus,
+  debugPendingAction,
+  onDebugAddRealTime,
+  onDebugAddIdleTime,
+  onDebugAddGems
+}: DebugPageProps) {
+  const debugBusy = debugPendingAction !== null;
+
   return (
     <>
       <h2>Debug</h2>
@@ -18,6 +31,38 @@ export function DebugPage({ resettingDailyBonus, onResetDailyBonus }: DebugPageP
         >
           {resettingDailyBonus ? "Resetting..." : "Reset current daily bonus"}
         </button>
+      </div>
+      <div className="panel">
+        <h3>Time currencies</h3>
+        <p className="subtle">
+          Grant banked real time, idle time (12 hours each), or time gems for shop spending and tests. Non-production API only.
+        </p>
+        <div className="debug-time-buttons">
+          <button
+            type="button"
+            className="collect"
+            onClick={() => void onDebugAddRealTime()}
+            disabled={debugBusy}
+          >
+            {debugPendingAction === "real" ? "Adding..." : "Add 12h real time"}
+          </button>
+          <button
+            type="button"
+            className="collect"
+            onClick={() => void onDebugAddIdleTime()}
+            disabled={debugBusy}
+          >
+            {debugPendingAction === "idle" ? "Adding..." : "Add 12h idle time"}
+          </button>
+          <button
+            type="button"
+            className="collect"
+            onClick={() => void onDebugAddGems()}
+            disabled={debugBusy}
+          >
+            {debugPendingAction === "gems" ? "Adding gems..." : "Add 5 Time Gems"}
+          </button>
+        </div>
       </div>
     </>
   );
