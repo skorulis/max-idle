@@ -3,6 +3,7 @@ import {
   Atom,
   Clock3,
   Gem,
+  Hourglass,
   Plus,
 } from "lucide-react";
 import { useState } from "react";
@@ -387,11 +388,16 @@ export function ShopPage({
                     className={`secondary shop-upgrade-buy-button${isPurchasable ? " shop-upgrade-buy-button-purchasable" : ""}`}
                     onClick={() => void upgradeState.onPurchase()}
                     disabled={isDisabled}
+                    aria-label={upgradeState.isPending ? "Purchase in progress" : undefined}
                   >
                     {upgradeState.isOwned ? (
                       "Owned"
                     ) : upgradeState.isPending ? (
-                      "..."
+                      <Hourglass
+                        size={16}
+                        aria-hidden="true"
+                        className="shop-upgrade-buy-hourglass-spin"
+                      />
                     ) : upgradeState.cost === null ? (
                       "Max level"
                     ) : (

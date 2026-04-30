@@ -666,6 +666,20 @@ input {
   line-height: 1;
 }
 
+.shop-upgrade-buy-hourglass-spin {
+  line-height: 1;
+  animation: shop-hourglass-spin 900ms linear infinite;
+}
+
+@keyframes shop-hourglass-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .shop-upgrade-buy-cost {
   font-size: 13px;
   line-height: 1.1;
