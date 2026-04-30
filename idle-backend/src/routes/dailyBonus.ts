@@ -31,6 +31,12 @@ export type DailyBonusResponse = {
   isClaimed: boolean;
 };
 
+export type DailyBonusHistoryItemResponse = {
+  type: DailyBonusType;
+  value: number;
+  date: string;
+};
+
 type Queryable = Pool | PoolClient;
 
 type RegisterDailyBonusRoutesOptions = {
@@ -145,6 +151,27 @@ export function toDailyBonusResponse(
   };
 }
 
+function toDailyBonusHistoryItemResponse(bonus: DailyBonusRow): DailyBonusHistoryItemResponse {
+  return {
+    type: bonus.bonus_type,
+    value: bonus.bonus_value,
+    date: bonus.bonus_date_utc.toISOString()
+  };
+}
+
+async function getDailyBonusHistory(queryable: Queryable, limit: number): Promise<DailyBonusRow[]> {
+  const historyResult = await queryable.query<DailyBonusRow>(
+    `
+    SELECT bonus_date_utc, bonus_type, bonus_value
+    FROM daily_bonuses
+    ORDER BY bonus_date_utc DESC
+    LIMIT $1
+    `,
+    [limit]
+  );
+  return historyResult.rows;
+}
+
 export function registerDailyBonusRoutes({
   app,
   pool,
@@ -153,6 +180,19 @@ export function registerDailyBonusRoutes({
   isProduction,
   analytics
 }: RegisterDailyBonusRoutesOptions): void {
+  app.get("/player/daily-bonus/history", async (req, res, next) => {
+    try {
+      const identity = await resolveIdentity(req);
+      req.auth = identity.claims;
+      const history = await getDailyBonusHistory(pool, 30);
+      res.json({
+        history: history.map(toDailyBonusHistoryItemResponse)
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.post("/player/daily-bonus/collect", async (req, res, next) => {
     const client = await pool.connect();
     try {

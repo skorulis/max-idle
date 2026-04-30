@@ -16,6 +16,7 @@ import { LeaderboardPage } from "../pages/LeaderboardPage";
 import { LoginPage } from "../pages/LoginPage";
 import { PlayerPage } from "../pages/PlayerPage";
 import { DebugPage } from "../pages/DebugPage";
+import { DailyBonusPage } from "../pages/DailyBonusPage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { ShopPage } from "../pages/ShopPage";
 import { TournamentPage } from "../pages/TournamentPage";
@@ -34,6 +35,7 @@ import {
   enterTournament,
   getAccount,
   getAchievements,
+  getDailyBonusHistory,
   getHome,
   getLeaderboard,
   getPlayer,
@@ -64,6 +66,7 @@ import type {
   LeaderboardResponse,
   LeaderboardType,
   PlayerProfileResponse,
+  DailyBonusHistoryItem,
   SyncedTournamentState,
   SyncedPlayerState
 } from "./types";
@@ -156,6 +159,8 @@ export function AppShell() {
   const [leaderboardType, setLeaderboardType] = useState<LeaderboardType>("current");
   const [achievements, setAchievements] = useState<AchievementsResponse | null>(null);
   const [achievementsLoading, setAchievementsLoading] = useState(false);
+  const [dailyBonusHistory, setDailyBonusHistory] = useState<DailyBonusHistoryItem[]>([]);
+  const [dailyBonusHistoryLoading, setDailyBonusHistoryLoading] = useState(false);
   const [, setStatus] = useState("Press start when you are ready to do nothing.");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -207,6 +212,43 @@ export function AppShell() {
       return rawPlayerId;
     }
   }, [playerRouteMatch?.params.playerId]);
+
+  useEffect(() => {
+    if (location.pathname !== "/dailybonus") {
+      return;
+    }
+
+    let cancelled = false;
+    const loadDailyBonusHistory = async () => {
+      setDailyBonusHistoryLoading(true);
+      setError(null);
+      try {
+        const nextHistory = await getDailyBonusHistory(token);
+        if (!cancelled) {
+          setDailyBonusHistory(nextHistory);
+        }
+      } catch (dailyBonusHistoryError) {
+        if (cancelled) {
+          return;
+        }
+        setDailyBonusHistory([]);
+        if (dailyBonusHistoryError instanceof Error && dailyBonusHistoryError.message === "UNAUTHORIZED") {
+          setError("Login or start idling to view daily bonus history.");
+          return;
+        }
+        setError(dailyBonusHistoryError instanceof Error ? dailyBonusHistoryError.message : "Failed to load daily bonus history.");
+      } finally {
+        if (!cancelled) {
+          setDailyBonusHistoryLoading(false);
+        }
+      }
+    };
+
+    void loadDailyBonusHistory();
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname, token, account?.gameUserId]);
 
   useEffect(() => {
     if (location.pathname !== "/leaderboard") {
@@ -1290,9 +1332,26 @@ export function AppShell() {
                 onCollectDailyBonus={onCollectDailyBonus}
                 onEnterTournament={onEnterTournament}
                 onNavigateTournament={() => navigate("/tournament")}
+                onNavigateDailyBonusHistory={() => navigate("/dailybonus")}
                 onNavigateLogin={() => navigate("/login")}
               />
             }
+          />
+          <Route
+            path="/dailybonus"
+            element={requireAuthenticatedRoute(
+              <DailyBonusPage
+                playerState={playerState}
+                collectingDailyReward={collectingDailyReward}
+                collectingDailyBonus={collectingDailyBonus}
+                dailyRewardAvailable={dailyRewardAvailable}
+                dailyRewardSecondsUntilAvailable={dailyRewardSecondsUntilAvailable}
+                dailyBonusHistory={dailyBonusHistory}
+                dailyBonusHistoryLoading={dailyBonusHistoryLoading}
+                onCollectDailyReward={onCollectDailyReward}
+                onCollectDailyBonus={onCollectDailyBonus}
+              />
+            )}
           />
           <Route
             path="/help"

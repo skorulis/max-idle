@@ -268,7 +268,7 @@ export const PURCHASE_REFUND_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpg
 /** Five levels: bonus per achievement scales from 0.05 to 0.25; multiplier is 1 + value × achievementCount. */
 export const WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS,
-  name: "Worthwile Achivements",
+  name: "Worthwile Achievements",
   icon: "trophy",
   description: "Gain a bonus based on number of achievements unlocked",
   valueDescription: "%s",

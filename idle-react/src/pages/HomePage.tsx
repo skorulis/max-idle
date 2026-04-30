@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { formatSeconds } from "../formatSeconds";
-import { Atom, CircleHelp, Clock3, Gem, Gift } from "lucide-react";
+import { Atom, CircleHelp, Clock3, Gem, Gift, History } from "lucide-react";
 import type { SyncedPlayerState } from "../app/types";
 import { getRestraintMinRealtimeSeconds } from "../shop";
 import { FlipDurationDisplay } from "../components/FlipDurationDisplay";
 import { CurrentRateInfoOverlay } from "./CurrentRateInfoOverlay";
 import { TournamentPanel } from "./TournamentPanel";
 import { toast } from "../gameToast";
+import { getDailyBonusDescription, isDoubleGemsDailyReward } from "../app/dailyBonus";
 
 const EARLY_COLLECT_WARNING_MESSAGES = [
   "Don't you think you should wait?",
@@ -36,6 +37,7 @@ type HomePageProps = {
   onCollectDailyBonus: () => Promise<void>;
   onEnterTournament: () => Promise<void>;
   onNavigateTournament: () => void;
+  onNavigateDailyBonusHistory: () => void;
   onNavigateLogin: () => void;
 };
 
@@ -60,6 +62,7 @@ export function HomePage({
   onCollectDailyBonus,
   onEnterTournament,
   onNavigateTournament,
+  onNavigateDailyBonusHistory,
   onNavigateLogin
 }: HomePageProps) {
   const [collectWarningIndex, setCollectWarningIndex] = useState(0);
@@ -91,23 +94,7 @@ export function HomePage({
   }
 
   const dailyBonus = playerState.dailyBonus;
-  const dailyBonusDescription = (() => {
-    if (!dailyBonus) {
-      return "Loading daily bonus...";
-    }
-    switch (dailyBonus.type) {
-      case "collect_idle_percent":
-        return `+${dailyBonus.value}% idle time on collect`;
-      case "collect_real_percent":
-        return `+${dailyBonus.value}% real time on collect`;
-      case "double_gems_daily_reward":
-        return "Double gems from daily reward collection";
-      case "free_real_time_hours":
-        return `Collect ${dailyBonus.value}h free real time`;
-      case "free_idle_time_hours":
-        return `Collect ${dailyBonus.value}h free idle time`;
-    }
-  })();
+  const dailyBonusDescription = getDailyBonusDescription(dailyBonus);
 
   const restraintRequiredRealtimeSeconds = getRestraintMinRealtimeSeconds(playerState.shop);
   const restraintWaitRemainingSeconds =
@@ -177,7 +164,7 @@ export function HomePage({
         {dailyRewardAvailable ? (
           <>
             <p className="shop-currency-value">
-              Ready to collect ({dailyBonus?.type === "double_gems_daily_reward" ? "+2 Time Gems" : "+1 Time Gem"})
+              Ready to collect ({isDoubleGemsDailyReward(dailyBonus) ? "+2 Time Gems" : "+1 Time Gem"})
             </p>
             <button className="collect" onClick={() => void onCollectDailyReward()} disabled={collectingDailyReward}>
               {collectingDailyReward ? "Collecting daily reward..." : "Collect daily reward"}
@@ -191,10 +178,21 @@ export function HomePage({
         )}
       </div>
       <div className="panel">
-        <p className="shop-currency-title">
-          <Gift size={16} aria-hidden="true" />
-          Daily Bonus
-        </p>
+        <div className="daily-bonus-header">
+          <p className="shop-currency-title">
+            <Gift size={16} aria-hidden="true" />
+            Daily Bonus
+          </p>
+          <button
+            type="button"
+            className="info-icon-button"
+            onClick={onNavigateDailyBonusHistory}
+            aria-label="View daily bonus history"
+            title="View history"
+          >
+            <History size={14} aria-hidden="true" />
+          </button>
+        </div>
         <p className="shop-currency-value">{dailyBonusDescription}</p>
         {dailyBonus?.isCollectable ? (
           <button

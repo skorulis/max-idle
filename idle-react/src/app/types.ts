@@ -10,17 +10,25 @@ export type TimeCurrencyBalances = {
   available: number;
 };
 
+export type DailyBonusType =
+  | "collect_idle_percent"
+  | "collect_real_percent"
+  | "double_gems_daily_reward"
+  | "free_real_time_hours"
+  | "free_idle_time_hours";
+
 export type DailyBonus = {
-  type:
-    | "collect_idle_percent"
-    | "collect_real_percent"
-    | "double_gems_daily_reward"
-    | "free_real_time_hours"
-    | "free_idle_time_hours";
+  type: DailyBonusType;
   value: number;
   date: string;
   isCollectable: boolean;
   isClaimed: boolean;
+};
+
+export type DailyBonusHistoryItem = {
+  type: DailyBonusType;
+  value: number;
+  date: string;
 };
 
 export type PlayerResponse = {

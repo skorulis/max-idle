@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetAccountData, GetAccountErrors, GetAccountResponses, GetAchievementsData, GetAchievementsErrors, GetAchievementsResponses, GetHealthData, GetHealthResponses, GetHomeData, GetHomeErrors, GetHomeResponses, GetLeaderboardData, GetLeaderboardErrors, GetLeaderboardResponses, GetPlayerData, GetPlayerErrors, GetPlayerResponses, GetPlayersByIdData, GetPlayersByIdErrors, GetPlayersByIdResponses, GetTournamentCurrentData, GetTournamentCurrentErrors, GetTournamentCurrentResponses, PostAccountUpgradeData, PostAccountUpgradeErrors, PostAccountUpgradeResponses, PostAccountUsernameData, PostAccountUsernameErrors, PostAccountUsernameResponses, PostAchievementsGrantData, PostAchievementsGrantErrors, PostAchievementsGrantResponses, PostAchievementsSeenData, PostAchievementsSeenErrors, PostAchievementsSeenResponses, PostAuthAnonymousData, PostAuthAnonymousErrors, PostAuthAnonymousResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutData, PostAuthLogoutResponses, PostAuthRegisterData, PostAuthRegisterErrors, PostAuthRegisterResponses, PostPlayerCollectData, PostPlayerCollectErrors, PostPlayerCollectResponses, PostPlayerDailyBonusCollectData, PostPlayerDailyBonusCollectErrors, PostPlayerDailyBonusCollectResponses, PostPlayerDailyRewardCollectData, PostPlayerDailyRewardCollectErrors, PostPlayerDailyRewardCollectResponses, PostShopPurchaseData, PostShopPurchaseErrors, PostShopPurchaseResponses, PostTournamentEnterData, PostTournamentEnterErrors, PostTournamentEnterResponses } from './types.gen';
+import type { GetAccountData, GetAccountErrors, GetAccountResponses, GetAchievementsData, GetAchievementsErrors, GetAchievementsResponses, GetHealthData, GetHealthResponses, GetHomeData, GetHomeErrors, GetHomeResponses, GetLeaderboardData, GetLeaderboardErrors, GetLeaderboardResponses, GetPlayerDailyBonusHistoryData, GetPlayerDailyBonusHistoryErrors, GetPlayerDailyBonusHistoryResponses, GetPlayerData, GetPlayerErrors, GetPlayerResponses, GetPlayersByIdData, GetPlayersByIdErrors, GetPlayersByIdResponses, GetTournamentCurrentData, GetTournamentCurrentErrors, GetTournamentCurrentResponses, PostAccountUpgradeData, PostAccountUpgradeErrors, PostAccountUpgradeResponses, PostAccountUsernameData, PostAccountUsernameErrors, PostAccountUsernameResponses, PostAchievementsGrantData, PostAchievementsGrantErrors, PostAchievementsGrantResponses, PostAchievementsSeenData, PostAchievementsSeenErrors, PostAchievementsSeenResponses, PostAuthAnonymousData, PostAuthAnonymousErrors, PostAuthAnonymousResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutData, PostAuthLogoutResponses, PostAuthRegisterData, PostAuthRegisterErrors, PostAuthRegisterResponses, PostPlayerCollectData, PostPlayerCollectErrors, PostPlayerCollectResponses, PostPlayerDailyBonusCollectData, PostPlayerDailyBonusCollectErrors, PostPlayerDailyBonusCollectResponses, PostPlayerDailyRewardCollectData, PostPlayerDailyRewardCollectErrors, PostPlayerDailyRewardCollectResponses, PostShopPurchaseData, PostShopPurchaseErrors, PostShopPurchaseResponses, PostTournamentEnterData, PostTournamentEnterErrors, PostTournamentEnterResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -157,6 +157,19 @@ export const postPlayerCollect = <ThrowOnError extends boolean = false>(options?
             type: 'apiKey'
         }, { scheme: 'bearer', type: 'http' }],
     url: '/player/collect',
+    ...options
+});
+
+/**
+ * Get latest global daily bonus history
+ */
+export const getPlayerDailyBonusHistory = <ThrowOnError extends boolean = false>(options?: Options<GetPlayerDailyBonusHistoryData, ThrowOnError>) => (options?.client ?? client).get<GetPlayerDailyBonusHistoryResponses, GetPlayerDailyBonusHistoryErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'better-auth.session_token',
+            type: 'apiKey'
+        }, { scheme: 'bearer', type: 'http' }],
+    url: '/player/daily-bonus/history',
     ...options
 });
 

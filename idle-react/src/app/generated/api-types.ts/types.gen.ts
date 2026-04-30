@@ -155,6 +155,16 @@ export type PlayerCollectResponse = PlayerState & {
     realSecondsCollected: number;
 };
 
+export type DailyBonusHistoryItem = {
+    type: 'collect_idle_percent' | 'collect_real_percent' | 'double_gems_daily_reward' | 'free_real_time_hours' | 'free_idle_time_hours';
+    value: number;
+    date: string;
+};
+
+export type DailyBonusHistoryResponse = {
+    history: Array<DailyBonusHistoryItem>;
+};
+
 export type TournamentEntry = {
     enteredAt: string;
     finalRank: number | null;
@@ -521,6 +531,31 @@ export type PostPlayerCollectResponses = {
 };
 
 export type PostPlayerCollectResponse = PostPlayerCollectResponses[keyof PostPlayerCollectResponses];
+
+export type GetPlayerDailyBonusHistoryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/player/daily-bonus/history';
+};
+
+export type GetPlayerDailyBonusHistoryErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+};
+
+export type GetPlayerDailyBonusHistoryError = GetPlayerDailyBonusHistoryErrors[keyof GetPlayerDailyBonusHistoryErrors];
+
+export type GetPlayerDailyBonusHistoryResponses = {
+    /**
+     * Latest daily bonus history items
+     */
+    200: DailyBonusHistoryResponse;
+};
+
+export type GetPlayerDailyBonusHistoryResponse = GetPlayerDailyBonusHistoryResponses[keyof GetPlayerDailyBonusHistoryResponses];
 
 export type PostPlayerDailyRewardCollectData = {
     body?: never;

@@ -227,6 +227,28 @@ const playerCollectResponseSchema = registry.register(
   })
 );
 
+const dailyBonusHistoryItemSchema = registry.register(
+  "DailyBonusHistoryItem",
+  z.object({
+    type: z.enum([
+      "collect_idle_percent",
+      "collect_real_percent",
+      "double_gems_daily_reward",
+      "free_real_time_hours",
+      "free_idle_time_hours"
+    ]),
+    value: z.number().int().positive(),
+    date: z.string().datetime()
+  })
+);
+
+const dailyBonusHistoryResponseSchema = registry.register(
+  "DailyBonusHistoryResponse",
+  z.object({
+    history: z.array(dailyBonusHistoryItemSchema)
+  })
+);
+
 const tournamentEntrySchema = registry.register(
   "TournamentEntry",
   z.object({
@@ -627,6 +649,28 @@ registry.registerPath({
       description: "Collected player state",
       content: {
         "application/json": { schema: playerCollectResponseSchema }
+      }
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    }
+  }
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/player/daily-bonus/history",
+  tags: ["Player"],
+  summary: "Get latest global daily bonus history",
+  security: authViaCookieOrBearer,
+  responses: {
+    200: {
+      description: "Latest daily bonus history items",
+      content: {
+        "application/json": { schema: dailyBonusHistoryResponseSchema }
       }
     },
     401: {
