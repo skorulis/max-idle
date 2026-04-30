@@ -1,6 +1,7 @@
 import { formatSeconds } from "../formatSeconds";
 import {
   Atom,
+  CircleHelp,
   Clock3,
   Gem,
   Hourglass,
@@ -29,6 +30,7 @@ import {
 import { getIdleSecondsRate } from "../idleRate";
 import GameIcon from "../GameIcon";
 import { getLucidIcon } from "../getLucidIcon";
+import { ShopUpgradeInfoOverlay } from "./ShopUpgradeInfoOverlay";
 
 type ShopPageProps = {
   playerState: SyncedPlayerState | null;
@@ -137,6 +139,7 @@ export function ShopPage({
   onNavigateHome
 }: ShopPageProps) {
   const [selectedCurrencyType, setSelectedCurrencyType] = useState<ShopCurrencyType>(SHOP_CURRENCY_TYPES.IDLE);
+  const [selectedUpgradeForInfo, setSelectedUpgradeForInfo] = useState<ShopUpgradeDefinition | null>(null);
 
   if (!playerState) {
     return (
@@ -373,10 +376,20 @@ export function ShopPage({
                 <div className="shop-upgrade-main">
                   <GameIcon icon={getLucidIcon(upgrade.icon)} className="shop-upgrade-icon" />
                   <div className="shop-upgrade-copy">
-                    <p className="shop-upgrade-name">
-                      {upgrade.name}
-                      {currentLevel !== null ? ` (Lvl ${currentLevel})` : ""}
-                    </p>
+                    <div className="shop-upgrade-name-row">
+                      <p className="shop-upgrade-name">
+                        {upgrade.name}
+                        {currentLevel !== null ? ` (Lvl ${currentLevel})` : ""}
+                      </p>
+                      <button
+                        type="button"
+                        className="info-icon-button shop-upgrade-info-button"
+                        aria-label={`Show details for ${upgrade.name}`}
+                        onClick={() => setSelectedUpgradeForInfo(upgrade)}
+                      >
+                        <CircleHelp size={14} aria-hidden="true" />
+                      </button>
+                    </div>
                     <p className="shop-upgrade-description">{upgradeState.description}</p>
                     {upgradeState.currentValueDescription ? (
                       <p className="shop-upgrade-description subtle">Current: {upgradeState.currentValueDescription}</p>
@@ -419,6 +432,11 @@ export function ShopPage({
           })}
         </div>
       )}
+      <ShopUpgradeInfoOverlay
+        open={selectedUpgradeForInfo !== null}
+        upgrade={selectedUpgradeForInfo}
+        onClose={() => setSelectedUpgradeForInfo(null)}
+      />
     </>
   );
 }

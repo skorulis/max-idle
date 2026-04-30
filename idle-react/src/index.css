@@ -619,14 +619,45 @@ input {
   margin: 0;
 }
 
+.shop-upgrade-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.shop-upgrade-name-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .shop-upgrade-name {
   font-weight: 600;
+}
+
+.shop-upgrade-info-button {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 .shop-upgrade-description {
   margin-top: 4px;
   color: #6b7280;
   font-size: 14px;
+}
+
+.shop-upgrade-info-dialog {
+  width: min(520px, 100%);
+}
+
+.shop-upgrade-info-short {
+  margin: 10px 0 0;
+}
+
+.shop-upgrade-info-long {
+  margin: 8px 0 0;
+  color: #374151;
+  line-height: 1.5;
 }
 
 .shop-upgrade-action {

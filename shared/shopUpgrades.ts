@@ -58,6 +58,7 @@ export type ShopUpgradeDefinition = {
   name: string;
   icon: string;
   description: string;
+  longDescription: string;
   valueDescription: string | null;
   levels: ShopUpgradeLevel[];
   currencyType: ShopCurrencyType;
@@ -103,6 +104,8 @@ export const SECONDS_MULTIPLIER_SHOP_UPGRADE: ShopUpgradeDefinition = defineShop
   name: "Base Multiplier",
   icon: "gauge",
   description: "Constant idle time multiplier",
+  longDescription:
+    "Increases your idle production at all times. Each level raises your always-on multiplier. There are no downsides to this.",
   valueDescription: "%s",
   levels: [
     { cost: 60, value: 1.05 },
@@ -134,6 +137,8 @@ export const ANOTHER_SECONDS_MULTIPLIER_SHOP_UPGRADE: ShopUpgradeDefinition = de
   name: "Another Base Multiplier",
   icon: "gauge",
   description: "Constant idle time multiplier",
+  longDescription:
+    "Increases your idle production at all times. Each level raises your always-on multiplier. This stacks with the base multiplier upgrade.",
   valueDescription: "%s",
   levels: [
     { cost: 60, value: 1.05 },
@@ -165,6 +170,8 @@ export const PATIENCE_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   name: "Patience",
   icon: "hourglass",
   description: "Idle time multiplier that increases over time",
+  longDescription:
+    "This idle multiplier increases over time up to a certain limit. The longer you wait before collecting the higher the bonus will be up to a maximum.",
   valueDescription: "Maximum multiplier %sx",
   levels: [
     { cost: 60, value: 2 },
@@ -185,6 +192,8 @@ export const RESTRAINT_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   name: "Restraint",
   icon: "shield-alert",
   description: "Idle time multiplier that blocks collection until time has passed.",
+  longDescription:
+    "Adds a constant idle multiplier, but enforces a minimum real-time wait before collecting. Collecting too early is blocked, trading flexibility for a higher payout.",
   valueDescription: "%s, collect after %s hours",
   levels: [
     { cost: 2 * 60 * 60, value: 1.1, value2: 1 },
@@ -200,7 +209,9 @@ export const IDLE_HOARDER_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrad
   id: SHOP_UPGRADE_IDS.IDLE_HOARDER,
   name: "Real hoarder",
   icon: "archive",
-  description: "Idle time multiplier that only applies when stored realtime >= available realtime",
+  description: "Idle time multiplier that only applies when you have more stored realtime than realtime to collect",
+  longDescription:
+    "Grants an extra multiplier only when your stored real-time pool is at least a set ratio of your current real-time wait. If you wait too long to collect this bonus will not apply.",
   valueDescription: "%sx when stored time is >= %s x current real time",
   levels: [
     { cost: 1 * SECONDS_PER_HOUR, value: 1.5, value2: 1},
@@ -217,6 +228,8 @@ export const LUCK_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   name: "Luck",
   icon: "dice-5",
   description: "Chance to not reset when collecting",
+  longDescription:
+    "Gives each collection a chance to avoid the usual reset behavior. Higher levels increase the probability, letting you preserve progress more often across collections.",
   valueDescription: "%s",
   levels: [
     { cost: 7 * 24 * 60 * 60, value: 0.05 },
@@ -233,6 +246,8 @@ export const EXTRA_REALTIME_WAIT_SHOP_UPGRADE: ShopUpgradeDefinition = defineSho
   name: "Time skip",
   icon: "hourglass",
   description: "Add %s realtime to your current collection",
+  longDescription:
+    "Spend a time gem to instantly extend the current run's real-time wait by a fixed amount. This can increase the current uncollected idle value without waiting in real time.",
   valueDescription: null,
   levels: [{ cost: 1, value: REALTIME_WAIT_EXTENSION_SECONDS }],
   currencyType: SHOP_CURRENCY_TYPES.GEM
@@ -244,6 +259,8 @@ export const COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE: ShopUpgradeDefinition = define
   name: "Idle boost",
   icon: "timer",
   description: "Apply an idle multiplier to your next collection",
+  longDescription:
+    "Temporarily boosts your next collection. On the next collection this bonus will be reset.",
   valueDescription: "%s",
   levels: [
     { cost: 1, value: 0.5 },
@@ -260,6 +277,8 @@ export const PURCHASE_REFUND_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpg
   name: "Purchase refund",
   icon: "undo-2",
   description: "Refund all idle and real time purchases",
+  longDescription:
+    "Spend a time gem to reset purchased idle and real-time shop upgrades, refunding the spent time into your balances. Use this to re-spec your upgrade path.",
   valueDescription: null,
   levels: [{ cost: 1, value: 0 }],
   currencyType: SHOP_CURRENCY_TYPES.GEM
@@ -271,6 +290,8 @@ export const WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE: ShopUpgradeDefinition = defin
   name: "Worthwile Achievements",
   icon: "trophy",
   description: "Idle time multiplier that increases with each achievement unlocked",
+  longDescription:
+    "Adds an idle multiplier that scales with your unlocked achievements. Each level increases the per-achievement bonus, making achievement progress directly improve income.",
   valueDescription: "%s",
   levels: [
     { cost: 5 * SECONDS_PER_HOUR, value: 0.05 },
