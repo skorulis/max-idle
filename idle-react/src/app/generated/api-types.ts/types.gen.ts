@@ -29,6 +29,7 @@ export type PlayerState = {
     secondsMultiplier: number;
     shop: {
         seconds_multiplier: number;
+        another_seconds_multiplier?: number;
         restraint: number;
         idle_hoarder?: number;
         luck: number;
@@ -42,6 +43,13 @@ export type PlayerState = {
     currentSecondsLastUpdated: string;
     lastCollectedAt: string;
     lastDailyRewardCollectedAt: string | null;
+    dailyBonus: {
+        type: 'collect_idle_percent' | 'collect_real_percent' | 'double_gems_daily_reward' | 'free_real_time_hours' | 'free_idle_time_hours';
+        value: number;
+        date: string;
+        isCollectable: boolean;
+        isClaimed: boolean;
+    };
     serverTime: string;
 };
 
@@ -63,7 +71,10 @@ export type Achievement = {
     description: string;
     icon: string;
     clientDriven: boolean;
+    level: number;
+    maxLevel: number;
     completed: boolean;
+    grantedAt: string | null;
 };
 
 export type GrantAchievementRequest = {
@@ -72,7 +83,6 @@ export type GrantAchievementRequest = {
 
 export type AchievementsResponse = {
     completedCount: number;
-    totalCount: number;
     earningsBonusMultiplier: number;
     achievements: Array<Achievement>;
 };
@@ -117,6 +127,8 @@ export type ShopPurchaseRequest = {
     upgradeType: 'seconds_multiplier';
     quantity: 1 | 5 | 10;
 } | {
+    upgradeType: 'another_seconds_multiplier';
+} | {
     upgradeType: 'restraint';
 } | {
     upgradeType: 'idle_hoarder';
@@ -132,7 +144,7 @@ export type ShopPurchaseRequest = {
 
 export type ShopPurchaseResponse = PlayerState & {
     purchase: {
-        upgradeType: 'seconds_multiplier' | 'restraint' | 'idle_hoarder' | 'luck' | 'extra_realtime_wait' | 'collect_gem_time_boost' | 'purchase_refund';
+        upgradeType: 'seconds_multiplier' | 'another_seconds_multiplier' | 'restraint' | 'idle_hoarder' | 'luck' | 'extra_realtime_wait' | 'collect_gem_time_boost' | 'purchase_refund';
         quantity: number;
         totalCost: number;
     };
@@ -151,6 +163,14 @@ export type TournamentEntry = {
     finalizedAt: string | null;
 };
 
+export type TournamentRankedEntry = {
+    rank: number;
+    userId: string;
+    username: string;
+    timeScoreSeconds: number;
+    isCurrentPlayer: boolean;
+};
+
 export type TournamentCurrentResponse = {
     drawAt: string;
     isActive: boolean;
@@ -158,12 +178,19 @@ export type TournamentCurrentResponse = {
     playerCount: number;
     currentRank: number | null;
     expectedRewardGems: number | null;
+    nearbyEntries: Array<TournamentRankedEntry>;
     entry: TournamentEntry & unknown;
 };
 
 export type TournamentEnterResponse = {
     tournament: TournamentCurrentResponse;
     enteredNow: boolean;
+};
+
+export type HomeResponse = {
+    player: PlayerState;
+    account: AccountResponse;
+    tournament: TournamentCurrentResponse;
 };
 
 export type EmailAuthRequest = {
@@ -218,6 +245,35 @@ export type PostAuthAnonymousResponses = {
 };
 
 export type PostAuthAnonymousResponse = PostAuthAnonymousResponses[keyof PostAuthAnonymousResponses];
+
+export type PostPlayerDailyBonusCollectData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/player/daily-bonus/collect';
+};
+
+export type PostPlayerDailyBonusCollectErrors = {
+    /**
+     * Daily bonus cannot be claimed
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+};
+
+export type PostPlayerDailyBonusCollectError = PostPlayerDailyBonusCollectErrors[keyof PostPlayerDailyBonusCollectErrors];
+
+export type PostPlayerDailyBonusCollectResponses = {
+    /**
+     * Updated player state after bonus claim
+     */
+    200: PlayerState;
+};
+
+export type PostPlayerDailyBonusCollectResponse = PostPlayerDailyBonusCollectResponses[keyof PostPlayerDailyBonusCollectResponses];
 
 export type PostAuthRegisterData = {
     body: EmailAuthRequest;
@@ -411,6 +467,35 @@ export type GetPlayerResponses = {
 };
 
 export type GetPlayerResponse = GetPlayerResponses[keyof GetPlayerResponses];
+
+export type GetHomeData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/home';
+};
+
+export type GetHomeErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Player not found
+     */
+    404: ErrorResponse;
+};
+
+export type GetHomeError = GetHomeErrors[keyof GetHomeErrors];
+
+export type GetHomeResponses = {
+    /**
+     * Aggregated home payload
+     */
+    200: HomeResponse;
+};
+
+export type GetHomeResponse = GetHomeResponses[keyof GetHomeResponses];
 
 export type PostPlayerCollectData = {
     body?: never;

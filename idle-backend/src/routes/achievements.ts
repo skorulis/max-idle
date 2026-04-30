@@ -61,7 +61,6 @@ export function registerAchievementsRoutes({
       const earningsBonusMultiplier = getWorthwhileAchievementsMultiplier(playerStateRow.shop, completedCount);
       res.json({
         completedCount,
-        totalCount: ACHIEVEMENTS.length,
         earningsBonusMultiplier,
         achievements: ACHIEVEMENTS.map((achievement) => {
           const levelEntry = levelById.get(achievement.id);

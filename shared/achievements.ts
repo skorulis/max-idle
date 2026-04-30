@@ -31,6 +31,11 @@ export type AchievementDefinition = {
   }>;
 };
 
+/** Each tier of a leveled achievement counts as one slot; definitions without `levels` count as one. */
+export function totalAchievementLevelSlots(): number {
+  return ACHIEVEMENTS.reduce((sum, def) => sum + (def.levels?.length ?? 1), 0);
+}
+
 // Make sure to update AchievementsPage.tsx to map new icons
 export const ACHIEVEMENTS: AchievementDefinition[] = [
   {

@@ -1,5 +1,5 @@
 import { Check, Lock } from "lucide-react";
-import { ACHIEVEMENTS, type AchievementId } from "../achievements";
+import { ACHIEVEMENTS, totalAchievementLevelSlots, type AchievementId } from "../achievements";
 import type { AchievementsResponse } from "../app/types";
 import { formatSeconds } from "../formatSeconds";
 import GameIcon from "../GameIcon";
@@ -15,10 +15,10 @@ export function AchievementsPage({ achievements, achievementsLoading, hasError }
   const achievementDefinitionById = new Map(ACHIEVEMENTS.map((achievement) => [achievement.id, achievement]));
   const renderAchievementStatus = (achievement: AchievementsResponse["achievements"][number], isCompleted: boolean) => {
     const hasLevels = achievement.maxLevel > 1;
-    if (hasLevels && achievement.level >= 1) {
+    if (hasLevels && !isCompleted) {
       return (
-        <span className="achievement-status" aria-label={`Level ${achievement.level}`}>
-          X{achievement.level}
+        <span className="achievement-status" aria-label={`Level ${achievement.level} of ${achievement.maxLevel}`}>
+          {achievement.level}/{achievement.maxLevel}
         </span>
       );
     }
@@ -82,7 +82,7 @@ export function AchievementsPage({ achievements, achievementsLoading, hasError }
       {!achievementsLoading && achievements ? (
         <>
           <p className="subtle">
-            Completed {achievements.completedCount} of {achievements.totalCount}
+            Completed {achievements.completedCount} of {totalAchievementLevelSlots()}
           </p>
           <p className="subtle">Earnings bonus multiplier: x{achievements.earningsBonusMultiplier.toFixed(2)}</p>
           <h3>In Progress</h3>

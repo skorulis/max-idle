@@ -290,6 +290,15 @@
           "clientDriven": {
             "type": "boolean"
           },
+          "level": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "maxLevel": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
           "completed": {
             "type": "boolean"
           },
@@ -305,6 +314,8 @@
           "description",
           "icon",
           "clientDriven",
+          "level",
+          "maxLevel",
           "completed",
           "grantedAt"
         ]
@@ -327,10 +338,6 @@
             "type": "integer",
             "minimum": 0
           },
-          "totalCount": {
-            "type": "integer",
-            "minimum": 0
-          },
           "earningsBonusMultiplier": {
             "type": "number",
             "minimum": 0,
@@ -345,7 +352,6 @@
         },
         "required": [
           "completedCount",
-          "totalCount",
           "earningsBonusMultiplier",
           "achievements"
         ]

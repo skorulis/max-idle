@@ -116,7 +116,6 @@ const achievementsResponseSchema = registry.register(
   "AchievementsResponse",
   z.object({
     completedCount: z.number().int().nonnegative(),
-    totalCount: z.number().int().nonnegative(),
     earningsBonusMultiplier: z.number().positive(),
     achievements: z.array(achievementSchema)
   })

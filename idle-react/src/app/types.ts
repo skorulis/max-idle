@@ -111,7 +111,6 @@ export type Achievement = {
 
 export type AchievementsResponse = {
   completedCount: number;
-  totalCount: number;
   earningsBonusMultiplier: number;
   achievements: Achievement[];
 };

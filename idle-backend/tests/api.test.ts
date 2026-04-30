@@ -899,7 +899,6 @@ describe("auth + player lifecycle", () => {
     const response = await request(app).get("/achievements").set("Authorization", `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(response.body.completedCount).toBe(0);
-    expect(response.body.totalCount).toBe(11);
     expect(response.body.earningsBonusMultiplier).toBe(1);
     expect(response.body.achievements).toHaveLength(11);
     expect(response.body.achievements[0].id).toBe("account_creation");
