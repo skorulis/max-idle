@@ -94,6 +94,28 @@ export function getRestraintBonusMultiplier(shop: ShopState): number {
   return RESTRAINT_SHOP_UPGRADE.levels[restraintLevel - 1]?.value ?? 1;
 }
 
+/** Realtime seconds required before collect when restraint is active; from current tier's `value2` (hours). */
+export function getRestraintMinRealtimeSeconds(shop: ShopState): number {
+  const restraintLevel = RESTRAINT_SHOP_UPGRADE.currentLevel(shop);
+  if (restraintLevel <= 0) {
+    return 0;
+  }
+  const hours = safeNumber(RESTRAINT_SHOP_UPGRADE.levels[restraintLevel - 1]?.value2, 1);
+  return Math.max(1, hours) * 60 * 60;
+}
+
+/** User-facing message when collect is blocked by restraint (tier-specific wait). */
+export function formatRestraintBlockedCollectMessage(shop: ShopState): string {
+  const sec = getRestraintMinRealtimeSeconds(shop);
+  if (sec <= 0) {
+    return "Restraint blocks collection until the required realtime has passed.";
+  }
+  const hours = sec / (60 * 60);
+  const label =
+    hours === 1 ? "1 hour" : `${Number.isInteger(hours) ? String(hours) : hours.toFixed(1)} hours`;
+  return `Restraint blocks collection until at least ${label} of realtime has passed.`;
+}
+
 /** ×(1 + bonusPerAchievement × achievementCount), from Worthwhile Achievements tier and unlock count. */
 export function getWorthwhileAchievementsMultiplier(shop: ShopState, achievementCount: number): number {
   const bonusPer = getWorthwhileAchievementsBonusPerAchievement(WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.currentLevel(shop));

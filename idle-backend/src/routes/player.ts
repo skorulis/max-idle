@@ -1,7 +1,12 @@
 import express from "express";
 import type { Pool } from "pg";
 import { ACHIEVEMENT_IDS, GEM_HOARDER_MIN_AVAILABLE_GEMS } from "@maxidle/shared/achievements";
-import { getSecondsMultiplier, getWorthwhileAchievementsMultiplier, withShopUpgradeLevel } from "@maxidle/shared/shop";
+import {
+  formatRestraintBlockedCollectMessage,
+  getSecondsMultiplier,
+  getWorthwhileAchievementsMultiplier,
+  withShopUpgradeLevel
+} from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
 import { SHOP_UPGRADE_IDS } from "@maxidle/shared/shopUpgrades";
 import { boostedUncollectedIdleSeconds } from "../boostedUncollectedIdle.js";
@@ -237,7 +242,7 @@ export function registerPlayerRoutes({
       if (isIdleCollectionBlockedByRestraint({ secondsSinceLastCollection: realSecondsCollected, shop: lockedRow.shop })) {
         await client.query("ROLLBACK");
         res.status(400).json({
-          error: "Restraint blocks collection until at least 1 hour of realtime has passed",
+          error: formatRestraintBlockedCollectMessage(lockedRow.shop),
           code: "RESTRAINT_BLOCKED"
         });
         return;

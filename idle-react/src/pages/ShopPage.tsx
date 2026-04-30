@@ -91,12 +91,31 @@ function formatUpgradeValue(upgrade: ShopUpgradeDefinition, value: number): stri
   return value.toString();
 }
 
-function formatValueDescription(upgrade: ShopUpgradeDefinition, value: number): string {
-  const valueDescription = (upgrade as ShopUpgradeDefinition & { valueDescription?: string | null }).valueDescription;
+/** Second `%s` in `valueDescription` (e.g. restraint wait hours). */
+function formatUpgradeSecondaryValue(upgrade: ShopUpgradeDefinition, value2: number): string {
+  if (upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT) {
+    return String(Math.round(value2));
+  }
+  return formatUpgradeValue(upgrade, value2);
+}
+
+function formatValueDescription(
+  upgrade: ShopUpgradeDefinition,
+  value: number,
+  value2?: number
+): string {
+  const valueDescription = upgrade.valueDescription;
   if (!valueDescription) {
     return "";
   }
-  return valueDescription.replace("%s", formatUpgradeValue(upgrade, value));
+  let result = valueDescription.replace("%s", formatUpgradeValue(upgrade, value));
+  if (result.includes("%s")) {
+    result = result.replace(
+      "%s",
+      value2 !== undefined ? formatUpgradeSecondaryValue(upgrade, value2) : ""
+    );
+  }
+  return result;
 }
 
 export function ShopPage({
@@ -124,7 +143,11 @@ export function ShopPage({
   const secondsMultiplierLevel = SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(syncedPlayer.shop);
   const hasRefundablePurchases = hasRefundableShopPurchases(syncedPlayer.shop);
 
-  function getValueDesciptionValue(upgrade: ShopUpgradeDefinition, playerState: SyncedPlayerState, level: number): number | null {
+  function getValueDescriptionParts(
+    upgrade: ShopUpgradeDefinition,
+    playerState: SyncedPlayerState,
+    level: number
+  ): { value: number; value2?: number } | null {
     const valueDescription = upgrade.valueDescription;
     if (typeof valueDescription !== "string" || valueDescription.length === 0) {
       return null;
@@ -134,22 +157,33 @@ export function ShopPage({
     }
     if (upgrade.id === SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS) {
       const achievementCount = safeNaturalNumber(playerState.achievementCount);
-      return getWorthwhileAchievementsMultiplier(
+      const value = getWorthwhileAchievementsMultiplier(
         withShopUpgradeLevel(playerState.shop, SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS, level),
         achievementCount
       );
+      return { value };
     }
     if (upgrade.id === SHOP_UPGRADE_IDS.PATIENCE) {
       const patienceShop = withShopUpgradeLevel(playerState.shop, SHOP_UPGRADE_IDS.PATIENCE, level);
-      return getIdleSecondsRate({
+      const value = getIdleSecondsRate({
         secondsSinceLastCollection: Number.MAX_SAFE_INTEGER,
         shop: patienceShop,
         achievementCount: playerState.achievementCount,
         realTimeAvailable: playerState.realTime.available
       });
+      return { value };
     }
-    
-    return upgrade.levels[level - 1]?.value ?? null
+
+    const levelDef = upgrade.levels[level - 1];
+    const value = levelDef?.value;
+    if (value === undefined || value === null || !Number.isFinite(value)) {
+      return null;
+    }
+    const rawV2 = levelDef?.value2;
+    if (rawV2 !== undefined && Number.isFinite(rawV2)) {
+      return { value, value2: rawV2 };
+    }
+    return { value };
   }
 
   function getUpgradeRowState(upgrade: ShopUpgradeDefinition): {
@@ -162,16 +196,16 @@ export function ShopPage({
     onPurchase: () => Promise<void>;
   } {
     const purchasedLevel = getUpgradeCurrentLevel(upgrade) ?? 0;
-    const currentValueForDescription = getValueDesciptionValue(upgrade, syncedPlayer, purchasedLevel);
-    const nextValueForDescription = getValueDesciptionValue(upgrade, syncedPlayer, purchasedLevel + 1);
-    
+    const currentParts = getValueDescriptionParts(upgrade, syncedPlayer, purchasedLevel);
+    const nextParts = getValueDescriptionParts(upgrade, syncedPlayer, purchasedLevel + 1);
+
     const currentValueDescription =
-      currentValueForDescription !== null
-        ? formatValueDescription(upgrade, currentValueForDescription)
+      currentParts !== null
+        ? formatValueDescription(upgrade, currentParts.value, currentParts.value2)
         : null;
     const nextValueDescription =
-      nextValueForDescription !== null
-        ? formatValueDescription(upgrade, nextValueForDescription)
+      nextParts !== null
+        ? formatValueDescription(upgrade, nextParts.value, nextParts.value2)
         : null;
 
     if (upgrade.id === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER) {

@@ -49,7 +49,7 @@ import {
   updateUsername,
   upgradeAnonymous
 } from "./api";
-import { hasAffordableIdleOrRealTimeShopPurchase } from "../shop";
+import { formatRestraintBlockedCollectMessage, hasAffordableIdleOrRealTimeShopPurchase } from "../shop";
 import { ACHIEVEMENT_IDS } from "../achievements";
 import { authClient } from "./authClient.ts";
 import { alignClientClock, useClientNowMs } from "./clientClock";
@@ -601,6 +601,14 @@ export function AppShell() {
     });
   }, [playerState, realtimeElapsedSeconds]);
 
+  const restraintCollectBlockedMessage = useMemo(
+    () =>
+      playerState
+        ? formatRestraintBlockedCollectMessage(playerState.shop)
+        : "Restraint blocks collection until the required realtime has passed.",
+    [playerState]
+  );
+
   const showShopAffordableBadge = useMemo(() => {
     if (!playerState) {
       return false;
@@ -748,7 +756,7 @@ export function AppShell() {
       return;
     }
     if (isCollectBlockedByRestraint) {
-      setError("Restraint blocks collection until at least 1 hour of realtime has passed.");
+      setError(restraintCollectBlockedMessage);
       setStatus("Keep idling to satisfy Restraint.");
       return;
     }
@@ -773,7 +781,7 @@ export function AppShell() {
         setAccount(null);
         setStatus("Press start when you are ready to do nothing.");
       } else if (collectError instanceof Error && collectError.message === "RESTRAINT_BLOCKED") {
-        setError("Restraint blocks collection until at least 1 hour of realtime has passed.");
+        setError(restraintCollectBlockedMessage);
         setStatus("Keep idling to satisfy Restraint.");
         return;
       }

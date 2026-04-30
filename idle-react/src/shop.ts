@@ -5,6 +5,8 @@ export {
   withShopUpgradeLevel,
   getLuckEnabled,
   getRestraintBonusMultiplier,
+  formatRestraintBlockedCollectMessage,
+  getRestraintMinRealtimeSeconds,
   getSecondsMultiplier,
   getSecondsMultiplierUpgradeValue,
   getShopPurchaseRefundTotals,

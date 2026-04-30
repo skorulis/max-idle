@@ -2,6 +2,7 @@ import { useState } from "react";
 import { formatSeconds } from "../formatSeconds";
 import { Atom, CircleHelp, Clock3, Gem, Gift } from "lucide-react";
 import type { SyncedPlayerState } from "../app/types";
+import { getRestraintMinRealtimeSeconds } from "../shop";
 import { FlipDurationDisplay } from "../components/FlipDurationDisplay";
 import { CurrentRateInfoOverlay } from "./CurrentRateInfoOverlay";
 import { TournamentPanel } from "./TournamentPanel";
@@ -111,6 +112,12 @@ export function HomePage({
     }
   })();
 
+  const restraintRequiredRealtimeSeconds = getRestraintMinRealtimeSeconds(playerState.shop);
+  const restraintWaitRemainingSeconds =
+    collectBlockedByRestraint && restraintRequiredRealtimeSeconds > 0
+      ? Math.max(0, restraintRequiredRealtimeSeconds - realtimeElapsedSeconds)
+      : 0;
+
   return (
     <>
       <p className="label">Current idle time</p>
@@ -131,7 +138,11 @@ export function HomePage({
       </div>
 
       <button className="collect" onClick={() => void handleCollect()} disabled={collecting || collectBlockedByRestraint}>
-        {collecting ? "Collecting..." : collectBlockedByRestraint ? "Collect (Collect after 1h)" : "Collect"}
+        {collecting
+          ? "Collecting..."
+          : collectBlockedByRestraint
+            ? `Collect (wait ${formatSeconds(restraintWaitRemainingSeconds)})`
+            : "Collect"}
       </button>
       {visibleCollectWarning ? <p className="warning-alert">{visibleCollectWarning}</p> : null}
 

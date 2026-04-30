@@ -3,6 +3,7 @@ import {
   calculateBoostedIdleSecondsGain,
   calculateIdleSecondsGain,
   getIdleSecondsRate,
+  isIdleCollectionBlockedByRestraint,
   shouldPreserveIdleTimerOnCollect
 } from "./idleRate.js";
 import type { ShopState } from "./shop.js";
@@ -60,6 +61,38 @@ describe("calculateIdleSecondsGain", () => {
 
     // 60 -> 600s ramps 2x -> 3x, average 2.5x across 540s => +1350, total 1440.
     expect(calculateIdleSecondsGain(10 * 60, fullPatienceShop)).toBe(1020);
+  });
+});
+
+describe("isIdleCollectionBlockedByRestraint", () => {
+  const baseShop = { seconds_multiplier: 0, restraint: 0, idle_hoarder: 0, luck: 0 };
+
+  it("requires realtime equal to restraint tier value2 hours", () => {
+    expect(
+      isIdleCollectionBlockedByRestraint({
+        secondsSinceLastCollection: 3599,
+        shop: { ...baseShop, restraint: 1 }
+      })
+    ).toBe(true);
+    expect(
+      isIdleCollectionBlockedByRestraint({
+        secondsSinceLastCollection: 3600,
+        shop: { ...baseShop, restraint: 1 }
+      })
+    ).toBe(false);
+
+    expect(
+      isIdleCollectionBlockedByRestraint({
+        secondsSinceLastCollection: 3600,
+        shop: { ...baseShop, restraint: 2 }
+      })
+    ).toBe(true);
+    expect(
+      isIdleCollectionBlockedByRestraint({
+        secondsSinceLastCollection: 7200,
+        shop: { ...baseShop, restraint: 2 }
+      })
+    ).toBe(false);
   });
 });
 

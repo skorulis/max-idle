@@ -3,7 +3,7 @@ import {
   getLuckPreserveChance,
   getDefaultShopState,
   getRestraintBonusMultiplier,
-  getRestraintEnabled,
+  getRestraintMinRealtimeSeconds,
   getSecondsMultiplier,
   getWorthwhileAchievementsMultiplier
 } from "./shop.js";
@@ -28,8 +28,6 @@ const IDLE_RATE_STEPS: IdleRateStep[] = [
   { seconds: 4 * 7 * 24 * 60 * 60, rate: 15 },
   { seconds: 365 * 24 * 60 * 60, rate: 20 }
 ];
-const RESTRAINT_MIN_REALTIME_SECONDS = 60 * 60;
-
 export type IdleCollectionPlayer = {
   secondsSinceLastCollection: number;
   shop: ShopState;
@@ -107,7 +105,8 @@ export function isIdleCollectionBlockedByRestraint(player: {
   shop: ShopState;
 }): boolean {
   const elapsedSeconds = safeNaturalNumber(player.secondsSinceLastCollection);
-  return getRestraintEnabled(player.shop) && elapsedSeconds < RESTRAINT_MIN_REALTIME_SECONDS;
+  const minSeconds = getRestraintMinRealtimeSeconds(player.shop);
+  return minSeconds > 0 && elapsedSeconds < minSeconds;
 }
 
 export function calculateBoostedIdleSecondsGain(player: IdleCollectionPlayer): number {

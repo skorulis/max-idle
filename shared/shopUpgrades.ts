@@ -50,6 +50,7 @@ export const SHOP_UPGRADE_DESCRIPTION_VALUE_PLACEHOLDER = "%s";
 export type ShopUpgradeLevel = {
   cost: number;
   value: number;
+  value2?: number;
 };
 
 export type ShopUpgradeDefinition = {
@@ -183,14 +184,14 @@ export const RESTRAINT_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.RESTRAINT,
   name: "Restraint",
   icon: "shield-alert",
-  description: "Increase idle multiplier but you must wait 1 hour before collecting.",
-  valueDescription: "%s",
+  description: "Idle multiplier that blocks collection until time has passed.",
+  valueDescription: "%s, collect after %s hours",
   levels: [
-    { cost: 2 * 60 * 60, value: 1.1 },
-    { cost: 4 * 60 * 60, value: 1.2 },
-    { cost: 8 * 60 * 60, value: 1.3 },
-    { cost: 12 * 60 * 60, value: 1.4 },
-    { cost: 16 * 60 * 60, value: 1.5 }
+    { cost: 2 * 60 * 60, value: 1.1, value2: 1 },
+    { cost: 4 * 60 * 60, value: 1.2, value2: 2 },
+    { cost: 8 * 60 * 60, value: 1.3, value2: 6 },
+    { cost: 12 * 60 * 60, value: 1.4, value2: 12 },
+    { cost: 16 * 60 * 60, value: 1.5, value2: 24 },
   ],
   currencyType: SHOP_CURRENCY_TYPES.REAL
 });
