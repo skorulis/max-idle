@@ -6,6 +6,34 @@ import { formatSeconds } from "../formatSeconds";
 import type { LeaderboardResponse, LeaderboardType } from "../app/types";
 import { RankedPlayerRow } from "./RankedPlayerRow";
 
+function leaderboardShareText(
+  leaderboardType: LeaderboardType,
+  currentPlayer: LeaderboardResponse["currentPlayer"]
+): string | null {
+  if (!currentPlayer) {
+    return null;
+  }
+  const rankPhrase = `I'm rank #${currentPlayer.rank} in the worlds most pointless game`;
+
+  switch (leaderboardType) {
+    case "collected": {
+      const duration = formatSeconds(currentPlayer.totalIdleSeconds);
+      return `${rankPhrase} after collecting ${duration} of idle time`;
+    }
+    case "current": {
+      const duration = formatSeconds(currentPlayer.totalIdleSeconds);
+      return `${rankPhrase} patiently holding ${duration} of idle time`;
+    }
+    case "time_gems": {
+      const gems = currentPlayer.totalIdleSeconds;
+      const gemsLabel = `${gems.toLocaleString()} time gem${gems === 1 ? "" : "s"}`;
+      return `${rankPhrase} after collecting ${gemsLabel}`;
+    }
+    default:
+      return null;
+  }
+}
+
 type LeaderboardPageProps = {
   leaderboardType: LeaderboardType;
   leaderboardLoading: boolean;
@@ -25,14 +53,7 @@ export function LeaderboardPage({
   onTypeChange,
   onStartJourney
 }: LeaderboardPageProps) {
-  const currentPlayer = leaderboard?.currentPlayer ?? null;
-  const shareIdleMetric = leaderboardType === "current" || leaderboardType === "collected";
-  const shareDuration =
-    shareIdleMetric && currentPlayer ? formatSeconds(currentPlayer.totalIdleSeconds) : null;
-  const shareText =
-    shareIdleMetric && currentPlayer && shareDuration
-      ? `I'm rank #${currentPlayer.rank} in the worlds most pointless game after earning ${shareDuration} of idle time`
-      : null;
+  const shareText = leaderboardShareText(leaderboardType, leaderboard?.currentPlayer ?? null);
   const shareUrl = "https://max-idle.com/leaderboard";
 
   return (
