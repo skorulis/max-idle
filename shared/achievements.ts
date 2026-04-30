@@ -7,7 +7,7 @@ export const ACHIEVEMENT_IDS = {
   IDLE_TIME_COLLECTOR_3H_7M: "idle_time_collector_3h_7m",
   REAL_TIME_STREAK_59_MINUTES: "real_time_streak_59_minutes",
   REAL_TIME_STREAK_2D_14H: "real_time_streak_2d_14h",
-  COLLECTION_COUNT_15: "collection_count_15",
+  COLLECTION_COUNT: "collection_count",
   CONTEMPLATION: "contemplation",
   REWARD_SKIPPER: "reward_skipper",
   GEM_HOARDER: "gem_hoarder"
@@ -81,9 +81,9 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     clientDriven: false
   },
   {
-    id: ACHIEVEMENT_IDS.COLLECTION_COUNT_15,
+    id: ACHIEVEMENT_IDS.COLLECTION_COUNT,
     name: "You're doing it wrong",
-    description: "Collect 15 times.",
+    description: "Collect %s times.",
     icon: "repeat",
     clientDriven: false,
     levels: [{ value: 15 }, { value: 150 }, { value: 1500 }]

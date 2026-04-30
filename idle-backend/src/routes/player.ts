@@ -370,9 +370,9 @@ export function registerPlayerRoutes({
         completedAchievementIds.add(ACHIEVEMENT_IDS.REAL_TIME_STREAK_2D_14H);
         levelsToGrant.set(ACHIEVEMENT_IDS.REAL_TIME_STREAK_2D_14H, 1);
       }
-      const collectionCountLevel = getAchievementLevelForValue(ACHIEVEMENT_IDS.COLLECTION_COUNT_15, collectionCount);
-      if (collectionCountLevel > (currentLevelById.get(ACHIEVEMENT_IDS.COLLECTION_COUNT_15) ?? 0)) {
-        levelsToGrant.set(ACHIEVEMENT_IDS.COLLECTION_COUNT_15, collectionCountLevel);
+      const collectionCountLevel = getAchievementLevelForValue(ACHIEVEMENT_IDS.COLLECTION_COUNT, collectionCount);
+      if (collectionCountLevel > (currentLevelById.get(ACHIEVEMENT_IDS.COLLECTION_COUNT) ?? 0)) {
+        levelsToGrant.set(ACHIEVEMENT_IDS.COLLECTION_COUNT, collectionCountLevel);
       }
       const nextAchievementLevels =
         levelsToGrant.size > 0

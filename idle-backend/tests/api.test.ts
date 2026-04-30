@@ -924,14 +924,14 @@ describe("auth + player lifecycle", () => {
     expect(response.body.achievements[4].id).toBe("idle_time_collector_3h_7m");
     expect(response.body.achievements[5].id).toBe("real_time_streak_59_minutes");
     expect(response.body.achievements[6].id).toBe("real_time_streak_2d_14h");
-    expect(response.body.achievements[7].id).toBe("collection_count_15");
+    expect(response.body.achievements[7].id).toBe("collection_count");
     expect(response.body.achievements[8].id).toBe("contemplation");
     expect(response.body.achievements[8].clientDriven).toBe(true);
     expect(response.body.achievements[9].id).toBe("reward_skipper");
     expect(response.body.achievements[9].clientDriven).toBe(false);
     expect(response.body.achievements[10].id).toBe("gem_hoarder");
     expect(response.body.achievements[10].clientDriven).toBe(false);
-    const collectionAchievement = response.body.achievements.find((achievement: { id: string }) => achievement.id === "collection_count_15");
+    const collectionAchievement = response.body.achievements.find((achievement: { id: string }) => achievement.id === "collection_count");
     expect(collectionAchievement?.level).toBe(0);
     expect(collectionAchievement?.maxLevel).toBe(3);
     expect(collectionAchievement?.completed).toBe(false);
@@ -1162,22 +1162,22 @@ describe("auth + player lifecycle", () => {
       achievement_levels: unknown;
     }>(`SELECT achievement_count, completed_achievements, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
     expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);
-    expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toContain("collection_count_15");
+    expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toContain("collection_count");
     const collectionLevel = parseAchievementLevels(achievementState.rows[0]?.achievement_levels).find(
-      (entry) => entry.id === "collection_count_15"
+      (entry) => entry.id === "collection_count"
     );
     expect(collectionLevel?.level).toBe(1);
     expect(collectionLevel?.grantedAt.length).toBeGreaterThan(0);
     expect(collectResponse.body.hasUnseenAchievements).toBe(true);
   });
 
-  it("increases collection-count levels and only completes at max level", async () => {
+  it("increases collection-count levels and stays incomplete before max level", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
 
-    for (let index = 0; index < 59; index += 1) {
+    for (let index = 0; index < 149; index += 1) {
       await pool.query(
         `
         INSERT INTO player_collection_history (user_id, collection_date, real_time, idle_time)
@@ -1199,14 +1199,14 @@ describe("auth + player lifecycle", () => {
 
     const collectResponse = await request(app).post("/player/collect").set("Authorization", `Bearer ${token}`);
     expect(collectResponse.status).toBe(200);
-    expect(collectResponse.body.achievementCount).toBe(3);
+    expect(collectResponse.body.achievementCount).toBe(2);
 
     const achievementsResponse = await request(app).get("/achievements").set("Authorization", `Bearer ${token}`);
     expect(achievementsResponse.status).toBe(200);
-    const collectionAchievement = achievementsResponse.body.achievements.find((achievement: { id: string }) => achievement.id === "collection_count_15");
-    expect(collectionAchievement?.level).toBe(3);
+    const collectionAchievement = achievementsResponse.body.achievements.find((achievement: { id: string }) => achievement.id === "collection_count");
+    expect(collectionAchievement?.level).toBe(2);
     expect(collectionAchievement?.maxLevel).toBe(3);
-    expect(collectionAchievement?.completed).toBe(true);
+    expect(collectionAchievement?.completed).toBe(false);
   });
 
   it("marks completed achievements from stored jsonb ids", async () => {
