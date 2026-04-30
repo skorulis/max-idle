@@ -27,7 +27,6 @@ import {
   hasRefundableShopPurchases,
   withShopUpgradeLevel
 } from "../shop";
-import { getIdleSecondsRate } from "../idleRate";
 import GameIcon from "../GameIcon";
 import { getLucidIcon } from "../getLucidIcon";
 import { ShopUpgradeInfoOverlay } from "./ShopUpgradeInfoOverlay";
@@ -104,6 +103,9 @@ function formatUpgradeValue(upgrade: ShopUpgradeDefinition, value: number): stri
 
 /** Second `%s` in `valueDescription` (e.g. restraint wait hours). */
 function formatUpgradeSecondaryValue(upgrade: ShopUpgradeDefinition, value2: number): string {
+  if (upgrade.id === SHOP_UPGRADE_IDS.PATIENCE) {
+    return formatSeconds(value2, 2, "floor");
+  }
   if (upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT) {
     return String(Math.round(value2));
   }
@@ -179,14 +181,11 @@ export function ShopPage({
       return { value };
     }
     if (upgrade.id === SHOP_UPGRADE_IDS.PATIENCE) {
-      const patienceShop = withShopUpgradeLevel(playerState.shop, SHOP_UPGRADE_IDS.PATIENCE, level);
-      const value = getIdleSecondsRate({
-        secondsSinceLastCollection: Number.MAX_SAFE_INTEGER,
-        shop: patienceShop,
-        achievementCount: playerState.achievementCount,
-        realTimeAvailable: playerState.realTime.available
-      });
-      return { value };
+      const levelDef = upgrade.levels[level - 1];
+      if (!levelDef || !Number.isFinite(levelDef.value) || !Number.isFinite(levelDef.value2)) {
+        return null;
+      }
+      return { value: levelDef.value, value2: levelDef.value2 };
     }
 
     const levelDef = upgrade.levels[level - 1];

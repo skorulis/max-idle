@@ -172,17 +172,17 @@ export const PATIENCE_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   description: "Idle time multiplier that increases over time",
   longDescription:
     "This idle multiplier increases over time up to a certain limit. The longer you wait before collecting the higher the bonus will be up to a maximum.",
-  valueDescription: "Maximum multiplier %sx",
+  valueDescription: "%sx at %s",
   levels: [
-    { cost: 60, value: 2 },
-    { cost: 5 * 60, value: 3 },
-    { cost: SECONDS_PER_HOUR, value: 4 },
-    { cost: 5 * SECONDS_PER_HOUR, value: 5 },
-    { cost: SECONDS_PER_DAY, value: 6 },
-    { cost: 4 * SECONDS_PER_DAY, value: 7 },
-    { cost: 14 * SECONDS_PER_DAY, value: 8 },
-    { cost: SECONDS_PER_YEAR, value: 9 },
-    { cost: 2 * SECONDS_PER_YEAR, value: 10 }
+    { cost: 60, value: 1.5, value2: 60 },
+    { cost: 5 * 60, value: 2, value2: 10 * 60 },
+    { cost: SECONDS_PER_HOUR, value: 3, value2: SECONDS_PER_HOUR },
+    { cost: 5 * SECONDS_PER_HOUR, value: 4, value2: 3 * SECONDS_PER_HOUR },
+    { cost: SECONDS_PER_DAY, value: 5, value2: 6 * SECONDS_PER_HOUR },
+    { cost: 4 * SECONDS_PER_DAY, value: 10, value2: SECONDS_PER_DAY },
+    { cost: 14 * SECONDS_PER_DAY, value: 12, value2: SECONDS_PER_WEEK },
+    { cost: SECONDS_PER_YEAR, value: 15, value2: 4 * SECONDS_PER_WEEK },
+    { cost: 2 * SECONDS_PER_YEAR, value: 20, value2: SECONDS_PER_YEAR }
   ],
   currencyType: SHOP_CURRENCY_TYPES.IDLE
 });
