@@ -11,9 +11,9 @@ async function run(): Promise<void> {
 
   const pool = new Pool({ connectionString: config.databaseUrl });
   try {
-    const schemaSql = await readFile(resolve(process.cwd(), "sql/schema.sql"), "utf-8");
+    const schemaSql = await readFile(resolve(process.cwd(), "sql/001_schema.sql"), "utf-8");
     await pool.query(schemaSql);
-    console.log("Migration completed: sql/schema.sql");
+    console.log("Migration completed: sql/001_schema.sql");
 
     const auth = createBetterAuth(pool, config);
     const migrations = await getMigrations(auth.options);
