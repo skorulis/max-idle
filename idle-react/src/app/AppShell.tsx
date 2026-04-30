@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
-import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "react-router-dom";
+import { Link, Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "react-router-dom";
 import { AppNav } from "./AppNav";
 import { toast, toastCollectIdle } from "../gameToast";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
@@ -78,7 +78,20 @@ const CONTEMPLATION_ACHIEVEMENT_HOME_TIME_MS = 10 * 60 * 1000;
 
 function IdleBulletinBody({ content }: { content: BulletinContent }) {
   if (content.kind === "plain") {
-    return <p className="message-copy">{content.text}</p>;
+    return (
+      <p className="message-copy">
+        {content.parts.map((part, index) => {
+          if (part.to) {
+            return (
+              <Link key={`${part.to}-${index}`} to={part.to}>
+                {part.text}
+              </Link>
+            );
+          }
+          return <span key={`${part.text}-${index}`}>{part.text}</span>;
+        })}
+      </p>
+    );
   }
   return (
     <blockquote className="message-quote">

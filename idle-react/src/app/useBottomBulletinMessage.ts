@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 
+export type BulletinPlainPart = { text: string; to?: string };
+export type BulletinPlain = { kind: "plain"; parts: BulletinPlainPart[] };
+export type BulletinQuote = { kind: "quote"; quote: string; author: string };
+export type BulletinContent = BulletinPlain | BulletinQuote;
+
 const FALLBACK_MESSAGE = "The message board is taking a snack break.";
 const WELCOME_MESSAGE = "Welcome to the world of competitive waiting.";
-const HUMOROUS_MESSAGES = [
+const HUMOROUS_MESSAGES: ReadonlyArray<string | BulletinPlain> = [
   "Your productivity has entered low-power mode.",
   "Another second has passed without incident",
   "Your idle engine is purring like a very relaxed cat.",
@@ -23,8 +28,22 @@ const HUMOROUS_MESSAGES = [
   "If you keep going, you’ll waste a full day in only 24 hours.",
   "If you're wondering what the point of this is, you're not alone.",
   "The numbers are going up. What else could you want in life.",
-  "You can't win this game, but you can be winning, check the leaderboard.",
-  "Idle time isn't just for show, you can buy things with it as well.",
+  {
+    kind: "plain",
+    parts: [
+      { text: "You can't win this game, but you can be winning, check the " },
+      { text: "leaderboard", to: "/leaderboard" },
+      { text: "." },
+    ],
+  },
+  {
+    kind: "plain",
+    parts: [
+      { text: "Idle time isn't just for show, you can buy things with it in the " },
+      { text: "shop", to: "/shop" },
+      { text: " as well." },
+    ],
+  },
 ];
 
 const QUOTES: ReadonlyArray<{ quote: string; author: string }> = [
@@ -62,12 +81,8 @@ const QUOTES: ReadonlyArray<{ quote: string; author: string }> = [
   }
 ];
 
-export type BulletinPlain = { kind: "plain"; text: string };
-export type BulletinQuote = { kind: "quote"; quote: string; author: string };
-export type BulletinContent = BulletinPlain | BulletinQuote;
-
 function plainBulletin(text: string): BulletinPlain {
-  return { kind: "plain", text };
+  return { kind: "plain", parts: [{ text }] };
 }
 
 function totalBulletinSlots(): number {
@@ -76,7 +91,13 @@ function totalBulletinSlots(): number {
 
 function bulletinEquals(a: BulletinContent, b: BulletinContent): boolean {
   if (a.kind === "plain" && b.kind === "plain") {
-    return a.text === b.text;
+    if (a.parts.length !== b.parts.length) {
+      return false;
+    }
+    return a.parts.every((part, index) => {
+      const otherPart = b.parts[index];
+      return part.text === otherPart?.text && part.to === otherPart?.to;
+    });
   }
   if (a.kind === "quote" && b.kind === "quote") {
     return a.quote === b.quote && a.author === b.author;
@@ -106,7 +127,11 @@ function slotToContent(slot: number): BulletinContent {
     return plainBulletin(FALLBACK_MESSAGE);
   }
   if (slot < humorousCount) {
-    return plainBulletin(HUMOROUS_MESSAGES[slot] ?? FALLBACK_MESSAGE);
+    const message = HUMOROUS_MESSAGES[slot];
+    if (!message) {
+      return plainBulletin(FALLBACK_MESSAGE);
+    }
+    return typeof message === "string" ? plainBulletin(message) : message;
   }
   const quoteEntry = QUOTES[slot - humorousCount];
   if (!quoteEntry) {
