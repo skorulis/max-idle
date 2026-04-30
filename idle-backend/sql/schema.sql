@@ -24,13 +24,6 @@ CREATE TABLE IF NOT EXISTS player_states (
   upgrades_purchased BIGINT NOT NULL DEFAULT 0,
   achievement_count BIGINT NOT NULL DEFAULT 0,
   has_unseen_achievements BOOLEAN NOT NULL DEFAULT FALSE,
-  completed_achievements JSONB NOT NULL DEFAULT '[]'::jsonb CHECK (
-    jsonb_typeof(completed_achievements) = 'array'
-    AND NOT jsonb_path_exists(
-      completed_achievements,
-      '$[*] ? (@.type() != "string" && (@.type() != "object" || !exists(@.id) || @.id.type() != "string" || !exists(@.grantedAt) || @.grantedAt.type() != "string"))'
-    )
-  ),
   achievement_levels JSONB NOT NULL DEFAULT '[]'::jsonb CHECK (
     jsonb_typeof(achievement_levels) = 'array'
     AND NOT jsonb_path_exists(

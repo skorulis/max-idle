@@ -140,7 +140,7 @@ export async function ensureGameIdentityForAuthUser(
         userEmail
       ]);
       await db.query(
-        `INSERT INTO player_states (user_id, achievement_count, completed_achievements, achievement_levels, shop, seconds_multiplier) VALUES ($1, 0, '[]'::jsonb, '[]'::jsonb, $2::jsonb, 0)`,
+        `INSERT INTO player_states (user_id, achievement_count, achievement_levels, shop, seconds_multiplier) VALUES ($1, 0, '[]'::jsonb, $2::jsonb, 0)`,
         [
           gameUserId,
           JSON.stringify({

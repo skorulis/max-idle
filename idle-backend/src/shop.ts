@@ -22,12 +22,11 @@ import type { ShopUpgradeDefinition } from "@maxidle/shared/shopUpgrades";
 import { safeNaturalNumber } from "@maxidle/shared/safeNumber";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 import {
+  isAchievementMaxed,
   mergeAchievementLevels,
   normalizeAchievementLevels,
-  parseCompletedAchievementIds,
   sumAchievementLevels,
-  toCompletedAchievementsFromLevels,
-  updateCompletedAchievements
+  updatePlayerAchievementLevels
 } from "./achievementUpdates.js";
 import { calculateElapsedSeconds } from "./time.js";
 import { getEffectiveIdleSecondsRate } from "./idleRate.js";
@@ -108,7 +107,6 @@ export function registerShopRoutes({
         time_gems_available: string;
         achievement_count: string;
         has_unseen_achievements: boolean;
-        completed_achievements: unknown;
         achievement_levels: unknown;
         upgrades_purchased: number | string;
         shop: ShopState;
@@ -128,9 +126,7 @@ export function registerShopRoutes({
           upgrades_purchased,
           achievement_count,
           has_unseen_achievements,
-          completed_achievements,
           achievement_levels,
-          upgrades_purchased,
           shop,
           current_seconds,
           current_seconds_last_updated,
@@ -208,14 +204,8 @@ export function registerShopRoutes({
       const nextUpgradesPurchased = toNumber(row.upgrades_purchased) + quantity;
       const nextAchievementLevels =
         nextUpgradesPurchased >= 4
-          ? mergeAchievementLevels(
-              row.achievement_levels,
-              row.completed_achievements,
-              new Map([[ACHIEVEMENT_IDS.BEGINNER_SHOPPER, 1]]),
-              now
-            )
-          : normalizeAchievementLevels(row.achievement_levels, row.completed_achievements, now);
-      const nextCompletedAchievements = toCompletedAchievementsFromLevels(nextAchievementLevels);
+          ? mergeAchievementLevels(row.achievement_levels, new Map([[ACHIEVEMENT_IDS.BEGINNER_SHOPPER, 1]]), now)
+          : normalizeAchievementLevels(row.achievement_levels, now);
       const nextAchievementCount = sumAchievementLevels(nextAchievementLevels);
       const hasNewAchievement = nextAchievementCount > toNumber(row.achievement_count);
       const nextAchievementBonusMultiplier = getWorthwhileAchievementsMultiplier(nextShopState, nextAchievementCount);
@@ -259,11 +249,10 @@ export function registerShopRoutes({
           current_seconds_last_updated = $6,
           shop = $7::jsonb,
           upgrades_purchased = $8,
-          completed_achievements = $9::jsonb,
-          achievement_levels = $10::jsonb,
-          achievement_count = $11,
-          has_unseen_achievements = has_unseen_achievements OR $12::boolean,
-          real_time_available = $13
+          achievement_levels = $9::jsonb,
+          achievement_count = $10,
+          has_unseen_achievements = has_unseen_achievements OR $11::boolean,
+          real_time_available = $12
         WHERE user_id = $1
         RETURNING
           idle_time_total,
@@ -289,7 +278,6 @@ export function registerShopRoutes({
           now,
           JSON.stringify(nextShopState),
           nextUpgradesPurchased,
-          JSON.stringify(nextCompletedAchievements),
           JSON.stringify(nextAchievementLevels),
           nextAchievementCount,
           hasNewAchievement,
@@ -376,7 +364,6 @@ export function registerShopRoutes({
         time_gems_total: string;
         time_gems_available: string;
         achievement_count: string;
-        completed_achievements: unknown;
         achievement_levels: unknown;
         has_unseen_achievements: boolean;
         shop: ShopState;
@@ -392,7 +379,6 @@ export function registerShopRoutes({
           time_gems_total,
           time_gems_available,
           achievement_count,
-          completed_achievements,
           achievement_levels,
           has_unseen_achievements,
           shop,
@@ -466,12 +452,12 @@ export function registerShopRoutes({
         return;
       }
 
-      const achievementLevels = normalizeAchievementLevels(row.achievement_levels, row.completed_achievements, now);
-      const completedAchievementIds = new Set(parseCompletedAchievementIds(toCompletedAchievementsFromLevels(achievementLevels)));
+      const achievementLevels = normalizeAchievementLevels(row.achievement_levels, now);
+      const currentLevelById = new Map(achievementLevels.map((entry) => [entry.id, entry.level] as const));
       const idsToGrant: string[] = [];
       if (
         toNumber(updated.time_gems_available) >= GEM_HOARDER_MIN_AVAILABLE_GEMS &&
-        !completedAchievementIds.has(ACHIEVEMENT_IDS.GEM_HOARDER)
+        !isAchievementMaxed(currentLevelById.get(ACHIEVEMENT_IDS.GEM_HOARDER) ?? 0, ACHIEVEMENT_IDS.GEM_HOARDER)
       ) {
         idsToGrant.push(ACHIEVEMENT_IDS.GEM_HOARDER);
       }
@@ -480,12 +466,10 @@ export function registerShopRoutes({
       if (idsToGrant.length > 0) {
         const nextAchievementLevels = mergeAchievementLevels(
           row.achievement_levels,
-          row.completed_achievements,
           new Map<AchievementId, number>(idsToGrant.map((id) => [id as AchievementId, 1])),
           now
         );
-        const nextCompletedAchievements = toCompletedAchievementsFromLevels(nextAchievementLevels);
-        await updateCompletedAchievements(client, userId, nextCompletedAchievements, nextAchievementLevels);
+        await updatePlayerAchievementLevels(client, userId, nextAchievementLevels);
         achievementCountAfter = sumAchievementLevels(nextAchievementLevels);
         hasUnseenAchievements =
           row.has_unseen_achievements || achievementCountAfter !== toNumber(row.achievement_count);

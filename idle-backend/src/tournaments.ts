@@ -1,12 +1,11 @@
 import type { Pool, PoolClient } from "pg";
-import { ACHIEVEMENT_IDS, GEM_HOARDER_MIN_AVAILABLE_GEMS } from "@maxidle/shared/achievements";
+import { ACHIEVEMENT_IDS, GEM_HOARDER_MIN_AVAILABLE_GEMS, type AchievementId } from "@maxidle/shared/achievements";
 import type { ShopState } from "@maxidle/shared/shop";
 import {
+  isAchievementMaxed,
   mergeAchievementLevels,
   normalizeAchievementLevels,
-  parseCompletedAchievementIds,
-  toCompletedAchievementsFromLevels,
-  updateCompletedAchievements
+  updatePlayerAchievementLevels
 } from "./achievementUpdates.js";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 
@@ -465,7 +464,6 @@ async function finalizeOneDueTournament(pool: Pool, now: Date): Promise<number> 
       );
       const gemUpdate = await client.query<{
         time_gems_available: string | number;
-        completed_achievements: unknown;
         achievement_levels: unknown;
         achievement_count: string | number;
         has_unseen_achievements: boolean;
@@ -479,7 +477,6 @@ async function finalizeOneDueTournament(pool: Pool, now: Date): Promise<number> 
         WHERE user_id = $1
         RETURNING
           time_gems_available,
-          completed_achievements,
           achievement_levels,
           achievement_count,
           has_unseen_achievements
@@ -488,21 +485,17 @@ async function finalizeOneDueTournament(pool: Pool, now: Date): Promise<number> 
       );
       const afterGems = gemUpdate.rows[0];
       if (afterGems && toNumber(afterGems.time_gems_available) >= GEM_HOARDER_MIN_AVAILABLE_GEMS) {
-        const achievementLevels = normalizeAchievementLevels(afterGems.achievement_levels, afterGems.completed_achievements, now);
-        const completedAchievementIds = new Set(parseCompletedAchievementIds(toCompletedAchievementsFromLevels(achievementLevels)));
-        if (!completedAchievementIds.has(ACHIEVEMENT_IDS.GEM_HOARDER)) {
+        const achievementLevels = normalizeAchievementLevels(afterGems.achievement_levels, now);
+        const currentLevelById = new Map<AchievementId, number>(
+          achievementLevels.map((entry) => [entry.id, entry.level] as const)
+        );
+        if (!isAchievementMaxed(currentLevelById.get(ACHIEVEMENT_IDS.GEM_HOARDER) ?? 0, ACHIEVEMENT_IDS.GEM_HOARDER)) {
           const nextAchievementLevels = mergeAchievementLevels(
             afterGems.achievement_levels,
-            afterGems.completed_achievements,
             new Map([[ACHIEVEMENT_IDS.GEM_HOARDER, 1]]),
             now
           );
-          await updateCompletedAchievements(
-            client,
-            entry.user_id,
-            toCompletedAchievementsFromLevels(nextAchievementLevels),
-            nextAchievementLevels
-          );
+          await updatePlayerAchievementLevels(client, entry.user_id, nextAchievementLevels);
         }
       }
     }

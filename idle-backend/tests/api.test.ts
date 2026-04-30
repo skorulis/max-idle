@@ -32,22 +32,8 @@ describe("auth + player lifecycle", () => {
     return `${randomUUID()}@example.com`;
   }
 
-  function parseAchievementIds(value: unknown): string[] {
-    const parsedValue = typeof value === "string" ? (JSON.parse(value) as unknown) : value;
-    if (!Array.isArray(parsedValue)) {
-      return [];
-    }
-    const ids: string[] = [];
-    for (const entry of parsedValue) {
-      if (typeof entry === "string") {
-        ids.push(entry);
-        continue;
-      }
-      if (entry && typeof entry === "object" && typeof entry.id === "string") {
-        ids.push(entry.id);
-      }
-    }
-    return ids;
+  function achievementIdsFromLevels(value: unknown): string[] {
+    return parseAchievementLevels(value).map((entry) => entry.id);
   }
 
   function parseAchievementLevels(value: unknown): Array<{ id: string; level: number; grantedAt: string }> {
@@ -599,10 +585,10 @@ describe("auth + player lifecycle", () => {
     expect(accountResponse.body.username.length).toBeGreaterThan(0);
     const achievementState = await pool.query<{
       achievement_count: string | number;
-      completed_achievements: unknown;
-    }>(`SELECT achievement_count, completed_achievements FROM player_states WHERE user_id = $1`, [accountResponse.body.gameUserId]);
+      achievement_levels: unknown;
+    }>(`SELECT achievement_count, achievement_levels FROM player_states WHERE user_id = $1`, [accountResponse.body.gameUserId]);
     expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);
-    expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toEqual(["account_creation"]);
+    expect(achievementIdsFromLevels(achievementState.rows[0]?.achievement_levels)).toEqual(["account_creation"]);
 
     const loginResponse = await request(app).post("/auth/login").send({
       email,
@@ -701,10 +687,10 @@ describe("auth + player lifecycle", () => {
 
     const achievementState = await pool.query<{
       achievement_count: string | number;
-      completed_achievements: unknown;
-    }>(`SELECT achievement_count, completed_achievements FROM player_states WHERE user_id = $1`, [userId]);
+      achievement_levels: unknown;
+    }>(`SELECT achievement_count, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
     expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);
-    expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toEqual(["account_creation"]);
+    expect(achievementIdsFromLevels(achievementState.rows[0]?.achievement_levels)).toEqual(["account_creation"]);
   });
 
   it("blocks anonymous upgrade when email belongs to another player", async () => {
@@ -811,13 +797,12 @@ describe("auth + player lifecycle", () => {
 
     const achievementState = await pool.query<{
       achievement_count: string | number;
-      completed_achievements: unknown;
-    }>(`SELECT achievement_count, completed_achievements FROM player_states WHERE user_id = $1`, [accountResponse.body.gameUserId]);
+      achievement_levels: unknown;
+    }>(`SELECT achievement_count, achievement_levels FROM player_states WHERE user_id = $1`, [accountResponse.body.gameUserId]);
     expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(2);
-    expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toEqual([
-      "account_creation",
-      "username_selected"
-    ]);
+    expect(achievementIdsFromLevels(achievementState.rows[0]?.achievement_levels).sort()).toEqual(
+      ["account_creation", "username_selected"].sort()
+    );
   });
 
   it("updates username for anonymous users", async () => {
@@ -922,7 +907,7 @@ describe("auth + player lifecycle", () => {
     expect(response.body.achievements[2].id).toBe("beginner_shopper");
     expect(response.body.achievements[3].id).toBe("real_time_collector_65_minutes");
     expect(response.body.achievements[4].id).toBe("idle_time_collector");
-    expect(response.body.achievements[4].maxLevel).toBe(3);
+    expect(response.body.achievements[4].maxLevel).toBe(5);
     expect(response.body.achievements[4].level).toBe(0);
     expect(response.body.achievements[5].id).toBe("real_time_streak_59_minutes");
     expect(response.body.achievements[6].id).toBe("real_time_streak_2d_14h");
@@ -953,15 +938,14 @@ describe("auth + player lifecycle", () => {
 
     const achievementState = await pool.query<{
       achievement_count: string | number;
-      completed_achievements: unknown;
       achievement_levels: unknown;
       has_unseen_achievements: boolean;
     }>(
-      `SELECT achievement_count, completed_achievements, achievement_levels, has_unseen_achievements FROM player_states WHERE user_id = $1`,
+      `SELECT achievement_count, achievement_levels, has_unseen_achievements FROM player_states WHERE user_id = $1`,
       [userId]
     );
     expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);
-    expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toEqual(["contemplation"]);
+    expect(achievementIdsFromLevels(achievementState.rows[0]?.achievement_levels)).toEqual(["contemplation"]);
     expect(parseAchievementLevels(achievementState.rows[0]?.achievement_levels)).toMatchObject([
       { id: "contemplation", level: 1 }
     ]);
@@ -1026,10 +1010,10 @@ describe("auth + player lifecycle", () => {
 
     const achievementState = await pool.query<{
       achievement_count: string | number;
-      completed_achievements: unknown;
-    }>(`SELECT achievement_count, completed_achievements FROM player_states WHERE user_id = $1`, [userId]);
+      achievement_levels: unknown;
+    }>(`SELECT achievement_count, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
     expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);
-    expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toEqual([
+    expect(achievementIdsFromLevels(achievementState.rows[0]?.achievement_levels)).toEqual([
       "real_time_collector_65_minutes"
     ]);
     expect(collectResponse.body.hasUnseenAchievements).toBe(true);
@@ -1058,11 +1042,10 @@ describe("auth + player lifecycle", () => {
 
     const achievementState = await pool.query<{
       achievement_count: string | number;
-      completed_achievements: unknown;
       achievement_levels: unknown;
-    }>(`SELECT achievement_count, completed_achievements, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
+    }>(`SELECT achievement_count, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
     expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);
-    expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toEqual(["idle_time_collector"]);
+    expect(achievementIdsFromLevels(achievementState.rows[0]?.achievement_levels)).toEqual(["idle_time_collector"]);
     expect(parseAchievementLevels(achievementState.rows[0]?.achievement_levels)).toMatchObject([
       { id: "idle_time_collector", level: 1 }
     ]);
@@ -1093,9 +1076,9 @@ describe("auth + player lifecycle", () => {
 
     const achievementState = await pool.query<{
       achievement_count: string | number;
-      completed_achievements: unknown;
-    }>(`SELECT achievement_count, completed_achievements FROM player_states WHERE user_id = $1`, [userId]);
-    expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toContain("real_time_streak_59_minutes");
+      achievement_levels: unknown;
+    }>(`SELECT achievement_count, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
+    expect(achievementIdsFromLevels(achievementState.rows[0]?.achievement_levels)).toContain("real_time_streak_59_minutes");
 
     // Keep this test from affecting leaderboard ordering in later tests.
     await pool.query(`UPDATE player_states SET idle_time_total = 0, idle_time_available = 0 WHERE user_id = $1`, [userId]);
@@ -1123,9 +1106,9 @@ describe("auth + player lifecycle", () => {
 
     const achievementState = await pool.query<{
       achievement_count: string | number;
-      completed_achievements: unknown;
-    }>(`SELECT achievement_count, completed_achievements FROM player_states WHERE user_id = $1`, [userId]);
-    const completed = parseAchievementIds(achievementState.rows[0]?.completed_achievements);
+      achievement_levels: unknown;
+    }>(`SELECT achievement_count, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
+    const completed = achievementIdsFromLevels(achievementState.rows[0]?.achievement_levels);
     expect(completed).toContain("real_time_streak_2d_14h");
     expect(completed).toContain("real_time_streak_59_minutes");
 
@@ -1164,11 +1147,10 @@ describe("auth + player lifecycle", () => {
 
     const achievementState = await pool.query<{
       achievement_count: string | number;
-      completed_achievements: unknown;
       achievement_levels: unknown;
-    }>(`SELECT achievement_count, completed_achievements, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
+    }>(`SELECT achievement_count, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
     expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);
-    expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toContain("collection_count");
+    expect(achievementIdsFromLevels(achievementState.rows[0]?.achievement_levels)).toContain("collection_count");
     const collectionLevel = parseAchievementLevels(achievementState.rows[0]?.achievement_levels).find(
       (entry) => entry.id === "collection_count"
     );
@@ -1215,7 +1197,7 @@ describe("auth + player lifecycle", () => {
     expect(collectionAchievement?.completed).toBe(false);
   });
 
-  it("marks completed achievements from stored jsonb ids", async () => {
+  it("marks achievements from stored achievement_levels", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
@@ -1226,10 +1208,10 @@ describe("auth + player lifecycle", () => {
       UPDATE player_states
       SET
         achievement_count = 1,
-        completed_achievements = $2::jsonb
+        achievement_levels = $2::jsonb
       WHERE user_id = $1
       `,
-      [userId, JSON.stringify(["account_creation"])]
+      [userId, JSON.stringify([{ id: "account_creation", level: 1, grantedAt: "2020-01-01T00:00:00.000Z" }])]
     );
 
     const response = await request(app).get("/achievements").set("Authorization", `Bearer ${token}`);
@@ -1244,7 +1226,7 @@ describe("auth + player lifecycle", () => {
     expect(usernameSelected?.completed).toBe(false);
   });
 
-  it("carries legacy grantedAt into achievement_levels during transition writes", async () => {
+  it("preserves existing grantedAt when merging grant into achievement_levels", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
@@ -1256,11 +1238,10 @@ describe("auth + player lifecycle", () => {
       UPDATE player_states
       SET
         achievement_count = 1,
-        completed_achievements = $2::jsonb,
-        achievement_levels = '[]'::jsonb
+        achievement_levels = $2::jsonb
       WHERE user_id = $1
       `,
-      [userId, JSON.stringify([{ id: "account_creation", grantedAt: legacyGrantedAt }])]
+      [userId, JSON.stringify([{ id: "account_creation", level: 1, grantedAt: legacyGrantedAt }])]
     );
 
     const grantResponse = await request(app)
@@ -1572,11 +1553,11 @@ describe("auth + player lifecycle", () => {
     const achievementState = await pool.query<{
       upgrades_purchased: string;
       achievement_count: string;
-      completed_achievements: unknown;
-    }>(`SELECT upgrades_purchased, achievement_count, completed_achievements FROM player_states WHERE user_id = $1`, [userId]);
+      achievement_levels: unknown;
+    }>(`SELECT upgrades_purchased, achievement_count, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
     expect(Number(achievementState.rows[0]?.upgrades_purchased)).toBe(5);
     expect(Number(achievementState.rows[0]?.achievement_count)).toBe(1);
-    expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toEqual(["beginner_shopper"]);
+    expect(achievementIdsFromLevels(achievementState.rows[0]?.achievement_levels)).toEqual(["beginner_shopper"]);
   });
 
   it("allows purchasing restraint upgrade up to max level", async () => {

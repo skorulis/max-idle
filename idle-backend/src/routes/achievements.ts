@@ -4,13 +4,7 @@ import { ACHIEVEMENTS, type AchievementId } from "@maxidle/shared/achievements";
 import { getWorthwhileAchievementsMultiplier } from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
 import type { AuthClaims } from "../types.js";
-import {
-  canonicalizeStoredAchievementId,
-  getMaxAchievementLevel,
-  grantAchievement,
-  normalizeAchievementLevels,
-  parseCompletedAchievementIds
-} from "../achievementUpdates.js";
+import { getMaxAchievementLevel, grantAchievement, isAchievementMaxed, normalizeAchievementLevels } from "../achievementUpdates.js";
 
 type RegisterAchievementsRoutesOptions = {
   app: express.Express;
@@ -18,37 +12,6 @@ type RegisterAchievementsRoutesOptions = {
   resolveIdentity: (req: express.Request) => Promise<{ claims: AuthClaims }>;
   toNumber: (value: unknown) => number;
 };
-
-function parseGrantedAtByAchievementId(value: unknown): Map<string, string> {
-  const entries: unknown[] =
-    typeof value === "string"
-      ? (() => {
-          try {
-            const parsed = JSON.parse(value) as unknown;
-            return Array.isArray(parsed) ? parsed : [];
-          } catch {
-            return [];
-          }
-        })()
-      : Array.isArray(value)
-        ? value
-        : [];
-  const grantedAtById = new Map<string, string>();
-  for (const entry of entries) {
-    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
-      continue;
-    }
-    const item = entry as { id?: unknown; grantedAt?: unknown };
-    if (typeof item.id !== "string" || typeof item.grantedAt !== "string" || item.grantedAt.length === 0) {
-      continue;
-    }
-    const id = canonicalizeStoredAchievementId(item.id);
-    if (id) {
-      grantedAtById.set(id, item.grantedAt);
-    }
-  }
-  return grantedAtById;
-}
 
 export function registerAchievementsRoutes({
   app,
@@ -73,14 +36,12 @@ export function registerAchievementsRoutes({
 
       const playerStateResult = await pool.query<{
         achievement_count: number | string;
-        completed_achievements: unknown;
         achievement_levels: unknown;
         shop: ShopState;
       }>(
         `
         SELECT
           achievement_count,
-          completed_achievements,
           achievement_levels,
           shop
         FROM player_states
@@ -94,13 +55,8 @@ export function registerAchievementsRoutes({
         return;
       }
 
-      const achievementLevels = normalizeAchievementLevels(
-        playerStateRow.achievement_levels,
-        playerStateRow.completed_achievements
-      );
+      const achievementLevels = normalizeAchievementLevels(playerStateRow.achievement_levels);
       const levelById = new Map(achievementLevels.map((entry) => [entry.id, entry]));
-      const completedAchievementIds = new Set(parseCompletedAchievementIds(playerStateRow.completed_achievements));
-      const grantedAtById = parseGrantedAtByAchievementId(playerStateRow.completed_achievements);
       const completedCount = toNumber(playerStateRow.achievement_count);
       const earningsBonusMultiplier = getWorthwhileAchievementsMultiplier(playerStateRow.shop, completedCount);
       res.json({
@@ -111,13 +67,13 @@ export function registerAchievementsRoutes({
           const levelEntry = levelById.get(achievement.id);
           const level = levelEntry?.level ?? 0;
           const maxLevel = getMaxAchievementLevel(achievement.id);
-          const completed = achievement.levels && achievement.levels.length > 0 ? level >= maxLevel : completedAchievementIds.has(achievement.id);
+          const completed = isAchievementMaxed(level, achievement.id);
           return {
             ...achievement,
             level,
             maxLevel,
             completed,
-            grantedAt: levelEntry?.grantedAt || grantedAtById.get(achievement.id) || null
+            grantedAt: levelEntry?.grantedAt || null
           };
         })
       });

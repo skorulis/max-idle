@@ -14,12 +14,11 @@ import { calculateElapsedSeconds } from "../time.js";
 import { getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint, shouldPreserveIdleTimerOnCollect } from "../idleRate.js";
 import {
   getAchievementLevelForValue,
+  isAchievementMaxed,
   mergeAchievementLevels,
   normalizeAchievementLevels,
-  parseCompletedAchievementIds,
   sumAchievementLevels,
-  toCompletedAchievementsFromLevels,
-  updateCompletedAchievements
+  updatePlayerAchievementLevels
 } from "../achievementUpdates.js";
 import type { AuthClaims } from "../types.js";
 import type { AnalyticsService } from "../analytics.js";
@@ -190,7 +189,6 @@ export function registerPlayerRoutes({
         real_time_available: number | string;
         upgrades_purchased: number | string;
         achievement_count: number | string;
-        completed_achievements: unknown;
         achievement_levels: unknown;
         has_unseen_achievements: boolean;
         shop: ShopState;
@@ -206,7 +204,6 @@ export function registerPlayerRoutes({
           idle_time_available,
           real_time_available,
           achievement_count,
-          completed_achievements,
           achievement_levels,
           has_unseen_achievements,
           shop,
@@ -333,19 +330,13 @@ export function registerPlayerRoutes({
       );
       const collectionCount = toNumber(collectionCountResult.rows[0]?.collection_count ?? 0);
 
-      const achievementLevels = normalizeAchievementLevels(
-        lockedRow.achievement_levels,
-        lockedRow.completed_achievements,
-        collectedAt
-      );
+      const achievementLevels = normalizeAchievementLevels(lockedRow.achievement_levels, collectedAt);
       const currentLevelById = new Map(achievementLevels.map((entry) => [entry.id, entry.level] as const));
-      const completedAchievementIds = new Set(parseCompletedAchievementIds(toCompletedAchievementsFromLevels(achievementLevels)));
       const levelsToGrant = new Map<AchievementId, number>();
       if (
         toNumber(row.real_time_total) >= REAL_TIME_COLLECT_65_MINUTES_SECONDS &&
-        !completedAchievementIds.has(ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES)
+        !isAchievementMaxed(currentLevelById.get(ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES) ?? 0, ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES)
       ) {
-        completedAchievementIds.add(ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES);
         levelsToGrant.set(ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES, 1);
       }
       const idleTimeTotalLevel = getAchievementLevelForValue(ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR, toNumber(row.idle_time_total));
@@ -354,16 +345,14 @@ export function registerPlayerRoutes({
       }
       if (
         realSecondsCollected >= REAL_TIME_STREAK_59_MINUTES_SECONDS &&
-        !completedAchievementIds.has(ACHIEVEMENT_IDS.REAL_TIME_STREAK_59_MINUTES)
+        !isAchievementMaxed(currentLevelById.get(ACHIEVEMENT_IDS.REAL_TIME_STREAK_59_MINUTES) ?? 0, ACHIEVEMENT_IDS.REAL_TIME_STREAK_59_MINUTES)
       ) {
-        completedAchievementIds.add(ACHIEVEMENT_IDS.REAL_TIME_STREAK_59_MINUTES);
         levelsToGrant.set(ACHIEVEMENT_IDS.REAL_TIME_STREAK_59_MINUTES, 1);
       }
       if (
         realSecondsCollected >= REAL_TIME_STREAK_2D_14H_SECONDS &&
-        !completedAchievementIds.has(ACHIEVEMENT_IDS.REAL_TIME_STREAK_2D_14H)
+        !isAchievementMaxed(currentLevelById.get(ACHIEVEMENT_IDS.REAL_TIME_STREAK_2D_14H) ?? 0, ACHIEVEMENT_IDS.REAL_TIME_STREAK_2D_14H)
       ) {
-        completedAchievementIds.add(ACHIEVEMENT_IDS.REAL_TIME_STREAK_2D_14H);
         levelsToGrant.set(ACHIEVEMENT_IDS.REAL_TIME_STREAK_2D_14H, 1);
       }
       const collectionCountLevel = getAchievementLevelForValue(ACHIEVEMENT_IDS.COLLECTION_COUNT, collectionCount);
@@ -371,18 +360,10 @@ export function registerPlayerRoutes({
         levelsToGrant.set(ACHIEVEMENT_IDS.COLLECTION_COUNT, collectionCountLevel);
       }
       const nextAchievementLevels =
-        levelsToGrant.size > 0
-          ? mergeAchievementLevels(
-              lockedRow.achievement_levels,
-              lockedRow.completed_achievements,
-              levelsToGrant,
-              collectedAt
-            )
-          : achievementLevels;
-      const nextCompletedAchievements = toCompletedAchievementsFromLevels(nextAchievementLevels);
+        levelsToGrant.size > 0 ? mergeAchievementLevels(lockedRow.achievement_levels, levelsToGrant, collectedAt) : achievementLevels;
       const nextAchievementCount = sumAchievementLevels(nextAchievementLevels);
       if (nextAchievementCount !== toNumber(lockedRow.achievement_count)) {
-        await updateCompletedAchievements(client, userId, nextCompletedAchievements, nextAchievementLevels);
+        await updatePlayerAchievementLevels(client, userId, nextAchievementLevels);
       }
       const hasUnseenAchievements =
         lockedRow.has_unseen_achievements || nextAchievementCount !== toNumber(lockedRow.achievement_count);
@@ -460,7 +441,6 @@ export function registerPlayerRoutes({
         current_seconds_last_updated: Date;
         shop: ShopState;
         achievement_count: number | string;
-        completed_achievements: unknown;
         achievement_levels: unknown;
         has_unseen_achievements: boolean;
         last_collected_at: Date;
@@ -480,7 +460,6 @@ export function registerPlayerRoutes({
           current_seconds_last_updated,
           shop,
           achievement_count,
-          completed_achievements,
           achievement_levels,
           has_unseen_achievements,
           last_collected_at,
@@ -561,39 +540,35 @@ export function registerPlayerRoutes({
         return;
       }
 
-      const achievementLevels = normalizeAchievementLevels(player.achievement_levels, player.completed_achievements, now);
-      const completedAchievementIds = new Set(parseCompletedAchievementIds(toCompletedAchievementsFromLevels(achievementLevels)));
+      const achievementLevels = normalizeAchievementLevels(player.achievement_levels, now);
+      const currentLevelById = new Map(achievementLevels.map((entry) => [entry.id, entry.level] as const));
       const idsToGrant: string[] = [];
       const previousDailyRewardAt = player.last_daily_reward_collected_at;
       if (
         previousDailyRewardAt !== null &&
         now.getTime() - previousDailyRewardAt.getTime() > REWARD_SKIPPER_GAP_MS &&
-        !completedAchievementIds.has(ACHIEVEMENT_IDS.REWARD_SKIPPER)
+        !isAchievementMaxed(currentLevelById.get(ACHIEVEMENT_IDS.REWARD_SKIPPER) ?? 0, ACHIEVEMENT_IDS.REWARD_SKIPPER)
       ) {
-        completedAchievementIds.add(ACHIEVEMENT_IDS.REWARD_SKIPPER);
         idsToGrant.push(ACHIEVEMENT_IDS.REWARD_SKIPPER);
       }
       const gemsAvailableAfterReward = toNumber(updatedPlayer.time_gems_available);
       if (
         gemsAvailableAfterReward >= GEM_HOARDER_MIN_AVAILABLE_GEMS &&
-        !completedAchievementIds.has(ACHIEVEMENT_IDS.GEM_HOARDER)
+        !isAchievementMaxed(currentLevelById.get(ACHIEVEMENT_IDS.GEM_HOARDER) ?? 0, ACHIEVEMENT_IDS.GEM_HOARDER)
       ) {
-        completedAchievementIds.add(ACHIEVEMENT_IDS.GEM_HOARDER);
         idsToGrant.push(ACHIEVEMENT_IDS.GEM_HOARDER);
       }
       const nextAchievementLevels =
         idsToGrant.length > 0
           ? mergeAchievementLevels(
               player.achievement_levels,
-              player.completed_achievements,
               new Map<AchievementId, number>(idsToGrant.map((id) => [id as AchievementId, 1])),
               now
             )
           : achievementLevels;
-      const nextCompletedAchievements = toCompletedAchievementsFromLevels(nextAchievementLevels);
       const nextAchievementCount = sumAchievementLevels(nextAchievementLevels);
       if (nextAchievementCount !== toNumber(player.achievement_count)) {
-        await updateCompletedAchievements(client, userId, nextCompletedAchievements, nextAchievementLevels);
+        await updatePlayerAchievementLevels(client, userId, nextAchievementLevels);
       }
       const hasUnseenAchievements =
         player.has_unseen_achievements ||
