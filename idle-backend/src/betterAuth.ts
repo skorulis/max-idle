@@ -140,8 +140,18 @@ export async function ensureGameIdentityForAuthUser(
         userEmail
       ]);
       await db.query(
-        `INSERT INTO player_states (user_id, achievement_count, completed_achievements, shop, seconds_multiplier) VALUES ($1, 0, '[]'::jsonb, $2::jsonb, 0)`,
-        [gameUserId, JSON.stringify({ seconds_multiplier: 0, restraint: 0, idle_hoarder: 0, luck: 0, worthwhile_achievements: 0, collect_gem_time_boost: 0 })]
+        `INSERT INTO player_states (user_id, achievement_count, completed_achievements, achievement_levels, shop, seconds_multiplier) VALUES ($1, 0, '[]'::jsonb, '[]'::jsonb, $2::jsonb, 0)`,
+        [
+          gameUserId,
+          JSON.stringify({
+            seconds_multiplier: 0,
+            restraint: 0,
+            idle_hoarder: 0,
+            luck: 0,
+            worthwhile_achievements: 0,
+            collect_gem_time_boost: 0
+          })
+        ]
       );
       await db.query(`INSERT INTO auth_identities (auth_user_id, game_user_id) VALUES ($1, $2)`, [authUserId, gameUserId]);
       await grantAchievement(db, gameUserId, ACHIEVEMENT_IDS.ACCOUNT_CREATION);

@@ -10,6 +10,29 @@ type AchievementsPageProps = {
 };
 
 export function AchievementsPage({ achievements, achievementsLoading, hasError }: AchievementsPageProps) {
+  const renderAchievementStatus = (achievement: AchievementsResponse["achievements"][number], isCompleted: boolean) => {
+    const hasLevels = achievement.maxLevel > 1;
+    if (hasLevels && achievement.level >= 1) {
+      return (
+        <span className="achievement-status" aria-label={`Level ${achievement.level}`}>
+          X{achievement.level}
+        </span>
+      );
+    }
+    if (isCompleted) {
+      return (
+        <span className="achievement-status" aria-label="Complete">
+          <GameIcon icon={Check} />
+        </span>
+      );
+    }
+    return (
+      <span className="achievement-status" aria-label="Locked">
+        <GameIcon icon={Lock} />
+      </span>
+    );
+  };
+
   const inProgressAchievements = achievements?.achievements.filter((achievement) => !achievement.completed) ?? [];
   const collectedAchievements = (achievements?.achievements.filter((achievement) => achievement.completed) ?? []).sort(
     (left, right) => {
@@ -48,12 +71,7 @@ export function AchievementsPage({ achievements, achievementsLoading, hasError }
                   <p className="achievement-name">{achievement.name}</p>
                   <p className="achievement-description">{achievement.description}</p>
                 </div>
-                <span
-                  className="achievement-status"
-                  aria-label="Locked"
-                >
-                  <GameIcon icon={Lock} />
-                </span>
+                {renderAchievementStatus(achievement, false)}
               </div>
             ))}
           </div>
@@ -71,9 +89,7 @@ export function AchievementsPage({ achievements, achievementsLoading, hasError }
                     <p className="achievement-description">Granted {grantedDate}</p>
                   ) : null}
                 </div>
-                <span className="achievement-status" aria-label="Complete">
-                  <GameIcon icon={Check} />
-                </span>
+                {renderAchievementStatus(achievement, true)}
               </div>
             );
             })}

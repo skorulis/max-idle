@@ -103,6 +103,8 @@ export type Achievement = {
   description: string;
   icon: string;
   clientDriven: boolean;
+  level: number;
+  maxLevel: number;
   completed: boolean;
   grantedAt: string | null;
 };

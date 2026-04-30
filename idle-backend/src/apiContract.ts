@@ -98,6 +98,8 @@ const achievementSchema = registry.register(
     description: z.string(),
     icon: z.string(),
     clientDriven: z.boolean(),
+    level: z.number().int().nonnegative(),
+    maxLevel: z.number().int().positive(),
     completed: z.boolean(),
     grantedAt: z.string().datetime().nullable()
   })

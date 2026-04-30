@@ -24,6 +24,9 @@ export type AchievementDefinition = {
   description: string;
   icon: string;
   clientDriven: boolean;
+  levels?: Array<{
+    value: number;
+  }>;
 };
 
 // Make sure to update AchievementsPage.tsx to map new icons
@@ -82,7 +85,8 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     name: "You're doing it wrong",
     description: "Collect 15 times.",
     icon: "repeat",
-    clientDriven: false
+    clientDriven: false,
+    levels: [{ value: 15 }, { value: 150 }, { value: 1500 }]
   },
   {
     id: ACHIEVEMENT_IDS.CONTEMPLATION,

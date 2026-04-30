@@ -50,6 +50,25 @@ describe("auth + player lifecycle", () => {
     return ids;
   }
 
+  function parseAchievementLevels(value: unknown): Array<{ id: string; level: number; grantedAt: string }> {
+    const parsedValue = typeof value === "string" ? (JSON.parse(value) as unknown) : value;
+    if (!Array.isArray(parsedValue)) {
+      return [];
+    }
+    const levels: Array<{ id: string; level: number; grantedAt: string }> = [];
+    for (const entry of parsedValue) {
+      if (!entry || typeof entry !== "object") {
+        continue;
+      }
+      const item = entry as { id?: unknown; level?: unknown; grantedAt?: unknown };
+      if (typeof item.id !== "string" || typeof item.level !== "number" || typeof item.grantedAt !== "string") {
+        continue;
+      }
+      levels.push({ id: item.id, level: item.level, grantedAt: item.grantedAt });
+    }
+    return levels;
+  }
+
   function getCurrentUtcDayStart(): Date {
     const now = new Date();
     return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
@@ -912,6 +931,10 @@ describe("auth + player lifecycle", () => {
     expect(response.body.achievements[9].clientDriven).toBe(false);
     expect(response.body.achievements[10].id).toBe("gem_hoarder");
     expect(response.body.achievements[10].clientDriven).toBe(false);
+    const collectionAchievement = response.body.achievements.find((achievement: { id: string }) => achievement.id === "collection_count_15");
+    expect(collectionAchievement?.level).toBe(0);
+    expect(collectionAchievement?.maxLevel).toBe(3);
+    expect(collectionAchievement?.completed).toBe(false);
   });
 
   it("grants client-driven achievements from the achievements endpoint", async () => {
@@ -929,13 +952,17 @@ describe("auth + player lifecycle", () => {
     const achievementState = await pool.query<{
       achievement_count: string | number;
       completed_achievements: unknown;
+      achievement_levels: unknown;
       has_unseen_achievements: boolean;
     }>(
-      `SELECT achievement_count, completed_achievements, has_unseen_achievements FROM player_states WHERE user_id = $1`,
+      `SELECT achievement_count, completed_achievements, achievement_levels, has_unseen_achievements FROM player_states WHERE user_id = $1`,
       [userId]
     );
     expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);
     expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toEqual(["contemplation"]);
+    expect(parseAchievementLevels(achievementState.rows[0]?.achievement_levels)).toMatchObject([
+      { id: "contemplation", level: 1 }
+    ]);
     expect(achievementState.rows[0]?.has_unseen_achievements).toBe(true);
   });
 
@@ -1100,7 +1127,7 @@ describe("auth + player lifecycle", () => {
     await pool.query(`UPDATE player_states SET idle_time_total = 0, idle_time_available = 0 WHERE user_id = $1`, [userId]);
   });
 
-  it("awards collection-count achievement after collecting 15 times", async () => {
+  it("awards leveled collection-count achievement and stores level metadata", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
@@ -1130,10 +1157,56 @@ describe("auth + player lifecycle", () => {
     expect(collectResponse.status).toBe(200);
 
     const achievementState = await pool.query<{
+      achievement_count: string | number;
       completed_achievements: unknown;
-    }>(`SELECT completed_achievements FROM player_states WHERE user_id = $1`, [userId]);
+      achievement_levels: unknown;
+    }>(`SELECT achievement_count, completed_achievements, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
+    expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);
     expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toContain("collection_count_15");
+    const collectionLevel = parseAchievementLevels(achievementState.rows[0]?.achievement_levels).find(
+      (entry) => entry.id === "collection_count_15"
+    );
+    expect(collectionLevel?.level).toBe(1);
+    expect(collectionLevel?.grantedAt.length).toBeGreaterThan(0);
     expect(collectResponse.body.hasUnseenAchievements).toBe(true);
+  });
+
+  it("increases collection-count levels and only completes at max level", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    for (let index = 0; index < 59; index += 1) {
+      await pool.query(
+        `
+        INSERT INTO player_collection_history (user_id, collection_date, real_time, idle_time)
+        VALUES ($1, NOW(), 1, 1)
+        `,
+        [userId]
+      );
+    }
+    await pool.query(
+      `
+      UPDATE player_states
+      SET
+        last_collected_at = NOW() - INTERVAL '1 second',
+        current_seconds_last_updated = NOW() - INTERVAL '1 second'
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+
+    const collectResponse = await request(app).post("/player/collect").set("Authorization", `Bearer ${token}`);
+    expect(collectResponse.status).toBe(200);
+    expect(collectResponse.body.achievementCount).toBe(3);
+
+    const achievementsResponse = await request(app).get("/achievements").set("Authorization", `Bearer ${token}`);
+    expect(achievementsResponse.status).toBe(200);
+    const collectionAchievement = achievementsResponse.body.achievements.find((achievement: { id: string }) => achievement.id === "collection_count_15");
+    expect(collectionAchievement?.level).toBe(3);
+    expect(collectionAchievement?.maxLevel).toBe(3);
+    expect(collectionAchievement?.completed).toBe(true);
   });
 
   it("marks completed achievements from stored jsonb ids", async () => {
@@ -1160,7 +1233,47 @@ describe("auth + player lifecycle", () => {
     const accountCreation = response.body.achievements.find((achievement: { id: string }) => achievement.id === "account_creation");
     const usernameSelected = response.body.achievements.find((achievement: { id: string }) => achievement.id === "username_selected");
     expect(accountCreation?.completed).toBe(true);
+    expect(accountCreation?.level).toBe(1);
+    expect(accountCreation?.maxLevel).toBe(1);
     expect(usernameSelected?.completed).toBe(false);
+  });
+
+  it("carries legacy grantedAt into achievement_levels during transition writes", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+    const legacyGrantedAt = "2025-01-02T03:04:05.000Z";
+
+    await pool.query(
+      `
+      UPDATE player_states
+      SET
+        achievement_count = 1,
+        completed_achievements = $2::jsonb,
+        achievement_levels = '[]'::jsonb
+      WHERE user_id = $1
+      `,
+      [userId, JSON.stringify([{ id: "account_creation", grantedAt: legacyGrantedAt }])]
+    );
+
+    const grantResponse = await request(app)
+      .post("/achievements/grant")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ achievementId: "contemplation" });
+    expect(grantResponse.status).toBe(204);
+
+    const achievementState = await pool.query<{ achievement_levels: unknown }>(
+      `SELECT achievement_levels FROM player_states WHERE user_id = $1`,
+      [userId]
+    );
+    const levels = parseAchievementLevels(achievementState.rows[0]?.achievement_levels);
+    const accountCreation = levels.find((entry) => entry.id === "account_creation");
+    const contemplation = levels.find((entry) => entry.id === "contemplation");
+    expect(accountCreation?.level).toBe(1);
+    expect(accountCreation?.grantedAt).toBe(legacyGrantedAt);
+    expect(contemplation?.level).toBe(1);
+    expect(contemplation?.grantedAt.length).toBeGreaterThan(0);
   });
 
   it("returns top 200 ordered by total seconds collected and highlights current player when in top", async () => {

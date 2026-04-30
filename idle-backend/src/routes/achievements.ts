@@ -4,14 +4,13 @@ import { ACHIEVEMENTS, type AchievementId } from "@maxidle/shared/achievements";
 import { getWorthwhileAchievementsMultiplier } from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
 import type { AuthClaims } from "../types.js";
-import { grantAchievement } from "../achievementUpdates.js";
+import { getMaxAchievementLevel, grantAchievement, normalizeAchievementLevels, parseCompletedAchievementIds } from "../achievementUpdates.js";
 
 type RegisterAchievementsRoutesOptions = {
   app: express.Express;
   pool: Pool;
   resolveIdentity: (req: express.Request) => Promise<{ claims: AuthClaims }>;
   toNumber: (value: unknown) => number;
-  parseCompletedAchievementIds: (value: unknown) => string[];
 };
 
 function parseGrantedAtByAchievementId(value: unknown): Map<string, string> {
@@ -46,8 +45,7 @@ export function registerAchievementsRoutes({
   app,
   pool,
   resolveIdentity,
-  toNumber,
-  parseCompletedAchievementIds
+  toNumber
 }: RegisterAchievementsRoutesOptions): void {
   const ACHIEVEMENTS_BY_ID = new Map(ACHIEVEMENTS.map((achievement) => [achievement.id, achievement]));
 
@@ -67,12 +65,14 @@ export function registerAchievementsRoutes({
       const playerStateResult = await pool.query<{
         achievement_count: number | string;
         completed_achievements: unknown;
+        achievement_levels: unknown;
         shop: ShopState;
       }>(
         `
         SELECT
           achievement_count,
           completed_achievements,
+          achievement_levels,
           shop
         FROM player_states
         WHERE user_id = $1
@@ -85,6 +85,11 @@ export function registerAchievementsRoutes({
         return;
       }
 
+      const achievementLevels = normalizeAchievementLevels(
+        playerStateRow.achievement_levels,
+        playerStateRow.completed_achievements
+      );
+      const levelById = new Map(achievementLevels.map((entry) => [entry.id, entry]));
       const completedAchievementIds = new Set(parseCompletedAchievementIds(playerStateRow.completed_achievements));
       const grantedAtById = parseGrantedAtByAchievementId(playerStateRow.completed_achievements);
       const completedCount = toNumber(playerStateRow.achievement_count);
@@ -93,11 +98,19 @@ export function registerAchievementsRoutes({
         completedCount,
         totalCount: ACHIEVEMENTS.length,
         earningsBonusMultiplier,
-        achievements: ACHIEVEMENTS.map((achievement) => ({
-          ...achievement,
-          completed: completedAchievementIds.has(achievement.id),
-          grantedAt: grantedAtById.get(achievement.id) ?? null
-        }))
+        achievements: ACHIEVEMENTS.map((achievement) => {
+          const levelEntry = levelById.get(achievement.id);
+          const level = levelEntry?.level ?? 0;
+          const maxLevel = getMaxAchievementLevel(achievement.id);
+          const completed = achievement.levels && achievement.levels.length > 0 ? level >= maxLevel : completedAchievementIds.has(achievement.id);
+          return {
+            ...achievement,
+            level,
+            maxLevel,
+            completed,
+            grantedAt: levelEntry?.grantedAt || grantedAtById.get(achievement.id) || null
+          };
+        })
       });
     } catch (error) {
       next(error);

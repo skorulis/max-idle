@@ -12,7 +12,6 @@ import {
 } from "./betterAuth.js";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 import { calculateElapsedSeconds } from "./time.js";
-import { parseCompletedAchievementIds } from "./achievementUpdates.js";
 import { registerShopRoutes } from "./shop.js";
 import { registerLeaderboardRoutes } from "./leaderboard.js";
 import { registerApiDocumentation } from "./apiContract.js";
@@ -286,8 +285,7 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
     app,
     pool,
     resolveIdentity: resolveIdentityForRequest,
-    toNumber,
-    parseCompletedAchievementIds
+    toNumber
   });
 
   app.get("/players/:id", async (req, res, next) => {

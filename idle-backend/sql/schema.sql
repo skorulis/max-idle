@@ -31,6 +31,13 @@ CREATE TABLE IF NOT EXISTS player_states (
       '$[*] ? (@.type() != "string" && (@.type() != "object" || !exists(@.id) || @.id.type() != "string" || !exists(@.grantedAt) || @.grantedAt.type() != "string"))'
     )
   ),
+  achievement_levels JSONB NOT NULL DEFAULT '[]'::jsonb CHECK (
+    jsonb_typeof(achievement_levels) = 'array'
+    AND NOT jsonb_path_exists(
+      achievement_levels,
+      '$[*] ? (@.type() != "object" || !exists(@.id) || @.id.type() != "string" || !exists(@.level) || @.level.type() != "number" || @.level < 1 || !exists(@.grantedAt) || @.grantedAt.type() != "string")'
+    )
+  ),
   shop JSONB NOT NULL DEFAULT '{"seconds_multiplier": 0, "restraint": 0, "idle_hoarder": 0, "luck": 0, "collect_gem_time_boost": 0}'::jsonb,
   seconds_multiplier DOUBLE PRECISION NOT NULL DEFAULT 0,
   current_seconds BIGINT NOT NULL DEFAULT 0,
