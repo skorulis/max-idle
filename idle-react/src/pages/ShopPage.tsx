@@ -66,8 +66,12 @@ function formatUpgradeCost(currencyType: ShopCurrencyType, amount: number): stri
   return formatSeconds(amount);
 }
 
+function formatDecimalUpTo2(value: number): string {
+  return Number(value.toFixed(2)).toString();
+}
+
 function formatMultiplier(value: number): string {
-  return `${value.toFixed(1)}x`;
+  return `${formatDecimalUpTo2(value)}x`;
 }
 
 function formatChance(value: number): string {
@@ -80,7 +84,7 @@ function formatUpgradeValue(upgrade: ShopUpgradeDefinition, value: number): stri
   }
   /** Template includes literal `x` after placeholder (`%sx`). */
   if (upgrade.id === SHOP_UPGRADE_IDS.IDLE_HOARDER) {
-    return value.toFixed(1);
+    return formatDecimalUpTo2(value);
   }
   if (
     upgrade.id === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER ||
@@ -102,7 +106,7 @@ function formatUpgradeSecondaryValue(upgrade: ShopUpgradeDefinition, value2: num
     return String(Math.round(value2));
   }
   if (upgrade.id === SHOP_UPGRADE_IDS.IDLE_HOARDER) {
-    return Number.isInteger(value2) ? String(value2) : value2.toFixed(1);
+    return formatDecimalUpTo2(value2);
   }
   return formatUpgradeValue(upgrade, value2);
 }
@@ -344,7 +348,7 @@ export function ShopPage({
         </button>
       </div>
       {selectedCurrencyType === SHOP_CURRENCY_TYPES.IDLE ? (
-        <p className="subtle">Current multiplier: {syncedPlayer.secondsMultiplier.toFixed(1)}x</p>
+        <p className="subtle">Current multiplier: {formatMultiplier(syncedPlayer.secondsMultiplier)}</p>
       ) : null}
       {visibleUpgrades.length === 0 ? (
         <p className="subtle">No upgrades currently available for this currency.</p>

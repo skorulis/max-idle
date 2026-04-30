@@ -102,7 +102,7 @@ export const SECONDS_MULTIPLIER_SHOP_UPGRADE: ShopUpgradeDefinition = defineShop
   id: SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER,
   name: "Base Multiplier",
   icon: "gauge",
-  description: "Base multiplier to idle time",
+  description: "Constant idle time multiplier",
   valueDescription: "%s",
   levels: [
     { cost: 60, value: 1.05 },
@@ -133,7 +133,7 @@ export const ANOTHER_SECONDS_MULTIPLIER_SHOP_UPGRADE: ShopUpgradeDefinition = de
   id: SHOP_UPGRADE_IDS.ANOTHER_SECONDS_MULTIPLIER,
   name: "Another Base Multiplier",
   icon: "gauge",
-  description: "Base multiplier to real time",
+  description: "Constant idle time multiplier",
   valueDescription: "%s",
   levels: [
     { cost: 60, value: 1.05 },
@@ -164,7 +164,7 @@ export const PATIENCE_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.PATIENCE,
   name: "Patience",
   icon: "hourglass",
-  description: "Unlock one additional patience bonus step for idle rate scaling",
+  description: "Idle time multiplier that increases over time",
   valueDescription: "Maximum multiplier %sx",
   levels: [
     { cost: 60, value: 2 },
@@ -184,7 +184,7 @@ export const RESTRAINT_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.RESTRAINT,
   name: "Restraint",
   icon: "shield-alert",
-  description: "Idle multiplier that blocks collection until time has passed.",
+  description: "Idle time multiplier that blocks collection until time has passed.",
   valueDescription: "%s, collect after %s hours",
   levels: [
     { cost: 2 * 60 * 60, value: 1.1, value2: 1 },
@@ -200,7 +200,7 @@ export const IDLE_HOARDER_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrad
   id: SHOP_UPGRADE_IDS.IDLE_HOARDER,
   name: "Real hoarder",
   icon: "archive",
-  description: "Gain an idle time bonus when stored real time is more than available realtime",
+  description: "Idle time multiplier that only applies when stored realtime >= available realtime",
   valueDescription: "%sx when stored time is >= %s x current real time",
   levels: [
     { cost: 1 * SECONDS_PER_HOUR, value: 1.5, value2: 1},
@@ -216,7 +216,7 @@ export const LUCK_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.LUCK,
   name: "Luck",
   icon: "dice-5",
-  description: "Chance to keep timer when collecting",
+  description: "Chance to not reset when collecting",
   valueDescription: "%s",
   levels: [
     { cost: 7 * 24 * 60 * 60, value: 0.05 },
@@ -270,7 +270,7 @@ export const WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE: ShopUpgradeDefinition = defin
   id: SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS,
   name: "Worthwile Achievements",
   icon: "trophy",
-  description: "Gain a bonus based on number of achievements unlocked",
+  description: "Idle time multiplier that increases with each achievement unlocked",
   valueDescription: "%s",
   levels: [
     { cost: 5 * SECONDS_PER_HOUR, value: 0.05 },
