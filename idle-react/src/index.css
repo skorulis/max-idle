@@ -51,6 +51,33 @@ body {
   line-height: 1.5;
 }
 
+.message-bulletin-body {
+  margin: 0;
+}
+
+.message-quote {
+  margin: 0;
+  padding: 0 0 0 14px;
+  border-left: 3px solid #d1d5db;
+  color: #374151;
+}
+
+.message-quote__text {
+  margin: 0 0 10px;
+  font-size: 16px;
+  line-height: 1.55;
+  font-style: italic;
+}
+
+.message-quote__footer {
+  margin: 0;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 500;
+  color: #6b7280;
+  letter-spacing: 0.01em;
+}
+
 .message-fade {
   transition: opacity 220ms ease;
   opacity: 1;

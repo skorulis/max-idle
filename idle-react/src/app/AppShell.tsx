@@ -55,7 +55,7 @@ import { ACHIEVEMENT_IDS } from "../achievements";
 import { authClient } from "./authClient.ts";
 import { alignClientClock, useClientNowMs } from "./clientClock";
 import { getTournamentSecondsUntilDraw, toSyncedState, toSyncedTournamentState } from "./playerState";
-import { useBottomBulletinMessage } from "./useBottomBulletinMessage";
+import { useBottomBulletinMessage, type BulletinContent } from "./useBottomBulletinMessage";
 import { useReturnAfterAwayMessage } from "./useReturnAfterAwayMessage";
 import type {
   AccountResponse,
@@ -72,6 +72,18 @@ const TOKEN_KEY = "max-idle-token";
 const UPGRADE_SOCIAL_INTENT_KEY = "max-idle-upgrade-social-intent";
 const DAILY_REWARD_NOTIFICATIONS_ENABLED_KEY = "max-idle-daily-reward-notifications-enabled";
 const CONTEMPLATION_ACHIEVEMENT_HOME_TIME_MS = 10 * 60 * 1000;
+
+function IdleBulletinBody({ content }: { content: BulletinContent }) {
+  if (content.kind === "plain") {
+    return <p className="message-copy">{content.text}</p>;
+  }
+  return (
+    <blockquote className="message-quote">
+      <p className="message-quote__text">{content.quote}</p>
+      <footer className="message-quote__footer">— {content.author}</footer>
+    </blockquote>
+  );
+}
 
 const SHOP_ALREADY_OWNED_MESSAGE: Partial<Record<ShopUpgradeId, string>> = {
   restraint: "Restraint is already active.",
@@ -178,7 +190,7 @@ export function AppShell() {
   const [signupForm, setSignupForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const [upgradeForm, setUpgradeForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const isAuthenticated = Boolean(playerState);
-  const { displayedMessage, isFadingOutMessage, isFadingInMessage } = useBottomBulletinMessage(isAuthenticated);
+  const { displayedContent, isFadingOutMessage, isFadingInMessage } = useBottomBulletinMessage(isAuthenticated);
   const showDebugFeatures = !import.meta.env.PROD;
   const clientNowMs = useClientNowMs();
 
@@ -1235,9 +1247,9 @@ export function AppShell() {
         <p>Preparing your idle session...</p>
         <section className="card message-card" aria-live="polite">
           <p className="label">Idle bulletin</p>
-          <p className={`message-copy message-fade${isFadingOutMessage ? " is-fading-out" : ""}${isFadingInMessage ? " is-fading-in" : ""}`}>
-            {displayedMessage}
-          </p>
+          <div className={`message-bulletin-body message-fade${isFadingOutMessage ? " is-fading-out" : ""}${isFadingInMessage ? " is-fading-in" : ""}`}>
+            <IdleBulletinBody content={displayedContent} />
+          </div>
         </section>
       </main>
     );
@@ -1415,9 +1427,9 @@ export function AppShell() {
       </section>
       <section className="card message-card" aria-live="polite">
         <p className="label">Idle bulletin</p>
-        <p className={`message-copy message-fade${isFadingOutMessage ? " is-fading-out" : ""}${isFadingInMessage ? " is-fading-in" : ""}`}>
-          {displayedMessage}
-        </p>
+        <div className={`message-bulletin-body message-fade${isFadingOutMessage ? " is-fading-out" : ""}${isFadingInMessage ? " is-fading-in" : ""}`}>
+          <IdleBulletinBody content={displayedContent} />
+        </div>
       </section>
     </main>
   );
