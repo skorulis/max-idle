@@ -1,5 +1,6 @@
 import express from "express";
 import type { Pool } from "pg";
+import { refreshStoredCurrentIdleSeconds } from "./currentSecondsRefresh.js";
 import type { AuthClaims } from "./types.js";
 
 type LeaderboardRouteIdentity = {
@@ -42,6 +43,14 @@ export function registerLeaderboardRoutes({
       } catch (error) {
         if (!(error instanceof Error && error.message === "MISSING_IDENTITY")) {
           throw error;
+        }
+      }
+
+      if (leaderboardType === "current" && identity) {
+        const refreshed = await refreshStoredCurrentIdleSeconds(pool, identity.claims.sub, toNumber);
+        if (refreshed === null) {
+          res.status(404).json({ error: "Player state not found" });
+          return;
         }
       }
 

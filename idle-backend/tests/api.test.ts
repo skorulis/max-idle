@@ -1336,7 +1336,10 @@ describe("auth + player lifecycle", () => {
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
 
-    await pool.query(`UPDATE player_states SET current_seconds = $2, idle_time_total = $3 WHERE user_id = $1`, [userId, 5000, 0]);
+    await pool.query(
+      `UPDATE player_states SET idle_time_total = $2, last_collected_at = NOW() - INTERVAL '48 hours' WHERE user_id = $1`,
+      [userId, 0]
+    );
     await insertLeaderboardPlayer(0, 490);
     await insertLeaderboardPlayer(5000, 10);
 
@@ -1344,7 +1347,32 @@ describe("auth + player lifecycle", () => {
     expect(leaderboardResponse.status).toBe(200);
     expect(leaderboardResponse.body.type).toBe("current");
     expect(leaderboardResponse.body.entries[0].userId).toBe(userId);
-    expect(leaderboardResponse.body.entries[0].totalIdleSeconds).toBe(5000);
+    expect(leaderboardResponse.body.entries[0].totalIdleSeconds).toBeGreaterThan(5000);
+  });
+
+  it("refreshes stored current idle for the authenticated user before ranking on current leaderboard", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(
+      `UPDATE player_states SET current_seconds = 999999, last_collected_at = NOW() WHERE user_id = $1`,
+      [userId]
+    );
+
+    const leaderboardResponse = await request(app)
+      .get("/leaderboard")
+      .query({ type: "current" })
+      .set("Authorization", `Bearer ${token}`);
+    expect(leaderboardResponse.status).toBe(200);
+    expect(leaderboardResponse.body.currentPlayer.totalIdleSeconds).toBeLessThan(999999);
+
+    const storedResult = await pool.query<{ current_seconds: string }>(
+      `SELECT current_seconds FROM player_states WHERE user_id = $1`,
+      [userId]
+    );
+    expect(Number(storedResult.rows[0]?.current_seconds ?? 0)).toBe(leaderboardResponse.body.currentPlayer.totalIdleSeconds);
   });
 
   it("returns leaderboard ordered by time_gems_total when type is time_gems", async () => {

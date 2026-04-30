@@ -10,6 +10,7 @@ import {
 import type { ShopState } from "@maxidle/shared/shop";
 import { SHOP_UPGRADE_IDS } from "@maxidle/shared/shopUpgrades";
 import { boostedUncollectedIdleSeconds } from "../boostedUncollectedIdle.js";
+import { persistCurrentSecondsFromPlayerRow } from "../currentSecondsRefresh.js";
 import { calculateElapsedSeconds } from "../time.js";
 import { getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint, shouldPreserveIdleTimerOnCollect } from "../idleRate.js";
 import {
@@ -96,23 +97,7 @@ export async function buildPlayerStatePayload(
 
   const achievementCount = toNumber(row.achievement_count);
   const achievementBonusMultiplier = getWorthwhileAchievementsMultiplier(row.shop, achievementCount);
-  const currentIdleSeconds = boostedUncollectedIdleSeconds(
-    row.last_collected_at,
-    row.server_time,
-    row.shop,
-    achievementCount,
-    toNumber(row.real_time_available)
-  );
-  await pool.query(
-    `
-    UPDATE player_states
-    SET
-      current_seconds = $2,
-      current_seconds_last_updated = $3
-    WHERE user_id = $1
-    `,
-    [userId, currentIdleSeconds, row.server_time]
-  );
+  const currentIdleSeconds = await persistCurrentSecondsFromPlayerRow(pool, userId, row, toNumber);
   const elapsedSinceLastCollection = calculateElapsedSeconds(row.last_collected_at, row.server_time);
   const idleSecondsRate = getEffectiveIdleSecondsRate({
     secondsSinceLastCollection: elapsedSinceLastCollection,
