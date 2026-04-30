@@ -130,7 +130,8 @@ describe("luck + boosted gain", () => {
       secondsSinceLastCollection: 60,
       shop: { seconds_multiplier: 0, restraint: 0, idle_hoarder: 5, luck: 0 },
       achievementCount: 0,
-      realTimeAvailable: 120
+      /** Level 5 needs stored/realtime ratio ≥ 3 (value2); 180/60 = 3 */
+      realTimeAvailable: 180
     });
     expect(withIdleHoarderAtCap).toBe(Math.floor(baseline * 2.5));
   });

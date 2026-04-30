@@ -77,6 +77,10 @@ function formatUpgradeValue(upgrade: ShopUpgradeDefinition, value: number): stri
   if (upgrade.id === SHOP_UPGRADE_IDS.LUCK) {
     return formatChance(value);
   }
+  /** Template includes literal `x` after placeholder (`%sx`). */
+  if (upgrade.id === SHOP_UPGRADE_IDS.IDLE_HOARDER) {
+    return value.toFixed(1);
+  }
   if (
     upgrade.id === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER ||
     (upgrade.id as string) === "another_seconds_multiplier" ||
@@ -95,6 +99,9 @@ function formatUpgradeValue(upgrade: ShopUpgradeDefinition, value: number): stri
 function formatUpgradeSecondaryValue(upgrade: ShopUpgradeDefinition, value2: number): string {
   if (upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT) {
     return String(Math.round(value2));
+  }
+  if (upgrade.id === SHOP_UPGRADE_IDS.IDLE_HOARDER) {
+    return Number.isInteger(value2) ? String(value2) : value2.toFixed(1);
   }
   return formatUpgradeValue(upgrade, value2);
 }

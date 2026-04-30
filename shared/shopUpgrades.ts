@@ -1,5 +1,5 @@
 import type { ShopState } from "./shop.js";
-import { safeNumber } from "./safeNumber.js";
+import { safeNumber, safeNaturalNumber } from "./safeNumber.js";
 
 export const SHOP_CURRENCY_TYPES = {
   IDLE: "idle",
@@ -200,14 +200,14 @@ export const IDLE_HOARDER_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrad
   id: SHOP_UPGRADE_IDS.IDLE_HOARDER,
   name: "Real hoarder",
   icon: "archive",
-  description: "Gain an idle time bonus based on how much real time is available",
-  valueDescription: "Max multiplier %sx",
+  description: "Gain an idle time bonus when stored real time is more than available realtime",
+  valueDescription: "%sx when stored time is >= %s x current real time",
   levels: [
-    { cost: 1 * SECONDS_PER_HOUR, value: 1.5 },
-    { cost: 2 * SECONDS_PER_HOUR, value: 1.75 },
-    { cost: 4 * SECONDS_PER_HOUR, value: 2.0 },
-    { cost: 8 * SECONDS_PER_HOUR, value: 2.25 },
-    { cost: 16 * SECONDS_PER_HOUR, value: 2.5 }
+    { cost: 1 * SECONDS_PER_HOUR, value: 1.5, value2: 1},
+    { cost: 2 * SECONDS_PER_HOUR, value: 1.75, value2: 1.5},
+    { cost: 4 * SECONDS_PER_HOUR, value: 2.0, value2: 2},
+    { cost: 8 * SECONDS_PER_HOUR, value: 2.25, value2: 2.5},
+    { cost: 16 * SECONDS_PER_HOUR, value: 2.5, value2: 3},
   ],
   currencyType: SHOP_CURRENCY_TYPES.REAL
 });
@@ -337,27 +337,37 @@ export function getIdleHoarderMaxMultiplierForLevel(level: number): number {
   return IDLE_HOARDER_SHOP_UPGRADE.levels[L - 1]?.value ?? 1;
 }
 
-const IDLE_HOARDER_MIN_MULTIPLIER = 0.01;
-const IDLE_HOARDER_MAX_RATIO = 2;
+function getIdleHoarderRatioThresholdForLevel(level: number): number {
+  const maxLevel = getIdleHoarderMaxLevel();
+  const L = Math.max(0, Math.min(maxLevel, Math.floor(Number(level) || 0)));
+  if (L <= 0) {
+    return Infinity;
+  }
+  const raw = IDLE_HOARDER_SHOP_UPGRADE.levels[L - 1]?.value2;
+  return safeNaturalNumber(raw, 1);
+}
 
 /**
- * Ratio-based multiplier from idle hoarder:
- * - 0 available real time => 0.01x
- * - reaches level cap when `realTimeAvailable/secondsSinceLastCollection >= 2`
+ * Stored-real-time bonus from idle hoarder:
+ * - Below tier threshold: {@link IDLE_HOARDER_MIN_MULTIPLIER}
+ * - When `realTimeAvailable / secondsSinceLastCollection >=` that level's `value2`: full tier `value` multiplier
  */
 export function getIdleHoarderMultiplier(level: number, realTimeAvailable: number, secondsSinceLastCollection: number): number {
   const maxMultiplier = getIdleHoarderMaxMultiplierForLevel(level);
   if (maxMultiplier <= 1) {
     return 1;
   }
-  const safeAvailable = Math.max(0, safeNumber(realTimeAvailable, 0));
-  const safeRealtime = Math.max(0, safeNumber(secondsSinceLastCollection, 0));
+  const safeAvailable = safeNaturalNumber(realTimeAvailable, 0);
+  const safeRealtime = safeNaturalNumber(secondsSinceLastCollection, 0);
   if (safeRealtime <= 0) {
-    return safeAvailable > 0 ? maxMultiplier : IDLE_HOARDER_MIN_MULTIPLIER;
+    return safeAvailable > 0 ? maxMultiplier : 1;
   }
   const ratio = safeAvailable / safeRealtime;
-  const progress = Math.max(0, Math.min(1, ratio / IDLE_HOARDER_MAX_RATIO));
-  return IDLE_HOARDER_MIN_MULTIPLIER + (maxMultiplier - IDLE_HOARDER_MIN_MULTIPLIER) * progress;
+  const threshold = getIdleHoarderRatioThresholdForLevel(level);
+  if (ratio >= threshold) {
+    return maxMultiplier;
+  }
+  return 1;
 }
 
 /**
