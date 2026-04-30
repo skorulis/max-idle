@@ -1,10 +1,11 @@
 type DebugPageProps = {
   resettingDailyBonus: boolean;
   onResetDailyBonus: () => Promise<void>;
-  debugPendingAction: "real" | "idle" | "gems" | null;
+  debugPendingAction: "real" | "idle" | "gems" | "balances" | null;
   onDebugAddRealTime: () => Promise<void>;
   onDebugAddIdleTime: () => Promise<void>;
   onDebugAddGems: () => Promise<void>;
+  onDebugResetBalances: () => Promise<void>;
 };
 
 export function DebugPage({
@@ -13,7 +14,8 @@ export function DebugPage({
   debugPendingAction,
   onDebugAddRealTime,
   onDebugAddIdleTime,
-  onDebugAddGems
+  onDebugAddGems,
+  onDebugResetBalances
 }: DebugPageProps) {
   const debugBusy = debugPendingAction !== null;
 
@@ -63,6 +65,17 @@ export function DebugPage({
             {debugPendingAction === "gems" ? "Adding gems..." : "Add 5 Time Gems"}
           </button>
         </div>
+        <p className="subtle" style={{ marginTop: "0.75rem" }}>
+          Reset all banked real time, idle time, and time gems to zero.
+        </p>
+        <button
+          type="button"
+          className="collect"
+          onClick={() => void onDebugResetBalances()}
+          disabled={debugBusy}
+        >
+          {debugPendingAction === "balances" ? "Resetting..." : "Reset all balances"}
+        </button>
       </div>
     </>
   );

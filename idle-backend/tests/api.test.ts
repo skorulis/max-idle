@@ -1714,6 +1714,34 @@ describe("auth + player lifecycle", () => {
     expect(debugResponse.body.idleTime.available).toBe(50 + grantSeconds);
   });
 
+  it("resets all currency balances to zero with debug endpoint in non-production config", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+    await pool.query(
+      `UPDATE player_states
+       SET
+         real_time_total = 100,
+         real_time_available = 100,
+         idle_time_total = 50,
+         idle_time_available = 50,
+         time_gems_total = 3,
+         time_gems_available = 3
+       WHERE user_id = $1`,
+      [userId]
+    );
+
+    const debugResponse = await request(app).post("/player/debug/reset-balances").set("Authorization", `Bearer ${token}`);
+    expect(debugResponse.status).toBe(200);
+    expect(debugResponse.body.realTime.total).toBe(0);
+    expect(debugResponse.body.realTime.available).toBe(0);
+    expect(debugResponse.body.idleTime.total).toBe(0);
+    expect(debugResponse.body.idleTime.available).toBe(0);
+    expect(debugResponse.body.timeGems.total).toBe(0);
+    expect(debugResponse.body.timeGems.available).toBe(0);
+  });
+
   it("does not register debug gems endpoint in production config", async () => {
     const app = createApp(pool, { ...config, isProduction: true });
     const authResponse = await request(app).post("/auth/anonymous");
@@ -1730,8 +1758,10 @@ describe("auth + player lifecycle", () => {
 
     const realResponse = await request(app).post("/player/debug/add-real-time").set("Authorization", `Bearer ${token}`);
     const idleResponse = await request(app).post("/player/debug/add-idle-time").set("Authorization", `Bearer ${token}`);
+    const resetBalancesResponse = await request(app).post("/player/debug/reset-balances").set("Authorization", `Bearer ${token}`);
     expect(realResponse.status).toBe(404);
     expect(idleResponse.status).toBe(404);
+    expect(resetBalancesResponse.status).toBe(404);
   });
 
   it("preserves timer on collect when luck roll succeeds", async () => {

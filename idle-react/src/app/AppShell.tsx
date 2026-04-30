@@ -28,6 +28,7 @@ import {
   debugAddGems,
   debugAddIdleTime,
   debugAddRealTime,
+  debugResetBalances,
   debugResetCurrentDailyBonus,
   completeSocialUpgrade,
   enterTournament,
@@ -168,7 +169,7 @@ export function AppShell() {
     | null
   >(null);
   const [resettingDailyBonus, setResettingDailyBonus] = useState(false);
-  const [debugPendingAction, setDebugPendingAction] = useState<"real" | "idle" | "gems" | null>(null);
+  const [debugPendingAction, setDebugPendingAction] = useState<"real" | "idle" | "gems" | "balances" | null>(null);
   const [dailyRewardNotificationsEnabled, setDailyRewardNotificationsEnabled] = useState(() =>
     isDailyRewardNotificationsEnabledStored()
   );
@@ -909,6 +910,28 @@ export function AppShell() {
     }
   };
 
+  const onDebugResetBalances = async () => {
+    if (!playerState) {
+      return;
+    }
+
+    setDebugPendingAction("balances");
+    setError(null);
+    setStatus("Resetting balances...");
+    try {
+      const updatedPlayer = await debugResetBalances(token);
+      const synced = toSyncedState(updatedPlayer);
+      alignClientClock();
+      setPlayerState(synced);
+      toast.success("Reset all balances to zero.");
+    } catch (debugError) {
+      setError(debugError instanceof Error ? debugError.message : "Failed to reset balances");
+      toast.error("Could not reset balances.");
+    } finally {
+      setDebugPendingAction(null);
+    }
+  };
+
   const onCollectDailyReward = async () => {
     if (!playerState) {
       return;
@@ -1296,6 +1319,7 @@ export function AppShell() {
                   onDebugAddRealTime={onDebugAddRealTime}
                   onDebugAddIdleTime={onDebugAddIdleTime}
                   onDebugAddGems={onDebugAddGems}
+                  onDebugResetBalances={onDebugResetBalances}
                 />
               )}
             />
