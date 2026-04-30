@@ -13,10 +13,18 @@ const HUMOROUS_MESSAGES = [
   "What will you do with all of that time?",
   "Your goal is simple.  Be idle for longer than anyone else.",
   "To catch up, try doing nothing faster.",
-  "You can't win this game, but you can be winning, check the leaderboard",
+  "You are now officially better at waiting than before. Don't brag too much.",
+  "Something exciting is happening. But not in this game.",
+  "The system appreciates your continued lack of input.",
+  "This is what peak inactivity looks like.",
+  "Your absence of action has been noted.",
+  "Your commitment to inaction is inspiring.",
+  "You could leave. But then who would watch the numbers?",
   "If you keep going, you’ll waste a full day in only 24 hours.",
   "If you're wondering what the point of this is, you're not alone.",
-  "Idle time isn't just for show, you can buy things with it as well",
+  "The numbers are going up. What else could you want in life.",
+  "You can't win this game, but you can be winning, check the leaderboard.",
+  "Idle time isn't just for show, you can buy things with it as well.",
 ];
 
 const QUOTES: ReadonlyArray<{ quote: string; author: string }> = [
