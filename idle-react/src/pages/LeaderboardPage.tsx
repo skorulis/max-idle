@@ -26,9 +26,11 @@ export function LeaderboardPage({
   onStartJourney
 }: LeaderboardPageProps) {
   const currentPlayer = leaderboard?.currentPlayer ?? null;
-  const shareDuration = currentPlayer ? formatSeconds(currentPlayer.totalIdleSeconds) : null;
+  const shareIdleMetric = leaderboardType === "current" || leaderboardType === "collected";
+  const shareDuration =
+    shareIdleMetric && currentPlayer ? formatSeconds(currentPlayer.totalIdleSeconds) : null;
   const shareText =
-    currentPlayer && shareDuration
+    shareIdleMetric && currentPlayer && shareDuration
       ? `I'm rank #${currentPlayer.rank} in the worlds most pointless game after earning ${shareDuration} of idle time`
       : null;
   const shareUrl = "https://max-idle.com/leaderboard";
@@ -58,6 +60,14 @@ export function LeaderboardPage({
         >
           Collected
         </button>
+        <button
+          type="button"
+          className={`secondary${leaderboardType === "time_gems" ? " leaderboard-type-active" : ""}`}
+          onClick={() => onTypeChange("time_gems")}
+          disabled={leaderboardLoading}
+        >
+          Time gems
+        </button>
       </div>
       {leaderboardLoading ? <p>Loading leaderboard...</p> : null}
       {!leaderboardLoading && leaderboard ? (
@@ -71,12 +81,17 @@ export function LeaderboardPage({
                 username={entry.username}
                 totalIdleSeconds={entry.totalIdleSeconds}
                 isCurrentPlayer={entry.isCurrentPlayer}
+                valueKind={leaderboardType === "time_gems" ? "time_gems" : "idle_seconds"}
               />
             ))}
           </div>
           {leaderboard.currentPlayer && !leaderboard.currentPlayer.inTop ? (
             <p className="subtle">
-              Your rank is #{leaderboard.currentPlayer.rank} with {formatSeconds(leaderboard.currentPlayer.totalIdleSeconds)}.
+              Your rank is #{leaderboard.currentPlayer.rank} with{" "}
+              {leaderboardType === "time_gems"
+                ? `${leaderboard.currentPlayer.totalIdleSeconds.toLocaleString()} time gem${leaderboard.currentPlayer.totalIdleSeconds === 1 ? "" : "s"}`
+                : formatSeconds(leaderboard.currentPlayer.totalIdleSeconds)}
+              .
             </p>
           ) : null}
           {shareText ? (

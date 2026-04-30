@@ -463,7 +463,8 @@
             "type": "string",
             "enum": [
               "current",
-              "collected"
+              "collected",
+              "time_gems"
             ]
           },
           "entries": {
@@ -1888,7 +1889,8 @@
               "type": "string",
               "enum": [
                 "current",
-                "collected"
+                "collected",
+                "time_gems"
               ]
             },
             "required": false,

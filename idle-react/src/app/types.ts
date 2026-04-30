@@ -92,7 +92,7 @@ export type TournamentEnterResponse = {
   enteredNow: boolean;
 };
 
-export type LeaderboardType = "current" | "collected" | "total";
+export type LeaderboardType = "current" | "collected" | "time_gems";
 
 export type LeaderboardResponse = {
   type: LeaderboardType;

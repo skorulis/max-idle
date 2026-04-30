@@ -1347,6 +1347,35 @@ describe("auth + player lifecycle", () => {
     expect(leaderboardResponse.body.entries[0].totalIdleSeconds).toBe(5000);
   });
 
+  it("returns leaderboard ordered by time_gems_total when type is time_gems", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(`UPDATE player_states SET time_gems_total = $2 WHERE user_id = $1`, [userId, 999]);
+    const midId = await insertLeaderboardPlayer(0, 0);
+    await pool.query(`UPDATE player_states SET time_gems_total = $2 WHERE user_id = $1`, [midId, 400]);
+    const lowId = await insertLeaderboardPlayer(0, 0);
+    await pool.query(`UPDATE player_states SET time_gems_total = $2 WHERE user_id = $1`, [lowId, 100]);
+
+    const leaderboardResponse = await request(app)
+      .get("/leaderboard")
+      .query({ type: "time_gems" })
+      .set("Authorization", `Bearer ${token}`);
+    expect(leaderboardResponse.status).toBe(200);
+    expect(leaderboardResponse.body.type).toBe("time_gems");
+    expect(leaderboardResponse.body.entries[0].userId).toBe(userId);
+    expect(leaderboardResponse.body.entries[0].totalIdleSeconds).toBe(999);
+    expect(leaderboardResponse.body.entries[1].totalIdleSeconds).toBe(400);
+    expect(leaderboardResponse.body.entries[2].totalIdleSeconds).toBe(100);
+    for (let i = 1; i < leaderboardResponse.body.entries.length; i += 1) {
+      expect(leaderboardResponse.body.entries[i - 1].totalIdleSeconds).toBeGreaterThanOrEqual(
+        leaderboardResponse.body.entries[i].totalIdleSeconds
+      );
+    }
+  });
+
   it("returns public player profile by id", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");

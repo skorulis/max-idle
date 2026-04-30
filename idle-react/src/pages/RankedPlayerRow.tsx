@@ -7,9 +7,22 @@ type RankedPlayerRowProps = {
   username: string;
   totalIdleSeconds: number;
   isCurrentPlayer: boolean;
+  /** When set, the numeric column shows time gems instead of a duration. */
+  valueKind?: "idle_seconds" | "time_gems";
 };
 
-export function RankedPlayerRow({ rank, userId, username, totalIdleSeconds, isCurrentPlayer }: RankedPlayerRowProps) {
+export function RankedPlayerRow({
+  rank,
+  userId,
+  username,
+  totalIdleSeconds,
+  isCurrentPlayer,
+  valueKind = "idle_seconds"
+}: RankedPlayerRowProps) {
+  const valueLabel =
+    valueKind === "time_gems"
+      ? `${totalIdleSeconds.toLocaleString()} time gem${totalIdleSeconds === 1 ? "" : "s"}`
+      : formatSeconds(totalIdleSeconds);
   return (
     <div className={`leaderboard-row${isCurrentPlayer ? " leaderboard-row-current" : ""}`}>
       <p>#{rank}</p>
@@ -18,7 +31,7 @@ export function RankedPlayerRow({ rank, userId, username, totalIdleSeconds, isCu
           {username}
         </Link>
       </p>
-      <p>{formatSeconds(totalIdleSeconds)}</p>
+      <p>{valueLabel}</p>
     </div>
   );
 }

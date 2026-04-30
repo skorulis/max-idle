@@ -113,7 +113,7 @@ export type LeaderboardEntry = {
 };
 
 export type LeaderboardResponse = {
-    type: 'current' | 'collected';
+    type: 'current' | 'collected' | 'time_gems';
     entries: Array<LeaderboardEntry>;
     currentPlayer: {
         userId: string;
@@ -754,7 +754,7 @@ export type GetLeaderboardData = {
     body?: never;
     path?: never;
     query?: {
-        type?: 'current' | 'collected';
+        type?: 'current' | 'collected' | 'time_gems';
     };
     url: '/leaderboard';
 };
