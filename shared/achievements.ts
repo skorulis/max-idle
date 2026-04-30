@@ -4,7 +4,7 @@ export const ACHIEVEMENT_IDS = {
   USERNAME_SELECTED: "username_selected",
   BEGINNER_SHOPPER: "beginner_shopper",
   REAL_TIME_COLLECTOR_65_MINUTES: "real_time_collector_65_minutes",
-  IDLE_TIME_COLLECTOR_3H_7M: "idle_time_collector_3h_7m",
+  IDLE_TIME_COLLECTOR: "idle_time_collector",
   REAL_TIME_STREAK_59_MINUTES: "real_time_streak_59_minutes",
   REAL_TIME_STREAK_2D_14H: "real_time_streak_2d_14h",
   COLLECTION_COUNT: "collection_count",
@@ -24,6 +24,8 @@ export type AchievementDefinition = {
   description: string;
   icon: string;
   clientDriven: boolean;
+  /** When set, level threshold `value` is in seconds and the UI formats `%s` as a duration. */
+  levelValueDisplay?: "time_seconds";
   levels?: Array<{
     value: number;
   }>;
@@ -60,11 +62,19 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     clientDriven: false
   },
   {
-    id: ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR_3H_7M,
+    id: ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR,
     name: "Just a little idling",
-    description: "Collect 3 hours and 7 minutes of idle time.",
+    description: "Gain %s of total idle time.",
     icon: "badge-check",
-    clientDriven: false
+    clientDriven: false,
+    levelValueDisplay: "time_seconds",
+    levels: [
+      { value: 3 * 60 * 60 + 7 * 60 },
+      { value: 25 * 60 * 60 },
+      { value: 6 * 24 * 60 * 60 },
+      { value: 19 * 24 * 60 * 60 },
+      { value: 364 * 24 * 60 * 60 },
+    ]
   },
   {
     id: ACHIEVEMENT_IDS.REAL_TIME_STREAK_59_MINUTES,
@@ -83,7 +93,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   {
     id: ACHIEVEMENT_IDS.COLLECTION_COUNT,
     name: "You're doing it wrong",
-    description: "Collect %s times.",
+    description: "Press collect %s times.",
     icon: "repeat",
     clientDriven: false,
     levels: [{ value: 15 }, { value: 150 }, { value: 1500 }]

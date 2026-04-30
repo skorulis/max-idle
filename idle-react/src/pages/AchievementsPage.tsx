@@ -1,6 +1,7 @@
 import { Check, Lock } from "lucide-react";
-import { ACHIEVEMENTS, ACHIEVEMENT_IDS } from "../achievements";
+import { ACHIEVEMENTS, type AchievementId } from "../achievements";
 import type { AchievementsResponse } from "../app/types";
+import { formatSeconds } from "../formatSeconds";
 import GameIcon from "../GameIcon";
 import { getLucidIcon } from "../getLucidIcon";
 
@@ -55,15 +56,23 @@ export function AchievementsPage({ achievements, achievementsLoading, hasError }
   };
 
   const renderAchievementDescription = (achievement: AchievementsResponse["achievements"][number]): string => {
-    if (achievement.id === ACHIEVEMENT_IDS.COLLECTION_COUNT) {
-      const levels = achievementDefinitionById.get(achievement.id)?.levels ?? [];
-      const nextLevelValue = achievement.level < levels.length ? levels[achievement.level]?.value ?? null : null;
-      if (nextLevelValue !== null) {
-        return `Collect ${nextLevelValue} times.`;
-      }
-      return "Collect all levels completed.";
+    const definition = achievementDefinitionById.get(achievement.id as AchievementId);
+    const levels = definition?.levels;
+    if (!definition || !levels || levels.length === 0) {
+      return achievement.description;
     }
-    return achievement.description;
+    const formatWithValue = (value: number) => {
+      if (!definition.description.includes("%s")) {
+        return definition.description;
+      }
+      const display =
+        definition.levelValueDisplay === "time_seconds" ? formatSeconds(value) : String(value);
+      return definition.description.replace("%s", display);
+    };
+    if (achievement.level < levels.length) {
+      return formatWithValue(levels[achievement.level].value);
+    }
+    return formatWithValue(levels[levels.length - 1].value);
   };
 
   return (

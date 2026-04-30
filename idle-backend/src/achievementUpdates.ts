@@ -1,5 +1,5 @@
 import type { Pool } from "pg";
-import { ACHIEVEMENTS, type AchievementId } from "@maxidle/shared/achievements";
+import { ACHIEVEMENTS, ACHIEVEMENT_IDS, type AchievementId } from "@maxidle/shared/achievements";
 
 type Queryable = Pick<Pool, "query">;
 
@@ -32,6 +32,16 @@ type LegacyAchievementLevelEntry = {
 
 function isKnownAchievementId(value: string): value is AchievementId {
   return KNOWN_ACHIEVEMENT_IDS.has(value);
+}
+
+const LEGACY_ACHIEVEMENT_ID_TO_CANONICAL: Readonly<Record<string, AchievementId>> = {
+  idle_time_collector_3h_7m: ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR
+};
+
+/** Maps stored achievement ids (including pre-rename ids) to the canonical {@link AchievementId}. */
+export function canonicalizeStoredAchievementId(id: string): AchievementId | null {
+  const mapped = LEGACY_ACHIEVEMENT_ID_TO_CANONICAL[id] ?? id;
+  return isKnownAchievementId(mapped) ? mapped : null;
 }
 
 function toPositiveInteger(value: unknown): number | null {
@@ -67,17 +77,22 @@ function parseCompletedAchievementEntries(value: unknown): CompletedAchievementE
   const seenIds = new Set<AchievementId>();
   for (const item of parsed) {
     if (typeof item === "string") {
-      if (isKnownAchievementId(item) && !seenIds.has(item)) {
-        seenIds.add(item);
-        entries.push({ id: item, grantedAt: "" });
+      const id = canonicalizeStoredAchievementId(item);
+      if (id && !seenIds.has(id)) {
+        seenIds.add(id);
+        entries.push({ id, grantedAt: "" });
       }
       continue;
     }
     if (!item || typeof item !== "object") {
       continue;
     }
-    const id = item.id;
-    if (typeof id !== "string" || !isKnownAchievementId(id) || seenIds.has(id)) {
+    const idRaw = item.id;
+    if (typeof idRaw !== "string") {
+      continue;
+    }
+    const id = canonicalizeStoredAchievementId(idRaw);
+    if (!id || seenIds.has(id)) {
       continue;
     }
     seenIds.add(id);
@@ -97,9 +112,13 @@ export function parseAchievementLevelEntries(value: unknown): AchievementLevelEn
     if (!item || typeof item !== "object" || Array.isArray(item)) {
       continue;
     }
-    const id = item.id;
+    const idRaw = item.id;
     const level = toPositiveInteger(item.level);
-    if (typeof id !== "string" || !isKnownAchievementId(id) || level === null || seenIds.has(id)) {
+    if (typeof idRaw !== "string" || level === null) {
+      continue;
+    }
+    const id = canonicalizeStoredAchievementId(idRaw);
+    if (!id || seenIds.has(id)) {
       continue;
     }
     seenIds.add(id);

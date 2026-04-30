@@ -4,7 +4,13 @@ import { ACHIEVEMENTS, type AchievementId } from "@maxidle/shared/achievements";
 import { getWorthwhileAchievementsMultiplier } from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
 import type { AuthClaims } from "../types.js";
-import { getMaxAchievementLevel, grantAchievement, normalizeAchievementLevels, parseCompletedAchievementIds } from "../achievementUpdates.js";
+import {
+  canonicalizeStoredAchievementId,
+  getMaxAchievementLevel,
+  grantAchievement,
+  normalizeAchievementLevels,
+  parseCompletedAchievementIds
+} from "../achievementUpdates.js";
 
 type RegisterAchievementsRoutesOptions = {
   app: express.Express;
@@ -36,7 +42,10 @@ function parseGrantedAtByAchievementId(value: unknown): Map<string, string> {
     if (typeof item.id !== "string" || typeof item.grantedAt !== "string" || item.grantedAt.length === 0) {
       continue;
     }
-    grantedAtById.set(item.id, item.grantedAt);
+    const id = canonicalizeStoredAchievementId(item.id);
+    if (id) {
+      grantedAtById.set(id, item.grantedAt);
+    }
   }
   return grantedAtById;
 }

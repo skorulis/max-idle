@@ -921,7 +921,9 @@ describe("auth + player lifecycle", () => {
     expect(response.body.achievements[1].id).toBe("username_selected");
     expect(response.body.achievements[2].id).toBe("beginner_shopper");
     expect(response.body.achievements[3].id).toBe("real_time_collector_65_minutes");
-    expect(response.body.achievements[4].id).toBe("idle_time_collector_3h_7m");
+    expect(response.body.achievements[4].id).toBe("idle_time_collector");
+    expect(response.body.achievements[4].maxLevel).toBe(3);
+    expect(response.body.achievements[4].level).toBe(0);
     expect(response.body.achievements[5].id).toBe("real_time_streak_59_minutes");
     expect(response.body.achievements[6].id).toBe("real_time_streak_2d_14h");
     expect(response.body.achievements[7].id).toBe("collection_count");
@@ -1057,9 +1059,13 @@ describe("auth + player lifecycle", () => {
     const achievementState = await pool.query<{
       achievement_count: string | number;
       completed_achievements: unknown;
-    }>(`SELECT achievement_count, completed_achievements FROM player_states WHERE user_id = $1`, [userId]);
+      achievement_levels: unknown;
+    }>(`SELECT achievement_count, completed_achievements, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
     expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);
-    expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toEqual(["idle_time_collector_3h_7m"]);
+    expect(parseAchievementIds(achievementState.rows[0]?.completed_achievements)).toEqual(["idle_time_collector"]);
+    expect(parseAchievementLevels(achievementState.rows[0]?.achievement_levels)).toMatchObject([
+      { id: "idle_time_collector", level: 1 }
+    ]);
 
     // Keep this test from affecting leaderboard ordering in later tests.
     await pool.query(`UPDATE player_states SET idle_time_total = 0, idle_time_available = 0 WHERE user_id = $1`, [userId]);

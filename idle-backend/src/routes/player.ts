@@ -26,7 +26,6 @@ import type { AnalyticsService } from "../analytics.js";
 import { canCollectDailyReward, getOrCreateCurrentDailyBonus, toDailyBonusResponse } from "./dailyBonus.js";
 
 const REAL_TIME_COLLECT_65_MINUTES_SECONDS = 65 * 60;
-const IDLE_TIME_COLLECT_3H_7M_SECONDS = 3 * 60 * 60 + 7 * 60;
 const REAL_TIME_STREAK_59_MINUTES_SECONDS = 59 * 60;
 const REAL_TIME_STREAK_2D_14H_SECONDS = (2 * 24 + 14) * 60 * 60;
 const REWARD_SKIPPER_GAP_MS = 48 * 60 * 60 * 1000;
@@ -349,12 +348,9 @@ export function registerPlayerRoutes({
         completedAchievementIds.add(ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES);
         levelsToGrant.set(ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES, 1);
       }
-      if (
-        toNumber(row.idle_time_total) >= IDLE_TIME_COLLECT_3H_7M_SECONDS &&
-        !completedAchievementIds.has(ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR_3H_7M)
-      ) {
-        completedAchievementIds.add(ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR_3H_7M);
-        levelsToGrant.set(ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR_3H_7M, 1);
+      const idleTimeTotalLevel = getAchievementLevelForValue(ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR, toNumber(row.idle_time_total));
+      if (idleTimeTotalLevel > (currentLevelById.get(ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR) ?? 0)) {
+        levelsToGrant.set(ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR, idleTimeTotalLevel);
       }
       if (
         realSecondsCollected >= REAL_TIME_STREAK_59_MINUTES_SECONDS &&
