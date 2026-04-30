@@ -1,3 +1,4 @@
+import { APP_VERSION } from "@maxidle/shared/appVersion";
 import { flush, init, track } from "@amplitude/analytics-node";
 
 type AnalyticsIdentityContext = {
@@ -76,6 +77,7 @@ export function createAnalyticsService(apiKey: string): AnalyticsService {
     void track({
       event_type: eventType,
       user_id: identity.userId,
+      app_version: APP_VERSION,
       event_properties: {
         ...createBaseEventProperties(identity),
         ...properties
