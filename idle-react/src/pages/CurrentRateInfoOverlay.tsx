@@ -57,8 +57,9 @@ export function CurrentRateInfoOverlay({
       safeNumber(achievementCount, 0)
     );
     const rateBeforeIdleHoarder = patienceRate * secondsMultiplier * shopBonusMultiplier * worthwhileAchievementsMultiplier;
+    const idleHoarderLevel = IDLE_HOARDER_SHOP_UPGRADE.currentLevel(shop);
     const idleHoarderMultiplier = getIdleHoarderMultiplier(
-      IDLE_HOARDER_SHOP_UPGRADE.currentLevel(shop),
+      idleHoarderLevel,
       realTimeAvailable,
       Math.max(0, secondsSinceLastCollection)
     );
@@ -68,6 +69,7 @@ export function CurrentRateInfoOverlay({
       secondsMultiplier,
       shopBonusMultiplier,
       worthwhileAchievementsMultiplier,
+      idleHoarderLevel,
       idleHoarderMultiplier,
       calculatedRate: rateBeforeIdleHoarder * idleHoarderMultiplier
     };
@@ -115,9 +117,9 @@ export function CurrentRateInfoOverlay({
             <span>{factors.worthwhileAchievementsMultiplier.toFixed(2)}x</span>
           </p>
         ) : null}
-        {shouldShowFactor(factors.idleHoarderMultiplier) ? (
+        {factors.idleHoarderLevel > 0 ? (
           <p className="rate-factor-row">
-            <span>Idle hoarder multiplier</span>
+            <span>Real hoarder multiplier</span>
             <span>{factors.idleHoarderMultiplier.toFixed(2)}x</span>
           </p>
         ) : null}
