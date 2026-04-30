@@ -6,6 +6,7 @@ import { getRestraintMinRealtimeSeconds } from "../shop";
 import { FlipDurationDisplay } from "../components/FlipDurationDisplay";
 import { CurrentRateInfoOverlay } from "./CurrentRateInfoOverlay";
 import { TournamentPanel } from "./TournamentPanel";
+import { toast } from "../gameToast";
 
 const EARLY_COLLECT_WARNING_MESSAGES = [
   "Don't you think you should wait?",
@@ -61,20 +62,16 @@ export function HomePage({
   onNavigateTournament,
   onNavigateLogin
 }: HomePageProps) {
-  const [collectWarning, setCollectWarning] = useState<string | null>(null);
   const [collectWarningIndex, setCollectWarningIndex] = useState(0);
   const [showRateInfo, setShowRateInfo] = useState(false);
 
-  const visibleCollectWarning = realtimeElapsedSeconds >= 15 ? null : collectWarning;
-
   const handleCollect = async () => {
     if (realtimeElapsedSeconds < 15) {
-      setCollectWarning(EARLY_COLLECT_WARNING_MESSAGES[collectWarningIndex]);
+      toast.warning(EARLY_COLLECT_WARNING_MESSAGES[collectWarningIndex]);
       setCollectWarningIndex((prev) => (prev + 1) % EARLY_COLLECT_WARNING_MESSAGES.length);
       return;
     }
 
-    setCollectWarning(null);
     await onCollect();
   };
 
@@ -144,7 +141,6 @@ export function HomePage({
             ? `Collect (wait ${formatSeconds(restraintWaitRemainingSeconds)})`
             : "Collect"}
       </button>
-      {visibleCollectWarning ? <p className="warning-alert">{visibleCollectWarning}</p> : null}
 
       <p className="subtle">Totals</p>
       <div className="shop-currencies">
