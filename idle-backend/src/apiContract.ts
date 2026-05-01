@@ -1,6 +1,7 @@
 import express from "express";
 import swaggerUi from "swagger-ui-express";
 import { OpenAPIRegistry, OpenApiGeneratorV3, extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
+import { WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE } from "@maxidle/shared/shopUpgrades";
 import { z } from "zod";
 
 extendZodWithOpenApi(z);
@@ -49,7 +50,12 @@ const playerStateSchema = registry.register(
         idle_hoarder: z.number().int().min(0).max(5).optional(),
         luck: z.number().int().nonnegative(),
         collect_gem_time_boost: z.number().int().min(0).max(5).optional(),
-        worthwhile_achievements: z.number().int().min(0).max(5).optional()
+        worthwhile_achievements: z
+          .number()
+          .int()
+          .min(0)
+          .max(WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.maxLevel())
+          .optional()
       })
       .catchall(z.unknown()),
     achievementCount: z.number().int().nonnegative(),
