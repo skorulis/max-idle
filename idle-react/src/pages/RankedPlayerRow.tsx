@@ -21,17 +21,17 @@ export function RankedPlayerRow({
 }: RankedPlayerRowProps) {
   const valueLabel =
     valueKind === "time_gems"
-      ? `${totalIdleSeconds.toLocaleString()} time gem${totalIdleSeconds === 1 ? "" : "s"}`
+      ? `${totalIdleSeconds.toLocaleString()} gem${totalIdleSeconds === 1 ? "" : "s"}`
       : formatSeconds(totalIdleSeconds);
   return (
     <div className={`leaderboard-row${isCurrentPlayer ? " leaderboard-row-current" : ""}`}>
-      <p>#{rank}</p>
+      <p className="leaderboard-rank">#{rank}</p>
       <p>
         <Link className="leaderboard-player-link" to={`/player/${encodeURIComponent(userId)}`}>
           {username}
         </Link>
       </p>
-      <p>{valueLabel}</p>
+      <p className="leaderboard-value">{valueLabel}</p>
     </div>
   );
 }

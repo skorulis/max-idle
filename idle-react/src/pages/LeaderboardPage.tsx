@@ -26,7 +26,7 @@ function leaderboardShareText(
     }
     case "time_gems": {
       const gems = currentPlayer.totalIdleSeconds;
-      const gemsLabel = `${gems.toLocaleString()} time gem${gems === 1 ? "" : "s"}`;
+      const gemsLabel = `${gems.toLocaleString()} gem${gems === 1 ? "" : "s"}`;
       return `${rankPhrase} after collecting ${gemsLabel}`;
     }
     default:
@@ -110,7 +110,7 @@ export function LeaderboardPage({
             <p className="subtle">
               Your rank is #{leaderboard.currentPlayer.rank} with{" "}
               {leaderboardType === "time_gems"
-                ? `${leaderboard.currentPlayer.totalIdleSeconds.toLocaleString()} time gem${leaderboard.currentPlayer.totalIdleSeconds === 1 ? "" : "s"}`
+                ? `${leaderboard.currentPlayer.totalIdleSeconds.toLocaleString()} gem${leaderboard.currentPlayer.totalIdleSeconds === 1 ? "" : "s"}`
                 : formatSeconds(leaderboard.currentPlayer.totalIdleSeconds)}
               .
             </p>

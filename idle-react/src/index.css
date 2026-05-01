@@ -670,7 +670,7 @@ input {
 
 .leaderboard-row {
   display: grid;
-  grid-template-columns: 70px 1fr auto;
+  grid-template-columns: max-content minmax(0, 1fr) minmax(0, auto);
   gap: 10px;
   align-items: center;
   padding: 8px 10px;
@@ -681,6 +681,15 @@ input {
 
 .leaderboard-row p {
   margin: 0;
+}
+
+.leaderboard-rank {
+  min-width: 2ch;
+}
+
+.leaderboard-value {
+  justify-self: end;
+  text-align: right;
 }
 
 .leaderboard-player-link {
