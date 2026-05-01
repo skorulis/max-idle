@@ -980,6 +980,7 @@ describe("auth + player lifecycle", () => {
     expect(response.body.achievements[0].id).toBe("account_creation");
     expect(response.body.achievements[1].id).toBe("username_selected");
     expect(response.body.achievements[2].id).toBe("beginner_shopper");
+    expect(response.body.achievements[2].maxLevel).toBe(3);
     expect(response.body.achievements[3].id).toBe("real_time_collector_65_minutes");
     expect(response.body.achievements[3].maxLevel).toBe(7);
     expect(response.body.achievements[3].level).toBe(0);

@@ -60,9 +60,10 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   {
     id: ACHIEVEMENT_IDS.BEGINNER_SHOPPER,
     name: "Beginner shopper",
-    description: "Purchase 4 upgrades from the shop.",
+    description: "Purchase %s upgrades from the shop.",
     icon: "shopping-cart",
-    clientDriven: false
+    clientDriven: false,
+    levels: [{ value: 4 }, { value: 14 }, { value: 34 }]
   },
   {
     id: ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES,

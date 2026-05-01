@@ -23,6 +23,7 @@ import type { ShopUpgradeDefinition } from "@maxidle/shared/shopUpgrades";
 import { safeNaturalNumber } from "@maxidle/shared/safeNumber";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 import {
+  getAchievementLevelForValue,
   isAchievementMaxed,
   mergeAchievementLevels,
   normalizeAchievementLevels,
@@ -208,9 +209,17 @@ export function registerShopRoutes({
         ? new Date(row.last_collected_at.getTime() - REALTIME_WAIT_EXTENSION_SECONDS * 1000)
         : row.last_collected_at;
       const nextUpgradesPurchased = toNumber(row.upgrades_purchased) + quantity;
+      const beginnerShopperLevel = getAchievementLevelForValue(
+        ACHIEVEMENT_IDS.BEGINNER_SHOPPER,
+        nextUpgradesPurchased
+      );
       const nextAchievementLevels =
-        nextUpgradesPurchased >= 4
-          ? mergeAchievementLevels(row.achievement_levels, new Map([[ACHIEVEMENT_IDS.BEGINNER_SHOPPER, 1]]), now)
+        beginnerShopperLevel > 0
+          ? mergeAchievementLevels(
+              row.achievement_levels,
+              new Map([[ACHIEVEMENT_IDS.BEGINNER_SHOPPER, beginnerShopperLevel]]),
+              now
+            )
           : normalizeAchievementLevels(row.achievement_levels, now);
       const nextAchievementCount = sumAchievementLevels(nextAchievementLevels);
       const hasNewAchievement = nextAchievementCount > toNumber(row.achievement_count);
