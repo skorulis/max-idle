@@ -119,7 +119,7 @@ export function HomePage({
 
   return (
     <>
-      <section className="card">
+      <section className="card idle-collect-card">
           <p className="label">Current idle time</p>
           <FlipDurationDisplay
             totalSeconds={uncollectedIdleSeconds}
