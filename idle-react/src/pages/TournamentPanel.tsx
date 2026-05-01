@@ -18,10 +18,11 @@ export function TournamentPanel({
 }: TournamentPanelProps) {
   return (
     <div className="tournament-stack">
-      <p className="shop-currency-title">
-        <Trophy size={16} aria-hidden="true" />
+      <h2 className="section-title-with-icon">
+
+        <Trophy size={18} aria-hidden="true" />
         Weekly Tournament
-      </p>
+      </h2>
       <p className="shop-currency-value">Compete for time gem rewards</p>
       {hasEntered ? (
         <p className="subtle">You are entered for this week.</p>

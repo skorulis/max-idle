@@ -120,7 +120,10 @@ export function HomePage({
   return (
     <>
       <section className="card idle-collect-card">
-          <p className="label">Current idle time</p>
+        <h2 className="section-title-with-icon">
+          <Atom size={18} aria-hidden="true" />
+          Current idle time
+        </h2>
           <FlipDurationDisplay
             totalSeconds={uncollectedIdleSeconds}
             collectFlashNonce={collectFlashNonce}
@@ -228,10 +231,10 @@ export function HomePage({
       </section>
 
       <section className="card">
-        <p className="shop-currency-title">
-          <Gift size={16} aria-hidden="true" />
+        <h2 className="section-title-with-icon">
+          <Gem size={18} aria-hidden="true" />
           Daily Gem Reward
-        </p>
+        </h2>
         {dailyRewardAvailable ? (
           <>
             <p className="shop-currency-value">
@@ -251,10 +254,10 @@ export function HomePage({
       {isDailyBonusFeatureUnlocked(playerState.shop) ? (
         <section className="card">
           <div className="daily-bonus-header">
-            <p className="shop-currency-title">
-              <Gift size={16} aria-hidden="true" />
+            <h2 className="section-title-with-icon">
+              <Gift size={18} aria-hidden="true" />
               Daily Bonus
-            </p>
+            </h2>
             <button
               type="button"
               className="info-icon-button"
