@@ -24,14 +24,16 @@ export function TournamentPage({
   }
 
   return (
-    <section className="card">
-      <TournamentPanel
-        hasEntered={tournamentState.hasEntered}
-        secondsUntilDraw={tournamentSecondsUntilDraw}
-        enteringTournament={enteringTournament}
-        onEnterTournament={onEnterTournament}
-      />
-      <div className="panel tournament-details-panel">
+    <>
+      <section className="card">
+        <TournamentPanel
+          hasEntered={tournamentState.hasEntered}
+          secondsUntilDraw={tournamentSecondsUntilDraw}
+          enteringTournament={enteringTournament}
+          onEnterTournament={onEnterTournament}
+        />
+      </section>
+      <section className="card tournament-stack">
         <p className="shop-currency-title">Current Tournament Details</p>
         <p className="subtle">Total Players: {tournamentState.playerCount}</p>
         <p className="subtle">
@@ -54,7 +56,7 @@ export function TournamentPage({
         ) : (
           <p className="subtle">Enter the tournament to see nearby ranked players.</p>
         )}
-      </div>
-    </section>
+      </section>
+    </>
   );
 }

@@ -7,7 +7,6 @@ type TournamentPanelProps = {
   enteringTournament: boolean;
   onEnterTournament: () => Promise<void>;
   onNavigateTournament?: () => void;
-  showTopSpacing?: boolean;
 };
 
 export function TournamentPanel({
@@ -15,11 +14,10 @@ export function TournamentPanel({
   secondsUntilDraw,
   enteringTournament,
   onEnterTournament,
-  onNavigateTournament,
-  showTopSpacing = false
+  onNavigateTournament
 }: TournamentPanelProps) {
   return (
-    <div className={`panel${showTopSpacing ? " tournament-panel" : ""}`}>
+    <div className="tournament-stack">
       <p className="shop-currency-title">
         <Trophy size={16} aria-hidden="true" />
         Weekly Tournament

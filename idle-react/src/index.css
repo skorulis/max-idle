@@ -482,6 +482,10 @@ h3 {
   margin-top: 14px;
 }
 
+.tournament-stack p {
+  margin: 8px 0;
+}
+
 .debug-time-buttons {
   display: flex;
   flex-wrap: wrap;
@@ -502,14 +506,6 @@ h3 {
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-}
-
-.tournament-panel {
-  margin-top: 12px;
-}
-
-.tournament-details-panel {
-  margin-top: 12px;
 }
 
 input {
