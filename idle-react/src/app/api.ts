@@ -178,6 +178,12 @@ export async function collectDailyBonus(token: string | null): Promise<PlayerRes
       throw new Error("DAILY_BONUS_ALREADY_CLAIMED");
     }
   }
+  if (response.status === 403) {
+    const payload = (await response.json().catch(() => null)) as { code?: string } | null;
+    if (payload?.code === "DAILY_BONUS_FEATURE_LOCKED") {
+      throw new Error("DAILY_BONUS_FEATURE_LOCKED");
+    }
+  }
   if (!response.ok) {
     throw new Error("Failed to collect daily bonus");
   }
@@ -195,6 +201,12 @@ export async function getDailyBonusHistory(token: string | null): Promise<DailyB
   });
   if (response.status === 401) {
     throw new Error("UNAUTHORIZED");
+  }
+  if (response.status === 403) {
+    const payload = (await response.json().catch(() => null)) as { code?: string } | null;
+    if (payload?.code === "DAILY_BONUS_FEATURE_LOCKED") {
+      throw new Error("DAILY_BONUS_FEATURE_LOCKED");
+    }
   }
   if (!response.ok) {
     throw new Error("Failed to load daily bonus history");

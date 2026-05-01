@@ -1,7 +1,11 @@
 import express from "express";
 import type { Pool, PoolClient } from "pg";
 import { DAILY_BONUS_ACTIVATION_IDLE_SECONDS } from "@maxidle/shared/dailyBonus";
-import { getSecondsMultiplier, getWorthwhileAchievementsMultiplier } from "@maxidle/shared/shop";
+import {
+  getSecondsMultiplier,
+  getWorthwhileAchievementsMultiplier,
+  isDailyBonusFeatureUnlocked
+} from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
 import { calculateElapsedSeconds } from "../time.js";
 import { getEffectiveIdleSecondsRate } from "../idleRate.js";
@@ -184,6 +188,23 @@ export function registerDailyBonusRoutes({
     try {
       const identity = await resolveIdentity(req);
       req.auth = identity.claims;
+      const userId = identity.claims.sub;
+      const shopResult = await pool.query<{ shop: ShopState }>(
+        `
+        SELECT shop
+        FROM player_states
+        WHERE user_id = $1
+        `,
+        [userId]
+      );
+      const shopRow = shopResult.rows[0];
+      if (!shopRow || !isDailyBonusFeatureUnlocked(shopRow.shop)) {
+        res.status(403).json({
+          error: "Daily bonus feature is not unlocked",
+          code: "DAILY_BONUS_FEATURE_LOCKED"
+        });
+        return;
+      }
       const history = await getDailyBonusHistory(pool, 30);
       res.json({
         history: history.map(toDailyBonusHistoryItemResponse)
@@ -244,6 +265,15 @@ export function registerDailyBonusRoutes({
       if (!player) {
         await client.query("ROLLBACK");
         res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+
+      if (!isDailyBonusFeatureUnlocked(player.shop)) {
+        await client.query("ROLLBACK");
+        res.status(403).json({
+          error: "Daily bonus feature is not unlocked",
+          code: "DAILY_BONUS_FEATURE_LOCKED"
+        });
         return;
       }
 

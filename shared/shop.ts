@@ -1,5 +1,6 @@
 import {
   ANOTHER_SECONDS_MULTIPLIER_SHOP_UPGRADE,
+  DAILY_BONUS_FEATURE_SHOP_UPGRADE,
   LUCK_SHOP_UPGRADE,
   RESTRAINT_SHOP_UPGRADE,
   SHOP_UPGRADES_BY_ID,
@@ -125,6 +126,10 @@ export function getWorthwhileAchievementsMultiplier(shop: ShopState, achievement
 
 export function getLuckEnabled(shop: ShopState): boolean {
   return LUCK_SHOP_UPGRADE.currentLevel(shop) > 0;
+}
+
+export function isDailyBonusFeatureUnlocked(shop: ShopState): boolean {
+  return DAILY_BONUS_FEATURE_SHOP_UPGRADE.currentLevel(shop) > 0;
 }
 
 export function getLuckPreserveChance(shop: ShopState): number {

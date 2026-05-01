@@ -166,6 +166,7 @@
           },
           "dailyBonus": {
             "type": "object",
+            "nullable": true,
             "properties": {
               "type": {
                 "type": "string",
@@ -650,6 +651,20 @@
             "required": [
               "upgradeType"
             ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "upgradeType": {
+                "type": "string",
+                "enum": [
+                  "daily_bonus_feature"
+                ]
+              }
+            },
+            "required": [
+              "upgradeType"
+            ]
           }
         ]
       },
@@ -712,6 +727,12 @@
                         "type": "string",
                         "enum": [
                           "purchase_refund"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "daily_bonus_feature"
                         ]
                       }
                     ]

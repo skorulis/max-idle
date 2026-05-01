@@ -50,7 +50,7 @@ export type PlayerState = {
         isCollectable: boolean;
         isClaimed: boolean;
         activationCostIdleSeconds: number;
-    };
+    } | null;
     serverTime: string;
 };
 
@@ -141,11 +141,13 @@ export type ShopPurchaseRequest = {
     upgradeType: 'collect_gem_time_boost';
 } | {
     upgradeType: 'purchase_refund';
+} | {
+    upgradeType: 'daily_bonus_feature';
 };
 
 export type ShopPurchaseResponse = PlayerState & {
     purchase: {
-        upgradeType: 'seconds_multiplier' | 'another_seconds_multiplier' | 'restraint' | 'idle_hoarder' | 'luck' | 'extra_realtime_wait' | 'collect_gem_time_boost' | 'purchase_refund';
+        upgradeType: 'seconds_multiplier' | 'another_seconds_multiplier' | 'restraint' | 'idle_hoarder' | 'luck' | 'extra_realtime_wait' | 'collect_gem_time_boost' | 'purchase_refund' | 'daily_bonus_feature';
         quantity: number;
         totalCost: number;
     };

@@ -75,6 +75,19 @@ describe("auth + player lifecycle", () => {
     );
   }
 
+  async function unlockDailyBonusFeature(
+    app: ReturnType<typeof createApp>,
+    token: string,
+    userId: string
+  ): Promise<void> {
+    await pool.query(`UPDATE player_states SET time_gems_available = time_gems_available + 1 WHERE user_id = $1`, [userId]);
+    const purchase = await request(app)
+      .post("/shop/purchase")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ upgradeType: "daily_bonus_feature" });
+    expect(purchase.status).toBe(200);
+  }
+
   async function insertLeaderboardPlayer(totalSecondsCollected: number, currentSeconds = 0): Promise<string> {
     const userId = randomUUID();
     const username = `lb_${randomUUID().replace(/-/g, "").slice(0, 12)}`;
@@ -307,10 +320,11 @@ describe("auth + player lifecycle", () => {
     expect(homeResponse.status).toBe(401);
   });
 
-  it("returns and persists today's generated daily bonus in player payload", async () => {
+  it("includes today's daily bonus in player payload even before the feature is unlocked", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
 
     const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
     expect(playerResponse.status).toBe(200);
@@ -318,6 +332,15 @@ describe("auth + player lifecycle", () => {
     expect(typeof playerResponse.body.dailyBonus.type).toBe("string");
     expect(typeof playerResponse.body.dailyBonus.value).toBe("number");
     expect(playerResponse.body.dailyBonus.activationCostIdleSeconds).toBe(24 * 60 * 60);
+
+    await unlockDailyBonusFeature(app, token, userId);
+
+    const afterUnlock = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
+    expect(afterUnlock.status).toBe(200);
+    expect(afterUnlock.body.dailyBonus).toBeTruthy();
+    expect(typeof afterUnlock.body.dailyBonus.type).toBe("string");
+    expect(typeof afterUnlock.body.dailyBonus.value).toBe("number");
+    expect(afterUnlock.body.dailyBonus.activationCostIdleSeconds).toBe(24 * 60 * 60);
 
     const historyRow = await pool.query<{ bonus_type: string; bonus_value: string | number }>(
       `
@@ -348,6 +371,7 @@ describe("auth + player lifecycle", () => {
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
+    await unlockDailyBonusFeature(app, token, userId);
     await upsertTodayBonus("double_gems_daily_reward", 2);
     await pool.query(`UPDATE player_states SET idle_time_available = $2 WHERE user_id = $1`, [userId, 24 * 60 * 60]);
 
@@ -366,6 +390,7 @@ describe("auth + player lifecycle", () => {
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
+    await unlockDailyBonusFeature(app, token, userId);
     await upsertTodayBonus("free_real_time_hours", 3);
     await pool.query(`UPDATE player_states SET idle_time_available = $2 WHERE user_id = $1`, [userId, 24 * 60 * 60]);
 
@@ -392,10 +417,25 @@ describe("auth + player lifecycle", () => {
     expect(claimState.rows[0]?.last_daily_bonus_claimed_type).toBe("free_real_time_hours");
   });
 
+  it("rejects daily bonus activation when the feature is not unlocked", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+    await upsertTodayBonus("collect_idle_percent", 30);
+    await pool.query(`UPDATE player_states SET idle_time_available = $2 WHERE user_id = $1`, [userId, 24 * 60 * 60]);
+
+    const collect = await request(app).post("/player/daily-bonus/collect").set("Authorization", `Bearer ${token}`);
+    expect(collect.status).toBe(403);
+    expect(collect.body.code).toBe("DAILY_BONUS_FEATURE_LOCKED");
+  });
+
   it("rejects daily bonus activation without enough idle time", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+    await unlockDailyBonusFeature(app, token, userId);
     await upsertTodayBonus("collect_idle_percent", 30);
 
     const collect = await request(app).post("/player/daily-bonus/collect").set("Authorization", `Bearer ${token}`);
@@ -408,6 +448,7 @@ describe("auth + player lifecycle", () => {
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
+    await unlockDailyBonusFeature(app, token, userId);
     await upsertTodayBonus("collect_idle_percent", 30);
     await pool.query(`UPDATE player_states SET idle_time_available = $2 WHERE user_id = $1`, [userId, 100_000]);
 
@@ -1828,7 +1869,8 @@ describe("auth + player lifecycle", () => {
       idle_hoarder: 0,
       luck: 0,
       worthwhile_achievements: 0,
-      collect_gem_time_boost: 0
+      collect_gem_time_boost: 0,
+      daily_bonus_feature: 0
     });
   });
 

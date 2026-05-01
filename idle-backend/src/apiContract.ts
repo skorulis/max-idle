@@ -64,20 +64,22 @@ const playerStateSchema = registry.register(
     currentSecondsLastUpdated: z.string().datetime(),
     lastCollectedAt: z.string().datetime(),
     lastDailyRewardCollectedAt: z.string().datetime().nullable(),
-    dailyBonus: z.object({
-      type: z.enum([
-        "collect_idle_percent",
-        "collect_real_percent",
-        "double_gems_daily_reward",
-        "free_real_time_hours",
-        "free_idle_time_hours"
-      ]),
-      value: z.number().int().positive(),
-      date: z.string().datetime(),
-      isCollectable: z.boolean(),
-      isClaimed: z.boolean(),
-      activationCostIdleSeconds: z.number().int().positive()
-    }),
+    dailyBonus: z
+      .object({
+        type: z.enum([
+          "collect_idle_percent",
+          "collect_real_percent",
+          "double_gems_daily_reward",
+          "free_real_time_hours",
+          "free_idle_time_hours"
+        ]),
+        value: z.number().int().positive(),
+        date: z.string().datetime(),
+        isCollectable: z.boolean(),
+        isClaimed: z.boolean(),
+        activationCostIdleSeconds: z.number().int().positive()
+      })
+      .nullable(),
     serverTime: z.string().datetime()
   })
 );
@@ -202,6 +204,9 @@ const shopPurchaseRequestSchema = registry.register(
     }),
     z.object({
       upgradeType: z.literal("purchase_refund")
+    }),
+    z.object({
+      upgradeType: z.literal("daily_bonus_feature")
     })
   ])
 );
@@ -218,7 +223,8 @@ const shopPurchaseResponseSchema = registry.register(
         z.literal("luck"),
         z.literal("extra_realtime_wait"),
         z.literal("collect_gem_time_boost"),
-        z.literal("purchase_refund")
+        z.literal("purchase_refund"),
+        z.literal("daily_bonus_feature")
       ]),
       quantity: z.number().int().positive(),
       totalCost: z.number().int().nonnegative()

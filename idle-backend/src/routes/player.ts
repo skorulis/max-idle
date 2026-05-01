@@ -24,7 +24,11 @@ import {
 import type { AuthClaims } from "../types.js";
 import type { AnalyticsService } from "../analytics.js";
 import { isDailyBonusEffectActiveForUtcDay } from "@maxidle/shared/dailyBonus";
-import { canCollectDailyReward, getOrCreateCurrentDailyBonus, toDailyBonusResponse } from "./dailyBonus.js";
+import {
+  canCollectDailyReward,
+  getOrCreateCurrentDailyBonus,
+  toDailyBonusResponse
+} from "./dailyBonus.js";
 
 const REWARD_SKIPPER_GAP_MS = 48 * 60 * 60 * 1000;
 

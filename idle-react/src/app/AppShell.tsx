@@ -4,7 +4,8 @@ import { AppNav } from "./AppNav";
 import { toast, toastCollectIdle } from "../gameToast";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
 import { getCollectGemIdleSecondsMultiplier } from "../shopUpgrades";
-import { COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE, SHOP_UPGRADES_BY_ID, } from "../shopUpgrades";
+import { isDailyBonusFeatureUnlocked } from "../shop";
+import { COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE, SHOP_UPGRADES_BY_ID } from "../shopUpgrades";
 import {
   type ShopUpgradeId
 } from "../shopUpgrades";
@@ -115,7 +116,8 @@ const SHOP_ALREADY_OWNED_MESSAGE: Partial<Record<ShopUpgradeId, string>> = {
   luck: "Luck is already active.",
   idle_hoarder: "Idle hoarder is already maxed.",
   worthwhile_achievements: "Worthwhile Achievements is already maxed.",
-  collect_gem_time_boost: "Hasty collection is already maxed."
+  collect_gem_time_boost: "Hasty collection is already maxed.",
+  daily_bonus_feature: "Daily Bonus is already unlocked."
 };
 
 function isDailyRewardNotificationsEnabledStored(): boolean {
@@ -206,6 +208,7 @@ export function AppShell() {
     | "extra_realtime_wait"
     | "collect_gem_time_boost"
     | "purchase_refund"
+    | "daily_bonus_feature"
     | null
   >(null);
   const [resettingDailyBonus, setResettingDailyBonus] = useState(false);
@@ -241,6 +244,12 @@ export function AppShell() {
       return;
     }
 
+    if (!playerState || !isDailyBonusFeatureUnlocked(playerState.shop)) {
+      setDailyBonusHistory([]);
+      setDailyBonusHistoryLoading(false);
+      return;
+    }
+
     let cancelled = false;
     const loadDailyBonusHistory = async () => {
       setDailyBonusHistoryLoading(true);
@@ -259,6 +268,10 @@ export function AppShell() {
           setError("Login or start idling to view daily bonus history.");
           return;
         }
+        if (dailyBonusHistoryError instanceof Error && dailyBonusHistoryError.message === "DAILY_BONUS_FEATURE_LOCKED") {
+          setError("Purchase Daily Bonus in the shop to view history.");
+          return;
+        }
         setError(dailyBonusHistoryError instanceof Error ? dailyBonusHistoryError.message : "Failed to load daily bonus history.");
       } finally {
         if (!cancelled) {
@@ -271,7 +284,7 @@ export function AppShell() {
     return () => {
       cancelled = true;
     };
-  }, [location.pathname, token, account?.gameUserId]);
+  }, [location.pathname, token, account?.gameUserId, playerState]);
 
   useEffect(() => {
     if (location.pathname !== "/collection") {
@@ -1104,6 +1117,8 @@ export function AppShell() {
         setError("Not enough idle time in the bank to activate today's daily bonus.");
       } else if (dailyBonusError instanceof Error && dailyBonusError.message === "DAILY_BONUS_ALREADY_CLAIMED") {
         setError("Daily bonus already activated today.");
+      } else if (dailyBonusError instanceof Error && dailyBonusError.message === "DAILY_BONUS_FEATURE_LOCKED") {
+        setError("Purchase Daily Bonus in the shop to activate.");
       } else {
         setError(dailyBonusError instanceof Error ? dailyBonusError.message : "Daily bonus collection failed");
       }

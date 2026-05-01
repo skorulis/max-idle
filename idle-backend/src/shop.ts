@@ -13,6 +13,7 @@ import {
 import type { ShopState } from "@maxidle/shared/shop";
 import {
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
+  DAILY_BONUS_FEATURE_SHOP_UPGRADE,
   getShopUpgradeDefinition,
   REALTIME_WAIT_EXTENSION_SECONDS,
   SHOP_CURRENCY_TYPES,
@@ -32,6 +33,7 @@ import { calculateElapsedSeconds } from "./time.js";
 import { getEffectiveIdleSecondsRate } from "./idleRate.js";
 import type { AuthClaims } from "./types.js";
 import type { AnalyticsService } from "./analytics.js";
+import { getOrCreateCurrentDailyBonus, toDailyBonusResponse } from "./routes/dailyBonus.js";
 
 export {
   getDefaultShopState,
@@ -191,13 +193,17 @@ export function registerShopRoutes({
       }
 
       const refundTotals = isPurchaseRefund ? getShopPurchaseRefundTotals(row.shop) : { idle: 0, real: 0 };
+      const preservedDailyBonusFeatureLevel = DAILY_BONUS_FEATURE_SHOP_UPGRADE.currentLevel(row.shop);
       const nextShopState = isExtraRealtimeWait
         ? row.shop
         : isCollectGemTimeBoost
           ? withShopUpgradeLevel(row.shop, SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST, collectGemLevel + quantity)
           : isPurchaseRefund
-            ? getDefaultShopState()
-            : withShopUpgradeLevel(row.shop, boundedUpgrade.id, currentLevel + quantity)            
+            ? {
+                ...getDefaultShopState(),
+                [SHOP_UPGRADE_IDS.DAILY_BONUS_FEATURE]: preservedDailyBonusFeatureLevel
+              }
+            : withShopUpgradeLevel(row.shop, boundedUpgrade.id, currentLevel + quantity)
       const nextLastCollectedAt = isExtraRealtimeWait
         ? new Date(row.last_collected_at.getTime() - REALTIME_WAIT_EXTENSION_SECONDS * 1000)
         : row.last_collected_at;
@@ -238,6 +244,7 @@ export function registerShopRoutes({
         last_collected_at: Date;
         shop: ShopState;
         last_daily_reward_collected_at: Date | null;
+        last_daily_bonus_claimed_at: Date | null;
       }>(
         `
         UPDATE player_states
@@ -267,7 +274,8 @@ export function registerShopRoutes({
           current_seconds_last_updated,
           last_collected_at,
           shop,
-          last_daily_reward_collected_at
+          last_daily_reward_collected_at,
+          last_daily_bonus_claimed_at
         `,
         [
           userId,
@@ -307,6 +315,7 @@ export function registerShopRoutes({
           total_cost: totalCost
         }
       );
+      const currentDailyBonusAfterPurchase = await getOrCreateCurrentDailyBonus(client, now);
       res.json({
         idleTime: {
           total: toNumber(updated.idle_time_total),
@@ -331,6 +340,7 @@ export function registerShopRoutes({
         currentSecondsLastUpdated: updated.current_seconds_last_updated.toISOString(),
         lastCollectedAt: updated.last_collected_at.toISOString(),
         lastDailyRewardCollectedAt: updated.last_daily_reward_collected_at?.toISOString() ?? null,
+        dailyBonus: toDailyBonusResponse(currentDailyBonusAfterPurchase, updated.last_daily_bonus_claimed_at),
         serverTime: now.toISOString(),
         purchase: {
           upgradeType,

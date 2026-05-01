@@ -41,7 +41,9 @@ export const SHOP_UPGRADE_IDS = {
   /** Spend 1 gem to reset purchased idle/real shop upgrades and refund their spent time. */
   PURCHASE_REFUND: "purchase_refund",
   /** Idle multiplier bonus per unlocked achievement: ×(1 + value × achievementCount). */
-  WORTHWHILE_ACHIEVEMENTS: "worthwhile_achievements"
+  WORTHWHILE_ACHIEVEMENTS: "worthwhile_achievements",
+  /** Spend 1 gem to unlock the daily bonus feature (activation still costs idle time). */
+  DAILY_BONUS_FEATURE: "daily_bonus_feature"
 } as const;
 
 export type ShopUpgradeId = (typeof SHOP_UPGRADE_IDS)[keyof typeof SHOP_UPGRADE_IDS];
@@ -285,6 +287,18 @@ export const PURCHASE_REFUND_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpg
   currencyType: SHOP_CURRENCY_TYPES.GEM
 });
 
+export const DAILY_BONUS_FEATURE_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
+  id: SHOP_UPGRADE_IDS.DAILY_BONUS_FEATURE,
+  name: "Daily Bonus",
+  icon: "gift",
+  description: "Unlock the daily bonus feature",
+  longDescription:
+    "Each day there will be a random bonus that can be purchased for 24h of idle time.",
+  valueDescription: null,
+  levels: [{ cost: 1, value: 1 }],
+  currencyType: SHOP_CURRENCY_TYPES.GEM
+});
+
 /** Ten levels: bonus per achievement rises by 0.02 per level, from 0.02 to 0.2; multiplier is 1 + value × achievementCount. */
 export const WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS,
@@ -319,7 +333,8 @@ export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
   EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
-  PURCHASE_REFUND_SHOP_UPGRADE
+  PURCHASE_REFUND_SHOP_UPGRADE,
+  DAILY_BONUS_FEATURE_SHOP_UPGRADE
 ];
 
 export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> = {
@@ -332,7 +347,8 @@ export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> =
   [SHOP_UPGRADE_IDS.EXTRA_REALTIME_WAIT]: EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST]: COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.PURCHASE_REFUND]: PURCHASE_REFUND_SHOP_UPGRADE,
-  [SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS]: WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE
+  [SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS]: WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
+  [SHOP_UPGRADE_IDS.DAILY_BONUS_FEATURE]: DAILY_BONUS_FEATURE_SHOP_UPGRADE
 };
 
 export function getShopUpgradeDefinition(upgradeType: string): ShopUpgradeDefinition | null {

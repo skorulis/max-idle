@@ -12,5 +12,6 @@ export {
   getShopPurchaseRefundTotals,
   getDefaultShopState,
   getWorthwhileAchievementsMultiplier,
-  multiplierToLevel
+  multiplierToLevel,
+  isDailyBonusFeatureUnlocked
 } from "@maxidle/shared/shop";

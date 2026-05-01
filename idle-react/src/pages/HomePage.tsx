@@ -2,7 +2,7 @@ import { useState } from "react";
 import { formatSeconds } from "../formatSeconds";
 import { Atom, CircleHelp, Clock3, Gem, Gift, History } from "lucide-react";
 import type { SyncedPlayerState } from "../app/types";
-import { getRestraintMinRealtimeSeconds } from "../shop";
+import { getRestraintMinRealtimeSeconds, isDailyBonusFeatureUnlocked } from "../shop";
 import { FlipDurationDisplay } from "../components/FlipDurationDisplay";
 import { CurrentRateInfoOverlay } from "./CurrentRateInfoOverlay";
 import { TournamentPanel } from "./TournamentPanel";
@@ -197,48 +197,50 @@ export function HomePage({
           </>
         )}
       </div>
-      <div className="panel">
-        <div className="daily-bonus-header">
-          <p className="shop-currency-title">
-            <Gift size={16} aria-hidden="true" />
-            Daily Bonus
-          </p>
-          <button
-            type="button"
-            className="info-icon-button"
-            onClick={onNavigateDailyBonusHistory}
-            aria-label="View daily bonus history"
-            title="View history"
-          >
-            <History size={14} aria-hidden="true" />
-          </button>
-        </div>
-        <p className="shop-currency-value">{dailyBonusDescription}</p>
-        {dailyBonus ? (
-          <>
-            <p className="subtle">
-              {dailyBonus.isClaimed
-                ? `Resets in ${formatSeconds(dailyBonusSecondsUntilUtcReset)}`
-                : `Activation costs ${formatSeconds(dailyBonus.activationCostIdleSeconds)} idle time.`}
+      {isDailyBonusFeatureUnlocked(playerState.shop) ? (
+        <div className="panel">
+          <div className="daily-bonus-header">
+            <p className="shop-currency-title">
+              <Gift size={16} aria-hidden="true" />
+              Daily Bonus
             </p>
             <button
-              className="collect"
-              onClick={() => void onCollectDailyBonus()}
-              disabled={
-                collectingDailyBonus ||
-                dailyBonus.isClaimed ||
-                playerState.idleTime.available < dailyBonus.activationCostIdleSeconds
-              }
+              type="button"
+              className="info-icon-button"
+              onClick={onNavigateDailyBonusHistory}
+              aria-label="View daily bonus history"
+              title="View history"
             >
-              {dailyBonus.isClaimed
-                ? "Daily bonus activated"
-                : collectingDailyBonus
-                  ? "Activating daily bonus..."
-                  : "Activate daily bonus"}
+              <History size={14} aria-hidden="true" />
             </button>
-          </>
-        ) : null}
-      </div>
+          </div>
+          <p className="shop-currency-value">{dailyBonusDescription}</p>
+          {dailyBonus ? (
+            <>
+              <p className="subtle">
+                {dailyBonus.isClaimed
+                  ? `Resets in ${formatSeconds(dailyBonusSecondsUntilUtcReset)}`
+                  : `Activation costs ${formatSeconds(dailyBonus.activationCostIdleSeconds)} idle time.`}
+              </p>
+              <button
+                className="collect"
+                onClick={() => void onCollectDailyBonus()}
+                disabled={
+                  collectingDailyBonus ||
+                  dailyBonus.isClaimed ||
+                  playerState.idleTime.available < dailyBonus.activationCostIdleSeconds
+                }
+              >
+                {dailyBonus.isClaimed
+                  ? "Daily bonus activated"
+                  : collectingDailyBonus
+                    ? "Activating daily bonus..."
+                    : "Activate daily bonus"}
+              </button>
+            </>
+          ) : null}
+        </div>
+      ) : null}
       <TournamentPanel
         hasEntered={tournamentHasEntered}
         secondsUntilDraw={tournamentSecondsUntilDraw}

@@ -56,7 +56,7 @@ export type PlayerResponse = {
   currentSecondsLastUpdated: string;
   lastCollectedAt: string;
   lastDailyRewardCollectedAt: string | null;
-  dailyBonus?: DailyBonus;
+  dailyBonus?: DailyBonus | null;
   serverTime: string;
 };
 
