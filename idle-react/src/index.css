@@ -321,6 +321,14 @@ input {
   object-fit: contain;
 }
 
+.home-hero-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 0 16px;
+  border-radius: 8px;
+}
+
 .subtle {
   color: #6b7280;
   font-size: 14px;
