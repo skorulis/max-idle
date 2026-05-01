@@ -43,6 +43,10 @@
     "./dailyBonus": {
       "types": "./dist/dailyBonus.d.ts",
       "default": "./dist/dailyBonus.js"
+    },
+    "./timeConstants": {
+      "types": "./dist/timeConstants.d.ts",
+      "default": "./dist/timeConstants.js"
     }
   }
 }

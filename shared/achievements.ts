@@ -1,3 +1,9 @@
+import {
+  SECONDS_PER_DAY,
+  SECONDS_PER_HOUR,
+  SECONDS_PER_MINUTE
+} from "./timeConstants.js";
+
 export const ACHIEVEMENT_EARNINGS_BONUS_PER_COMPLETION = 0.25;
 export const ACHIEVEMENT_IDS = {
   ACCOUNT_CREATION: "account_creation",
@@ -66,13 +72,13 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     clientDriven: false,
     levelValueDisplay: "time_seconds",
     levels: [
-      { value: 65 * 60 },
-      { value: 9 * 60 * 60 + 5 * 60 },
-      { value: 26 * 60 * 60 },
-      { value: 4 * 24 * 60 * 60 },
-      { value: 19 * 24 * 60 * 60 },
-      { value: 97 * 24 * 60 * 60 },
-      { value: 366 * 24 * 60 * 60 },
+      { value: 65 * SECONDS_PER_MINUTE },
+      { value: 9 * SECONDS_PER_HOUR + 5 * SECONDS_PER_MINUTE },
+      { value: 26 * SECONDS_PER_HOUR },
+      { value: 4 * SECONDS_PER_DAY },
+      { value: 19 * SECONDS_PER_DAY },
+      { value: 97 * SECONDS_PER_DAY },
+      { value: 366 * SECONDS_PER_DAY },
     ]
   },
   {
@@ -83,12 +89,12 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     clientDriven: false,
     levelValueDisplay: "time_seconds",
     levels: [
-      { value: 3 * 60 * 60 + 7 * 60 },
-      { value: 25 * 60 * 60 },
-      { value: 6 * 24 * 60 * 60 },
-      { value: 19 * 24 * 60 * 60 },
-      { value: 364 * 24 * 60 * 60 },
-      { value: 2 * 364 * 24 * 60 * 60 },
+      { value: 3 * SECONDS_PER_HOUR + 7 * SECONDS_PER_MINUTE },
+      { value: 25 * SECONDS_PER_HOUR },
+      { value: 6 * SECONDS_PER_DAY },
+      { value: 19 * SECONDS_PER_DAY },
+      { value: 364 * SECONDS_PER_DAY },
+      { value: 2 * 364 * SECONDS_PER_DAY },
     ]
   },
   {
@@ -99,11 +105,11 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     clientDriven: false,
     levelValueDisplay: "time_seconds",
     levels: [
-      { value: 59 * 60 },
-      { value: 24 * 60 * 60 },
-      { value: (2 * 24 + 14) * 60 * 60 },
-      { value: 6 * 24 * 60 * 60 },
-      { value: 15 * 24 * 60 * 60 }
+      { value: 59 * SECONDS_PER_MINUTE },
+      { value: SECONDS_PER_DAY },
+      { value: 2 * SECONDS_PER_DAY + 14 * SECONDS_PER_HOUR },
+      { value: 6 * SECONDS_PER_DAY },
+      { value: 15 * SECONDS_PER_DAY }
     ]
   },
   {

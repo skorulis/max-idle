@@ -1,5 +1,11 @@
 import type { ShopState } from "./shop.js";
 import { safeNumber, safeNaturalNumber } from "./safeNumber.js";
+import {
+  SECONDS_PER_DAY,
+  SECONDS_PER_HOUR,
+  SECONDS_PER_WEEK,
+  SECONDS_PER_YEAR
+} from "./timeConstants.js";
 
 export const SHOP_CURRENCY_TYPES = {
   IDLE: "idle",
@@ -17,11 +23,6 @@ export const REALTIME_WAIT_EXTENSION_SECONDS = 6 * 60 * 60;
  * Level resets to 0 on collect.
  */
 export const COLLECT_GEM_TIME_PER_LEVEL_WAIT_FACTOR = 0.5;
-
-const SECONDS_PER_HOUR = 60 * 60;
-const SECONDS_PER_DAY = 24 * 60 * 60;
-const SECONDS_PER_WEEK = 7 * 24 * 60 * 60;
-const SECONDS_PER_YEAR = 365 * 24 * 60 * 60;
 
 export const SHOP_UPGRADE_IDS = {
   SECONDS_MULTIPLIER: "seconds_multiplier",
