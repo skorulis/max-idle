@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS player_states (
   last_daily_reward_collected_at TIMESTAMPTZ,
   last_daily_bonus_claimed_at TIMESTAMPTZ,
   last_daily_bonus_claimed_type TEXT,
+  daily_bonuses_collected_count BIGINT NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

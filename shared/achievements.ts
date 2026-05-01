@@ -15,7 +15,8 @@ export const ACHIEVEMENT_IDS = {
   COLLECTION_COUNT: "collection_count",
   CONTEMPLATION: "contemplation",
   REWARD_SKIPPER: "reward_skipper",
-  GEM_HOARDER: "gem_hoarder"
+  GEM_HOARDER: "gem_hoarder",
+  DAILY_BONUS_COLLECTOR: "daily_bonus_collector"
 } as const;
 
 /** Minimum `time_gems_available` to earn Gem Hoarder */
@@ -141,5 +142,13 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: "Have 20 time gems available.",
     icon: "gem",
     clientDriven: false
+  },
+  {
+    id: ACHIEVEMENT_IDS.DAILY_BONUS_COLLECTOR,
+    name: "Daily ritual",
+    description: "Activate %s daily bonuses.",
+    icon: "gift",
+    clientDriven: false,
+    levels: [{ value: 1 }, { value: 13 }, { value: 27 }, { value: 41 }, { value: 77 }]
   }
 ];

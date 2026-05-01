@@ -8,6 +8,7 @@ import { calculateBoostedIdleSecondsGain, calculateIdleSecondsGain } from "../sr
 import { finalizeDueTournaments, getNextTournamentDrawAt } from "../src/tournaments.js";
 import type { AppConfig } from "../src/types.js";
 import { createTestPool } from "./testDb.js";
+import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import { getRestraintBonusMultiplier } from "@maxidle/shared/shop";
 import { LUCK_SHOP_UPGRADE, RESTRAINT_SHOP_UPGRADE, SECONDS_MULTIPLIER_SHOP_UPGRADE } from "@maxidle/shared/shopUpgrades";
 
@@ -514,6 +515,35 @@ describe("auth + player lifecycle", () => {
     expect(collect.status).toBe(200);
     expect(collect.body.dailyBonus.isClaimed).toBe(true);
     expect(collect.body.idleTime.available).toBe(100_000 - 24 * 60 * 60);
+  });
+
+  it("increments daily_bonuses_collected_count and grants the daily bonus collector achievement", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+    await unlockDailyBonusFeature(app, token, userId);
+    await upsertTodayBonus("free_real_time_hours", 3);
+    await pool.query(`UPDATE player_states SET idle_time_available = $2 WHERE user_id = $1`, [userId, 24 * 60 * 60]);
+
+    const collect = await request(app).post("/player/daily-bonus/collect").set("Authorization", `Bearer ${token}`);
+    expect(collect.status).toBe(200);
+
+    const state = await pool.query<{
+      daily_bonuses_collected_count: string | number;
+      achievement_levels: unknown;
+    }>(
+      `
+      SELECT daily_bonuses_collected_count, achievement_levels
+      FROM player_states
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+    expect(Number(state.rows[0]?.daily_bonuses_collected_count)).toBe(1);
+    const levels = state.rows[0]?.achievement_levels as Array<{ id: string; level: number }>;
+    const collector = levels.find((entry) => entry.id === ACHIEVEMENT_IDS.DAILY_BONUS_COLLECTOR);
+    expect(collector?.level).toBe(1);
   });
 
   it("returns 403 from tournament routes when the weekly tournament shop upgrade is locked", async () => {
@@ -1050,7 +1080,7 @@ describe("auth + player lifecycle", () => {
     expect(response.status).toBe(200);
     expect(response.body.completedCount).toBe(0);
     expect(response.body.earningsBonusMultiplier).toBe(1);
-    expect(response.body.achievements).toHaveLength(10);
+    expect(response.body.achievements).toHaveLength(11);
     expect(response.body.achievements[0].id).toBe("account_creation");
     expect(response.body.achievements[1].id).toBe("username_selected");
     expect(response.body.achievements[2].id).toBe("beginner_shopper");
@@ -1071,6 +1101,9 @@ describe("auth + player lifecycle", () => {
     expect(response.body.achievements[8].clientDriven).toBe(false);
     expect(response.body.achievements[9].id).toBe("gem_hoarder");
     expect(response.body.achievements[9].clientDriven).toBe(false);
+    expect(response.body.achievements[10].id).toBe("daily_bonus_collector");
+    expect(response.body.achievements[10].maxLevel).toBe(5);
+    expect(response.body.achievements[10].level).toBe(0);
     const collectionAchievement = response.body.achievements.find((achievement: { id: string }) => achievement.id === "collection_count");
     expect(collectionAchievement?.level).toBe(0);
     expect(collectionAchievement?.maxLevel).toBe(3);

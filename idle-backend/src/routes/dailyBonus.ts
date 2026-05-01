@@ -1,5 +1,6 @@
 import express from "express";
 import type { Pool, PoolClient } from "pg";
+import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import { DAILY_BONUS_ACTIVATION_IDLE_SECONDS } from "@maxidle/shared/dailyBonus";
 import {
   getSecondsMultiplier,
@@ -7,8 +8,14 @@ import {
   isDailyBonusFeatureUnlocked
 } from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
-import { calculateElapsedSeconds } from "../time.js";
+import {
+  getAchievementLevelForValue,
+  mergeAchievementLevels,
+  normalizeAchievementLevels,
+  sumAchievementLevels
+} from "../achievementUpdates.js";
 import { getEffectiveIdleSecondsRate } from "../idleRate.js";
+import { calculateElapsedSeconds } from "../time.js";
 import type { AuthClaims } from "../types.js";
 import type { AnalyticsService } from "../analytics.js";
 
@@ -238,10 +245,12 @@ export function registerDailyBonusRoutes({
         current_seconds_last_updated: Date;
         shop: ShopState;
         achievement_count: number | string;
+        achievement_levels: unknown;
         has_unseen_achievements: boolean;
         last_collected_at: Date;
         last_daily_reward_collected_at: Date | null;
         last_daily_bonus_claimed_at: Date | null;
+        daily_bonuses_collected_count: number | string;
       }>(
         `
         SELECT
@@ -256,10 +265,12 @@ export function registerDailyBonusRoutes({
           current_seconds_last_updated,
           shop,
           achievement_count,
+          achievement_levels,
           has_unseen_achievements,
           last_collected_at,
           last_daily_reward_collected_at,
-          last_daily_bonus_claimed_at
+          last_daily_bonus_claimed_at,
+          daily_bonuses_collected_count
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -304,6 +315,22 @@ export function registerDailyBonusRoutes({
       }
 
       const bonusSeconds = currentDailyBonus.bonus_value * 60 * 60;
+      const nextDailyBonusesCollected = toNumber(player.daily_bonuses_collected_count) + 1;
+      const dailyBonusCollectorLevel = getAchievementLevelForValue(
+        ACHIEVEMENT_IDS.DAILY_BONUS_COLLECTOR,
+        nextDailyBonusesCollected
+      );
+      const nextAchievementLevels =
+        dailyBonusCollectorLevel > 0
+          ? mergeAchievementLevels(
+              player.achievement_levels,
+              new Map([[ACHIEVEMENT_IDS.DAILY_BONUS_COLLECTOR, dailyBonusCollectorLevel]]),
+              now
+            )
+          : normalizeAchievementLevels(player.achievement_levels, now);
+      const nextAchievementCount = sumAchievementLevels(nextAchievementLevels);
+      const hasNewAchievement = nextAchievementCount > toNumber(player.achievement_count);
+
       const updateResult = await client.query<{
         idle_time_total: number | string;
         idle_time_available: number | string;
@@ -333,6 +360,10 @@ export function registerDailyBonusRoutes({
           time_gems_available = time_gems_available + CASE WHEN $3 = 'free_time_gem' THEN $6::BIGINT ELSE 0 END,
           last_daily_bonus_claimed_at = $2,
           last_daily_bonus_claimed_type = $3,
+          daily_bonuses_collected_count = daily_bonuses_collected_count + 1,
+          achievement_levels = $7::jsonb,
+          achievement_count = $8,
+          has_unseen_achievements = has_unseen_achievements OR $9::boolean,
           updated_at = $2
         WHERE user_id = $1
           AND idle_time_available >= $4::BIGINT
@@ -353,7 +384,17 @@ export function registerDailyBonusRoutes({
           last_daily_reward_collected_at,
           last_daily_bonus_claimed_at
         `,
-        [userId, now, currentDailyBonus.bonus_type, activationCost, bonusSeconds, currentDailyBonus.bonus_value]
+        [
+          userId,
+          now,
+          currentDailyBonus.bonus_type,
+          activationCost,
+          bonusSeconds,
+          currentDailyBonus.bonus_value,
+          JSON.stringify(nextAchievementLevels),
+          nextAchievementCount,
+          hasNewAchievement
+        ]
       );
       const updatedPlayer = updateResult.rows[0];
       if (!updatedPlayer) {
