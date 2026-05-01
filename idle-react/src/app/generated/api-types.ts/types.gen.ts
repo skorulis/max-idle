@@ -44,7 +44,7 @@ export type PlayerState = {
     lastCollectedAt: string;
     lastDailyRewardCollectedAt: string | null;
     dailyBonus: {
-        type: 'collect_idle_percent' | 'collect_real_percent' | 'double_gems_daily_reward' | 'free_real_time_hours' | 'free_idle_time_hours';
+        type: 'collect_idle_percent' | 'collect_real_percent' | 'double_gems_daily_reward' | 'free_time_gem' | 'free_real_time_hours' | 'free_idle_time_hours';
         value: number;
         date: string;
         isCollectable: boolean;
@@ -159,7 +159,7 @@ export type PlayerCollectResponse = PlayerState & {
 };
 
 export type DailyBonusHistoryItem = {
-    type: 'collect_idle_percent' | 'collect_real_percent' | 'double_gems_daily_reward' | 'free_real_time_hours' | 'free_idle_time_hours';
+    type: 'collect_idle_percent' | 'collect_real_percent' | 'double_gems_daily_reward' | 'free_time_gem' | 'free_real_time_hours' | 'free_idle_time_hours';
     value: number;
     date: string;
 };
@@ -214,7 +214,7 @@ export type TournamentEnterResponse = {
 export type HomeResponse = {
     player: PlayerState;
     account: AccountResponse;
-    tournament: TournamentCurrentResponse;
+    tournament: TournamentCurrentResponse & unknown;
 };
 
 export type EmailAuthRequest = {
@@ -637,6 +637,10 @@ export type GetTournamentCurrentErrors = {
      * Unauthorized
      */
     401: ErrorResponse;
+    /**
+     * Weekly tournament shop upgrade required
+     */
+    403: ErrorResponse;
 };
 
 export type GetTournamentCurrentError = GetTournamentCurrentErrors[keyof GetTournamentCurrentErrors];
@@ -662,6 +666,10 @@ export type PostTournamentEnterErrors = {
      * Unauthorized
      */
     401: ErrorResponse;
+    /**
+     * Weekly tournament shop upgrade required
+     */
+    403: ErrorResponse;
     /**
      * Draw is currently being finalized
      */

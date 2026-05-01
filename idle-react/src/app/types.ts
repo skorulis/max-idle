@@ -147,7 +147,8 @@ export type AccountResponse = {
 export type HomeResponse = {
   player: PlayerResponse;
   account: AccountResponse;
-  tournament: TournamentCurrentResponse;
+  /** Present when the player has purchased the weekly tournament shop upgrade. */
+  tournament: TournamentCurrentResponse | null;
 };
 
 export type SyncedPlayerState = {

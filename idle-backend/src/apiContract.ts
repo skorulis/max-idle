@@ -330,7 +330,7 @@ const homeResponseSchema = registry.register(
   z.object({
     player: playerStateSchema,
     account: accountResponseSchema,
-    tournament: tournamentCurrentResponseSchema
+    tournament: tournamentCurrentResponseSchema.nullable()
   })
 );
 
@@ -782,6 +782,12 @@ registry.registerPath({
       content: {
         "application/json": { schema: errorResponseSchema }
       }
+    },
+    403: {
+      description: "Weekly tournament shop upgrade required",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
     }
   }
 });
@@ -801,6 +807,12 @@ registry.registerPath({
     },
     401: {
       description: "Unauthorized",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    },
+    403: {
+      description: "Weekly tournament shop upgrade required",
       content: {
         "application/json": { schema: errorResponseSchema }
       }

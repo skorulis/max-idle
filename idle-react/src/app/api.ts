@@ -247,6 +247,12 @@ export async function getCurrentTournament(token: string | null): Promise<Tourna
   if (response.status === 401) {
     throw new Error("UNAUTHORIZED");
   }
+  if (response.status === 403) {
+    const payload = (await response.json().catch(() => null)) as { code?: string } | null;
+    if (payload?.code === "TOURNAMENT_FEATURE_LOCKED") {
+      throw new Error("TOURNAMENT_FEATURE_LOCKED");
+    }
+  }
   if (!response.ok) {
     throw new Error("Failed to load tournament");
   }
@@ -267,6 +273,12 @@ export async function enterTournament(token: string | null): Promise<TournamentE
 
   if (response.status === 401) {
     throw new Error("UNAUTHORIZED");
+  }
+  if (response.status === 403) {
+    const payload = (await response.json().catch(() => null)) as { code?: string } | null;
+    if (payload?.code === "TOURNAMENT_FEATURE_LOCKED") {
+      throw new Error("TOURNAMENT_FEATURE_LOCKED");
+    }
   }
   if (response.status === 409) {
     const payload = (await response.json().catch(() => null)) as { code?: string } | null;

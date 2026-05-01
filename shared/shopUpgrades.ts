@@ -43,7 +43,9 @@ export const SHOP_UPGRADE_IDS = {
   /** Idle multiplier bonus per unlocked achievement: ×(1 + value × achievementCount). */
   WORTHWHILE_ACHIEVEMENTS: "worthwhile_achievements",
   /** Spend 1 gem to unlock the daily bonus feature (activation still costs idle time). */
-  DAILY_BONUS_FEATURE: "daily_bonus_feature"
+  DAILY_BONUS_FEATURE: "daily_bonus_feature",
+  /** Spend 1 gem to unlock weekly tournaments (entering competes for Time Gems). */
+  TOURNAMENT_FEATURE: "tournament_feature"
 } as const;
 
 export type ShopUpgradeId = (typeof SHOP_UPGRADE_IDS)[keyof typeof SHOP_UPGRADE_IDS];
@@ -299,6 +301,18 @@ export const DAILY_BONUS_FEATURE_SHOP_UPGRADE: ShopUpgradeDefinition = defineSho
   currencyType: SHOP_CURRENCY_TYPES.GEM
 });
 
+export const TOURNAMENT_FEATURE_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
+  id: SHOP_UPGRADE_IDS.TOURNAMENT_FEATURE,
+  name: "Weekly Tournament",
+  icon: "medal",
+  description: "Unlock weekly tournaments",
+  longDescription:
+    "Compete each week by total idle collected since joining the current draw. Rankings pay up to five Time Gems when the round ends (Sunday 00:00 UTC).",
+  valueDescription: null,
+  levels: [{ cost: 2, value: 1 }],
+  currencyType: SHOP_CURRENCY_TYPES.GEM
+});
+
 /** Ten levels: bonus per achievement rises by 0.02 per level, from 0.02 to 0.2; multiplier is 1 + value × achievementCount. */
 export const WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS,
@@ -334,7 +348,8 @@ export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
   PURCHASE_REFUND_SHOP_UPGRADE,
-  DAILY_BONUS_FEATURE_SHOP_UPGRADE
+  DAILY_BONUS_FEATURE_SHOP_UPGRADE,
+  TOURNAMENT_FEATURE_SHOP_UPGRADE
 ];
 
 export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> = {
@@ -348,7 +363,8 @@ export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> =
   [SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST]: COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.PURCHASE_REFUND]: PURCHASE_REFUND_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS]: WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
-  [SHOP_UPGRADE_IDS.DAILY_BONUS_FEATURE]: DAILY_BONUS_FEATURE_SHOP_UPGRADE
+  [SHOP_UPGRADE_IDS.DAILY_BONUS_FEATURE]: DAILY_BONUS_FEATURE_SHOP_UPGRADE,
+  [SHOP_UPGRADE_IDS.TOURNAMENT_FEATURE]: TOURNAMENT_FEATURE_SHOP_UPGRADE
 };
 
 export function getShopUpgradeDefinition(upgradeType: string): ShopUpgradeDefinition | null {

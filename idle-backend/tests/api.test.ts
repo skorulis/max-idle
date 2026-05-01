@@ -94,6 +94,19 @@ describe("auth + player lifecycle", () => {
     expect(purchase.status).toBe(200);
   }
 
+  async function unlockTournamentFeature(
+    app: ReturnType<typeof createApp>,
+    token: string,
+    userId: string
+  ): Promise<void> {
+    await pool.query(`UPDATE player_states SET time_gems_available = time_gems_available + 1 WHERE user_id = $1`, [userId]);
+    const purchase = await request(app)
+      .post("/shop/purchase")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ upgradeType: "tournament_feature" });
+    expect(purchase.status).toBe(200);
+  }
+
   async function insertLeaderboardPlayer(totalSecondsCollected: number, currentSeconds = 0): Promise<string> {
     const userId = randomUUID();
     const username = `lb_${randomUUID().replace(/-/g, "").slice(0, 12)}`;
@@ -124,6 +137,7 @@ describe("auth + player lifecycle", () => {
       `,
       [userId, lastCollectedAt]
     );
+    await unlockTournamentFeature(app, token, userId);
     const enterResponse = await request(app).post("/tournament/enter").set("Authorization", `Bearer ${token}`);
     expect(enterResponse.status).toBe(200);
     return { userId, token };
@@ -312,12 +326,18 @@ describe("auth + player lifecycle", () => {
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
 
+    const homeBeforeUnlock = await request(app).get("/home").set("Authorization", `Bearer ${token}`);
+    expect(homeBeforeUnlock.status).toBe(200);
+    expect(homeBeforeUnlock.body.player.serverTime).toBeTruthy();
+    expect(homeBeforeUnlock.body.account.isAnonymous).toBe(true);
+    expect(homeBeforeUnlock.body.account.gameUserId).toBe(userId);
+    expect(homeBeforeUnlock.body.tournament).toBeNull();
+
+    await unlockTournamentFeature(app, token, userId);
+
     const homeResponse = await request(app).get("/home").set("Authorization", `Bearer ${token}`);
     expect(homeResponse.status).toBe(200);
-    expect(homeResponse.body.player.serverTime).toBeTruthy();
-    expect(homeResponse.body.account.isAnonymous).toBe(true);
-    expect(homeResponse.body.account.gameUserId).toBe(userId);
-    expect(typeof homeResponse.body.tournament.drawAt).toBe("string");
+    expect(typeof homeResponse.body.tournament?.drawAt).toBe("string");
   });
 
   it("returns 401 from GET /home without credentials", async () => {
@@ -496,6 +516,20 @@ describe("auth + player lifecycle", () => {
     expect(collect.body.idleTime.available).toBe(100_000 - 24 * 60 * 60);
   });
 
+  it("returns 403 from tournament routes when the weekly tournament shop upgrade is locked", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+
+    const currentLocked = await request(app).get("/tournament/current").set("Authorization", `Bearer ${token}`);
+    expect(currentLocked.status).toBe(403);
+    expect(currentLocked.body.code).toBe("TOURNAMENT_FEATURE_LOCKED");
+
+    const enterLocked = await request(app).post("/tournament/enter").set("Authorization", `Bearer ${token}`);
+    expect(enterLocked.status).toBe(403);
+    expect(enterLocked.body.code).toBe("TOURNAMENT_FEATURE_LOCKED");
+  });
+
   it("returns current weekly tournament state and allows entering once", async () => {
     const app = createApp(pool, config);
     await pool.query("DELETE FROM tournament_entries");
@@ -503,6 +537,8 @@ describe("auth + player lifecycle", () => {
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
+
+    await unlockTournamentFeature(app, token, userId);
 
     const currentBeforeEntry = await request(app).get("/tournament/current").set("Authorization", `Bearer ${token}`);
     expect(currentBeforeEntry.status).toBe(200);
@@ -1909,7 +1945,8 @@ describe("auth + player lifecycle", () => {
       luck: 0,
       worthwhile_achievements: 0,
       collect_gem_time_boost: 0,
-      daily_bonus_feature: 0
+      daily_bonus_feature: 0,
+      tournament_feature: 0
     });
   });
 

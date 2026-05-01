@@ -2,7 +2,11 @@ import { useState } from "react";
 import { formatSeconds } from "../formatSeconds";
 import { Atom, CircleHelp, Clock3, Gem, Gift, History, PiggyBank } from "lucide-react";
 import type { SyncedPlayerState } from "../app/types";
-import { getRestraintMinRealtimeSeconds, isDailyBonusFeatureUnlocked } from "../shop";
+import {
+  getRestraintMinRealtimeSeconds,
+  isDailyBonusFeatureUnlocked,
+  isTournamentFeatureUnlocked
+} from "../shop";
 import { FlipDurationDisplay } from "../components/FlipDurationDisplay";
 import { CurrentRateInfoOverlay } from "./CurrentRateInfoOverlay";
 import { TournamentPanel } from "./TournamentPanel";
@@ -295,15 +299,17 @@ export function HomePage({
           ) : null}
         </section>
       ) : null}
-      <section className="card">
-        <TournamentPanel
-          hasEntered={tournamentHasEntered}
-          secondsUntilDraw={tournamentSecondsUntilDraw}
-          enteringTournament={enteringTournament}
-          onEnterTournament={onEnterTournament}
-          onNavigateTournament={onNavigateTournament}
-        />
-      </section>
+      {isTournamentFeatureUnlocked(playerState.shop) ? (
+        <section className="card">
+          <TournamentPanel
+            hasEntered={tournamentHasEntered}
+            secondsUntilDraw={tournamentSecondsUntilDraw}
+            enteringTournament={enteringTournament}
+            onEnterTournament={onEnterTournament}
+            onNavigateTournament={onNavigateTournament}
+          />
+        </section>
+      ) : null}
       <CurrentRateInfoOverlay
         open={showRateInfo}
         onClose={() => setShowRateInfo(false)}

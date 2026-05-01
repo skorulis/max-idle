@@ -13,5 +13,6 @@ export {
   getDefaultShopState,
   getWorthwhileAchievementsMultiplier,
   multiplierToLevel,
-  isDailyBonusFeatureUnlocked
+  isDailyBonusFeatureUnlocked,
+  isTournamentFeatureUnlocked
 } from "@maxidle/shared/shop";

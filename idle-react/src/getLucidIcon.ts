@@ -9,6 +9,7 @@ import {
   Gift,
   Gauge,
   Hourglass,
+  Medal,
   Repeat,
   ShieldAlert,
   Timer,
@@ -40,6 +41,8 @@ export function getLucidIcon(iconName: string): LucideIcon {
       return Gift;
     case "hourglass":
       return Hourglass;
+    case "medal":
+      return Medal;
     case "calendar-x":
       return CalendarX;
     case "archive":

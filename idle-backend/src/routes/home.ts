@@ -1,5 +1,7 @@
 import express from "express";
 import type { Pool } from "pg";
+import type { ShopState } from "@maxidle/shared/shop";
+import { isTournamentFeatureUnlocked } from "@maxidle/shared/shop";
 import type { AuthClaims } from "../types.js";
 import { finalizeDueTournaments, getCurrentTournamentForUser } from "../tournaments.js";
 import type { BetterAuthSession } from "./account.js";
@@ -38,16 +40,20 @@ export function registerHomeRoutes({
       await finalizeDueTournaments(pool);
       const userId = identity.claims.sub;
 
-      const [playerPayload, accountPayload, tournamentPayload] = await Promise.all([
-        buildPlayerStatePayload(pool, userId, toNumber),
-        buildAccountPayloadForIdentity(pool, socialConfig, identity),
-        getCurrentTournamentForUser(pool, userId)
-      ]);
+      const playerPayload = await buildPlayerStatePayload(pool, userId, toNumber);
 
       if (!playerPayload) {
         res.status(404).json({ error: "Player state not found" });
         return;
       }
+
+      const shop = playerPayload.shop as ShopState;
+      const [accountPayload, tournamentPayload] = await Promise.all([
+        buildAccountPayloadForIdentity(pool, socialConfig, identity),
+        isTournamentFeatureUnlocked(shop)
+          ? getCurrentTournamentForUser(pool, userId)
+          : Promise.resolve(null)
+      ]);
 
       res.json({
         player: playerPayload,

@@ -14,6 +14,7 @@ import type { ShopState } from "@maxidle/shared/shop";
 import {
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
   DAILY_BONUS_FEATURE_SHOP_UPGRADE,
+  TOURNAMENT_FEATURE_SHOP_UPGRADE,
   getShopUpgradeDefinition,
   REALTIME_WAIT_EXTENSION_SECONDS,
   SHOP_CURRENCY_TYPES,
@@ -195,6 +196,7 @@ export function registerShopRoutes({
 
       const refundTotals = isPurchaseRefund ? getShopPurchaseRefundTotals(row.shop) : { idle: 0, real: 0 };
       const preservedDailyBonusFeatureLevel = DAILY_BONUS_FEATURE_SHOP_UPGRADE.currentLevel(row.shop);
+      const preservedTournamentFeatureLevel = TOURNAMENT_FEATURE_SHOP_UPGRADE.currentLevel(row.shop);
       const nextShopState = isExtraRealtimeWait
         ? row.shop
         : isCollectGemTimeBoost
@@ -202,7 +204,8 @@ export function registerShopRoutes({
           : isPurchaseRefund
             ? {
                 ...getDefaultShopState(),
-                [SHOP_UPGRADE_IDS.DAILY_BONUS_FEATURE]: preservedDailyBonusFeatureLevel
+                [SHOP_UPGRADE_IDS.DAILY_BONUS_FEATURE]: preservedDailyBonusFeatureLevel,
+                [SHOP_UPGRADE_IDS.TOURNAMENT_FEATURE]: preservedTournamentFeatureLevel
               }
             : withShopUpgradeLevel(row.shop, boundedUpgrade.id, currentLevel + quantity)
       const nextLastCollectedAt = isExtraRealtimeWait

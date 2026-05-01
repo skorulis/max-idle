@@ -45,6 +45,7 @@ type ShopPageProps = {
     | "collect_gem_time_boost"
     | "purchase_refund"
     | "daily_bonus_feature"
+    | "tournament_feature"
     | null;
   /** Purchase flow for any shop upgrade row; `upgradeId` matches {@link SHOP_UPGRADE_IDS}. */
   onPurchase: (upgradeId: ShopUpgradeId) => Promise<void>;

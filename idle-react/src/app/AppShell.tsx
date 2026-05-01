@@ -5,7 +5,7 @@ import { toast, toastCollectIdle } from "../gameToast";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
 import { getCollectGemIdleSecondsMultiplier } from "../shopUpgrades";
 import { isDailyBonusFeatureUnlocked } from "../shop";
-import { COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE, SHOP_UPGRADES_BY_ID } from "../shopUpgrades";
+import { COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE, SHOP_UPGRADE_IDS, SHOP_UPGRADES_BY_ID } from "../shopUpgrades";
 import {
   type ShopUpgradeId
 } from "../shopUpgrades";
@@ -117,7 +117,8 @@ const SHOP_ALREADY_OWNED_MESSAGE: Partial<Record<ShopUpgradeId, string>> = {
   idle_hoarder: "Idle hoarder is already maxed.",
   worthwhile_achievements: "Worthwhile Achievements is already maxed.",
   collect_gem_time_boost: "Hasty collection is already maxed.",
-  daily_bonus_feature: "Daily Bonus is already unlocked."
+  daily_bonus_feature: "Daily Bonus is already unlocked.",
+  tournament_feature: "Weekly Tournament is already unlocked."
 };
 
 function isDailyRewardNotificationsEnabledStored(): boolean {
@@ -209,6 +210,7 @@ export function AppShell() {
     | "collect_gem_time_boost"
     | "purchase_refund"
     | "daily_bonus_feature"
+    | "tournament_feature"
     | null
   >(null);
   const [resettingDailyBonus, setResettingDailyBonus] = useState(false);
@@ -538,6 +540,10 @@ export function AppShell() {
         setTournamentState(null);
         return;
       }
+      if (tournamentError instanceof Error && tournamentError.message === "TOURNAMENT_FEATURE_LOCKED") {
+        setTournamentState(null);
+        return;
+      }
       throw tournamentError;
     }
   }, []);
@@ -549,8 +555,11 @@ export function AppShell() {
     setPlayerState(synced);
     setAccount(home.account);
     setUsernameDraft(home.account.username ?? "");
-    const tournamentSynced = toSyncedTournamentState(home.tournament);
-    setTournamentState(tournamentSynced);
+    if (home.tournament) {
+      setTournamentState(toSyncedTournamentState(home.tournament));
+    } else {
+      setTournamentState(null);
+    }
   }, []);
 
   useEffect(() => {
@@ -945,6 +954,11 @@ export function AppShell() {
       const synced = toSyncedState(updatedPlayer);
       alignClientClock();
       setPlayerState(synced);
+      if (upgradeId === SHOP_UPGRADE_IDS.TOURNAMENT_FEATURE) {
+        void refreshTournament(token).catch(() => {
+          // Ignore; user can refresh from home or tournament page.
+        });
+      }
       const purchasedUpgrade = SHOP_UPGRADES_BY_ID[upgradeId];
       const purchasedLevel = purchasedUpgrade.currentLevel(synced.shop);
       const shopToastMessage =
@@ -1158,6 +1172,8 @@ export function AppShell() {
         void refreshTournament(token).catch(() => {
           // Ignore refresh errors and keep current state.
         });
+      } else if (tournamentError instanceof Error && tournamentError.message === "TOURNAMENT_FEATURE_LOCKED") {
+        setError("Purchase Weekly Tournament in the shop to enter.");
       } else {
         setError(tournamentError instanceof Error ? tournamentError.message : "Failed to enter tournament");
       }
@@ -1461,6 +1477,7 @@ export function AppShell() {
             path="/tournament"
             element={requireAuthenticatedRoute(
               <TournamentPage
+                playerState={playerState}
                 tournamentState={tournamentState}
                 tournamentSecondsUntilDraw={tournamentSecondsUntilDraw}
                 enteringTournament={enteringTournament}

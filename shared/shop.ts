@@ -1,6 +1,7 @@
 import {
   ANOTHER_SECONDS_MULTIPLIER_SHOP_UPGRADE,
   DAILY_BONUS_FEATURE_SHOP_UPGRADE,
+  TOURNAMENT_FEATURE_SHOP_UPGRADE,
   LUCK_SHOP_UPGRADE,
   RESTRAINT_SHOP_UPGRADE,
   SHOP_UPGRADES_BY_ID,
@@ -130,6 +131,10 @@ export function getLuckEnabled(shop: ShopState): boolean {
 
 export function isDailyBonusFeatureUnlocked(shop: ShopState): boolean {
   return DAILY_BONUS_FEATURE_SHOP_UPGRADE.currentLevel(shop) > 0;
+}
+
+export function isTournamentFeatureUnlocked(shop: ShopState): boolean {
+  return TOURNAMENT_FEATURE_SHOP_UPGRADE.currentLevel(shop) > 0;
 }
 
 export function getLuckPreserveChance(shop: ShopState): number {
