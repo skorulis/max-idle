@@ -57,13 +57,6 @@ CREATE TABLE IF NOT EXISTS daily_bonuses (
       'free_real_time_hours',
       'free_idle_time_hours'
     )
-  ),
-  CONSTRAINT daily_bonuses_bonus_value_check CHECK (
-    (bonus_type = 'collect_idle_percent' AND bonus_value BETWEEN 10 AND 50)
-    OR (bonus_type = 'collect_real_percent' AND bonus_value BETWEEN 10 AND 50)
-    OR (bonus_type = 'double_gems_daily_reward' AND bonus_value = 2)
-    OR (bonus_type = 'free_real_time_hours' AND bonus_value BETWEEN 1 AND 5)
-    OR (bonus_type = 'free_idle_time_hours' AND bonus_value BETWEEN 6 AND 24)
   )
 );
 

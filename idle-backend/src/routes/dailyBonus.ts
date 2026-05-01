@@ -86,10 +86,10 @@ function rollDailyBonus(now: Date): DailyBonusRow {
       value = 2;
       break;
     case "free_real_time_hours":
-      value = getRandomIntInclusive(1, 5);
+      value = getRandomIntInclusive(2, 6);
       break;
     case "free_idle_time_hours":
-      value = getRandomIntInclusive(6, 24);
+      value = getRandomIntInclusive(16, 48);
       break;
   }
   return {

@@ -293,7 +293,7 @@ export const DAILY_BONUS_FEATURE_SHOP_UPGRADE: ShopUpgradeDefinition = defineSho
   icon: "gift",
   description: "Unlock the daily bonus feature",
   longDescription:
-    "Each day there will be a random bonus that can be purchased for 24h of idle time.",
+    "Each day there will be a random bonus that can be purchased for 24h of idle time. The bonus will be available for collection from the home page",
   valueDescription: null,
   levels: [{ cost: 1, value: 1 }],
   currencyType: SHOP_CURRENCY_TYPES.GEM

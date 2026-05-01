@@ -11,9 +11,12 @@ async function run(): Promise<void> {
 
   const pool = new Pool({ connectionString: config.databaseUrl });
   try {
-    const schemaSql = await readFile(resolve(process.cwd(), "sql/001_schema.sql"), "utf-8");
-    await pool.query(schemaSql);
-    console.log("Migration completed: sql/001_schema.sql");
+    const migrationFiles = ["001_schema.sql", "002_drop_daily_bonuses_bonus_value_check.sql"] as const;
+    for (const file of migrationFiles) {
+      const sql = await readFile(resolve(process.cwd(), "sql", file), "utf-8");
+      await pool.query(sql);
+      console.log(`Migration completed: sql/${file}`);
+    }
 
     const auth = createBetterAuth(pool, config);
     const migrations = await getMigrations(auth.options);
