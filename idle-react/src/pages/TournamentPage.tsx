@@ -16,11 +16,15 @@ export function TournamentPage({
   onEnterTournament
 }: TournamentPageProps) {
   if (!tournamentState) {
-    return <p className="subtle">Sign in or start idling to view tournament details.</p>;
+    return (
+      <section className="card">
+        <p className="subtle">Sign in or start idling to view tournament details.</p>
+      </section>
+    );
   }
 
   return (
-    <>
+    <section className="card">
       <TournamentPanel
         hasEntered={tournamentState.hasEntered}
         secondsUntilDraw={tournamentSecondsUntilDraw}
@@ -51,6 +55,6 @@ export function TournamentPage({
           <p className="subtle">Enter the tournament to see nearby ranked players.</p>
         )}
       </div>
-    </>
+    </section>
   );
 }

@@ -21,7 +21,7 @@ function formatCollectionDate(date: string): string {
 
 export function CollectionHistoryPage({ history, loading }: CollectionHistoryPageProps) {
   return (
-    <>
+    <section className="card">
       <h2>Collection History</h2>
       <h3 className="leaderboard-header">Last 100 collections</h3>
       {loading ? <p>Loading collection history...</p> : null}
@@ -43,6 +43,6 @@ export function CollectionHistoryPage({ history, loading }: CollectionHistoryPag
           })}
         </div>
       ) : null}
-    </>
+    </section>
   );
 }

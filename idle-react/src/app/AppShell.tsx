@@ -1394,7 +1394,7 @@ export function AppShell() {
         showDebugFeatures={showDebugFeatures}
       />
 
-      <section className="card">
+      <>
         <Routes>
           <Route
             path="/"
@@ -1583,7 +1583,7 @@ export function AppShell() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         {error ? <p className="error">{error}</p> : null}
-      </section>
+      </>
       <section className="card message-card" aria-live="polite">
         <p className="label">Idle bulletin</p>
         <div className={`message-bulletin-body message-fade${isFadingOutMessage ? " is-fading-out" : ""}${isFadingInMessage ? " is-fading-in" : ""}`}>

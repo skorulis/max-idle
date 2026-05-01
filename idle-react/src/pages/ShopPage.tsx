@@ -146,12 +146,12 @@ export function ShopPage({
 
   if (!playerState) {
     return (
-      <>
+      <section className="card">
         <p>Start idling to unlock the shop.</p>
         <button type="button" className="secondary" onClick={onNavigateHome}>
           Go to Home
         </button>
-      </>
+      </section>
     );
   }
 
@@ -305,133 +305,135 @@ export function ShopPage({
 
   return (
     <>
-      <h2>Shop</h2>
-      <div className="shop-currencies">
-        <button
-          type="button"
-          className={`shop-currency-card shop-currency-button${
-            selectedCurrencyType === SHOP_CURRENCY_TYPES.IDLE ? " shop-currency-card-active" : ""
-          }`}
-          onClick={() => setSelectedCurrencyType(SHOP_CURRENCY_TYPES.IDLE)}
-          aria-pressed={selectedCurrencyType === SHOP_CURRENCY_TYPES.IDLE}
-        >
-          <p className="shop-currency-title">
-            <Atom size={16} aria-hidden="true" />
-            Idle Time
-          </p>
-          <p className="shop-currency-value">{formatSeconds(syncedPlayer.idleTime.available, 2, "floor")}</p>
-        </button>
-        <button
-          type="button"
-          className={`shop-currency-card shop-currency-button${
-            selectedCurrencyType === SHOP_CURRENCY_TYPES.REAL ? " shop-currency-card-active" : ""
-          }`}
-          onClick={() => setSelectedCurrencyType(SHOP_CURRENCY_TYPES.REAL)}
-          aria-pressed={selectedCurrencyType === SHOP_CURRENCY_TYPES.REAL}
-        >
-          <p className="shop-currency-title">
-            <Clock3 size={16} aria-hidden="true" />
-            Real Time
-          </p>
-          <p className="shop-currency-value">{formatSeconds(syncedPlayer.realTime.available, 2, "floor")}</p>
-        </button>
-        <button
-          type="button"
-          className={`shop-currency-card shop-currency-button${
-            selectedCurrencyType === SHOP_CURRENCY_TYPES.GEM ? " shop-currency-card-active" : ""
-          }`}
-          onClick={() => setSelectedCurrencyType(SHOP_CURRENCY_TYPES.GEM)}
-          aria-pressed={selectedCurrencyType === SHOP_CURRENCY_TYPES.GEM}
-        >
-          <p className="shop-currency-title">
-            <Gem size={16} aria-hidden="true" />
-            Time Gems
-          </p>
-          <p className="shop-currency-value">{syncedPlayer.timeGems.available}</p>
-        </button>
-      </div>
-      {selectedCurrencyType === SHOP_CURRENCY_TYPES.IDLE ? (
-        <p className="subtle">Current multiplier: {formatMultiplier(syncedPlayer.secondsMultiplier)}</p>
-      ) : null}
-      {visibleUpgrades.length === 0 ? (
-        <p className="subtle">No upgrades currently available for this currency.</p>
-      ) : (
-        <div className="shop-upgrade-list">
-          {visibleUpgrades.map((upgrade) => {
-            const upgradeState = getUpgradeRowState(upgrade);
-            const currentLevel = getUpgradeCurrentLevel(upgrade);
-            const upgradeAvailableBalance = getCurrencyAmount(syncedPlayer, upgrade.currencyType);
-            const cannotAfford = upgradeState.cost !== null && upgradeAvailableBalance < upgradeState.cost;
-            const refundUnavailable =
-              upgrade.id === SHOP_UPGRADE_IDS.PURCHASE_REFUND && !hasRefundablePurchases;
-            const isDisabled =
-              shopPendingQuantity !== null ||
-              upgradeState.isOwned ||
-              upgradeState.cost === null ||
-              cannotAfford ||
-              refundUnavailable;
-            const isPurchasable = !isDisabled && !upgradeState.isPending;
-            return (
-              <div key={upgrade.id} className={`shop-upgrade-row${upgradeState.isOwned ? " shop-upgrade-row-owned" : ""}`}>
-                <div className="shop-upgrade-main">
-                  <GameIcon icon={getLucidIcon(upgrade.icon)} className="shop-upgrade-icon" />
-                  <div className="shop-upgrade-copy">
-                    <div className="shop-upgrade-name-row">
-                      <p className="shop-upgrade-name">
-                        {upgrade.name}
-                        {currentLevel !== null ? ` (Lvl ${currentLevel})` : ""}
-                      </p>
-                      <button
-                        type="button"
-                        className="info-icon-button shop-upgrade-info-button"
-                        aria-label={`Show details for ${upgrade.name}`}
-                        onClick={() => setSelectedUpgradeForInfo(upgrade)}
-                      >
-                        <CircleHelp size={14} aria-hidden="true" />
-                      </button>
+      <section className="card">
+        <h2>Shop</h2>
+        <div className="shop-currencies">
+          <button
+            type="button"
+            className={`shop-currency-card shop-currency-button${
+              selectedCurrencyType === SHOP_CURRENCY_TYPES.IDLE ? " shop-currency-card-active" : ""
+            }`}
+            onClick={() => setSelectedCurrencyType(SHOP_CURRENCY_TYPES.IDLE)}
+            aria-pressed={selectedCurrencyType === SHOP_CURRENCY_TYPES.IDLE}
+          >
+            <p className="shop-currency-title">
+              <Atom size={16} aria-hidden="true" />
+              Idle Time
+            </p>
+            <p className="shop-currency-value">{formatSeconds(syncedPlayer.idleTime.available, 2, "floor")}</p>
+          </button>
+          <button
+            type="button"
+            className={`shop-currency-card shop-currency-button${
+              selectedCurrencyType === SHOP_CURRENCY_TYPES.REAL ? " shop-currency-card-active" : ""
+            }`}
+            onClick={() => setSelectedCurrencyType(SHOP_CURRENCY_TYPES.REAL)}
+            aria-pressed={selectedCurrencyType === SHOP_CURRENCY_TYPES.REAL}
+          >
+            <p className="shop-currency-title">
+              <Clock3 size={16} aria-hidden="true" />
+              Real Time
+            </p>
+            <p className="shop-currency-value">{formatSeconds(syncedPlayer.realTime.available, 2, "floor")}</p>
+          </button>
+          <button
+            type="button"
+            className={`shop-currency-card shop-currency-button${
+              selectedCurrencyType === SHOP_CURRENCY_TYPES.GEM ? " shop-currency-card-active" : ""
+            }`}
+            onClick={() => setSelectedCurrencyType(SHOP_CURRENCY_TYPES.GEM)}
+            aria-pressed={selectedCurrencyType === SHOP_CURRENCY_TYPES.GEM}
+          >
+            <p className="shop-currency-title">
+              <Gem size={16} aria-hidden="true" />
+              Time Gems
+            </p>
+            <p className="shop-currency-value">{syncedPlayer.timeGems.available}</p>
+          </button>
+        </div>
+        {selectedCurrencyType === SHOP_CURRENCY_TYPES.IDLE ? (
+          <p className="subtle">Current multiplier: {formatMultiplier(syncedPlayer.secondsMultiplier)}</p>
+        ) : null}
+        {visibleUpgrades.length === 0 ? (
+          <p className="subtle">No upgrades currently available for this currency.</p>
+        ) : (
+          <div className="shop-upgrade-list">
+            {visibleUpgrades.map((upgrade) => {
+              const upgradeState = getUpgradeRowState(upgrade);
+              const currentLevel = getUpgradeCurrentLevel(upgrade);
+              const upgradeAvailableBalance = getCurrencyAmount(syncedPlayer, upgrade.currencyType);
+              const cannotAfford = upgradeState.cost !== null && upgradeAvailableBalance < upgradeState.cost;
+              const refundUnavailable =
+                upgrade.id === SHOP_UPGRADE_IDS.PURCHASE_REFUND && !hasRefundablePurchases;
+              const isDisabled =
+                shopPendingQuantity !== null ||
+                upgradeState.isOwned ||
+                upgradeState.cost === null ||
+                cannotAfford ||
+                refundUnavailable;
+              const isPurchasable = !isDisabled && !upgradeState.isPending;
+              return (
+                <div key={upgrade.id} className={`shop-upgrade-row${upgradeState.isOwned ? " shop-upgrade-row-owned" : ""}`}>
+                  <div className="shop-upgrade-main">
+                    <GameIcon icon={getLucidIcon(upgrade.icon)} className="shop-upgrade-icon" />
+                    <div className="shop-upgrade-copy">
+                      <div className="shop-upgrade-name-row">
+                        <p className="shop-upgrade-name">
+                          {upgrade.name}
+                          {currentLevel !== null ? ` (Lvl ${currentLevel})` : ""}
+                        </p>
+                        <button
+                          type="button"
+                          className="info-icon-button shop-upgrade-info-button"
+                          aria-label={`Show details for ${upgrade.name}`}
+                          onClick={() => setSelectedUpgradeForInfo(upgrade)}
+                        >
+                          <CircleHelp size={14} aria-hidden="true" />
+                        </button>
+                      </div>
+                      <p className="shop-upgrade-description">{upgradeState.description}</p>
+                      {upgradeState.currentValueDescription ? (
+                        <p className="shop-upgrade-description subtle">Current: {upgradeState.currentValueDescription}</p>
+                      ) : null}
+                      {upgradeState.nextValueDescription ? (
+                        <p className="shop-upgrade-description subtle">Next: {upgradeState.nextValueDescription}</p>
+                      ) : null}
                     </div>
-                    <p className="shop-upgrade-description">{upgradeState.description}</p>
-                    {upgradeState.currentValueDescription ? (
-                      <p className="shop-upgrade-description subtle">Current: {upgradeState.currentValueDescription}</p>
-                    ) : null}
-                    {upgradeState.nextValueDescription ? (
-                      <p className="shop-upgrade-description subtle">Next: {upgradeState.nextValueDescription}</p>
-                    ) : null}
+                  </div>
+                  <div className="shop-upgrade-action">
+                    <button
+                      type="button"
+                      className={`secondary shop-upgrade-buy-button${isPurchasable ? " shop-upgrade-buy-button-purchasable" : ""}`}
+                      onClick={() => void upgradeState.onPurchase()}
+                      disabled={isDisabled}
+                      aria-label={upgradeState.isPending ? "Purchase in progress" : undefined}
+                    >
+                      {upgradeState.isOwned ? (
+                        "Owned"
+                      ) : upgradeState.isPending ? (
+                        <Hourglass
+                          size={16}
+                          aria-hidden="true"
+                          className="shop-upgrade-buy-hourglass-spin"
+                        />
+                      ) : upgradeState.cost === null ? (
+                        "Max level"
+                      ) : (
+                        <>
+                          <Plus size={18} aria-hidden="true" className="shop-upgrade-buy-plus" />
+                          <span className="shop-upgrade-buy-cost">
+                            {formatUpgradeCost(upgrade.currencyType, upgradeState.cost)}
+                          </span>
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
-                <div className="shop-upgrade-action">
-                  <button
-                    type="button"
-                    className={`secondary shop-upgrade-buy-button${isPurchasable ? " shop-upgrade-buy-button-purchasable" : ""}`}
-                    onClick={() => void upgradeState.onPurchase()}
-                    disabled={isDisabled}
-                    aria-label={upgradeState.isPending ? "Purchase in progress" : undefined}
-                  >
-                    {upgradeState.isOwned ? (
-                      "Owned"
-                    ) : upgradeState.isPending ? (
-                      <Hourglass
-                        size={16}
-                        aria-hidden="true"
-                        className="shop-upgrade-buy-hourglass-spin"
-                      />
-                    ) : upgradeState.cost === null ? (
-                      "Max level"
-                    ) : (
-                      <>
-                        <Plus size={18} aria-hidden="true" className="shop-upgrade-buy-plus" />
-                        <span className="shop-upgrade-buy-cost">
-                          {formatUpgradeCost(upgrade.currencyType, upgradeState.cost)}
-                        </span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </section>
       <ShopUpgradeInfoOverlay
         open={selectedUpgradeForInfo !== null}
         upgrade={selectedUpgradeForInfo}

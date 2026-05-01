@@ -49,19 +49,19 @@ export function AccountPage({
 
   if (!account) {
     return (
-      <>
+      <section className="card">
         <h2>Account</h2>
         <p>No active account session.</p>
         <button className="secondary" onClick={onNavigateLogin}>
           Go to login
         </button>
         <p className="subtle">Version {APP_VERSION}</p>
-      </>
+      </section>
     );
   }
 
   return (
-    <>
+    <section className="card">
       <h2>Account</h2>
       {account.email ? (
         <p>
@@ -121,6 +121,7 @@ export function AccountPage({
               onSubmit={onUpgrade}
               isSubmitDisabled={isUpgradeSubmitDisabled}
               renderAuthButtons={renderAuthButtons}
+              embedded
             />
           </div>
         </>
@@ -134,6 +135,6 @@ export function AccountPage({
         </p>
       ) : null}
       <p className="subtle">Version {APP_VERSION}</p>
-    </>
+    </section>
   );
 }

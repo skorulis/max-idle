@@ -57,7 +57,7 @@ export function LeaderboardPage({
   const shareUrl = "https://max-idle.com/leaderboard";
 
   return (
-    <>
+    <section className="card">
       <h2>Leaderboard</h2>
       {showStartJourneyButton ? (
         <button type="button" className="collect leaderboard-start-journey-button" onClick={() => void onStartJourney()}>
@@ -137,6 +137,6 @@ export function LeaderboardPage({
         </>
       ) : null}
       {!leaderboardLoading && !leaderboard && !hasError ? <p>No leaderboard data available.</p> : null}
-    </>
+    </section>
   );
 }

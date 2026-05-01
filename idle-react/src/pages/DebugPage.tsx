@@ -20,7 +20,7 @@ export function DebugPage({
   const debugBusy = debugPendingAction !== null;
 
   return (
-    <>
+    <section className="card">
       <h2>Debug</h2>
       <div className="panel">
         <h3>Daily Bonus</h3>
@@ -77,6 +77,6 @@ export function DebugPage({
           {debugPendingAction === "balances" ? "Resetting..." : "Reset all balances"}
         </button>
       </div>
-    </>
+    </section>
   );
 }

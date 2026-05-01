@@ -35,7 +35,7 @@ export function DailyBonusPage({
   const dailyBonusUnlocked = playerState ? isDailyBonusFeatureUnlocked(playerState.shop) : false;
 
   return (
-    <>
+    <section className="card">
       <h2>Daily Bonus</h2>
       <div className="panel">
         <p className="shop-currency-title">
@@ -132,6 +132,6 @@ export function DailyBonusPage({
           ) : null}
         </>
       )}
-    </>
+    </section>
   );
 }

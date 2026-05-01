@@ -76,7 +76,7 @@ export function AchievementsPage({ achievements, achievementsLoading, hasError }
   };
 
   return (
-    <>
+    <section className="card">
       <h2>Achievements</h2>
       {achievementsLoading ? <p>Loading achievements...</p> : null}
       {!achievementsLoading && achievements ? (
@@ -120,6 +120,6 @@ export function AchievementsPage({ achievements, achievementsLoading, hasError }
         </>
       ) : null}
       {!achievementsLoading && !achievements && !hasError ? <p>No achievements available.</p> : null}
-    </>
+    </section>
   );
 }

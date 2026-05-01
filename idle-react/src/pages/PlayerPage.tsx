@@ -10,7 +10,7 @@ type PlayerPageProps = {
 
 export function PlayerPage({ publicPlayerLoading, publicPlayerProfile, hasError }: PlayerPageProps) {
   return (
-    <>
+    <section className="card">
       <h2>{publicPlayerProfile?.username ?? "Player"}</h2>
       {publicPlayerLoading ? <p>Loading player profile...</p> : null}
       {!publicPlayerLoading && publicPlayerProfile ? (
@@ -57,6 +57,6 @@ export function PlayerPage({ publicPlayerLoading, publicPlayerProfile, hasError 
         </>
       ) : null}
       {!publicPlayerLoading && !publicPlayerProfile && !hasError ? <p>Player not found.</p> : null}
-    </>
+    </section>
   );
 }

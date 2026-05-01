@@ -88,7 +88,7 @@ export function HomePage({
 
   if (!playerState) {
     return (
-      <>
+      <section className="card">
         <img
           className="home-hero-image"
           src="/og-image.png"
@@ -102,7 +102,7 @@ export function HomePage({
         <button type="button" className="secondary" onClick={onNavigateLogin}>
           Login
         </button>
-      </>
+      </section>
     );
   }
 
@@ -119,86 +119,88 @@ export function HomePage({
 
   return (
     <>
-      <div className="idle-collect-hero">
-        <p className="label">Current idle time</p>
-        <FlipDurationDisplay
-          totalSeconds={uncollectedIdleSeconds}
-          collectFlashNonce={collectFlashNonce}
-        />
-        <div className="idle-rate-meta">
-          <div className="idle-rate-lines">
-            <p className="subtle">Realtime: {formatSeconds(realtimeElapsedSeconds)}</p>
-            <p className="subtle">Multiplier: {effectiveIdleSecondsRate.toFixed(2)}x</p>
+      <section className="card">
+        <div className="idle-collect-hero">
+          <p className="label">Current idle time</p>
+          <FlipDurationDisplay
+            totalSeconds={uncollectedIdleSeconds}
+            collectFlashNonce={collectFlashNonce}
+          />
+          <div className="idle-rate-meta">
+            <div className="idle-rate-lines">
+              <p className="subtle">Realtime: {formatSeconds(realtimeElapsedSeconds)}</p>
+              <p className="subtle">Multiplier: {effectiveIdleSecondsRate.toFixed(2)}x</p>
+            </div>
+            <button
+              type="button"
+              className="info-icon-button"
+              aria-label="Show current rate factors"
+              onClick={() => setShowRateInfo(true)}
+            >
+              <CircleHelp size={15} aria-hidden="true" />
+            </button>
           </div>
-          <button
-            type="button"
-            className="info-icon-button"
-            aria-label="Show current rate factors"
-            onClick={() => setShowRateInfo(true)}
-          >
-            <CircleHelp size={15} aria-hidden="true" />
-          </button>
-        </div>
 
-        <div className="collect-row collect-row--primary">
-          <button
-            type="button"
-            className={
-              "collect collect-primary" +
-              (collecting ? " collect-primary--collecting" : "") +
-              (collectReady ? " collect-primary--ready" : "")
-            }
-            onClick={() => void handleCollect()}
-            disabled={collecting || collectBlockedByRestraint}
-          >
-            <span className="collect-primary-label">
-              {collecting
-                ? "Collecting..."
-                : collectBlockedByRestraint
-                  ? `Collect (wait ${formatSeconds(restraintWaitRemainingSeconds)})`
-                  : "Collect idle time"}
-            </span>
-          </button>
-          <button
-            type="button"
-            className="info-icon-button"
-            onClick={onNavigateCollectionHistory}
-            aria-label="View collection history"
-            title="View collection history"
-          >
-            <History size={16} aria-hidden="true" />
-          </button>
+          <div className="collect-row collect-row--primary">
+            <button
+              type="button"
+              className={
+                "collect collect-primary" +
+                (collecting ? " collect-primary--collecting" : "") +
+                (collectReady ? " collect-primary--ready" : "")
+              }
+              onClick={() => void handleCollect()}
+              disabled={collecting || collectBlockedByRestraint}
+            >
+              <span className="collect-primary-label">
+                {collecting
+                  ? "Collecting..."
+                  : collectBlockedByRestraint
+                    ? `Collect (wait ${formatSeconds(restraintWaitRemainingSeconds)})`
+                    : "Collect idle time"}
+              </span>
+            </button>
+            <button
+              type="button"
+              className="info-icon-button"
+              onClick={onNavigateCollectionHistory}
+              aria-label="View collection history"
+              title="View collection history"
+            >
+              <History size={16} aria-hidden="true" />
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <p className="subtle">Totals</p>
-      <div className="shop-currencies">
-        <div className="shop-currency-card">
-          <p className="shop-currency-title">
-            <Atom size={16} aria-hidden="true" />
-            Idle Time
-          </p>
-          <p className="shop-currency-value">{formatSeconds(playerState.idleTime.total, 2, "floor")}</p>
+      <section className="card">
+        <p className="subtle">Totals</p>
+        <div className="shop-currencies">
+          <div className="shop-currency-card">
+            <p className="shop-currency-title">
+              <Atom size={16} aria-hidden="true" />
+              Idle Time
+            </p>
+            <p className="shop-currency-value">{formatSeconds(playerState.idleTime.total, 2, "floor")}</p>
+          </div>
+          <div className="shop-currency-card">
+            <p className="shop-currency-title">
+              <Clock3 size={16} aria-hidden="true" />
+              Real Time
+            </p>
+            <p className="shop-currency-value">{formatSeconds(playerState.realTime.total, 2, "floor")}</p>
+          </div>
+          <div className="shop-currency-card">
+            <p className="shop-currency-title">
+              <Gem size={16} aria-hidden="true" />
+              Time Gems
+            </p>
+            <p className="shop-currency-value">{playerState.timeGems.total}</p>
+          </div>
         </div>
-        <div className="shop-currency-card">
-          <p className="shop-currency-title">
-            <Clock3 size={16} aria-hidden="true" />
-            Real Time
-          </p>
-          <p className="shop-currency-value">{formatSeconds(playerState.realTime.total, 2, "floor")}</p>
-        </div>
-        <div className="shop-currency-card">
-          <p className="shop-currency-title">
-            <Gem size={16} aria-hidden="true" />
-            Time Gems
-          </p>
-          <p className="shop-currency-value">{playerState.timeGems.total}</p>
-        </div>
-      </div>
+      </section>
 
-      
-
-      <div className="panel">
+      <section className="card">
         <p className="shop-currency-title">
           <Gift size={16} aria-hidden="true" />
           Daily Gem Reward
@@ -218,9 +220,9 @@ export function HomePage({
             <p className="subtle">Resets in {formatSeconds(dailyRewardSecondsUntilAvailable)}</p>
           </>
         )}
-      </div>
+      </section>
       {isDailyBonusFeatureUnlocked(playerState.shop) ? (
-        <div className="panel">
+        <section className="card">
           <div className="daily-bonus-header">
             <p className="shop-currency-title">
               <Gift size={16} aria-hidden="true" />
@@ -261,16 +263,17 @@ export function HomePage({
               </button>
             </>
           ) : null}
-        </div>
+        </section>
       ) : null}
-      <TournamentPanel
-        hasEntered={tournamentHasEntered}
-        secondsUntilDraw={tournamentSecondsUntilDraw}
-        enteringTournament={enteringTournament}
-        onEnterTournament={onEnterTournament}
-        onNavigateTournament={onNavigateTournament}
-        showTopSpacing
-      />
+      <section className="card">
+        <TournamentPanel
+          hasEntered={tournamentHasEntered}
+          secondsUntilDraw={tournamentSecondsUntilDraw}
+          enteringTournament={enteringTournament}
+          onEnterTournament={onEnterTournament}
+          onNavigateTournament={onNavigateTournament}
+        />
+      </section>
       <CurrentRateInfoOverlay
         open={showRateInfo}
         onClose={() => setShowRateInfo(false)}

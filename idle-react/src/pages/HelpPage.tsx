@@ -2,7 +2,7 @@ import { APP_VERSION } from "@maxidle/shared/appVersion";
 
 export function HelpPage() {
   return (
-    <>
+    <section className="card">
       <h2>Help</h2>
       <div className="panel">
         <h3>What is Max Idle?</h3>
@@ -20,6 +20,6 @@ export function HelpPage() {
       <p style={{ marginTop: "1.25rem", fontSize: "0.85rem", color: "#6b7280" }}>
         Client version {APP_VERSION}
       </p>
-    </>
+    </section>
   );
 }

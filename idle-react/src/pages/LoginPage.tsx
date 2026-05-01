@@ -16,6 +16,8 @@ type SharedAuthPageProps = {
   onAlternateAction?: () => void;
   isSubmitDisabled: boolean;
   renderAuthButtons: () => ReactNode;
+  /** When true, omit the outer card (e.g. embedded inside Account upgrade panel). */
+  embedded?: boolean;
 };
 
 export function SharedAuthPage({
@@ -31,12 +33,13 @@ export function SharedAuthPage({
   onSubmit,
   onAlternateAction,
   isSubmitDisabled,
-  renderAuthButtons
+  renderAuthButtons,
+  embedded = false
 }: SharedAuthPageProps) {
   const HeadingTag = headingTag;
   const showAlternateAction = Boolean(alternateActionCopy && alternateActionLabel && alternateActionClassName && onAlternateAction);
 
-  return (
+  const body = (
     <div className="auth-grid">
       <div>
         <HeadingTag>{heading}</HeadingTag>
@@ -81,6 +84,8 @@ export function SharedAuthPage({
       </div>
     </div>
   );
+
+  return embedded ? body : <section className="card">{body}</section>;
 }
 
 type LoginPageProps = {
