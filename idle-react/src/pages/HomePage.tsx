@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { formatSeconds } from "../formatSeconds";
-import { Atom, CircleHelp, Clock3, Gem, Gift, History } from "lucide-react";
+import { Atom, CircleHelp, Clock3, Gem, Gift, History, PiggyBank } from "lucide-react";
 import type { SyncedPlayerState } from "../app/types";
 import { getRestraintMinRealtimeSeconds, isDailyBonusFeatureUnlocked } from "../shop";
 import { FlipDurationDisplay } from "../components/FlipDurationDisplay";
@@ -172,33 +172,10 @@ export function HomePage({
       </section>
 
       <section className="card">
-        <h2>All time gains</h2>
-        <div className="shop-currencies">
-          <div className="shop-currency-card">
-            <p className="shop-currency-title">
-              <Atom size={16} aria-hidden="true" />
-              Idle Time
-            </p>
-            <p className="shop-currency-value">{formatSeconds(playerState.idleTime.total, 2, "floor")}</p>
-          </div>
-          <div className="shop-currency-card">
-            <p className="shop-currency-title">
-              <Clock3 size={16} aria-hidden="true" />
-              Real Time
-            </p>
-            <p className="shop-currency-value">{formatSeconds(playerState.realTime.total, 2, "floor")}</p>
-          </div>
-          <div className="shop-currency-card">
-            <p className="shop-currency-title">
-              <Gem size={16} aria-hidden="true" />
-              Time Gems
-            </p>
-            <p className="shop-currency-value">{playerState.timeGems.total}</p>
-          </div>
-        </div>
-        <p className="subtle" style={{ marginTop: "1rem" }}>
-          Available to spend
-        </p>
+        <h2 className="section-title-with-icon">
+          <PiggyBank size={18} aria-hidden="true" />
+          Spendable time
+        </h2>
         <div className="shop-currencies">
           <div className="shop-currency-card">
             <p className="shop-currency-title">
@@ -220,6 +197,32 @@ export function HomePage({
               Time Gems
             </p>
             <p className="shop-currency-value">{playerState.timeGems.available}</p>
+          </div>
+        </div>
+        <p className="subtle" style={{ marginTop: "1rem" }}>
+          Total earned
+        </p>
+        <div className="shop-currencies">
+          <div className="shop-currency-card">
+            <p className="shop-currency-title">
+              <Atom size={16} aria-hidden="true" />
+              Idle Time
+            </p>
+            <p className="shop-currency-value">{formatSeconds(playerState.idleTime.total, 2, "floor")}</p>
+          </div>
+          <div className="shop-currency-card">
+            <p className="shop-currency-title">
+              <Clock3 size={16} aria-hidden="true" />
+              Real Time
+            </p>
+            <p className="shop-currency-value">{formatSeconds(playerState.realTime.total, 2, "floor")}</p>
+          </div>
+          <div className="shop-currency-card">
+            <p className="shop-currency-title">
+              <Gem size={16} aria-hidden="true" />
+              Time Gems
+            </p>
+            <p className="shop-currency-value">{playerState.timeGems.total}</p>
           </div>
         </div>
       </section>

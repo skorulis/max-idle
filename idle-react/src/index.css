@@ -102,6 +102,12 @@ h2 {
   font-size: 20px;
 }
 
+.section-title-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 h3 {
   margin: 14px 0 10px;
   font-size: 16px;
