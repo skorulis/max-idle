@@ -909,7 +909,9 @@ describe("auth + player lifecycle", () => {
     expect(response.body.achievements[4].maxLevel).toBe(5);
     expect(response.body.achievements[4].level).toBe(0);
     expect(response.body.achievements[5].id).toBe("real_time_streak_59_minutes");
-    expect(response.body.achievements[6].id).toBe("real_time_streak_2d_14h");
+    expect(response.body.achievements[6].id).toBe("real_time_streak");
+    expect(response.body.achievements[6].maxLevel).toBe(5);
+    expect(response.body.achievements[6].level).toBe(0);
     expect(response.body.achievements[7].id).toBe("collection_count");
     expect(response.body.achievements[8].id).toBe("contemplation");
     expect(response.body.achievements[8].clientDriven).toBe(true);
@@ -1108,8 +1110,9 @@ describe("auth + player lifecycle", () => {
       achievement_levels: unknown;
     }>(`SELECT achievement_count, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
     const completed = achievementIdsFromLevels(achievementState.rows[0]?.achievement_levels);
-    expect(completed).toContain("real_time_streak_2d_14h");
+    expect(completed).toContain("real_time_streak");
     expect(completed).toContain("real_time_streak_59_minutes");
+    expect(parseAchievementLevels(achievementState.rows[0]?.achievement_levels).find((e) => e.id === "real_time_streak")?.level).toBe(3);
 
     // Keep this test from affecting leaderboard ordering in later tests.
     await pool.query(`UPDATE player_states SET idle_time_total = 0, idle_time_available = 0 WHERE user_id = $1`, [userId]);

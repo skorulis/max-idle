@@ -25,7 +25,8 @@ function isKnownAchievementId(value: string): value is AchievementId {
 }
 
 const LEGACY_ACHIEVEMENT_ID_TO_CANONICAL: Readonly<Record<string, AchievementId>> = {
-  idle_time_collector_3h_7m: ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR
+  idle_time_collector_3h_7m: ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR,
+  real_time_streak_2d_14h: ACHIEVEMENT_IDS.REAL_TIME_STREAK
 };
 
 /** Maps stored achievement ids (including pre-rename ids) to the canonical {@link AchievementId}. */
@@ -77,10 +78,14 @@ export function parseAchievementLevelEntries(value: unknown): AchievementLevelEn
     if (!id || seenIds.has(id)) {
       continue;
     }
+    let resolvedLevel = level;
+    if (idRaw === "real_time_streak_2d_14h" && id === ACHIEVEMENT_IDS.REAL_TIME_STREAK && resolvedLevel >= 1) {
+      resolvedLevel = Math.max(resolvedLevel, 3);
+    }
     seenIds.add(id);
     entries.push({
       id,
-      level: Math.min(level, MAX_LEVEL_BY_ACHIEVEMENT_ID.get(id) ?? 1),
+      level: Math.min(resolvedLevel, MAX_LEVEL_BY_ACHIEVEMENT_ID.get(id) ?? 1),
       grantedAt: typeof item.grantedAt === "string" ? item.grantedAt : ""
     });
   }

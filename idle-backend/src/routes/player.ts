@@ -27,7 +27,6 @@ import { canCollectDailyReward, getOrCreateCurrentDailyBonus, toDailyBonusRespon
 
 const REAL_TIME_COLLECT_65_MINUTES_SECONDS = 65 * 60;
 const REAL_TIME_STREAK_59_MINUTES_SECONDS = 59 * 60;
-const REAL_TIME_STREAK_2D_14H_SECONDS = (2 * 24 + 14) * 60 * 60;
 const REWARD_SKIPPER_GAP_MS = 48 * 60 * 60 * 1000;
 
 type RegisterPlayerRoutesOptions = {
@@ -334,11 +333,9 @@ export function registerPlayerRoutes({
       ) {
         levelsToGrant.set(ACHIEVEMENT_IDS.REAL_TIME_STREAK_59_MINUTES, 1);
       }
-      if (
-        realSecondsCollected >= REAL_TIME_STREAK_2D_14H_SECONDS &&
-        !isAchievementMaxed(currentLevelById.get(ACHIEVEMENT_IDS.REAL_TIME_STREAK_2D_14H) ?? 0, ACHIEVEMENT_IDS.REAL_TIME_STREAK_2D_14H)
-      ) {
-        levelsToGrant.set(ACHIEVEMENT_IDS.REAL_TIME_STREAK_2D_14H, 1);
+      const realTimeStreakLevel = getAchievementLevelForValue(ACHIEVEMENT_IDS.REAL_TIME_STREAK, realSecondsCollected);
+      if (realTimeStreakLevel > (currentLevelById.get(ACHIEVEMENT_IDS.REAL_TIME_STREAK) ?? 0)) {
+        levelsToGrant.set(ACHIEVEMENT_IDS.REAL_TIME_STREAK, realTimeStreakLevel);
       }
       const collectionCountLevel = getAchievementLevelForValue(ACHIEVEMENT_IDS.COLLECTION_COUNT, collectionCount);
       if (collectionCountLevel > (currentLevelById.get(ACHIEVEMENT_IDS.COLLECTION_COUNT) ?? 0)) {

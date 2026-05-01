@@ -6,7 +6,7 @@ export const ACHIEVEMENT_IDS = {
   REAL_TIME_COLLECTOR_65_MINUTES: "real_time_collector_65_minutes",
   IDLE_TIME_COLLECTOR: "idle_time_collector",
   REAL_TIME_STREAK_59_MINUTES: "real_time_streak_59_minutes",
-  REAL_TIME_STREAK_2D_14H: "real_time_streak_2d_14h",
+  REAL_TIME_STREAK: "real_time_streak",
   COLLECTION_COUNT: "collection_count",
   CONTEMPLATION: "contemplation",
   REWARD_SKIPPER: "reward_skipper",
@@ -89,11 +89,19 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     clientDriven: false
   },
   {
-    id: ACHIEVEMENT_IDS.REAL_TIME_STREAK_2D_14H,
+    id: ACHIEVEMENT_IDS.REAL_TIME_STREAK,
     name: "Hibernation",
-    description: "Wait at least 2 days and 14 hours before collecting.",
+    description: "Wait at least %s before collecting.",
     icon: "clock",
-    clientDriven: false
+    clientDriven: false,
+    levelValueDisplay: "time_seconds",
+    levels: [
+      { value: 2 * 60 * 60 + 9 * 60 },
+      { value: 24 * 60 * 60 },
+      { value: (2 * 24 + 14) * 60 * 60 },
+      { value: 6 * 24 * 60 * 60 },
+      { value: 15 * 24 * 60 * 60 }
+    ]
   },
   {
     id: ACHIEVEMENT_IDS.COLLECTION_COUNT,
