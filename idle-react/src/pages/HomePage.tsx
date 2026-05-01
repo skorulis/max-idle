@@ -120,7 +120,6 @@ export function HomePage({
   return (
     <>
       <section className="card">
-        <div className="idle-collect-hero">
           <p className="label">Current idle time</p>
           <FlipDurationDisplay
             totalSeconds={uncollectedIdleSeconds}
@@ -170,11 +169,10 @@ export function HomePage({
               <History size={16} aria-hidden="true" />
             </button>
           </div>
-        </div>
       </section>
 
       <section className="card">
-        <p className="subtle">Totals</p>
+        <h2>All time gains</h2>
         <div className="shop-currencies">
           <div className="shop-currency-card">
             <p className="shop-currency-title">
@@ -196,6 +194,32 @@ export function HomePage({
               Time Gems
             </p>
             <p className="shop-currency-value">{playerState.timeGems.total}</p>
+          </div>
+        </div>
+        <p className="subtle" style={{ marginTop: "1rem" }}>
+          Available to spend
+        </p>
+        <div className="shop-currencies">
+          <div className="shop-currency-card">
+            <p className="shop-currency-title">
+              <Atom size={16} aria-hidden="true" />
+              Idle Time
+            </p>
+            <p className="shop-currency-value">{formatSeconds(playerState.idleTime.available, 2, "floor")}</p>
+          </div>
+          <div className="shop-currency-card">
+            <p className="shop-currency-title">
+              <Clock3 size={16} aria-hidden="true" />
+              Real Time
+            </p>
+            <p className="shop-currency-value">{formatSeconds(playerState.realTime.available, 2, "floor")}</p>
+          </div>
+          <div className="shop-currency-card">
+            <p className="shop-currency-title">
+              <Gem size={16} aria-hidden="true" />
+              Time Gems
+            </p>
+            <p className="shop-currency-value">{playerState.timeGems.available}</p>
           </div>
         </div>
       </section>
