@@ -211,6 +211,16 @@ h3 {
   cursor: pointer;
 }
 
+.collect-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.collect-row .collect {
+  flex: 1;
+}
+
 .collect:disabled {
   opacity: 0.65;
   cursor: not-allowed;

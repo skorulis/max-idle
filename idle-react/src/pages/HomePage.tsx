@@ -38,6 +38,7 @@ type HomePageProps = {
   onEnterTournament: () => Promise<void>;
   onNavigateTournament: () => void;
   onNavigateDailyBonusHistory: () => void;
+  onNavigateCollectionHistory: () => void;
   onNavigateLogin: () => void;
 };
 
@@ -63,6 +64,7 @@ export function HomePage({
   onEnterTournament,
   onNavigateTournament,
   onNavigateDailyBonusHistory,
+  onNavigateCollectionHistory,
   onNavigateLogin
 }: HomePageProps) {
   const [collectWarningIndex, setCollectWarningIndex] = useState(0);
@@ -121,13 +123,24 @@ export function HomePage({
         </button>
       </div>
 
-      <button className="collect" onClick={() => void handleCollect()} disabled={collecting || collectBlockedByRestraint}>
-        {collecting
-          ? "Collecting..."
-          : collectBlockedByRestraint
-            ? `Collect (wait ${formatSeconds(restraintWaitRemainingSeconds)})`
-            : "Collect"}
-      </button>
+      <div className="collect-row">
+        <button className="collect" onClick={() => void handleCollect()} disabled={collecting || collectBlockedByRestraint}>
+          {collecting
+            ? "Collecting..."
+            : collectBlockedByRestraint
+              ? `Collect (wait ${formatSeconds(restraintWaitRemainingSeconds)})`
+              : "Collect"}
+        </button>
+        <button
+          type="button"
+          className="info-icon-button"
+          onClick={onNavigateCollectionHistory}
+          aria-label="View collection history"
+          title="View collection history"
+        >
+          <History size={16} aria-hidden="true" />
+        </button>
+      </div>
 
       <p className="subtle">Totals</p>
       <div className="shop-currencies">

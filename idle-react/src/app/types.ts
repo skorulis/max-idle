@@ -31,6 +31,13 @@ export type DailyBonusHistoryItem = {
   date: string;
 };
 
+export type CollectionHistoryItem = {
+  id: number;
+  collectionDate: string;
+  realTime: number;
+  idleTime: number;
+};
+
 export type PlayerResponse = {
   idleTime: TimeCurrencyBalances;
   realTime: TimeCurrencyBalances;

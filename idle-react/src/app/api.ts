@@ -3,6 +3,7 @@ import type {
   AccountResponse,
   AchievementsResponse,
   AuthResponse,
+  CollectionHistoryItem,
   DailyBonusHistoryItem,
   HomeResponse,
   LeaderboardResponse,
@@ -199,6 +200,25 @@ export async function getDailyBonusHistory(token: string | null): Promise<DailyB
     throw new Error("Failed to load daily bonus history");
   }
   const payload = (await response.json()) as { history?: DailyBonusHistoryItem[] } | null;
+  return payload?.history ?? [];
+}
+
+export async function getCollectionHistory(token: string | null): Promise<CollectionHistoryItem[]> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const response = await fetch(`${API_BASE_URL}/player/collection-history`, {
+    credentials: "include",
+    headers
+  });
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    throw new Error("Failed to load collection history");
+  }
+  const payload = (await response.json()) as { history?: CollectionHistoryItem[] } | null;
   return payload?.history ?? [];
 }
 

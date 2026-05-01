@@ -255,6 +255,23 @@ const dailyBonusHistoryResponseSchema = registry.register(
   })
 );
 
+const collectionHistoryItemSchema = registry.register(
+  "CollectionHistoryItem",
+  z.object({
+    id: z.number().int().nonnegative(),
+    collectionDate: z.string().datetime(),
+    realTime: z.number().int().nonnegative(),
+    idleTime: z.number().int().nonnegative()
+  })
+);
+
+const collectionHistoryResponseSchema = registry.register(
+  "CollectionHistoryResponse",
+  z.object({
+    history: z.array(collectionHistoryItemSchema)
+  })
+);
+
 const tournamentEntrySchema = registry.register(
   "TournamentEntry",
   z.object({
@@ -677,6 +694,28 @@ registry.registerPath({
       description: "Latest daily bonus history items",
       content: {
         "application/json": { schema: dailyBonusHistoryResponseSchema }
+      }
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    }
+  }
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/player/collection-history",
+  tags: ["Player"],
+  summary: "Get the player's most recent collection history (up to 100 rows)",
+  security: authViaCookieOrBearer,
+  responses: {
+    200: {
+      description: "Latest collection history items",
+      content: {
+        "application/json": { schema: collectionHistoryResponseSchema }
       }
     },
     401: {

@@ -10,6 +10,7 @@ import {
 } from "../shopUpgrades";
 import { AccountPage } from "../pages/AccountPage";
 import { AchievementsPage } from "../pages/AchievementsPage";
+import { CollectionHistoryPage } from "../pages/CollectionHistoryPage";
 import { HomePage } from "../pages/HomePage";
 import { HelpPage } from "../pages/HelpPage";
 import { LeaderboardPage } from "../pages/LeaderboardPage";
@@ -35,6 +36,7 @@ import {
   enterTournament,
   getAccount,
   getAchievements,
+  getCollectionHistory,
   getDailyBonusHistory,
   getHome,
   getLeaderboard,
@@ -63,6 +65,7 @@ import type {
   AccountResponse,
   AchievementsResponse,
   AuthFormState,
+  CollectionHistoryItem,
   LeaderboardResponse,
   LeaderboardType,
   PlayerProfileResponse,
@@ -174,6 +177,8 @@ export function AppShell() {
   const [achievementsLoading, setAchievementsLoading] = useState(false);
   const [dailyBonusHistory, setDailyBonusHistory] = useState<DailyBonusHistoryItem[]>([]);
   const [dailyBonusHistoryLoading, setDailyBonusHistoryLoading] = useState(false);
+  const [collectionHistory, setCollectionHistory] = useState<CollectionHistoryItem[]>([]);
+  const [collectionHistoryLoading, setCollectionHistoryLoading] = useState(false);
   const [, setStatus] = useState("Press start when you are ready to do nothing.");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -258,6 +263,43 @@ export function AppShell() {
     };
 
     void loadDailyBonusHistory();
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname, token, account?.gameUserId]);
+
+  useEffect(() => {
+    if (location.pathname !== "/collection") {
+      return;
+    }
+
+    let cancelled = false;
+    const loadCollectionHistory = async () => {
+      setCollectionHistoryLoading(true);
+      setError(null);
+      try {
+        const nextHistory = await getCollectionHistory(token);
+        if (!cancelled) {
+          setCollectionHistory(nextHistory);
+        }
+      } catch (collectionHistoryError) {
+        if (cancelled) {
+          return;
+        }
+        setCollectionHistory([]);
+        if (collectionHistoryError instanceof Error && collectionHistoryError.message === "UNAUTHORIZED") {
+          setError("Login or start idling to view collection history.");
+          return;
+        }
+        setError(collectionHistoryError instanceof Error ? collectionHistoryError.message : "Failed to load collection history.");
+      } finally {
+        if (!cancelled) {
+          setCollectionHistoryLoading(false);
+        }
+      }
+    };
+
+    void loadCollectionHistory();
     return () => {
       cancelled = true;
     };
@@ -1346,6 +1388,7 @@ export function AppShell() {
                 onEnterTournament={onEnterTournament}
                 onNavigateTournament={() => navigate("/tournament")}
                 onNavigateDailyBonusHistory={() => navigate("/dailybonus")}
+                onNavigateCollectionHistory={() => navigate("/collection")}
                 onNavigateLogin={() => navigate("/login")}
               />
             }
@@ -1363,6 +1406,15 @@ export function AppShell() {
                 dailyBonusHistoryLoading={dailyBonusHistoryLoading}
                 onCollectDailyReward={onCollectDailyReward}
                 onCollectDailyBonus={onCollectDailyBonus}
+              />
+            )}
+          />
+          <Route
+            path="/collection"
+            element={requireAuthenticatedRoute(
+              <CollectionHistoryPage
+                history={collectionHistory}
+                loading={collectionHistoryLoading}
               />
             )}
           />

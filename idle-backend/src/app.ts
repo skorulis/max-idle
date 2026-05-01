@@ -22,6 +22,7 @@ import { registerAccountRoutes } from "./routes/account.js";
 import { registerAchievementsRoutes } from "./routes/achievements.js";
 import { registerDailyBonusRoutes } from "./routes/dailyBonus.js";
 import { registerPlayerRoutes } from "./routes/player.js";
+import { registerPlayerCollectionHistoryRoutes } from "./routes/playerCollectionHistory.js";
 import { registerHomeRoutes } from "./routes/home.js";
 import { registerTournamentRoutes } from "./routes/tournament.js";
 import { registerNotificationRoutes } from "./routes/notifications.js";
@@ -392,6 +393,13 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
     toNumber,
     analytics,
     isProduction: config.isProduction
+  });
+
+  registerPlayerCollectionHistoryRoutes({
+    app,
+    pool,
+    resolveIdentity: resolveIdentityForRequest,
+    toNumber
   });
 
   registerHomeRoutes({
