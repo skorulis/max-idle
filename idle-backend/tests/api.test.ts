@@ -61,7 +61,13 @@ describe("auth + player lifecycle", () => {
   }
 
   async function upsertTodayBonus(
-    type: "collect_idle_percent" | "collect_real_percent" | "double_gems_daily_reward" | "free_real_time_hours" | "free_idle_time_hours",
+    type:
+      | "collect_idle_percent"
+      | "collect_real_percent"
+      | "double_gems_daily_reward"
+      | "free_time_gem"
+      | "free_real_time_hours"
+      | "free_idle_time_hours",
     value: number
   ): Promise<void> {
     await pool.query(
@@ -415,6 +421,38 @@ describe("auth + player lifecycle", () => {
     );
     expect(claimState.rows[0]?.last_daily_bonus_claimed_at).toBeTruthy();
     expect(claimState.rows[0]?.last_daily_bonus_claimed_type).toBe("free_real_time_hours");
+  });
+
+  it("collects free time gem daily bonus exactly once per UTC day", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+    await unlockDailyBonusFeature(app, token, userId);
+    await upsertTodayBonus("free_time_gem", 1);
+    await pool.query(`UPDATE player_states SET idle_time_available = $2 WHERE user_id = $1`, [userId, 24 * 60 * 60]);
+
+    const collect = await request(app).post("/player/daily-bonus/collect").set("Authorization", `Bearer ${token}`);
+    expect(collect.status).toBe(200);
+    expect(collect.body.timeGems.total).toBe(1);
+    expect(collect.body.timeGems.available).toBe(1);
+    expect(collect.body.idleTime.available).toBe(0);
+    expect(collect.body.dailyBonus.isClaimed).toBe(true);
+
+    const secondCollect = await request(app).post("/player/daily-bonus/collect").set("Authorization", `Bearer ${token}`);
+    expect(secondCollect.status).toBe(400);
+    expect(secondCollect.body.code).toBe("DAILY_BONUS_ALREADY_CLAIMED");
+
+    const claimState = await pool.query<{ last_daily_bonus_claimed_at: Date | null; last_daily_bonus_claimed_type: string | null }>(
+      `
+      SELECT last_daily_bonus_claimed_at, last_daily_bonus_claimed_type
+      FROM player_states
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+    expect(claimState.rows[0]?.last_daily_bonus_claimed_at).toBeTruthy();
+    expect(claimState.rows[0]?.last_daily_bonus_claimed_type).toBe("free_time_gem");
   });
 
   it("rejects daily bonus activation when the feature is not unlocked", async () => {

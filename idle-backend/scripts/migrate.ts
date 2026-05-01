@@ -11,7 +11,11 @@ async function run(): Promise<void> {
 
   const pool = new Pool({ connectionString: config.databaseUrl });
   try {
-    const migrationFiles = ["001_schema.sql", "002_drop_daily_bonuses_bonus_value_check.sql"] as const;
+    const migrationFiles = [
+      "001_schema.sql",
+      "002_drop_daily_bonuses_bonus_value_check.sql",
+      "003_add_free_time_gem_daily_bonus_type.sql"
+    ] as const;
     for (const file of migrationFiles) {
       const sql = await readFile(resolve(process.cwd(), "sql", file), "utf-8");
       await pool.query(sql);

@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS daily_bonuses (
       'collect_idle_percent',
       'collect_real_percent',
       'double_gems_daily_reward',
+      'free_time_gem',
       'free_real_time_hours',
       'free_idle_time_hours'
     )

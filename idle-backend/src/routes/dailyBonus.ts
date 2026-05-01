@@ -12,13 +12,17 @@ import { getEffectiveIdleSecondsRate } from "../idleRate.js";
 import type { AuthClaims } from "../types.js";
 import type { AnalyticsService } from "../analytics.js";
 
-const DAILY_BONUS_TYPES = [
+/** Types that can be chosen by {@link rollDailyBonus} (excludes legacy types no longer rolled). */
+const DAILY_BONUS_ROLL_TYPES = [
   "collect_idle_percent",
   "collect_real_percent",
-  "double_gems_daily_reward",
+  "free_time_gem",
   "free_real_time_hours",
   "free_idle_time_hours"
 ] as const;
+
+/** All `bonus_type` values that may exist in `daily_bonuses` (including legacy / no longer rolled). */
+const DAILY_BONUS_TYPES = [...DAILY_BONUS_ROLL_TYPES, "double_gems_daily_reward"] as const;
 
 type DailyBonusType = (typeof DAILY_BONUS_TYPES)[number];
 
@@ -75,15 +79,16 @@ function getRandomIntInclusive(min: number, max: number): number {
 }
 
 function rollDailyBonus(now: Date): DailyBonusRow {
-  const type = DAILY_BONUS_TYPES[getRandomIntInclusive(0, DAILY_BONUS_TYPES.length - 1)];
+  const type =
+    DAILY_BONUS_ROLL_TYPES[getRandomIntInclusive(0, DAILY_BONUS_ROLL_TYPES.length - 1)];
   let value = 2;
   switch (type) {
     case "collect_idle_percent":
     case "collect_real_percent":
       value = getRandomIntInclusive(10, 25);
       break;
-    case "double_gems_daily_reward":
-      value = 2;
+    case "free_time_gem":
+      value = 1;
       break;
     case "free_real_time_hours":
       value = getRandomIntInclusive(2, 6);
@@ -324,6 +329,8 @@ export function registerDailyBonusRoutes({
             + CASE WHEN $3 = 'free_idle_time_hours' THEN $5::BIGINT ELSE 0 END,
           real_time_total = real_time_total + CASE WHEN $3 = 'free_real_time_hours' THEN $5::BIGINT ELSE 0 END,
           real_time_available = real_time_available + CASE WHEN $3 = 'free_real_time_hours' THEN $5::BIGINT ELSE 0 END,
+          time_gems_total = time_gems_total + CASE WHEN $3 = 'free_time_gem' THEN $6::BIGINT ELSE 0 END,
+          time_gems_available = time_gems_available + CASE WHEN $3 = 'free_time_gem' THEN $6::BIGINT ELSE 0 END,
           last_daily_bonus_claimed_at = $2,
           last_daily_bonus_claimed_type = $3,
           updated_at = $2
@@ -346,7 +353,7 @@ export function registerDailyBonusRoutes({
           last_daily_reward_collected_at,
           last_daily_bonus_claimed_at
         `,
-        [userId, now, currentDailyBonus.bonus_type, activationCost, bonusSeconds]
+        [userId, now, currentDailyBonus.bonus_type, activationCost, bonusSeconds, currentDailyBonus.bonus_value]
       );
       const updatedPlayer = updateResult.rows[0];
       if (!updatedPlayer) {

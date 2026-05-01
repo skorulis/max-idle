@@ -11,6 +11,8 @@ export function getDailyBonusDescription(dailyBonus: DailyBonus | DailyBonusHist
       return `+${dailyBonus.value}% real time on collect`;
     case "double_gems_daily_reward":
       return "Double gems from daily reward";
+    case "free_time_gem":
+      return `+${dailyBonus.value} Time Gem when activated`;
     case "free_real_time_hours":
       return `+${dailyBonus.value}h free real time when activated`;
     case "free_idle_time_hours":
