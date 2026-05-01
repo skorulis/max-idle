@@ -154,13 +154,24 @@ export type FlipDurationDisplayProps = {
   /** Non-negative duration in seconds (fractional part uses floor when breaking down). */
   totalSeconds: number;
   className?: string;
+  /** Increment after a successful idle collect to play a short emphasis animation (optional). */
+  collectFlashNonce?: number;
 };
 
 /**
  * Flip-card duration display (calendar units + clock-style hours/minutes/seconds).
  * Swap this component on the home screen or reuse {@link FlipSegment} elsewhere.
  */
-export function FlipDurationDisplay({ totalSeconds, className }: FlipDurationDisplayProps) {
+export function FlipDurationDisplay({ totalSeconds, className, collectFlashNonce }: FlipDurationDisplayProps) {
+  const [collectCelebrate, setCollectCelebrate] = useState(false);
+
+  useEffect(() => {
+    if (!collectFlashNonce) return;
+    setCollectCelebrate(true);
+    const done = window.setTimeout(() => setCollectCelebrate(false), 720);
+    return () => window.clearTimeout(done);
+  }, [collectFlashNonce]);
+
   const parts = breakDownSeconds(totalSeconds, "floor");
   const ariaLabel = formatSeconds(totalSeconds);
 
@@ -172,7 +183,13 @@ export function FlipDurationDisplay({ totalSeconds, className }: FlipDurationDis
   const showHours = parts.hours > 0;
 
   return (
-    <div className={"flip-duration-display" + (className ? ` ${className}` : "")}>
+    <div
+      className={
+        "flip-duration-display" +
+        (className ? ` ${className}` : "") +
+        (collectCelebrate ? " flip-duration-display--collect-celebrate" : "")
+      }
+    >
       <span className="flip-duration-sr">{ariaLabel}</span>
       {showCalendar ? (
         <div className="flip-duration-group flip-duration-group--calendar" aria-hidden="true">

@@ -303,3 +303,40 @@
     0 1px 0 rgba(255, 255, 255, 0.06),
     var(--flip-text-shadow);
 }
+
+@keyframes flip-duration-collect-celebrate {
+  0% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  35% {
+    filter: brightness(1.08);
+    transform: scale(1.015);
+  }
+  100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+}
+
+.flip-duration-display--collect-celebrate {
+  animation: flip-duration-collect-celebrate 0.7s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-duration-display--collect-celebrate {
+    animation: flip-duration-collect-subtle 0.45s ease-out;
+  }
+}
+
+@keyframes flip-duration-collect-subtle {
+  0% {
+    opacity: 1;
+  }
+  40% {
+    opacity: 0.88;
+  }
+  100% {
+    opacity: 1;
+  }
+}

@@ -886,14 +886,16 @@ export function AppShell() {
     }
   };
 
-  const onCollect = async () => {
+  const onCollect = async (): Promise<
+    { collectedSeconds: number; realSecondsCollected: number } | undefined
+  > => {
     if (!playerState) {
-      return;
+      return undefined;
     }
     if (isCollectBlockedByRestraint) {
       setError(restraintCollectBlockedMessage);
       setStatus("Keep idling to satisfy Restraint.");
-      return;
+      return undefined;
     }
 
     setCollecting(true);
@@ -902,12 +904,15 @@ export function AppShell() {
 
     try {
       const nextPlayer = await collectIdleTime(token);
-      toastCollectIdle(nextPlayer.collectedSeconds ?? 0, nextPlayer.realSecondsCollected ?? 0);
+      const collectedSeconds = nextPlayer.collectedSeconds ?? 0;
+      const realSecondsCollected = nextPlayer.realSecondsCollected ?? 0;
+      toastCollectIdle(collectedSeconds, realSecondsCollected);
       const synced = toSyncedState(nextPlayer);
       alignClientClock();
       setPlayerState(synced);
       await refreshAccount(token);
       setStatus("Collected. You may now continue doing nothing.");
+      return { collectedSeconds, realSecondsCollected };
     } catch (collectError) {
       if (collectError instanceof Error && collectError.message === "UNAUTHORIZED") {
         localStorage.removeItem(TOKEN_KEY);
@@ -922,6 +927,7 @@ export function AppShell() {
       }
       setError(collectError instanceof Error ? collectError.message : "Collect failed");
       setStatus("Your inactivity transfer was interrupted.");
+      return undefined;
     } finally {
       setCollecting(false);
     }

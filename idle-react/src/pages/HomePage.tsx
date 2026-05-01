@@ -33,7 +33,7 @@ type HomePageProps = {
   tournamentSecondsUntilDraw: number;
   enteringTournament: boolean;
   onStartIdling: () => Promise<void>;
-  onCollect: () => Promise<void>;
+  onCollect: () => Promise<{ collectedSeconds: number; realSecondsCollected: number } | undefined>;
   onCollectDailyReward: () => Promise<void>;
   onCollectDailyBonus: () => Promise<void>;
   onEnterTournament: () => Promise<void>;
@@ -71,6 +71,7 @@ export function HomePage({
 }: HomePageProps) {
   const [collectWarningIndex, setCollectWarningIndex] = useState(0);
   const [showRateInfo, setShowRateInfo] = useState(false);
+  const [collectFlashNonce, setCollectFlashNonce] = useState(0);
 
   const handleCollect = async () => {
     if (realtimeElapsedSeconds < 15) {
@@ -79,7 +80,10 @@ export function HomePage({
       return;
     }
 
-    await onCollect();
+    const result = await onCollect();
+    if (!result) return;
+
+    setCollectFlashNonce((n) => n + 1);
   };
 
   if (!playerState) {
@@ -111,42 +115,60 @@ export function HomePage({
       ? Math.max(0, restraintRequiredRealtimeSeconds - realtimeElapsedSeconds)
       : 0;
 
+  const collectReady = !collecting && !collectBlockedByRestraint;
+
   return (
     <>
-      <p className="label">Current idle time</p>
-      <FlipDurationDisplay totalSeconds={uncollectedIdleSeconds} />
-      <div className="idle-rate-meta">
-        <div className="idle-rate-lines">
-          <p className="subtle">Realtime: {formatSeconds(realtimeElapsedSeconds)}</p>
-          <p className="subtle">Multiplier: {effectiveIdleSecondsRate.toFixed(2)}x</p>
+      <div className="idle-collect-hero">
+        <p className="label">Current idle time</p>
+        <FlipDurationDisplay
+          totalSeconds={uncollectedIdleSeconds}
+          collectFlashNonce={collectFlashNonce}
+        />
+        <div className="idle-rate-meta">
+          <div className="idle-rate-lines">
+            <p className="subtle">Realtime: {formatSeconds(realtimeElapsedSeconds)}</p>
+            <p className="subtle">Multiplier: {effectiveIdleSecondsRate.toFixed(2)}x</p>
+          </div>
+          <button
+            type="button"
+            className="info-icon-button"
+            aria-label="Show current rate factors"
+            onClick={() => setShowRateInfo(true)}
+          >
+            <CircleHelp size={15} aria-hidden="true" />
+          </button>
         </div>
-        <button
-          type="button"
-          className="info-icon-button"
-          aria-label="Show current rate factors"
-          onClick={() => setShowRateInfo(true)}
-        >
-          <CircleHelp size={15} aria-hidden="true" />
-        </button>
-      </div>
 
-      <div className="collect-row">
-        <button className="collect" onClick={() => void handleCollect()} disabled={collecting || collectBlockedByRestraint}>
-          {collecting
-            ? "Collecting..."
-            : collectBlockedByRestraint
-              ? `Collect (wait ${formatSeconds(restraintWaitRemainingSeconds)})`
-              : "Collect"}
-        </button>
-        <button
-          type="button"
-          className="info-icon-button"
-          onClick={onNavigateCollectionHistory}
-          aria-label="View collection history"
-          title="View collection history"
-        >
-          <History size={16} aria-hidden="true" />
-        </button>
+        <div className="collect-row collect-row--primary">
+          <button
+            type="button"
+            className={
+              "collect collect-primary" +
+              (collecting ? " collect-primary--collecting" : "") +
+              (collectReady ? " collect-primary--ready" : "")
+            }
+            onClick={() => void handleCollect()}
+            disabled={collecting || collectBlockedByRestraint}
+          >
+            <span className="collect-primary-label">
+              {collecting
+                ? "Collecting..."
+                : collectBlockedByRestraint
+                  ? `Collect (wait ${formatSeconds(restraintWaitRemainingSeconds)})`
+                  : "Collect idle time"}
+            </span>
+          </button>
+          <button
+            type="button"
+            className="info-icon-button"
+            onClick={onNavigateCollectionHistory}
+            aria-label="View collection history"
+            title="View collection history"
+          >
+            <History size={16} aria-hidden="true" />
+          </button>
+        </div>
       </div>
 
       <p className="subtle">Totals</p>

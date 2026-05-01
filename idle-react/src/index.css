@@ -221,6 +221,110 @@ h3 {
   flex: 1;
 }
 
+.collect-row--primary {
+  position: relative;
+  margin-top: 4px;
+}
+
+.idle-collect-hero {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px 14px 16px;
+  margin-bottom: 20px;
+  background: linear-gradient(180deg, #f9fafb 0%, #ffffff 52%);
+}
+
+.idle-collect-hero .flip-duration-display {
+  margin-bottom: 16px;
+}
+
+.collect-primary-label {
+  position: relative;
+  z-index: 1;
+}
+
+.collect-primary {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, #243047 0%, #111827 48%, #0c1322 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.07) inset,
+    0 6px 20px rgba(15, 23, 42, 0.38);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding-top: 14px;
+  padding-bottom: 14px;
+  transition:
+    transform 0.14s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+
+.collect-primary:not(:disabled):active {
+  transform: scale(0.985);
+}
+
+.collect-primary--ready:not(:disabled):not(.collect-primary--collecting) {
+  animation: collect-primary-idle-glow 4.8s ease-in-out infinite;
+}
+
+@keyframes collect-primary-idle-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.07) inset,
+      0 6px 20px rgba(15, 23, 42, 0.38),
+      0 0 0 0 rgba(59, 130, 246, 0);
+  }
+  50% {
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.08) inset,
+      0 8px 24px rgba(15, 23, 42, 0.42),
+      0 0 28px rgba(59, 130, 246, 0.22);
+  }
+}
+
+.collect-primary.collect-primary--collecting::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.11) 50%,
+    transparent 62%
+  );
+  animation: collect-primary-shimmer 1.15s ease-in-out infinite;
+}
+
+@keyframes collect-primary-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collect-primary {
+    transition: none;
+  }
+
+  .collect-primary:not(:disabled):active {
+    transform: none;
+  }
+
+  .collect-primary--ready:not(:disabled):not(.collect-primary--collecting) {
+    animation: none;
+  }
+
+  .collect-primary.collect-primary--collecting::after {
+    animation: none;
+    opacity: 0;
+  }
+}
+
 .collect:disabled {
   opacity: 0.65;
   cursor: not-allowed;
