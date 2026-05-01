@@ -191,6 +191,11 @@
               },
               "isClaimed": {
                 "type": "boolean"
+              },
+              "activationCostIdleSeconds": {
+                "type": "integer",
+                "minimum": 0,
+                "exclusiveMinimum": true
               }
             },
             "required": [
@@ -198,7 +203,8 @@
               "value",
               "date",
               "isCollectable",
-              "isClaimed"
+              "isClaimed",
+              "activationCostIdleSeconds"
             ]
           },
           "serverTime": {
@@ -800,6 +806,47 @@
           "history"
         ]
       },
+      "CollectionHistoryItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "collectionDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "realTime": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "idleTime": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "collectionDate",
+          "realTime",
+          "idleTime"
+        ]
+      },
+      "CollectionHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CollectionHistoryItem"
+            }
+          }
+        },
+        "required": [
+          "history"
+        ]
+      },
       "TournamentEntry": {
         "type": "object",
         "properties": {
@@ -1056,7 +1103,7 @@
         "tags": [
           "Player"
         ],
-        "summary": "Collect today's collectable daily bonus",
+        "summary": "Activate today's daily bonus (costs idle time; grants time rewards when applicable)",
         "security": [
           {
             "cookieAuth": []
@@ -1555,6 +1602,44 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DailyBonusHistoryResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/player/collection-history": {
+      "get": {
+        "tags": [
+          "Player"
+        ],
+        "summary": "Get the player's most recent collection history (up to 100 rows)",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Latest collection history items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionHistoryResponse"
                 }
               }
             }

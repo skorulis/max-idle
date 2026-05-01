@@ -75,7 +75,8 @@ const playerStateSchema = registry.register(
       value: z.number().int().positive(),
       date: z.string().datetime(),
       isCollectable: z.boolean(),
-      isClaimed: z.boolean()
+      isClaimed: z.boolean(),
+      activationCostIdleSeconds: z.number().int().positive()
     }),
     serverTime: z.string().datetime()
   })
@@ -392,7 +393,7 @@ registry.registerPath({
   method: "post",
   path: "/player/daily-bonus/collect",
   tags: ["Player"],
-  summary: "Collect today's collectable daily bonus",
+  summary: "Activate today's daily bonus (costs idle time; grants time rewards when applicable)",
   security: authViaCookieOrBearer,
   responses: {
     200: {

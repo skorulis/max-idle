@@ -34,6 +34,7 @@ type DailyBonusCollectProperties = {
   bonus_type: string;
   bonus_value: number;
   awarded_seconds: number;
+  activation_idle_seconds: number;
 };
 
 export type AnalyticsService = {

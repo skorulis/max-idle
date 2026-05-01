@@ -46,3 +46,10 @@ export function toSyncedTournamentState(data: TournamentCurrentResponse): Synced
 export function getTournamentSecondsUntilDraw(drawAtMs: number, estimatedServerNowMs: number): number {
   return Math.max(0, Math.ceil((drawAtMs - estimatedServerNowMs) / 1000));
 }
+
+/** Whole seconds until 00:00:00 UTC on the next calendar day (daily bonus / daily reward UTC boundary). */
+export function getSecondsUntilNextUtcDayBoundary(estimatedServerNowMs: number): number {
+  const now = new Date(estimatedServerNowMs);
+  const nextUtcDayStartMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+  return Math.max(0, Math.ceil((nextUtcDayStartMs - estimatedServerNowMs) / 1000));
+}

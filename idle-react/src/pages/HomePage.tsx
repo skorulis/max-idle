@@ -7,7 +7,7 @@ import { FlipDurationDisplay } from "../components/FlipDurationDisplay";
 import { CurrentRateInfoOverlay } from "./CurrentRateInfoOverlay";
 import { TournamentPanel } from "./TournamentPanel";
 import { toast } from "../gameToast";
-import { getDailyBonusDescription, isDoubleGemsDailyReward } from "../app/dailyBonus";
+import { getDailyBonusDescription, isDailyRewardDoubledToday } from "../app/dailyBonus";
 
 const EARLY_COLLECT_WARNING_MESSAGES = [
   "Don't you think you should wait?",
@@ -28,6 +28,7 @@ type HomePageProps = {
   effectiveIdleSecondsRate: number;
   dailyRewardAvailable: boolean;
   dailyRewardSecondsUntilAvailable: number;
+  dailyBonusSecondsUntilUtcReset: number;
   tournamentHasEntered: boolean;
   tournamentSecondsUntilDraw: number;
   enteringTournament: boolean;
@@ -54,6 +55,7 @@ export function HomePage({
   effectiveIdleSecondsRate,
   dailyRewardAvailable,
   dailyRewardSecondsUntilAvailable,
+  dailyBonusSecondsUntilUtcReset,
   tournamentHasEntered,
   tournamentSecondsUntilDraw,
   enteringTournament,
@@ -177,7 +179,7 @@ export function HomePage({
         {dailyRewardAvailable ? (
           <>
             <p className="shop-currency-value">
-              Ready to collect ({isDoubleGemsDailyReward(dailyBonus) ? "+2 Time Gems" : "+1 Time Gem"})
+              Ready to collect ({isDailyRewardDoubledToday(dailyBonus) ? "+2 Time Gems" : "+1 Time Gem"})
             </p>
             <button className="collect" onClick={() => void onCollectDailyReward()} disabled={collectingDailyReward}>
               {collectingDailyReward ? "Collecting daily reward..." : "Collect daily reward"}
@@ -207,21 +209,30 @@ export function HomePage({
           </button>
         </div>
         <p className="shop-currency-value">{dailyBonusDescription}</p>
-        {dailyBonus?.isCollectable ? (
-          <button
-            className="collect"
-            onClick={() => void onCollectDailyBonus()}
-            disabled={collectingDailyBonus || dailyBonus.isClaimed}
-          >
-            {dailyBonus.isClaimed
-              ? "Daily bonus claimed"
-              : collectingDailyBonus
-                ? "Collecting daily bonus..."
-                : "Collect daily bonus"}
-          </button>
-        ) : (
-          <p className="subtle">Applies automatically today.</p>
-        )}
+        {dailyBonus ? (
+          <>
+            <p className="subtle">
+              {dailyBonus.isClaimed
+                ? `Resets in ${formatSeconds(dailyBonusSecondsUntilUtcReset)}`
+                : `Activation costs ${formatSeconds(dailyBonus.activationCostIdleSeconds)} idle time.`}
+            </p>
+            <button
+              className="collect"
+              onClick={() => void onCollectDailyBonus()}
+              disabled={
+                collectingDailyBonus ||
+                dailyBonus.isClaimed ||
+                playerState.idleTime.available < dailyBonus.activationCostIdleSeconds
+              }
+            >
+              {dailyBonus.isClaimed
+                ? "Daily bonus activated"
+                : collectingDailyBonus
+                  ? "Activating daily bonus..."
+                  : "Activate daily bonus"}
+            </button>
+          </>
+        ) : null}
       </div>
       <TournamentPanel
         hasEntered={tournamentHasEntered}

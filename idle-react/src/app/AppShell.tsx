@@ -58,7 +58,12 @@ import { formatRestraintBlockedCollectMessage, hasAffordableIdleOrRealTimeShopPu
 import { ACHIEVEMENT_IDS } from "../achievements";
 import { authClient } from "./authClient.ts";
 import { alignClientClock, useClientNowMs } from "./clientClock";
-import { getTournamentSecondsUntilDraw, toSyncedState, toSyncedTournamentState } from "./playerState";
+import {
+  getSecondsUntilNextUtcDayBoundary,
+  getTournamentSecondsUntilDraw,
+  toSyncedState,
+  toSyncedTournamentState
+} from "./playerState";
 import { useBottomBulletinMessage, type BulletinContent } from "./useBottomBulletinMessage";
 import { useReturnAfterAwayMessage } from "./useReturnAfterAwayMessage";
 import type {
@@ -747,10 +752,15 @@ export function AppShell() {
     if (!playerState || dailyRewardAvailable) {
       return 0;
     }
-    const now = new Date(estimatedServerNowMs);
-    const nextUtcDayStartMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
-    return Math.max(0, Math.ceil((nextUtcDayStartMs - estimatedServerNowMs) / 1000));
+    return getSecondsUntilNextUtcDayBoundary(estimatedServerNowMs);
   }, [dailyRewardAvailable, estimatedServerNowMs, playerState]);
+
+  const dailyBonusSecondsUntilUtcReset = useMemo(() => {
+    if (!playerState) {
+      return 0;
+    }
+    return getSecondsUntilNextUtcDayBoundary(estimatedServerNowMs);
+  }, [estimatedServerNowMs, playerState]);
 
   const dailyRewardNotificationsSupported = typeof window !== "undefined" &&
     "Notification" in window &&
@@ -1082,7 +1092,7 @@ export function AppShell() {
       const synced = toSyncedState(nextPlayer);
       alignClientClock();
       setPlayerState(synced);
-      setStatus("Daily bonus collected.");
+      setStatus("Daily bonus activated.");
     } catch (dailyBonusError) {
       if (dailyBonusError instanceof Error && dailyBonusError.message === "UNAUTHORIZED") {
         localStorage.removeItem(TOKEN_KEY);
@@ -1090,10 +1100,10 @@ export function AppShell() {
         setPlayerState(null);
         setAccount(null);
         setStatus("Press start when you are ready to do nothing.");
-      } else if (dailyBonusError instanceof Error && dailyBonusError.message === "DAILY_BONUS_NOT_COLLECTABLE") {
-        setError("Today's daily bonus cannot be collected manually.");
+      } else if (dailyBonusError instanceof Error && dailyBonusError.message === "DAILY_BONUS_INSUFFICIENT_IDLE") {
+        setError("Not enough idle time in the bank to activate today's daily bonus.");
       } else if (dailyBonusError instanceof Error && dailyBonusError.message === "DAILY_BONUS_ALREADY_CLAIMED") {
-        setError("Daily bonus already claimed today.");
+        setError("Daily bonus already activated today.");
       } else {
         setError(dailyBonusError instanceof Error ? dailyBonusError.message : "Daily bonus collection failed");
       }
@@ -1378,6 +1388,7 @@ export function AppShell() {
                 collectingDailyBonus={collectingDailyBonus}
                 dailyRewardAvailable={dailyRewardAvailable}
                 dailyRewardSecondsUntilAvailable={dailyRewardSecondsUntilAvailable}
+                dailyBonusSecondsUntilUtcReset={dailyBonusSecondsUntilUtcReset}
                 tournamentHasEntered={tournamentHasEntered}
                 tournamentSecondsUntilDraw={tournamentSecondsUntilDraw}
                 enteringTournament={enteringTournament}
@@ -1402,6 +1413,7 @@ export function AppShell() {
                 collectingDailyBonus={collectingDailyBonus}
                 dailyRewardAvailable={dailyRewardAvailable}
                 dailyRewardSecondsUntilAvailable={dailyRewardSecondsUntilAvailable}
+                dailyBonusSecondsUntilUtcReset={dailyBonusSecondsUntilUtcReset}
                 dailyBonusHistory={dailyBonusHistory}
                 dailyBonusHistoryLoading={dailyBonusHistoryLoading}
                 onCollectDailyReward={onCollectDailyReward}

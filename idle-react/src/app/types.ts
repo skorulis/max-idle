@@ -23,6 +23,7 @@ export type DailyBonus = {
   date: string;
   isCollectable: boolean;
   isClaimed: boolean;
+  activationCostIdleSeconds: number;
 };
 
 export type DailyBonusHistoryItem = {

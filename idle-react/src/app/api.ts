@@ -171,8 +171,8 @@ export async function collectDailyBonus(token: string | null): Promise<PlayerRes
   }
   if (response.status === 400) {
     const payload = (await response.json().catch(() => null)) as { code?: string } | null;
-    if (payload?.code === "DAILY_BONUS_NOT_COLLECTABLE") {
-      throw new Error("DAILY_BONUS_NOT_COLLECTABLE");
+    if (payload?.code === "DAILY_BONUS_INSUFFICIENT_IDLE") {
+      throw new Error("DAILY_BONUS_INSUFFICIENT_IDLE");
     }
     if (payload?.code === "DAILY_BONUS_ALREADY_CLAIMED") {
       throw new Error("DAILY_BONUS_ALREADY_CLAIMED");

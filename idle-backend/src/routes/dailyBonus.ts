@@ -1,5 +1,6 @@
 import express from "express";
 import type { Pool, PoolClient } from "pg";
+import { DAILY_BONUS_ACTIVATION_IDLE_SECONDS } from "@maxidle/shared/dailyBonus";
 import { getSecondsMultiplier, getWorthwhileAchievementsMultiplier } from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
 import { calculateElapsedSeconds } from "../time.js";
@@ -27,8 +28,10 @@ export type DailyBonusResponse = {
   type: DailyBonusType;
   value: number;
   date: string;
+  /** True for all types: the daily bonus is activated via POST /player/daily-bonus/collect. */
   isCollectable: boolean;
   isClaimed: boolean;
+  activationCostIdleSeconds: number;
 };
 
 export type DailyBonusHistoryItemResponse = {
@@ -61,10 +64,6 @@ export function canCollectDailyReward(lastCollectedAt: Date | null, now: Date): 
 
 function getCurrentUtcDayStart(date: Date): Date {
   return new Date(getUtcDayStartMs(date));
-}
-
-export function isCollectableDailyBonusType(type: DailyBonusType): boolean {
-  return type === "free_real_time_hours" || type === "free_idle_time_hours";
 }
 
 function getRandomIntInclusive(min: number, max: number): number {
@@ -146,8 +145,9 @@ export function toDailyBonusResponse(
     type: bonus.bonus_type,
     value: bonus.bonus_value,
     date: bonus.bonus_date_utc.toISOString(),
-    isCollectable: isCollectableDailyBonusType(bonus.bonus_type),
-    isClaimed: lastDailyBonusClaimedAt !== null && lastDailyBonusClaimedAt.getTime() >= bonus.bonus_date_utc.getTime()
+    isCollectable: true,
+    isClaimed: lastDailyBonusClaimedAt !== null && lastDailyBonusClaimedAt.getTime() >= bonus.bonus_date_utc.getTime(),
+    activationCostIdleSeconds: DAILY_BONUS_ACTIVATION_IDLE_SECONDS
   };
 }
 
@@ -249,19 +249,21 @@ export function registerDailyBonusRoutes({
 
       const now = new Date();
       const currentDailyBonus = await getOrCreateCurrentDailyBonus(client, now);
-      if (!isCollectableDailyBonusType(currentDailyBonus.bonus_type)) {
-        await client.query("ROLLBACK");
-        res.status(400).json({
-          error: "Today's daily bonus is not collectable",
-          code: "DAILY_BONUS_NOT_COLLECTABLE"
-        });
-        return;
-      }
       if (player.last_daily_bonus_claimed_at && player.last_daily_bonus_claimed_at.getTime() >= currentDailyBonus.bonus_date_utc.getTime()) {
         await client.query("ROLLBACK");
         res.status(400).json({
           error: "Daily bonus already claimed today",
           code: "DAILY_BONUS_ALREADY_CLAIMED"
+        });
+        return;
+      }
+
+      const activationCost = DAILY_BONUS_ACTIVATION_IDLE_SECONDS;
+      if (toNumber(player.idle_time_available) < activationCost) {
+        await client.query("ROLLBACK");
+        res.status(400).json({
+          error: "Not enough idle time to activate today's daily bonus",
+          code: "DAILY_BONUS_INSUFFICIENT_IDLE"
         });
         return;
       }
@@ -287,14 +289,16 @@ export function registerDailyBonusRoutes({
         `
         UPDATE player_states
         SET
-          idle_time_total = idle_time_total + CASE WHEN $3 = 'free_idle_time_hours' THEN $4::BIGINT ELSE 0 END,
-          idle_time_available = idle_time_available + CASE WHEN $3 = 'free_idle_time_hours' THEN $4::BIGINT ELSE 0 END,
-          real_time_total = real_time_total + CASE WHEN $3 = 'free_real_time_hours' THEN $4::BIGINT ELSE 0 END,
-          real_time_available = real_time_available + CASE WHEN $3 = 'free_real_time_hours' THEN $4::BIGINT ELSE 0 END,
+          idle_time_total = idle_time_total + CASE WHEN $3 = 'free_idle_time_hours' THEN $5::BIGINT ELSE 0 END,
+          idle_time_available = idle_time_available - $4::BIGINT
+            + CASE WHEN $3 = 'free_idle_time_hours' THEN $5::BIGINT ELSE 0 END,
+          real_time_total = real_time_total + CASE WHEN $3 = 'free_real_time_hours' THEN $5::BIGINT ELSE 0 END,
+          real_time_available = real_time_available + CASE WHEN $3 = 'free_real_time_hours' THEN $5::BIGINT ELSE 0 END,
           last_daily_bonus_claimed_at = $2,
           last_daily_bonus_claimed_type = $3,
           updated_at = $2
         WHERE user_id = $1
+          AND idle_time_available >= $4::BIGINT
         RETURNING
           idle_time_total,
           idle_time_available,
@@ -312,12 +316,15 @@ export function registerDailyBonusRoutes({
           last_daily_reward_collected_at,
           last_daily_bonus_claimed_at
         `,
-        [userId, now, currentDailyBonus.bonus_type, bonusSeconds]
+        [userId, now, currentDailyBonus.bonus_type, activationCost, bonusSeconds]
       );
       const updatedPlayer = updateResult.rows[0];
       if (!updatedPlayer) {
         await client.query("ROLLBACK");
-        res.status(404).json({ error: "Player state not found" });
+        res.status(400).json({
+          error: "Not enough idle time to activate today's daily bonus",
+          code: "DAILY_BONUS_INSUFFICIENT_IDLE"
+        });
         return;
       }
 
@@ -331,12 +338,17 @@ export function registerDailyBonusRoutes({
         realTimeAvailable: toNumber(updatedPlayer.real_time_available)
       });
       await client.query("COMMIT");
+      const awardedSeconds =
+        currentDailyBonus.bonus_type === "free_real_time_hours" || currentDailyBonus.bonus_type === "free_idle_time_hours"
+          ? bonusSeconds
+          : 0;
       analytics.trackDailyBonusCollect(
         { userId, isAnonymous: identity.claims.isAnonymous },
         {
           bonus_type: currentDailyBonus.bonus_type,
           bonus_value: currentDailyBonus.bonus_value,
-          awarded_seconds: bonusSeconds
+          awarded_seconds: awardedSeconds,
+          activation_idle_seconds: activationCost
         }
       );
 

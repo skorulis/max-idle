@@ -49,6 +49,7 @@ export type PlayerState = {
         date: string;
         isCollectable: boolean;
         isClaimed: boolean;
+        activationCostIdleSeconds: number;
     };
     serverTime: string;
 };
@@ -163,6 +164,17 @@ export type DailyBonusHistoryItem = {
 
 export type DailyBonusHistoryResponse = {
     history: Array<DailyBonusHistoryItem>;
+};
+
+export type CollectionHistoryItem = {
+    id: number;
+    collectionDate: string;
+    realTime: number;
+    idleTime: number;
+};
+
+export type CollectionHistoryResponse = {
+    history: Array<CollectionHistoryItem>;
 };
 
 export type TournamentEntry = {
@@ -556,6 +568,31 @@ export type GetPlayerDailyBonusHistoryResponses = {
 };
 
 export type GetPlayerDailyBonusHistoryResponse = GetPlayerDailyBonusHistoryResponses[keyof GetPlayerDailyBonusHistoryResponses];
+
+export type GetPlayerCollectionHistoryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/player/collection-history';
+};
+
+export type GetPlayerCollectionHistoryErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+};
+
+export type GetPlayerCollectionHistoryError = GetPlayerCollectionHistoryErrors[keyof GetPlayerCollectionHistoryErrors];
+
+export type GetPlayerCollectionHistoryResponses = {
+    /**
+     * Latest collection history items
+     */
+    200: CollectionHistoryResponse;
+};
+
+export type GetPlayerCollectionHistoryResponse = GetPlayerCollectionHistoryResponses[keyof GetPlayerCollectionHistoryResponses];
 
 export type PostPlayerDailyRewardCollectData = {
     body?: never;

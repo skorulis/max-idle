@@ -39,6 +39,10 @@
     "./safeNumber": {
       "types": "./dist/safeNumber.d.ts",
       "default": "./dist/safeNumber.js"
+    },
+    "./dailyBonus": {
+      "types": "./dist/dailyBonus.d.ts",
+      "default": "./dist/dailyBonus.js"
     }
   }
 }

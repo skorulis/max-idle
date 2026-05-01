@@ -23,6 +23,7 @@ import {
 } from "../achievementUpdates.js";
 import type { AuthClaims } from "../types.js";
 import type { AnalyticsService } from "../analytics.js";
+import { isDailyBonusEffectActiveForUtcDay } from "@maxidle/shared/dailyBonus";
 import { canCollectDailyReward, getOrCreateCurrentDailyBonus, toDailyBonusResponse } from "./dailyBonus.js";
 
 const REWARD_SKIPPER_GAP_MS = 48 * 60 * 60 * 1000;
@@ -210,6 +211,10 @@ export function registerPlayerRoutes({
 
       const collectedAt = new Date();
       const currentDailyBonus = await getOrCreateCurrentDailyBonus(client, collectedAt);
+      const dailyBonusEffectActive = isDailyBonusEffectActiveForUtcDay(
+        lockedRow.last_daily_bonus_claimed_at,
+        currentDailyBonus.bonus_date_utc
+      );
       const collectionAchievementCount = toNumber(lockedRow.achievement_count);
       const baseCollectedSeconds = boostedUncollectedIdleSeconds(
         lockedRow.last_collected_at,
@@ -220,11 +225,11 @@ export function registerPlayerRoutes({
       );
       const baseRealSecondsCollected = calculateElapsedSeconds(lockedRow.last_collected_at, collectedAt);
       const collectedSeconds =
-        currentDailyBonus.bonus_type === "collect_idle_percent"
+        dailyBonusEffectActive && currentDailyBonus.bonus_type === "collect_idle_percent"
           ? Math.floor(baseCollectedSeconds * (1 + currentDailyBonus.bonus_value / 100))
           : baseCollectedSeconds;
       const realSecondsCollected =
-        currentDailyBonus.bonus_type === "collect_real_percent"
+        dailyBonusEffectActive && currentDailyBonus.bonus_type === "collect_real_percent"
           ? Math.floor(baseRealSecondsCollected * (1 + currentDailyBonus.bonus_value / 100))
           : baseRealSecondsCollected;
       if (isIdleCollectionBlockedByRestraint({ secondsSinceLastCollection: realSecondsCollected, shop: lockedRow.shop })) {
@@ -455,6 +460,10 @@ export function registerPlayerRoutes({
 
       const now = new Date();
       const currentDailyBonus = await getOrCreateCurrentDailyBonus(client, now);
+      const dailyBonusEffectActive = isDailyBonusEffectActiveForUtcDay(
+        player.last_daily_bonus_claimed_at,
+        currentDailyBonus.bonus_date_utc
+      );
       if (!canCollectDailyReward(player.last_daily_reward_collected_at, now)) {
         await client.query("ROLLBACK");
         res.status(400).json({
@@ -506,7 +515,11 @@ export function registerPlayerRoutes({
           last_daily_reward_collected_at,
           last_daily_bonus_claimed_at
         `,
-        [userId, now, currentDailyBonus.bonus_type === "double_gems_daily_reward" ? 2 : 1]
+        [
+          userId,
+          now,
+          dailyBonusEffectActive && currentDailyBonus.bonus_type === "double_gems_daily_reward" ? 2 : 1
+        ]
       );
       const updatedPlayer = updateResult.rows[0];
       if (!updatedPlayer) {
@@ -559,7 +572,8 @@ export function registerPlayerRoutes({
         realTimeAvailable: toNumber(updatedPlayer.real_time_available)
       });
       await client.query("COMMIT");
-      const rewardMultiplier = currentDailyBonus.bonus_type === "double_gems_daily_reward" ? 2 : 1;
+      const rewardMultiplier =
+        dailyBonusEffectActive && currentDailyBonus.bonus_type === "double_gems_daily_reward" ? 2 : 1;
       analytics.trackDailyRewardCollect(
         { userId, isAnonymous: identity.claims.isAnonymous },
         {

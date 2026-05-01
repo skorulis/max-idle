@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetAccountData, GetAccountErrors, GetAccountResponses, GetAchievementsData, GetAchievementsErrors, GetAchievementsResponses, GetHealthData, GetHealthResponses, GetHomeData, GetHomeErrors, GetHomeResponses, GetLeaderboardData, GetLeaderboardErrors, GetLeaderboardResponses, GetPlayerDailyBonusHistoryData, GetPlayerDailyBonusHistoryErrors, GetPlayerDailyBonusHistoryResponses, GetPlayerData, GetPlayerErrors, GetPlayerResponses, GetPlayersByIdData, GetPlayersByIdErrors, GetPlayersByIdResponses, GetTournamentCurrentData, GetTournamentCurrentErrors, GetTournamentCurrentResponses, PostAccountUpgradeData, PostAccountUpgradeErrors, PostAccountUpgradeResponses, PostAccountUsernameData, PostAccountUsernameErrors, PostAccountUsernameResponses, PostAchievementsGrantData, PostAchievementsGrantErrors, PostAchievementsGrantResponses, PostAchievementsSeenData, PostAchievementsSeenErrors, PostAchievementsSeenResponses, PostAuthAnonymousData, PostAuthAnonymousErrors, PostAuthAnonymousResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutData, PostAuthLogoutResponses, PostAuthRegisterData, PostAuthRegisterErrors, PostAuthRegisterResponses, PostPlayerCollectData, PostPlayerCollectErrors, PostPlayerCollectResponses, PostPlayerDailyBonusCollectData, PostPlayerDailyBonusCollectErrors, PostPlayerDailyBonusCollectResponses, PostPlayerDailyRewardCollectData, PostPlayerDailyRewardCollectErrors, PostPlayerDailyRewardCollectResponses, PostShopPurchaseData, PostShopPurchaseErrors, PostShopPurchaseResponses, PostTournamentEnterData, PostTournamentEnterErrors, PostTournamentEnterResponses } from './types.gen';
+import type { GetAccountData, GetAccountErrors, GetAccountResponses, GetAchievementsData, GetAchievementsErrors, GetAchievementsResponses, GetHealthData, GetHealthResponses, GetHomeData, GetHomeErrors, GetHomeResponses, GetLeaderboardData, GetLeaderboardErrors, GetLeaderboardResponses, GetPlayerCollectionHistoryData, GetPlayerCollectionHistoryErrors, GetPlayerCollectionHistoryResponses, GetPlayerDailyBonusHistoryData, GetPlayerDailyBonusHistoryErrors, GetPlayerDailyBonusHistoryResponses, GetPlayerData, GetPlayerErrors, GetPlayerResponses, GetPlayersByIdData, GetPlayersByIdErrors, GetPlayersByIdResponses, GetTournamentCurrentData, GetTournamentCurrentErrors, GetTournamentCurrentResponses, PostAccountUpgradeData, PostAccountUpgradeErrors, PostAccountUpgradeResponses, PostAccountUsernameData, PostAccountUsernameErrors, PostAccountUsernameResponses, PostAchievementsGrantData, PostAchievementsGrantErrors, PostAchievementsGrantResponses, PostAchievementsSeenData, PostAchievementsSeenErrors, PostAchievementsSeenResponses, PostAuthAnonymousData, PostAuthAnonymousErrors, PostAuthAnonymousResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutData, PostAuthLogoutResponses, PostAuthRegisterData, PostAuthRegisterErrors, PostAuthRegisterResponses, PostPlayerCollectData, PostPlayerCollectErrors, PostPlayerCollectResponses, PostPlayerDailyBonusCollectData, PostPlayerDailyBonusCollectErrors, PostPlayerDailyBonusCollectResponses, PostPlayerDailyRewardCollectData, PostPlayerDailyRewardCollectErrors, PostPlayerDailyRewardCollectResponses, PostShopPurchaseData, PostShopPurchaseErrors, PostShopPurchaseResponses, PostTournamentEnterData, PostTournamentEnterErrors, PostTournamentEnterResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -29,7 +29,7 @@ export const getHealth = <ThrowOnError extends boolean = false>(options?: Option
 export const postAuthAnonymous = <ThrowOnError extends boolean = false>(options?: Options<PostAuthAnonymousData, ThrowOnError>) => (options?.client ?? client).post<PostAuthAnonymousResponses, PostAuthAnonymousErrors, ThrowOnError>({ url: '/auth/anonymous', ...options });
 
 /**
- * Collect today's collectable daily bonus
+ * Activate today's daily bonus (costs idle time; grants time rewards when applicable)
  */
 export const postPlayerDailyBonusCollect = <ThrowOnError extends boolean = false>(options?: Options<PostPlayerDailyBonusCollectData, ThrowOnError>) => (options?.client ?? client).post<PostPlayerDailyBonusCollectResponses, PostPlayerDailyBonusCollectErrors, ThrowOnError>({
     security: [{
@@ -170,6 +170,19 @@ export const getPlayerDailyBonusHistory = <ThrowOnError extends boolean = false>
             type: 'apiKey'
         }, { scheme: 'bearer', type: 'http' }],
     url: '/player/daily-bonus/history',
+    ...options
+});
+
+/**
+ * Get the player's most recent collection history (up to 100 rows)
+ */
+export const getPlayerCollectionHistory = <ThrowOnError extends boolean = false>(options?: Options<GetPlayerCollectionHistoryData, ThrowOnError>) => (options?.client ?? client).get<GetPlayerCollectionHistoryResponses, GetPlayerCollectionHistoryErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'better-auth.session_token',
+            type: 'apiKey'
+        }, { scheme: 'bearer', type: 'http' }],
+    url: '/player/collection-history',
     ...options
 });
 

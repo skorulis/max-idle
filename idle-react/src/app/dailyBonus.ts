@@ -10,16 +10,21 @@ export function getDailyBonusDescription(dailyBonus: DailyBonus | DailyBonusHist
     case "collect_real_percent":
       return `+${dailyBonus.value}% real time on collect`;
     case "double_gems_daily_reward":
-      return "Double gems from daily reward collection";
+      return "Double gems from daily reward";
     case "free_real_time_hours":
-      return `Collect ${dailyBonus.value}h free real time`;
+      return `+${dailyBonus.value}h free real time when activated`;
     case "free_idle_time_hours":
-      return `Collect ${dailyBonus.value}h free idle time`;
+      return `+${dailyBonus.value}h free idle time when activated`;
   }
 }
 
 export function isDoubleGemsDailyReward(dailyBonus: DailyBonus | DailyBonusHistoryItem | null): boolean {
   return dailyBonus?.type === "double_gems_daily_reward";
+}
+
+/** Double-gem payout applies only after the daily bonus is activated for today. */
+export function isDailyRewardDoubledToday(dailyBonus: DailyBonus | null): boolean {
+  return dailyBonus !== null && dailyBonus.type === "double_gems_daily_reward" && dailyBonus.isClaimed;
 }
 
 export function formatDailyBonusDate(date: string): string {

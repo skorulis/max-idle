@@ -317,6 +317,7 @@ describe("auth + player lifecycle", () => {
     expect(playerResponse.body.dailyBonus).toBeTruthy();
     expect(typeof playerResponse.body.dailyBonus.type).toBe("string");
     expect(typeof playerResponse.body.dailyBonus.value).toBe("number");
+    expect(playerResponse.body.dailyBonus.activationCostIdleSeconds).toBe(24 * 60 * 60);
 
     const historyRow = await pool.query<{ bonus_type: string; bonus_value: string | number }>(
       `
@@ -330,11 +331,29 @@ describe("auth + player lifecycle", () => {
     expect(historyRow.rows[0]).toBeTruthy();
   });
 
-  it("doubles daily reward gems when daily bonus type is double_gems_daily_reward", async () => {
+  it("does not double daily reward gems until the daily bonus is activated", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
     await upsertTodayBonus("double_gems_daily_reward", 2);
+
+    const collect = await request(app).post("/player/daily-reward/collect").set("Authorization", `Bearer ${token}`);
+    expect(collect.status).toBe(200);
+    expect(collect.body.timeGems.total).toBe(1);
+    expect(collect.body.timeGems.available).toBe(1);
+  });
+
+  it("doubles daily reward gems when double gems daily bonus is activated", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+    await upsertTodayBonus("double_gems_daily_reward", 2);
+    await pool.query(`UPDATE player_states SET idle_time_available = $2 WHERE user_id = $1`, [userId, 24 * 60 * 60]);
+
+    const activate = await request(app).post("/player/daily-bonus/collect").set("Authorization", `Bearer ${token}`);
+    expect(activate.status).toBe(200);
+    expect(activate.body.dailyBonus.isClaimed).toBe(true);
 
     const collect = await request(app).post("/player/daily-reward/collect").set("Authorization", `Bearer ${token}`);
     expect(collect.status).toBe(200);
@@ -348,11 +367,13 @@ describe("auth + player lifecycle", () => {
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
     await upsertTodayBonus("free_real_time_hours", 3);
+    await pool.query(`UPDATE player_states SET idle_time_available = $2 WHERE user_id = $1`, [userId, 24 * 60 * 60]);
 
     const collect = await request(app).post("/player/daily-bonus/collect").set("Authorization", `Bearer ${token}`);
     expect(collect.status).toBe(200);
     expect(collect.body.realTime.total).toBe(3 * 60 * 60);
     expect(collect.body.realTime.available).toBe(3 * 60 * 60);
+    expect(collect.body.idleTime.available).toBe(0);
     expect(collect.body.dailyBonus.isClaimed).toBe(true);
 
     const secondCollect = await request(app).post("/player/daily-bonus/collect").set("Authorization", `Bearer ${token}`);
@@ -371,7 +392,7 @@ describe("auth + player lifecycle", () => {
     expect(claimState.rows[0]?.last_daily_bonus_claimed_type).toBe("free_real_time_hours");
   });
 
-  it("rejects daily bonus collect endpoint for non-collectable bonus types", async () => {
+  it("rejects daily bonus activation without enough idle time", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
@@ -379,7 +400,21 @@ describe("auth + player lifecycle", () => {
 
     const collect = await request(app).post("/player/daily-bonus/collect").set("Authorization", `Bearer ${token}`);
     expect(collect.status).toBe(400);
-    expect(collect.body.code).toBe("DAILY_BONUS_NOT_COLLECTABLE");
+    expect(collect.body.code).toBe("DAILY_BONUS_INSUFFICIENT_IDLE");
+  });
+
+  it("activates a percent daily bonus by spending idle time", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+    await upsertTodayBonus("collect_idle_percent", 30);
+    await pool.query(`UPDATE player_states SET idle_time_available = $2 WHERE user_id = $1`, [userId, 100_000]);
+
+    const collect = await request(app).post("/player/daily-bonus/collect").set("Authorization", `Bearer ${token}`);
+    expect(collect.status).toBe(200);
+    expect(collect.body.dailyBonus.isClaimed).toBe(true);
+    expect(collect.body.idleTime.available).toBe(100_000 - 24 * 60 * 60);
   });
 
   it("returns current weekly tournament state and allows entering once", async () => {

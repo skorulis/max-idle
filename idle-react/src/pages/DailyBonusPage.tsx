@@ -1,7 +1,7 @@
 import { Gift } from "lucide-react";
 import { formatSeconds } from "../formatSeconds";
 import type { DailyBonusHistoryItem, SyncedPlayerState } from "../app/types";
-import { formatDailyBonusDate, getDailyBonusDescription, isDoubleGemsDailyReward } from "../app/dailyBonus";
+import { formatDailyBonusDate, getDailyBonusDescription, isDailyRewardDoubledToday } from "../app/dailyBonus";
 
 type DailyBonusPageProps = {
   playerState: SyncedPlayerState | null;
@@ -9,6 +9,7 @@ type DailyBonusPageProps = {
   collectingDailyBonus: boolean;
   dailyRewardAvailable: boolean;
   dailyRewardSecondsUntilAvailable: number;
+  dailyBonusSecondsUntilUtcReset: number;
   dailyBonusHistory: DailyBonusHistoryItem[];
   dailyBonusHistoryLoading: boolean;
   onCollectDailyReward: () => Promise<void>;
@@ -21,6 +22,7 @@ export function DailyBonusPage({
   collectingDailyBonus,
   dailyRewardAvailable,
   dailyRewardSecondsUntilAvailable,
+  dailyBonusSecondsUntilUtcReset,
   dailyBonusHistory,
   dailyBonusHistoryLoading,
   onCollectDailyReward,
@@ -39,7 +41,7 @@ export function DailyBonusPage({
         {dailyRewardAvailable ? (
           <>
             <p className="shop-currency-value">
-              Ready to collect ({isDoubleGemsDailyReward(dailyBonus) ? "+2 Time Gems" : "+1 Time Gem"})
+              Ready to collect ({isDailyRewardDoubledToday(dailyBonus) ? "+2 Time Gems" : "+1 Time Gem"})
             </p>
             <button className="collect" onClick={() => void onCollectDailyReward()} disabled={collectingDailyReward}>
               {collectingDailyReward ? "Collecting daily reward..." : "Collect daily reward"}
@@ -58,21 +60,30 @@ export function DailyBonusPage({
           Daily Bonus
         </p>
         <p className="shop-currency-value">{getDailyBonusDescription(dailyBonus)}</p>
-        {dailyBonus?.isCollectable ? (
-          <button
-            className="collect"
-            onClick={() => void onCollectDailyBonus()}
-            disabled={collectingDailyBonus || dailyBonus.isClaimed}
-          >
-            {dailyBonus.isClaimed
-              ? "Daily bonus claimed"
-              : collectingDailyBonus
-                ? "Collecting daily bonus..."
-                : "Collect daily bonus"}
-          </button>
-        ) : (
-          <p className="subtle">Applies automatically today.</p>
-        )}
+        {dailyBonus ? (
+          <>
+            <p className="subtle">
+              {dailyBonus.isClaimed
+                ? `Resets in ${formatSeconds(dailyBonusSecondsUntilUtcReset)}`
+                : `Activation costs ${formatSeconds(dailyBonus.activationCostIdleSeconds)} idle time.`}
+            </p>
+            <button
+              className="collect"
+              onClick={() => void onCollectDailyBonus()}
+              disabled={
+                collectingDailyBonus ||
+                dailyBonus.isClaimed ||
+                (playerState?.idleTime.available ?? 0) < dailyBonus.activationCostIdleSeconds
+              }
+            >
+              {dailyBonus.isClaimed
+                ? "Daily bonus activated"
+                : collectingDailyBonus
+                  ? "Activating daily bonus..."
+                  : "Activate daily bonus"}
+            </button>
+          </>
+        ) : null}
       </div>
 
       <h3 className="leaderboard-header">
