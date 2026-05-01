@@ -224,6 +224,10 @@ export function AppShell() {
   const { displayedContent, isFadingOutMessage, isFadingInMessage } = useBottomBulletinMessage(isAuthenticated);
   const showDebugFeatures = !import.meta.env.PROD;
   const clientNowMs = useClientNowMs();
+  const dailyBonusHistoryUnlocked =
+    playerState != null && isDailyBonusFeatureUnlocked(playerState.shop);
+  const dailyBonusHistoryForPage = dailyBonusHistoryUnlocked ? dailyBonusHistory : [];
+  const dailyBonusHistoryLoadingForPage = dailyBonusHistoryUnlocked ? dailyBonusHistoryLoading : false;
 
   useReturnAfterAwayMessage();
 
@@ -245,8 +249,6 @@ export function AppShell() {
     }
 
     if (!playerState || !isDailyBonusFeatureUnlocked(playerState.shop)) {
-      setDailyBonusHistory([]);
-      setDailyBonusHistoryLoading(false);
       return;
     }
 
@@ -1429,8 +1431,8 @@ export function AppShell() {
                 dailyRewardAvailable={dailyRewardAvailable}
                 dailyRewardSecondsUntilAvailable={dailyRewardSecondsUntilAvailable}
                 dailyBonusSecondsUntilUtcReset={dailyBonusSecondsUntilUtcReset}
-                dailyBonusHistory={dailyBonusHistory}
-                dailyBonusHistoryLoading={dailyBonusHistoryLoading}
+                dailyBonusHistory={dailyBonusHistoryForPage}
+                dailyBonusHistoryLoading={dailyBonusHistoryLoadingForPage}
                 onCollectDailyReward={onCollectDailyReward}
                 onCollectDailyBonus={onCollectDailyBonus}
               />
