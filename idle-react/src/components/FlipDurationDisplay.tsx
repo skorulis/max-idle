@@ -167,9 +167,12 @@ export function FlipDurationDisplay({ totalSeconds, className, collectFlashNonce
 
   useEffect(() => {
     if (!collectFlashNonce) return;
-    setCollectCelebrate(true);
-    const done = window.setTimeout(() => setCollectCelebrate(false), 720);
-    return () => window.clearTimeout(done);
+    const showId = window.setTimeout(() => setCollectCelebrate(true), 0);
+    const hideId = window.setTimeout(() => setCollectCelebrate(false), 720);
+    return () => {
+      window.clearTimeout(showId);
+      window.clearTimeout(hideId);
+    };
   }, [collectFlashNonce]);
 
   const parts = breakDownSeconds(totalSeconds, "floor");
