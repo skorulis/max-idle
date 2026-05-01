@@ -26,7 +26,8 @@ function isKnownAchievementId(value: string): value is AchievementId {
 
 const LEGACY_ACHIEVEMENT_ID_TO_CANONICAL: Readonly<Record<string, AchievementId>> = {
   idle_time_collector_3h_7m: ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR,
-  real_time_streak_2d_14h: ACHIEVEMENT_IDS.REAL_TIME_STREAK
+  real_time_streak_2d_14h: ACHIEVEMENT_IDS.REAL_TIME_STREAK,
+  real_time_streak_59_minutes: ACHIEVEMENT_IDS.REAL_TIME_STREAK
 };
 
 /** Maps stored achievement ids (including pre-rename ids) to the canonical {@link AchievementId}. */

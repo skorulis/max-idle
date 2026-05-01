@@ -900,25 +900,26 @@ describe("auth + player lifecycle", () => {
     expect(response.status).toBe(200);
     expect(response.body.completedCount).toBe(0);
     expect(response.body.earningsBonusMultiplier).toBe(1);
-    expect(response.body.achievements).toHaveLength(11);
+    expect(response.body.achievements).toHaveLength(10);
     expect(response.body.achievements[0].id).toBe("account_creation");
     expect(response.body.achievements[1].id).toBe("username_selected");
     expect(response.body.achievements[2].id).toBe("beginner_shopper");
     expect(response.body.achievements[3].id).toBe("real_time_collector_65_minutes");
+    expect(response.body.achievements[3].maxLevel).toBe(7);
+    expect(response.body.achievements[3].level).toBe(0);
     expect(response.body.achievements[4].id).toBe("idle_time_collector");
-    expect(response.body.achievements[4].maxLevel).toBe(5);
+    expect(response.body.achievements[4].maxLevel).toBe(6);
     expect(response.body.achievements[4].level).toBe(0);
-    expect(response.body.achievements[5].id).toBe("real_time_streak_59_minutes");
-    expect(response.body.achievements[6].id).toBe("real_time_streak");
-    expect(response.body.achievements[6].maxLevel).toBe(5);
-    expect(response.body.achievements[6].level).toBe(0);
-    expect(response.body.achievements[7].id).toBe("collection_count");
-    expect(response.body.achievements[8].id).toBe("contemplation");
-    expect(response.body.achievements[8].clientDriven).toBe(true);
-    expect(response.body.achievements[9].id).toBe("reward_skipper");
+    expect(response.body.achievements[5].id).toBe("real_time_streak");
+    expect(response.body.achievements[5].maxLevel).toBe(5);
+    expect(response.body.achievements[5].level).toBe(0);
+    expect(response.body.achievements[6].id).toBe("collection_count");
+    expect(response.body.achievements[7].id).toBe("contemplation");
+    expect(response.body.achievements[7].clientDriven).toBe(true);
+    expect(response.body.achievements[8].id).toBe("reward_skipper");
+    expect(response.body.achievements[8].clientDriven).toBe(false);
+    expect(response.body.achievements[9].id).toBe("gem_hoarder");
     expect(response.body.achievements[9].clientDriven).toBe(false);
-    expect(response.body.achievements[10].id).toBe("gem_hoarder");
-    expect(response.body.achievements[10].clientDriven).toBe(false);
     const collectionAchievement = response.body.achievements.find((achievement: { id: string }) => achievement.id === "collection_count");
     expect(collectionAchievement?.level).toBe(0);
     expect(collectionAchievement?.maxLevel).toBe(3);
@@ -1055,7 +1056,7 @@ describe("auth + player lifecycle", () => {
     await pool.query(`UPDATE player_states SET idle_time_total = 0, idle_time_available = 0 WHERE user_id = $1`, [userId]);
   });
 
-  it("awards 59-minute real-time streak achievement on collect", async () => {
+  it("awards hibernation level 1 when collecting after a 59-minute real-time gap", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
@@ -1079,13 +1080,14 @@ describe("auth + player lifecycle", () => {
       achievement_count: string | number;
       achievement_levels: unknown;
     }>(`SELECT achievement_count, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
-    expect(achievementIdsFromLevels(achievementState.rows[0]?.achievement_levels)).toContain("real_time_streak_59_minutes");
+    expect(achievementIdsFromLevels(achievementState.rows[0]?.achievement_levels)).toContain("real_time_streak");
+    expect(parseAchievementLevels(achievementState.rows[0]?.achievement_levels).find((e) => e.id === "real_time_streak")?.level).toBe(1);
 
     // Keep this test from affecting leaderboard ordering in later tests.
     await pool.query(`UPDATE player_states SET idle_time_total = 0, idle_time_available = 0 WHERE user_id = $1`, [userId]);
   });
 
-  it("awards 2d14h real-time streak achievement on collect", async () => {
+  it("awards hibernation level 3 when collecting after a 2d14h real-time gap", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
@@ -1111,7 +1113,6 @@ describe("auth + player lifecycle", () => {
     }>(`SELECT achievement_count, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
     const completed = achievementIdsFromLevels(achievementState.rows[0]?.achievement_levels);
     expect(completed).toContain("real_time_streak");
-    expect(completed).toContain("real_time_streak_59_minutes");
     expect(parseAchievementLevels(achievementState.rows[0]?.achievement_levels).find((e) => e.id === "real_time_streak")?.level).toBe(3);
 
     // Keep this test from affecting leaderboard ordering in later tests.

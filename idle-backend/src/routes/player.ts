@@ -25,8 +25,6 @@ import type { AuthClaims } from "../types.js";
 import type { AnalyticsService } from "../analytics.js";
 import { canCollectDailyReward, getOrCreateCurrentDailyBonus, toDailyBonusResponse } from "./dailyBonus.js";
 
-const REAL_TIME_COLLECT_65_MINUTES_SECONDS = 65 * 60;
-const REAL_TIME_STREAK_59_MINUTES_SECONDS = 59 * 60;
 const REWARD_SKIPPER_GAP_MS = 48 * 60 * 60 * 1000;
 
 type RegisterPlayerRoutesOptions = {
@@ -317,21 +315,16 @@ export function registerPlayerRoutes({
       const achievementLevels = normalizeAchievementLevels(lockedRow.achievement_levels, collectedAt);
       const currentLevelById = new Map(achievementLevels.map((entry) => [entry.id, entry.level] as const));
       const levelsToGrant = new Map<AchievementId, number>();
-      if (
-        toNumber(row.real_time_total) >= REAL_TIME_COLLECT_65_MINUTES_SECONDS &&
-        !isAchievementMaxed(currentLevelById.get(ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES) ?? 0, ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES)
-      ) {
-        levelsToGrant.set(ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES, 1);
+      const realTimeCollectorLevel = getAchievementLevelForValue(
+        ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES,
+        toNumber(row.real_time_total)
+      );
+      if (realTimeCollectorLevel > (currentLevelById.get(ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES) ?? 0)) {
+        levelsToGrant.set(ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES, realTimeCollectorLevel);
       }
       const idleTimeTotalLevel = getAchievementLevelForValue(ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR, toNumber(row.idle_time_total));
       if (idleTimeTotalLevel > (currentLevelById.get(ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR) ?? 0)) {
         levelsToGrant.set(ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR, idleTimeTotalLevel);
-      }
-      if (
-        realSecondsCollected >= REAL_TIME_STREAK_59_MINUTES_SECONDS &&
-        !isAchievementMaxed(currentLevelById.get(ACHIEVEMENT_IDS.REAL_TIME_STREAK_59_MINUTES) ?? 0, ACHIEVEMENT_IDS.REAL_TIME_STREAK_59_MINUTES)
-      ) {
-        levelsToGrant.set(ACHIEVEMENT_IDS.REAL_TIME_STREAK_59_MINUTES, 1);
       }
       const realTimeStreakLevel = getAchievementLevelForValue(ACHIEVEMENT_IDS.REAL_TIME_STREAK, realSecondsCollected);
       if (realTimeStreakLevel > (currentLevelById.get(ACHIEVEMENT_IDS.REAL_TIME_STREAK) ?? 0)) {

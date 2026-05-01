@@ -5,7 +5,6 @@ export const ACHIEVEMENT_IDS = {
   BEGINNER_SHOPPER: "beginner_shopper",
   REAL_TIME_COLLECTOR_65_MINUTES: "real_time_collector_65_minutes",
   IDLE_TIME_COLLECTOR: "idle_time_collector",
-  REAL_TIME_STREAK_59_MINUTES: "real_time_streak_59_minutes",
   REAL_TIME_STREAK: "real_time_streak",
   COLLECTION_COUNT: "collection_count",
   CONTEMPLATION: "contemplation",
@@ -62,9 +61,19 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   {
     id: ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES,
     name: "Timekeeper",
-    description: "Collect 1 hour and 5 minutes of real time.",
+    description: "Collect at least %s of real time in total.",
     icon: "badge-check",
-    clientDriven: false
+    clientDriven: false,
+    levelValueDisplay: "time_seconds",
+    levels: [
+      { value: 65 * 60 },
+      { value: 9 * 60 * 60 + 5 * 60 },
+      { value: 26 * 60 * 60 },
+      { value: 4 * 24 * 60 * 60 },
+      { value: 19 * 24 * 60 * 60 },
+      { value: 97 * 24 * 60 * 60 },
+      { value: 366 * 24 * 60 * 60 },
+    ]
   },
   {
     id: ACHIEVEMENT_IDS.IDLE_TIME_COLLECTOR,
@@ -79,14 +88,8 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
       { value: 6 * 24 * 60 * 60 },
       { value: 19 * 24 * 60 * 60 },
       { value: 364 * 24 * 60 * 60 },
+      { value: 2 * 364 * 24 * 60 * 60 },
     ]
-  },
-  {
-    id: ACHIEVEMENT_IDS.REAL_TIME_STREAK_59_MINUTES,
-    name: "Short collection",
-    description: "Wait at least 59 minutes before collecting.",
-    icon: "clock",
-    clientDriven: false
   },
   {
     id: ACHIEVEMENT_IDS.REAL_TIME_STREAK,
@@ -96,7 +99,7 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     clientDriven: false,
     levelValueDisplay: "time_seconds",
     levels: [
-      { value: 2 * 60 * 60 + 9 * 60 },
+      { value: 59 * 60 },
       { value: 24 * 60 * 60 },
       { value: (2 * 24 + 14) * 60 * 60 },
       { value: 6 * 24 * 60 * 60 },
