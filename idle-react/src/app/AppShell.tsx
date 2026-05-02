@@ -31,6 +31,7 @@ import {
   debugAddGems,
   debugAddIdleTime,
   debugAddRealTime,
+  debugFinalizeCurrentTournament,
   debugResetBalances,
   debugResetCurrentDailyBonus,
   completeSocialUpgrade,
@@ -214,7 +215,9 @@ export function AppShell() {
     | null
   >(null);
   const [resettingDailyBonus, setResettingDailyBonus] = useState(false);
-  const [debugPendingAction, setDebugPendingAction] = useState<"real" | "idle" | "gems" | "balances" | null>(null);
+  const [debugPendingAction, setDebugPendingAction] = useState<"real" | "idle" | "gems" | "balances" | "tournament" | null>(
+    null
+  );
   const [dailyRewardNotificationsEnabled, setDailyRewardNotificationsEnabled] = useState(() =>
     isDailyRewardNotificationsEnabledStored()
   );
@@ -1086,6 +1089,32 @@ export function AppShell() {
     }
   };
 
+  const onDebugFinalizeTournament = async () => {
+    if (!playerState) {
+      return;
+    }
+
+    setDebugPendingAction("tournament");
+    setError(null);
+    setStatus("Finalizing tournament...");
+    try {
+      const result = await debugFinalizeCurrentTournament(token);
+      if (!result.ok) {
+        toast.error("No active tournament.");
+        return;
+      }
+      await refreshHome(token);
+      toast.success(
+        `Tournament finalized (${result.entryCount} entr${result.entryCount === 1 ? "y" : "ies"}). New round #${result.newTournamentId}.`
+      );
+    } catch (debugError) {
+      setError(debugError instanceof Error ? debugError.message : "Failed to finalize tournament");
+      toast.error("Could not finalize tournament.");
+    } finally {
+      setDebugPendingAction(null);
+    }
+  };
+
   const onCollectDailyReward = async () => {
     if (!playerState) {
       return;
@@ -1508,6 +1537,7 @@ export function AppShell() {
                   onDebugAddIdleTime={onDebugAddIdleTime}
                   onDebugAddGems={onDebugAddGems}
                   onDebugResetBalances={onDebugResetBalances}
+                  onDebugFinalizeTournament={onDebugFinalizeTournament}
                 />
               )}
             />

@@ -100,7 +100,7 @@ describe("auth + player lifecycle", () => {
     token: string,
     userId: string
   ): Promise<void> {
-    await pool.query(`UPDATE player_states SET time_gems_available = time_gems_available + 1 WHERE user_id = $1`, [userId]);
+    await pool.query(`UPDATE player_states SET time_gems_available = time_gems_available + 2 WHERE user_id = $1`, [userId]);
     const purchase = await request(app)
       .post("/shop/purchase")
       .set("Authorization", `Bearer ${token}`)
@@ -722,6 +722,55 @@ describe("auth + player lifecycle", () => {
       `,
       [entrants.map((entrant) => entrant.userId)]
     );
+  });
+
+  it("debug-finalizes current tournament early and recreates with same draw_at_utc", async () => {
+    const app = createApp(pool, config);
+    await pool.query("DELETE FROM tournament_entries");
+    await pool.query("DELETE FROM tournaments");
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await unlockTournamentFeature(app, token, userId);
+    const currentBefore = await request(app).get("/tournament/current").set("Authorization", `Bearer ${token}`);
+    expect(currentBefore.status).toBe(200);
+    const drawAtBefore = currentBefore.body.drawAt as string;
+
+    const activeBefore = await pool.query<{ id: string }>(`SELECT id FROM tournaments WHERE is_active = TRUE LIMIT 1`);
+    const tournamentIdBefore = Number(activeBefore.rows[0]?.id);
+
+    const enterResponse = await request(app).post("/tournament/enter").set("Authorization", `Bearer ${token}`);
+    expect(enterResponse.status).toBe(200);
+
+    const debugResponse = await request(app)
+      .post("/tournament/debug/finalize-current")
+      .set("Authorization", `Bearer ${token}`);
+    expect(debugResponse.status).toBe(200);
+    expect(debugResponse.body.ok).toBe(true);
+    expect(debugResponse.body.finalizedTournamentId).toBe(tournamentIdBefore);
+    expect(debugResponse.body.newTournamentId).not.toBe(tournamentIdBefore);
+    expect(debugResponse.body.drawAtUtc).toBe(drawAtBefore);
+    expect(debugResponse.body.entryCount).toBe(1);
+
+    const activeAfter = await pool.query<{ id: string; draw_at_utc: Date }>(
+      `SELECT id, draw_at_utc FROM tournaments WHERE is_active = TRUE LIMIT 1`
+    );
+    expect(Number(activeAfter.rows[0]?.id)).toBe(debugResponse.body.newTournamentId);
+    expect(activeAfter.rows[0]?.draw_at_utc.toISOString()).toBe(drawAtBefore);
+
+    const finalizedRow = await pool.query<{ finalized_at: Date | null }>(
+      `SELECT finalized_at FROM tournaments WHERE id = $1`,
+      [tournamentIdBefore]
+    );
+    expect(finalizedRow.rows[0]?.finalized_at).not.toBeNull();
+
+    const gemsRow = await pool.query<{ time_gems_total: string; time_gems_available: string }>(
+      `SELECT time_gems_total, time_gems_available FROM player_states WHERE user_id = $1`,
+      [userId]
+    );
+    expect(Number(gemsRow.rows[0]?.time_gems_total)).toBe(5);
+    expect(Number(gemsRow.rows[0]?.time_gems_available)).toBe(5);
   });
 
   it("computes next tournament draw at Sunday 00:00 UTC", () => {
@@ -2108,6 +2157,17 @@ describe("auth + player lifecycle", () => {
     expect(realResponse.status).toBe(404);
     expect(idleResponse.status).toBe(404);
     expect(resetBalancesResponse.status).toBe(404);
+  });
+
+  it("does not register tournament debug finalize endpoint in production config", async () => {
+    const app = createApp(pool, { ...config, isProduction: true });
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+
+    const debugResponse = await request(app)
+      .post("/tournament/debug/finalize-current")
+      .set("Authorization", `Bearer ${token}`);
+    expect(debugResponse.status).toBe(404);
   });
 
   it("preserves timer on collect when luck roll succeeds", async () => {

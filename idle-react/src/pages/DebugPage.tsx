@@ -1,11 +1,12 @@
 type DebugPageProps = {
   resettingDailyBonus: boolean;
   onResetDailyBonus: () => Promise<void>;
-  debugPendingAction: "real" | "idle" | "gems" | "balances" | null;
+  debugPendingAction: "real" | "idle" | "gems" | "balances" | "tournament" | null;
   onDebugAddRealTime: () => Promise<void>;
   onDebugAddIdleTime: () => Promise<void>;
   onDebugAddGems: () => Promise<void>;
   onDebugResetBalances: () => Promise<void>;
+  onDebugFinalizeTournament: () => Promise<void>;
 };
 
 export function DebugPage({
@@ -15,7 +16,8 @@ export function DebugPage({
   onDebugAddRealTime,
   onDebugAddIdleTime,
   onDebugAddGems,
-  onDebugResetBalances
+  onDebugResetBalances,
+  onDebugFinalizeTournament
 }: DebugPageProps) {
   const debugBusy = debugPendingAction !== null;
 
@@ -75,6 +77,20 @@ export function DebugPage({
           disabled={debugBusy}
         >
           {debugPendingAction === "balances" ? "Resetting..." : "Reset all balances"}
+        </button>
+      </div>
+      <div className="panel">
+        <h3>Tournament</h3>
+        <p className="subtle">
+          Finalize the active weekly tournament immediately (same rewards as the real draw), then start a new round with the same draw time. Non-production API only.
+        </p>
+        <button
+          type="button"
+          className="collect"
+          onClick={() => void onDebugFinalizeTournament()}
+          disabled={debugBusy}
+        >
+          {debugPendingAction === "tournament" ? "Finalizing..." : "Finalize current tournament"}
         </button>
       </div>
     </section>

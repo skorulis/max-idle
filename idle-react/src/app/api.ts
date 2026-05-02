@@ -631,6 +631,41 @@ export async function debugResetBalances(token: string | null): Promise<PlayerRe
   return (await response.json()) as PlayerResponse;
 }
 
+export type DebugFinalizeCurrentTournamentResponse =
+  | {
+      ok: true;
+      finalizedTournamentId: number;
+      newTournamentId: number;
+      drawAtUtc: string;
+      entryCount: number;
+    }
+  | { ok: false; reason: "NO_ACTIVE_TOURNAMENT" };
+
+export async function debugFinalizeCurrentTournament(
+  token: string | null
+): Promise<DebugFinalizeCurrentTournamentResponse> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/tournament/debug/finalize-current`, {
+    method: "POST",
+    credentials: "include",
+    headers
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(payload?.error ?? "Failed to finalize tournament");
+  }
+
+  return (await response.json()) as DebugFinalizeCurrentTournamentResponse;
+}
+
 export async function logoutSession(): Promise<void> {
   await apiRequest("/auth/logout", { method: "POST" });
 }

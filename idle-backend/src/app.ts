@@ -422,7 +422,8 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
   registerTournamentRoutes({
     app,
     pool,
-    resolveIdentity: resolveIdentityForRequest
+    resolveIdentity: resolveIdentityForRequest,
+    isProduction: config.isProduction
   });
 
   registerNotificationRoutes({

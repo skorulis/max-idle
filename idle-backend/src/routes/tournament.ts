@@ -3,12 +3,18 @@ import type { Pool } from "pg";
 import type { ShopState } from "@maxidle/shared/shop";
 import { isTournamentFeatureUnlocked } from "@maxidle/shared/shop";
 import type { AuthClaims } from "../types.js";
-import { enterCurrentTournament, finalizeDueTournaments, getCurrentTournamentForUser } from "../tournaments.js";
+import {
+  debugFinalizeCurrentTournament,
+  enterCurrentTournament,
+  finalizeDueTournaments,
+  getCurrentTournamentForUser
+} from "../tournaments.js";
 
 type RegisterTournamentRoutesOptions = {
   app: express.Express;
   pool: Pool;
   resolveIdentity: (req: express.Request) => Promise<{ claims: AuthClaims }>;
+  isProduction: boolean;
 };
 
 async function loadShopForUser(pool: Pool, userId: string): Promise<ShopState | null> {
@@ -23,7 +29,7 @@ async function loadShopForUser(pool: Pool, userId: string): Promise<ShopState | 
   return result.rows[0]?.shop ?? null;
 }
 
-export function registerTournamentRoutes({ app, pool, resolveIdentity }: RegisterTournamentRoutesOptions): void {
+export function registerTournamentRoutes({ app, pool, resolveIdentity, isProduction }: RegisterTournamentRoutesOptions): void {
   app.get("/tournament/current", async (req, res, next) => {
     try {
       const identity = await resolveIdentity(req);
@@ -67,6 +73,20 @@ export function registerTournamentRoutes({ app, pool, resolveIdentity }: Registe
         });
         return;
       }
+      next(error);
+    }
+  });
+
+  if (isProduction) {
+    return;
+  }
+
+  app.post("/tournament/debug/finalize-current", async (req, res, next) => {
+    try {
+      await resolveIdentity(req);
+      const result = await debugFinalizeCurrentTournament(pool);
+      res.json(result);
+    } catch (error) {
       next(error);
     }
   });

@@ -77,6 +77,39 @@ export function getNextTournamentDrawAt(from: Date): Date {
   return new Date(drawAtMs);
 }
 
+async function insertActiveTournamentWithDrawAt(client: PoolClient, drawAtUtc: Date): Promise<TournamentRow> {
+  try {
+    const insertResult = await client.query<TournamentRow>(
+      `
+      INSERT INTO tournaments (draw_at_utc, is_active)
+      VALUES ($1, TRUE)
+      RETURNING id, draw_at_utc, is_active
+      `,
+      [drawAtUtc]
+    );
+    return insertResult.rows[0];
+  } catch (error) {
+    if (!isUniqueViolation(error)) {
+      throw error;
+    }
+    const retryResult = await client.query<TournamentRow>(
+      `
+      SELECT id, draw_at_utc, is_active
+      FROM tournaments
+      WHERE is_active = TRUE
+      ORDER BY id DESC
+      LIMIT 1
+      FOR UPDATE
+      `
+    );
+    const activeTournament = retryResult.rows[0];
+    if (!activeTournament) {
+      throw new Error("Failed to resolve active tournament after unique conflict");
+    }
+    return activeTournament;
+  }
+}
+
 async function ensureActiveTournament(client: PoolClient, now: Date): Promise<TournamentRow> {
   const existingResult = await client.query<TournamentRow>(
     `
@@ -358,6 +391,139 @@ export async function enterCurrentTournament(pool: Pool, userId: string, now = n
   }
 }
 
+async function finalizeTournamentCore(client: PoolClient, tournament: TournamentRow, now: Date): Promise<void> {
+  const entriesResult = await client.query<TournamentEntryRow>(
+    `
+    SELECT
+      te.id,
+      te.user_id,
+      te.entered_at,
+      ps.shop,
+      ps.last_collected_at,
+      ps.real_time_available,
+      ps.achievement_count
+    FROM tournament_entries te
+    INNER JOIN player_states ps ON ps.user_id = te.user_id
+    WHERE te.tournament_id = $1
+    ORDER BY te.id ASC
+    FOR UPDATE
+    `,
+    [tournament.id]
+  );
+
+  for (const row of entriesResult.rows) {
+    const achievementCount = toNumber(row.achievement_count);
+    const score = boostedUncollectedIdleSeconds(
+      row.last_collected_at,
+      now,
+      row.shop,
+      achievementCount,
+      toNumber(row.real_time_available)
+    );
+    await client.query(
+      `
+      UPDATE tournament_entries
+      SET
+        time_score_seconds = $2
+      WHERE id = $1
+      `,
+      [row.id, score]
+    );
+    await client.query(
+      `
+      UPDATE player_states
+      SET
+        current_seconds = $2,
+        current_seconds_last_updated = $3
+      WHERE user_id = $1
+      `,
+      [row.user_id, score, now]
+    );
+  }
+
+  const scoredEntriesResult = await client.query<{
+    id: number;
+    user_id: string;
+    entered_at: Date;
+    time_score_seconds: string | number | null;
+  }>(
+    `
+    SELECT id, user_id, entered_at, time_score_seconds
+    FROM tournament_entries
+    WHERE tournament_id = $1
+    ORDER BY time_score_seconds DESC, entered_at ASC, user_id ASC
+    FOR UPDATE
+    `,
+    [tournament.id]
+  );
+  const scoredEntries = scoredEntriesResult.rows;
+  const totalEntries = scoredEntries.length;
+  for (let index = 0; index < totalEntries; index += 1) {
+    const entry = scoredEntries[index];
+    const rank = index + 1;
+    const rewardBucket = Math.floor((index * 5) / totalEntries) + 1;
+    const gemsAwarded = 6 - rewardBucket;
+    await client.query(
+      `
+      UPDATE tournament_entries
+      SET
+        final_rank = $2,
+        gems_awarded = $3,
+        finalized_at = $4
+      WHERE id = $1
+      `,
+      [entry.id, rank, gemsAwarded, now]
+    );
+    const gemUpdate = await client.query<{
+      time_gems_available: string | number;
+      achievement_levels: unknown;
+      achievement_count: string | number;
+      has_unseen_achievements: boolean;
+    }>(
+      `
+      UPDATE player_states
+      SET
+        time_gems_total = time_gems_total + $2,
+        time_gems_available = time_gems_available + $2,
+        updated_at = $3
+      WHERE user_id = $1
+      RETURNING
+        time_gems_available,
+        achievement_levels,
+        achievement_count,
+        has_unseen_achievements
+      `,
+      [entry.user_id, gemsAwarded, now]
+    );
+    const afterGems = gemUpdate.rows[0];
+    if (afterGems && toNumber(afterGems.time_gems_available) >= GEM_HOARDER_MIN_AVAILABLE_GEMS) {
+      const achievementLevels = normalizeAchievementLevels(afterGems.achievement_levels, now);
+      const currentLevelById = new Map<AchievementId, number>(
+        achievementLevels.map((entry) => [entry.id, entry.level] as const)
+      );
+      if (!isAchievementMaxed(currentLevelById.get(ACHIEVEMENT_IDS.GEM_HOARDER) ?? 0, ACHIEVEMENT_IDS.GEM_HOARDER)) {
+        const nextAchievementLevels = mergeAchievementLevels(
+          afterGems.achievement_levels,
+          new Map([[ACHIEVEMENT_IDS.GEM_HOARDER, 1]]),
+          now
+        );
+        await updatePlayerAchievementLevels(client, entry.user_id, nextAchievementLevels);
+      }
+    }
+  }
+
+  await client.query(
+    `
+    UPDATE tournaments
+    SET
+      is_active = FALSE,
+      finalized_at = $2
+    WHERE id = $1
+    `,
+    [tournament.id, now]
+  );
+}
+
 async function finalizeOneDueTournament(pool: Pool, now: Date): Promise<number> {
   const client = await pool.connect();
   try {
@@ -380,139 +546,66 @@ async function finalizeOneDueTournament(pool: Pool, now: Date): Promise<number> 
       return 0;
     }
 
-    const entriesResult = await client.query<TournamentEntryRow>(
-      `
-      SELECT
-        te.id,
-        te.user_id,
-        te.entered_at,
-        ps.shop,
-        ps.last_collected_at,
-        ps.real_time_available,
-        ps.achievement_count
-      FROM tournament_entries te
-      INNER JOIN player_states ps ON ps.user_id = te.user_id
-      WHERE te.tournament_id = $1
-      ORDER BY te.id ASC
-      FOR UPDATE
-      `,
-      [dueTournament.id]
-    );
-
-    for (const row of entriesResult.rows) {
-      const achievementCount = toNumber(row.achievement_count);
-      const score = boostedUncollectedIdleSeconds(
-        row.last_collected_at,
-        now,
-        row.shop,
-        achievementCount,
-        toNumber(row.real_time_available)
-      );
-      await client.query(
-        `
-        UPDATE tournament_entries
-        SET
-          time_score_seconds = $2
-        WHERE id = $1
-        `,
-        [row.id, score]
-      );
-      await client.query(
-        `
-        UPDATE player_states
-        SET
-          current_seconds = $2,
-          current_seconds_last_updated = $3
-        WHERE user_id = $1
-        `,
-        [row.user_id, score, now]
-      );
-    }
-
-    const scoredEntriesResult = await client.query<{
-      id: number;
-      user_id: string;
-      entered_at: Date;
-      time_score_seconds: string | number | null;
-    }>(
-      `
-      SELECT id, user_id, entered_at, time_score_seconds
-      FROM tournament_entries
-      WHERE tournament_id = $1
-      ORDER BY time_score_seconds DESC, entered_at ASC, user_id ASC
-      FOR UPDATE
-      `,
-      [dueTournament.id]
-    );
-    const scoredEntries = scoredEntriesResult.rows;
-    const totalEntries = scoredEntries.length;
-    for (let index = 0; index < totalEntries; index += 1) {
-      const entry = scoredEntries[index];
-      const rank = index + 1;
-      const rewardBucket = Math.floor((index * 5) / totalEntries) + 1;
-      const gemsAwarded = 6 - rewardBucket;
-      await client.query(
-        `
-        UPDATE tournament_entries
-        SET
-          final_rank = $2,
-          gems_awarded = $3,
-          finalized_at = $4
-        WHERE id = $1
-        `,
-        [entry.id, rank, gemsAwarded, now]
-      );
-      const gemUpdate = await client.query<{
-        time_gems_available: string | number;
-        achievement_levels: unknown;
-        achievement_count: string | number;
-        has_unseen_achievements: boolean;
-      }>(
-        `
-        UPDATE player_states
-        SET
-          time_gems_total = time_gems_total + $2,
-          time_gems_available = time_gems_available + $2,
-          updated_at = $3
-        WHERE user_id = $1
-        RETURNING
-          time_gems_available,
-          achievement_levels,
-          achievement_count,
-          has_unseen_achievements
-        `,
-        [entry.user_id, gemsAwarded, now]
-      );
-      const afterGems = gemUpdate.rows[0];
-      if (afterGems && toNumber(afterGems.time_gems_available) >= GEM_HOARDER_MIN_AVAILABLE_GEMS) {
-        const achievementLevels = normalizeAchievementLevels(afterGems.achievement_levels, now);
-        const currentLevelById = new Map<AchievementId, number>(
-          achievementLevels.map((entry) => [entry.id, entry.level] as const)
-        );
-        if (!isAchievementMaxed(currentLevelById.get(ACHIEVEMENT_IDS.GEM_HOARDER) ?? 0, ACHIEVEMENT_IDS.GEM_HOARDER)) {
-          const nextAchievementLevels = mergeAchievementLevels(
-            afterGems.achievement_levels,
-            new Map([[ACHIEVEMENT_IDS.GEM_HOARDER, 1]]),
-            now
-          );
-          await updatePlayerAchievementLevels(client, entry.user_id, nextAchievementLevels);
-        }
-      }
-    }
-
-    await client.query(
-      `
-      UPDATE tournaments
-      SET
-        is_active = FALSE,
-        finalized_at = $2
-      WHERE id = $1
-      `,
-      [dueTournament.id, now]
-    );
+    await finalizeTournamentCore(client, dueTournament, now);
     await ensureActiveTournament(client, new Date(dueTournament.draw_at_utc.getTime() + 1));
     await client.query("COMMIT");
     return 1;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export type DebugFinalizeCurrentTournamentResult =
+  | {
+      ok: true;
+      finalizedTournamentId: number;
+      newTournamentId: number;
+      drawAtUtc: string;
+      entryCount: number;
+    }
+  | { ok: false; reason: "NO_ACTIVE_TOURNAMENT" };
+
+export async function debugFinalizeCurrentTournament(pool: Pool, now = new Date()): Promise<DebugFinalizeCurrentTournamentResult> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const activeResult = await client.query<TournamentRow>(
+      `
+      SELECT id, draw_at_utc, is_active
+      FROM tournaments
+      WHERE is_active = TRUE
+      ORDER BY id ASC
+      LIMIT 1
+      FOR UPDATE
+      `
+    );
+    const active = activeResult.rows[0];
+    if (!active) {
+      await client.query("ROLLBACK");
+      return { ok: false, reason: "NO_ACTIVE_TOURNAMENT" };
+    }
+
+    const countResult = await client.query<{ n: string }>(
+      `SELECT COUNT(*)::text AS n FROM tournament_entries WHERE tournament_id = $1`,
+      [active.id]
+    );
+    const entryCount = toNumber(countResult.rows[0]?.n ?? 0);
+
+    const savedDrawAt = active.draw_at_utc;
+    await finalizeTournamentCore(client, active, now);
+    const inserted = await insertActiveTournamentWithDrawAt(client, savedDrawAt);
+
+    await client.query("COMMIT");
+    return {
+      ok: true,
+      finalizedTournamentId: active.id,
+      newTournamentId: inserted.id,
+      drawAtUtc: savedDrawAt.toISOString(),
+      entryCount
+    };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
