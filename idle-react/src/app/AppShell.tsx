@@ -559,9 +559,14 @@ export function AppShell() {
     if (location.pathname !== "/tournament" || !tournamentFeatureUnlocked) {
       return;
     }
-    void refreshTournament(token).catch(() => {
-      // Keep existing state if refresh fails.
-    });
+    const refreshTimer = window.setTimeout(() => {
+      void refreshTournament(token).catch(() => {
+        // Keep existing state if refresh fails.
+      });
+    }, 0);
+    return () => {
+      window.clearTimeout(refreshTimer);
+    };
   }, [location.pathname, token, refreshTournament, tournamentFeatureUnlocked]);
 
   const refreshHome = useCallback(async (currentToken: string | null) => {
