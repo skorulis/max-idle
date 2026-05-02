@@ -8,6 +8,8 @@ export function HelpPage() {
         <h3>What is Max Idle?</h3>
         <p>
           Max Idle is a game about doing as little as possible while your idle time grows. Compete against other players to find who is the most patient.
+          <br/>
+          It's a joke about the competitive idle game genre where the only way to win is to wait until you've been playing longer than the next person.
         </p>
       </div>
       <div className="panel" style={{ marginTop: "0.75rem" }}>
