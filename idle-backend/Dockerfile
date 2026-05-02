@@ -19,6 +19,7 @@ COPY --from=builder /app/idle-backend/package-lock.json /app/package-lock.json
 COPY --from=builder /app/idle-backend/node_modules /app/node_modules
 COPY --from=builder /app/shared /shared
 COPY --from=builder /app/idle-backend/dist /app/dist
+COPY --from=builder /app/idle-backend/data /app/dist/data
 COPY --from=builder /app/idle-backend/sql /app/sql
 
 EXPOSE 3000
