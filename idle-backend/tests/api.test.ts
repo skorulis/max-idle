@@ -339,6 +339,14 @@ describe("auth + player lifecycle", () => {
     const homeResponse = await request(app).get("/home").set("Authorization", `Bearer ${token}`);
     expect(homeResponse.status).toBe(200);
     expect(typeof homeResponse.body.tournament?.drawAt).toBe("string");
+    expect(homeResponse.body.tournament?.nearbyEntries).toEqual([]);
+
+    const enterResponse = await request(app).post("/tournament/enter").set("Authorization", `Bearer ${token}`);
+    expect(enterResponse.status).toBe(200);
+    const homeAfterEnter = await request(app).get("/home").set("Authorization", `Bearer ${token}`);
+    expect(homeAfterEnter.body.tournament?.nearbyEntries).toEqual([]);
+    const tournamentCurrent = await request(app).get("/tournament/current").set("Authorization", `Bearer ${token}`);
+    expect(tournamentCurrent.body.nearbyEntries.length).toBeGreaterThan(0);
   });
 
   it("returns 401 from GET /home without credentials", async () => {

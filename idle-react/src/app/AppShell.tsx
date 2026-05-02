@@ -4,7 +4,7 @@ import { AppNav } from "./AppNav";
 import { toast, toastCollectIdle } from "../gameToast";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
 import { getCollectGemIdleSecondsMultiplier } from "../shopUpgrades";
-import { isDailyBonusFeatureUnlocked } from "../shop";
+import { isDailyBonusFeatureUnlocked, isTournamentFeatureUnlocked } from "../shop";
 import { COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE, SHOP_UPGRADE_IDS, SHOP_UPGRADES_BY_ID } from "../shopUpgrades";
 import {
   type ShopUpgradeId
@@ -550,6 +550,17 @@ export function AppShell() {
       throw tournamentError;
     }
   }, []);
+
+  const tournamentFeatureUnlocked = Boolean(playerState && isTournamentFeatureUnlocked(playerState.shop));
+
+  useEffect(() => {
+    if (location.pathname !== "/tournament" || !tournamentFeatureUnlocked) {
+      return;
+    }
+    void refreshTournament(token).catch(() => {
+      // Keep existing state if refresh fails.
+    });
+  }, [location.pathname, token, refreshTournament, tournamentFeatureUnlocked]);
 
   const refreshHome = useCallback(async (currentToken: string | null) => {
     const home = await getHome(currentToken);

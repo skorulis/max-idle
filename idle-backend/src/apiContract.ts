@@ -650,7 +650,8 @@ registry.registerPath({
   security: authViaCookieOrBearer,
   responses: {
     200: {
-      description: "Aggregated home payload",
+      description:
+        "Aggregated home payload. When tournament is present, nearbyEntries is always an empty array (use GET /tournament/current for leaderboard neighbors).",
       content: {
         "application/json": { schema: homeResponseSchema }
       }

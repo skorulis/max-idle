@@ -240,8 +240,10 @@ async function buildTournamentSummary(
   client: PoolClient,
   tournament: TournamentRow,
   userId: string,
-  now: Date
+  now: Date,
+  options?: { includeNearbyEntries?: boolean }
 ): Promise<TournamentCurrentSummary> {
+  const includeNearbyEntries = options?.includeNearbyEntries !== false;
   const entry = await getTournamentEntry(client, tournament.id, userId);
   const playerCountResult = await client.query<{ player_count: string | number }>(
     `
@@ -311,7 +313,7 @@ async function buildTournamentSummary(
   const currentRank = userRankIndex >= 0 ? userRankIndex + 1 : null;
   const expectedRewardGems = userRankIndex >= 0 ? calculateExpectedGemsByRank(userRankIndex, scoredEntries.length) : null;
   const nearbyEntries =
-    userRankIndex >= 0
+    includeNearbyEntries && userRankIndex >= 0
       ? scoredEntries
           .slice(Math.max(0, userRankIndex - 20), Math.min(scoredEntries.length, userRankIndex + 21))
           .map((row, index) => {
@@ -338,12 +340,17 @@ async function buildTournamentSummary(
   };
 }
 
-export async function getCurrentTournamentForUser(pool: Pool, userId: string, now = new Date()): Promise<TournamentCurrentSummary> {
+export async function getCurrentTournamentForUser(
+  pool: Pool,
+  userId: string,
+  now = new Date(),
+  options?: { includeNearbyEntries?: boolean }
+): Promise<TournamentCurrentSummary> {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
     const tournament = await ensureActiveTournament(client, now);
-    const summary = await buildTournamentSummary(client, tournament, userId, now);
+    const summary = await buildTournamentSummary(client, tournament, userId, now, options);
     await client.query("COMMIT");
     return summary;
   } catch (error) {

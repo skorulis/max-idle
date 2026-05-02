@@ -51,7 +51,7 @@ export function registerHomeRoutes({
       const [accountPayload, tournamentPayload] = await Promise.all([
         buildAccountPayloadForIdentity(pool, socialConfig, identity),
         isTournamentFeatureUnlocked(shop)
-          ? getCurrentTournamentForUser(pool, userId)
+          ? getCurrentTournamentForUser(pool, userId, new Date(), { includeNearbyEntries: false })
           : Promise.resolve(null)
       ]);
 
