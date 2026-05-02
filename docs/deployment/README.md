@@ -69,6 +69,7 @@ IMAGE_TAG=release-0.1.0 docker compose --env-file .env.production -f compose.pro
 - DB backup script: `deploy/scripts/backup-db.sh`
 - Restore helper: `deploy/scripts/restore-db.sh`
 - Rollback guide: `docs/deployment/runbook.md`
+- When a container is **unhealthy** or Compose reports **dependency failed to start**: [production debugging](./production-debugging.md)
 
 ## 7) Wipe production database (destructive)
 

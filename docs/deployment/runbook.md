@@ -50,6 +50,10 @@ Recommended cron (daily at 02:30 UTC, 14-day retention):
 
 Restore is destructive for live data. Take a fresh backup before restoring.
 
+## Troubleshooting deploy failures
+
+For unhealthy containers, failed Compose dependencies, and how to read logs and health probes on the VPS, see [production-debugging.md](./production-debugging.md).
+
 ## Required GitHub secrets
 
 - `PROD_BACKEND_IMAGE_REPO`
