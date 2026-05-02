@@ -236,12 +236,8 @@ export function AppShell() {
   const [signupForm, setSignupForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const [upgradeForm, setUpgradeForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const isAuthenticated = Boolean(playerState);
+  const availableSurveyForUi = playerState ? availableSurvey : null;
 
-  useEffect(() => {
-    if (!playerState) {
-      setAvailableSurvey(null);
-    }
-  }, [playerState]);
   const { displayedContent, isFadingOutMessage, isFadingInMessage } = useBottomBulletinMessage(isAuthenticated);
   const showDebugFeatures = !import.meta.env.PROD;
   const clientNowMs = useClientNowMs();
@@ -1588,7 +1584,7 @@ export function AppShell() {
                 onNavigateDailyBonusHistory={() => navigate("/dailybonus")}
                 onNavigateCollectionHistory={() => navigate("/collection")}
                 onNavigateLogin={() => navigate("/login")}
-                availableSurvey={availableSurvey}
+                availableSurvey={availableSurveyForUi}
                 onNavigateSurvey={() => navigate("/survey")}
               />
             }
