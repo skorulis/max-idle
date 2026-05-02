@@ -1120,6 +1120,127 @@
           "enteredNow"
         ]
       },
+      "SurveyOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text"
+        ]
+      },
+      "Survey": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "currencyType": {
+            "type": "string",
+            "enum": [
+              "idle",
+              "real",
+              "gem"
+            ]
+          },
+          "reward": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "title": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SurveyOption"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "active",
+          "currencyType",
+          "reward",
+          "title",
+          "options"
+        ]
+      },
+      "SurveyAvailableSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "currencyType": {
+            "type": "string",
+            "enum": [
+              "idle",
+              "real",
+              "gem"
+            ]
+          },
+          "reward": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "currencyType",
+          "reward"
+        ]
+      },
+      "SurveyActiveResponse": {
+        "type": "object",
+        "properties": {
+          "survey": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Survey"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          }
+        },
+        "required": [
+          "survey"
+        ]
+      },
+      "SurveyAnswerRequest": {
+        "type": "object",
+        "properties": {
+          "surveyId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "optionId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "surveyId",
+          "optionId"
+        ]
+      },
       "HomeResponse": {
         "type": "object",
         "properties": {
@@ -1138,12 +1259,23 @@
                 "nullable": true
               }
             ]
+          },
+          "availableSurvey": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SurveyAvailableSummary"
+              },
+              {
+                "nullable": true
+              }
+            ]
           }
         },
         "required": [
           "player",
           "account",
-          "tournament"
+          "tournament",
+          "availableSurvey"
         ]
       },
       "EmailAuthRequest": {
@@ -1671,6 +1803,122 @@
           },
           "404": {
             "description": "Player not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/surveys/active": {
+      "get": {
+        "tags": [
+          "Surveys"
+        ],
+        "summary": "Get the first active survey the player has not completed",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active survey or null if none",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SurveyActiveResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/surveys/answer": {
+      "post": {
+        "tags": [
+          "Surveys"
+        ],
+        "summary": "Submit a survey answer and receive the configured reward",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SurveyAnswerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated player state after reward",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payload or option",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Player not found or survey not found/inactive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Survey already answered (code SURVEY_ALREADY_ANSWERED)",
             "content": {
               "application/json": {
                 "schema": {

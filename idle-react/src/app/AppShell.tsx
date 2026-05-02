@@ -22,6 +22,7 @@ import { DailyBonusPage } from "../pages/DailyBonusPage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { ShopPage } from "../pages/ShopPage";
 import { TournamentPage } from "../pages/TournamentPage";
+import { SurveyPage } from "../pages/SurveyPage";
 import {
   collectDailyBonus,
   collectDailyReward,
@@ -70,10 +71,12 @@ import {
 } from "./playerState";
 import { useBottomBulletinMessage, type BulletinContent } from "./useBottomBulletinMessage";
 import { useReturnAfterAwayMessage } from "./useReturnAfterAwayMessage";
+import { formatRewardAmount } from "../formatReward";
 import type {
   AccountResponse,
   AchievementsResponse,
   AuthFormState,
+  AvailableSurveySummary,
   CollectionHistoryItem,
   LeaderboardResponse,
   LeaderboardType,
@@ -179,6 +182,7 @@ export function AppShell() {
   const [token, setToken] = useState<string | null>(null);
   const [playerState, setPlayerState] = useState<SyncedPlayerState | null>(null);
   const [tournamentState, setTournamentState] = useState<SyncedTournamentState | null>(null);
+  const [availableSurvey, setAvailableSurvey] = useState<AvailableSurveySummary | null>(null);
   const [publicPlayerProfile, setPublicPlayerProfile] = useState<PlayerProfileResponse["player"] | null>(null);
   const [publicPlayerLoading, setPublicPlayerLoading] = useState(false);
   const [account, setAccount] = useState<AccountResponse | null>(null);
@@ -232,6 +236,12 @@ export function AppShell() {
   const [signupForm, setSignupForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const [upgradeForm, setUpgradeForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const isAuthenticated = Boolean(playerState);
+
+  useEffect(() => {
+    if (!playerState) {
+      setAvailableSurvey(null);
+    }
+  }, [playerState]);
   const { displayedContent, isFadingOutMessage, isFadingInMessage } = useBottomBulletinMessage(isAuthenticated);
   const showDebugFeatures = !import.meta.env.PROD;
   const clientNowMs = useClientNowMs();
@@ -632,6 +642,7 @@ export function AppShell() {
     } else {
       setTournamentState(null);
     }
+    setAvailableSurvey(home.availableSurvey ?? null);
   }, []);
 
   useEffect(() => {
@@ -1577,8 +1588,28 @@ export function AppShell() {
                 onNavigateDailyBonusHistory={() => navigate("/dailybonus")}
                 onNavigateCollectionHistory={() => navigate("/collection")}
                 onNavigateLogin={() => navigate("/login")}
+                availableSurvey={availableSurvey}
+                onNavigateSurvey={() => navigate("/survey")}
               />
             }
+          />
+          <Route
+            path="/survey"
+            element={requireAuthenticatedRoute(
+              <SurveyPage
+                token={token}
+                onSurveyCompleted={async (granted) => {
+                  await refreshHome(token);
+                  if (granted) {
+                    toast.success(
+                      `You earned ${formatRewardAmount(granted.currencyType, granted.reward)}. Thanks for helping out!`
+                    );
+                  } else {
+                    toast.success("Thanks for helping out!");
+                  }
+                }}
+              />
+            )}
           />
           <Route
             path="/dailybonus"

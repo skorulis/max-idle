@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetAccountData, GetAccountErrors, GetAccountResponses, GetAchievementsData, GetAchievementsErrors, GetAchievementsResponses, GetHealthData, GetHealthResponses, GetHomeData, GetHomeErrors, GetHomeResponses, GetLeaderboardData, GetLeaderboardErrors, GetLeaderboardResponses, GetPlayerCollectionHistoryData, GetPlayerCollectionHistoryErrors, GetPlayerCollectionHistoryResponses, GetPlayerDailyBonusHistoryData, GetPlayerDailyBonusHistoryErrors, GetPlayerDailyBonusHistoryResponses, GetPlayerData, GetPlayerErrors, GetPlayerResponses, GetPlayersByIdData, GetPlayersByIdErrors, GetPlayersByIdResponses, GetTournamentCurrentData, GetTournamentCurrentErrors, GetTournamentCurrentResponses, GetTournamentHistoryData, GetTournamentHistoryErrors, GetTournamentHistoryResponses, PostAccountUpgradeData, PostAccountUpgradeErrors, PostAccountUpgradeResponses, PostAccountUsernameData, PostAccountUsernameErrors, PostAccountUsernameResponses, PostAchievementsGrantData, PostAchievementsGrantErrors, PostAchievementsGrantResponses, PostAchievementsSeenData, PostAchievementsSeenErrors, PostAchievementsSeenResponses, PostAuthAnonymousData, PostAuthAnonymousErrors, PostAuthAnonymousResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutData, PostAuthLogoutResponses, PostAuthRegisterData, PostAuthRegisterErrors, PostAuthRegisterResponses, PostPlayerCollectData, PostPlayerCollectErrors, PostPlayerCollectResponses, PostPlayerDailyBonusCollectData, PostPlayerDailyBonusCollectErrors, PostPlayerDailyBonusCollectResponses, PostPlayerDailyRewardCollectData, PostPlayerDailyRewardCollectErrors, PostPlayerDailyRewardCollectResponses, PostShopPurchaseData, PostShopPurchaseErrors, PostShopPurchaseResponses, PostTournamentCollectRewardData, PostTournamentCollectRewardErrors, PostTournamentCollectRewardResponses, PostTournamentEnterData, PostTournamentEnterErrors, PostTournamentEnterResponses } from './types.gen';
+import type { GetAccountData, GetAccountErrors, GetAccountResponses, GetAchievementsData, GetAchievementsErrors, GetAchievementsResponses, GetHealthData, GetHealthResponses, GetHomeData, GetHomeErrors, GetHomeResponses, GetLeaderboardData, GetLeaderboardErrors, GetLeaderboardResponses, GetPlayerCollectionHistoryData, GetPlayerCollectionHistoryErrors, GetPlayerCollectionHistoryResponses, GetPlayerDailyBonusHistoryData, GetPlayerDailyBonusHistoryErrors, GetPlayerDailyBonusHistoryResponses, GetPlayerData, GetPlayerErrors, GetPlayerResponses, GetPlayersByIdData, GetPlayersByIdErrors, GetPlayersByIdResponses, GetSurveysActiveData, GetSurveysActiveErrors, GetSurveysActiveResponses, GetTournamentCurrentData, GetTournamentCurrentErrors, GetTournamentCurrentResponses, GetTournamentHistoryData, GetTournamentHistoryErrors, GetTournamentHistoryResponses, PostAccountUpgradeData, PostAccountUpgradeErrors, PostAccountUpgradeResponses, PostAccountUsernameData, PostAccountUsernameErrors, PostAccountUsernameResponses, PostAchievementsGrantData, PostAchievementsGrantErrors, PostAchievementsGrantResponses, PostAchievementsSeenData, PostAchievementsSeenErrors, PostAchievementsSeenResponses, PostAuthAnonymousData, PostAuthAnonymousErrors, PostAuthAnonymousResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutData, PostAuthLogoutResponses, PostAuthRegisterData, PostAuthRegisterErrors, PostAuthRegisterResponses, PostPlayerCollectData, PostPlayerCollectErrors, PostPlayerCollectResponses, PostPlayerDailyBonusCollectData, PostPlayerDailyBonusCollectErrors, PostPlayerDailyBonusCollectResponses, PostPlayerDailyRewardCollectData, PostPlayerDailyRewardCollectErrors, PostPlayerDailyRewardCollectResponses, PostShopPurchaseData, PostShopPurchaseErrors, PostShopPurchaseResponses, PostSurveysAnswerData, PostSurveysAnswerErrors, PostSurveysAnswerResponses, PostTournamentCollectRewardData, PostTournamentCollectRewardErrors, PostTournamentCollectRewardResponses, PostTournamentEnterData, PostTournamentEnterErrors, PostTournamentEnterResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -145,6 +145,36 @@ export const getHome = <ThrowOnError extends boolean = false>(options?: Options<
         }, { scheme: 'bearer', type: 'http' }],
     url: '/home',
     ...options
+});
+
+/**
+ * Get the first active survey the player has not completed
+ */
+export const getSurveysActive = <ThrowOnError extends boolean = false>(options?: Options<GetSurveysActiveData, ThrowOnError>) => (options?.client ?? client).get<GetSurveysActiveResponses, GetSurveysActiveErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'better-auth.session_token',
+            type: 'apiKey'
+        }, { scheme: 'bearer', type: 'http' }],
+    url: '/surveys/active',
+    ...options
+});
+
+/**
+ * Submit a survey answer and receive the configured reward
+ */
+export const postSurveysAnswer = <ThrowOnError extends boolean = false>(options: Options<PostSurveysAnswerData, ThrowOnError>) => (options.client ?? client).post<PostSurveysAnswerResponses, PostSurveysAnswerErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'better-auth.session_token',
+            type: 'apiKey'
+        }, { scheme: 'bearer', type: 'http' }],
+    url: '/surveys/answer',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**

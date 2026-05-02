@@ -362,12 +362,58 @@ const tournamentEnterResponseSchema = registry.register(
   })
 );
 
+const surveyOptionSchema = registry.register(
+  "SurveyOption",
+  z.object({
+    id: z.string(),
+    text: z.string()
+  })
+);
+
+const surveySchema = registry.register(
+  "Survey",
+  z.object({
+    id: z.string(),
+    active: z.boolean(),
+    currencyType: z.enum(["idle", "real", "gem"]),
+    reward: z.number().int().positive(),
+    title: z.string(),
+    options: z.array(surveyOptionSchema)
+  })
+);
+
+const surveyAvailableSummarySchema = registry.register(
+  "SurveyAvailableSummary",
+  z.object({
+    id: z.string(),
+    title: z.string(),
+    currencyType: z.enum(["idle", "real", "gem"]),
+    reward: z.number().int().positive()
+  })
+);
+
+const surveyActiveResponseSchema = registry.register(
+  "SurveyActiveResponse",
+  z.object({
+    survey: surveySchema.nullable()
+  })
+);
+
+const surveyAnswerRequestSchema = registry.register(
+  "SurveyAnswerRequest",
+  z.object({
+    surveyId: z.string().min(1),
+    optionId: z.string().min(1)
+  })
+);
+
 const homeResponseSchema = registry.register(
   "HomeResponse",
   z.object({
     player: playerStateSchema,
     account: accountResponseSchema,
-    tournament: tournamentCurrentResponseSchema.nullable()
+    tournament: tournamentCurrentResponseSchema.nullable(),
+    availableSurvey: surveyAvailableSummarySchema.nullable()
   })
 );
 
@@ -701,6 +747,78 @@ registry.registerPath({
     },
     404: {
       description: "Player not found",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    }
+  }
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/surveys/active",
+  tags: ["Surveys"],
+  summary: "Get the first active survey the player has not completed",
+  security: authViaCookieOrBearer,
+  responses: {
+    200: {
+      description: "Active survey or null if none",
+      content: {
+        "application/json": { schema: surveyActiveResponseSchema }
+      }
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    }
+  }
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/surveys/answer",
+  tags: ["Surveys"],
+  summary: "Submit a survey answer and receive the configured reward",
+  security: authViaCookieOrBearer,
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: surveyAnswerRequestSchema
+        }
+      }
+    }
+  },
+  responses: {
+    200: {
+      description: "Updated player state after reward",
+      content: {
+        "application/json": { schema: playerStateSchema }
+      }
+    },
+    400: {
+      description: "Invalid payload or option",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    },
+    404: {
+      description: "Player not found or survey not found/inactive",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    },
+    409: {
+      description: "Survey already answered (code SURVEY_ALREADY_ANSWERED)",
       content: {
         "application/json": { schema: errorResponseSchema }
       }

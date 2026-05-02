@@ -7,6 +7,7 @@ import { finalizeDueTournaments, getCurrentTournamentForUser } from "../tourname
 import type { BetterAuthSession } from "./account.js";
 import { buildAccountPayloadForIdentity } from "./account.js";
 import { buildPlayerStatePayload } from "./player.js";
+import { getAvailableSurveySummaryForUser } from "./surveys.js";
 
 type RegisterHomeRoutesOptions = {
   app: express.Express;
@@ -48,17 +49,19 @@ export function registerHomeRoutes({
       }
 
       const shop = playerPayload.shop as ShopState;
-      const [accountPayload, tournamentPayload] = await Promise.all([
+      const [accountPayload, tournamentPayload, availableSurvey] = await Promise.all([
         buildAccountPayloadForIdentity(pool, socialConfig, identity),
         isTournamentFeatureUnlocked(shop)
           ? getCurrentTournamentForUser(pool, userId, new Date(), { includeNearbyEntries: false })
-          : Promise.resolve(null)
+          : Promise.resolve(null),
+        getAvailableSurveySummaryForUser(pool, userId)
       ]);
 
       res.json({
         player: playerPayload,
         account: accountPayload,
-        tournament: tournamentPayload
+        tournament: tournamentPayload,
+        availableSurvey
       });
     } catch (error) {
       next(error);

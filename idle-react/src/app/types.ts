@@ -165,11 +165,35 @@ export type AccountResponse = {
   };
 };
 
+export type SurveyCurrencyType = "idle" | "real" | "gem";
+
+export type SurveyOption = {
+  id: string;
+  text: string;
+};
+
+export type Survey = {
+  id: string;
+  active: boolean;
+  currencyType: SurveyCurrencyType;
+  reward: number;
+  title: string;
+  options: SurveyOption[];
+};
+
+export type AvailableSurveySummary = {
+  id: string;
+  title: string;
+  currencyType: SurveyCurrencyType;
+  reward: number;
+};
+
 export type HomeResponse = {
   player: PlayerResponse;
   account: AccountResponse;
   /** Present when the player has purchased the weekly tournament shop upgrade. */
   tournament: TournamentCurrentResponse | null;
+  availableSurvey: AvailableSurveySummary | null;
 };
 
 export type SyncedPlayerState = {

@@ -1,0 +1,33 @@
+{
+    "surveys":[
+        {
+            "id": "1",
+            "isActive": true,
+            "currencyType": "idle",
+            "reward": 21600,
+            "title": "What improvements would you like to see in the next version of Max Idle?",
+            "options": [
+                {
+                    "id": "UI",
+                    "text": "Make the game look more exciting than an excel spreadsheet."
+                },
+                {
+                    "id": "SHOPS",
+                    "text": "Add more random shop upgrades. I need a higher multiplier!"
+                },
+                {
+                    "id": "BORED",
+                    "text": "Add something else to do. There isn't enough going on."
+                },
+                {
+                    "id": "PVP",
+                    "text": "Add ways to interact with other players. I want to dominate."
+                },
+                {
+                    "id": "TOWLIE",
+                    "text": "I have no idea what’s going on."
+                }
+            ]
+        }
+    ]
+}

@@ -10,6 +10,7 @@ import type {
   LeaderboardType,
   PlayerProfileResponse,
   PlayerResponse,
+  Survey,
   TournamentCollectRewardResponse,
   TournamentCurrentResponse,
   TournamentEnterResponse,
@@ -94,6 +95,63 @@ export async function getHome(token: string | null): Promise<HomeResponse> {
   }
 
   return (await response.json()) as HomeResponse;
+}
+
+export async function getActiveSurvey(token: string | null): Promise<Survey | null> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/surveys/active`, {
+    credentials: "include",
+    headers
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response));
+  }
+
+  const payload = (await response.json()) as { survey?: Survey | null };
+  return payload.survey ?? null;
+}
+
+export async function submitSurveyAnswer(
+  token: string | null,
+  surveyId: string,
+  optionId: string
+): Promise<PlayerResponse> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json"
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/surveys/answer`, {
+    method: "POST",
+    credentials: "include",
+    headers,
+    body: JSON.stringify({ surveyId, optionId })
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (response.status === 409) {
+    const payload = (await response.json().catch(() => null)) as { code?: string } | null;
+    if (payload?.code === "SURVEY_ALREADY_ANSWERED") {
+      throw new Error("SURVEY_ALREADY_ANSWERED");
+    }
+  }
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response));
+  }
+
+  return (await response.json()) as PlayerResponse;
 }
 
 export async function collectIdleTime(token: string | null): Promise<PlayerResponse> {

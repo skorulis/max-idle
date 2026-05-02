@@ -236,10 +236,41 @@ export type TournamentEnterResponse = {
     enteredNow: boolean;
 };
 
+export type SurveyOption = {
+    id: string;
+    text: string;
+};
+
+export type Survey = {
+    id: string;
+    active: boolean;
+    currencyType: 'idle' | 'real' | 'gem';
+    reward: number;
+    title: string;
+    options: Array<SurveyOption>;
+};
+
+export type SurveyAvailableSummary = {
+    id: string;
+    title: string;
+    currencyType: 'idle' | 'real' | 'gem';
+    reward: number;
+};
+
+export type SurveyActiveResponse = {
+    survey: Survey & unknown;
+};
+
+export type SurveyAnswerRequest = {
+    surveyId: string;
+    optionId: string;
+};
+
 export type HomeResponse = {
     player: PlayerState;
     account: AccountResponse;
     tournament: TournamentCurrentResponse & unknown;
+    availableSurvey: SurveyAvailableSummary & unknown;
 };
 
 export type EmailAuthRequest = {
@@ -545,6 +576,68 @@ export type GetHomeResponses = {
 };
 
 export type GetHomeResponse = GetHomeResponses[keyof GetHomeResponses];
+
+export type GetSurveysActiveData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/surveys/active';
+};
+
+export type GetSurveysActiveErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+};
+
+export type GetSurveysActiveError = GetSurveysActiveErrors[keyof GetSurveysActiveErrors];
+
+export type GetSurveysActiveResponses = {
+    /**
+     * Active survey or null if none
+     */
+    200: SurveyActiveResponse;
+};
+
+export type GetSurveysActiveResponse = GetSurveysActiveResponses[keyof GetSurveysActiveResponses];
+
+export type PostSurveysAnswerData = {
+    body: SurveyAnswerRequest;
+    path?: never;
+    query?: never;
+    url: '/surveys/answer';
+};
+
+export type PostSurveysAnswerErrors = {
+    /**
+     * Invalid payload or option
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Player not found or survey not found/inactive
+     */
+    404: ErrorResponse;
+    /**
+     * Survey already answered (code SURVEY_ALREADY_ANSWERED)
+     */
+    409: ErrorResponse;
+};
+
+export type PostSurveysAnswerError = PostSurveysAnswerErrors[keyof PostSurveysAnswerErrors];
+
+export type PostSurveysAnswerResponses = {
+    /**
+     * Updated player state after reward
+     */
+    200: PlayerState;
+};
+
+export type PostSurveysAnswerResponse = PostSurveysAnswerResponses[keyof PostSurveysAnswerResponses];
 
 export type PostPlayerCollectData = {
     body?: never;

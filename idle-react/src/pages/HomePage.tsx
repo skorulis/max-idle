@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { formatSeconds } from "../formatSeconds";
-import { Atom, ChevronRight, CircleHelp, Clock3, Gem, Gift, PiggyBank } from "lucide-react";
-import type { SyncedOutstandingTournamentResult, SyncedPlayerState } from "../app/types";
+import { formatRewardAmount } from "../formatReward";
+import { Atom, ChevronRight, CircleHelp, ClipboardList, Clock3, Gem, Gift, PiggyBank } from "lucide-react";
+import type { AvailableSurveySummary, SyncedOutstandingTournamentResult, SyncedPlayerState } from "../app/types";
 import {
   getRestraintMinRealtimeSeconds,
   isDailyBonusFeatureUnlocked,
@@ -48,6 +49,8 @@ type HomePageProps = {
   onNavigateDailyBonusHistory: () => void;
   onNavigateCollectionHistory: () => void;
   onNavigateLogin: () => void;
+  availableSurvey: AvailableSurveySummary | null;
+  onNavigateSurvey: () => void;
 };
 
 export function HomePage({
@@ -77,7 +80,9 @@ export function HomePage({
   onNavigateTournament,
   onNavigateDailyBonusHistory,
   onNavigateCollectionHistory,
-  onNavigateLogin
+  onNavigateLogin,
+  availableSurvey,
+  onNavigateSurvey
 }: HomePageProps) {
   const [collectWarningIndex, setCollectWarningIndex] = useState(0);
   const [showRateInfo, setShowRateInfo] = useState(false);
@@ -241,6 +246,21 @@ export function HomePage({
           </div>
         </div>
       </section>
+
+      {availableSurvey ? (
+        <section className="card">
+          <h2 className="section-title-with-icon">
+            <ClipboardList size={18} aria-hidden="true" />
+            Survey
+          </h2>
+          <p>
+            Get {formatRewardAmount(availableSurvey.currencyType, availableSurvey.reward)} for answering a quick question.
+          </p>
+          <button type="button" className="collect" onClick={onNavigateSurvey}>
+            Answer survey
+          </button>
+        </section>
+      ) : null}
 
       <section className="card">
         <h2 className="section-title-with-icon">

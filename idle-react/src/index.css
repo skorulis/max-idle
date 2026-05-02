@@ -228,6 +228,38 @@ h3 {
   flex: 1;
 }
 
+/* Survey: keep radios compact; option text fills remaining width and wraps */
+.survey-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  border: none;
+}
+
+.survey-option-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  cursor: pointer;
+}
+
+.survey-option-label input[type="radio"] {
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0.2rem 0 0;
+  accent-color: #111827;
+}
+
+.survey-option-label__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.45;
+}
+
 .collect-row--primary {
   position: relative;
   margin-top: 4px;
