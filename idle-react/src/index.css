@@ -508,11 +508,16 @@ h3 {
   color: #6b7280;
 }
 
-.daily-bonus-header {
+.card-section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 8px;
+  margin-bottom: 12px;
+}
+
+.card-section-header .section-title-with-icon {
+  margin-bottom: 0;
 }
 
 input {

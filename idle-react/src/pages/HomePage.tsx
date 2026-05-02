@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { formatSeconds } from "../formatSeconds";
-import { Atom, CircleHelp, Clock3, Gem, Gift, History, PiggyBank } from "lucide-react";
+import { Atom, ChevronRight, CircleHelp, Clock3, Gem, Gift, PiggyBank } from "lucide-react";
 import type { SyncedPlayerState } from "../app/types";
 import {
   getRestraintMinRealtimeSeconds,
@@ -124,58 +124,60 @@ export function HomePage({
   return (
     <>
       <section className="card idle-collect-card">
-        <h2 className="section-title-with-icon">
-          <Atom size={18} aria-hidden="true" />
-          Current idle time
-        </h2>
-          <FlipDurationDisplay
-            totalSeconds={uncollectedIdleSeconds}
-            collectFlashNonce={collectFlashNonce}
-          />
-          <div className="idle-rate-meta">
-            <div className="idle-rate-lines">
-              <p className="subtle">Realtime: {formatSeconds(realtimeElapsedSeconds)}</p>
-              <p className="subtle">Multiplier: {effectiveIdleSecondsRate.toFixed(2)}x</p>
-            </div>
-            <button
-              type="button"
-              className="info-icon-button"
-              aria-label="Show current rate factors"
-              onClick={() => setShowRateInfo(true)}
-            >
-              <CircleHelp size={15} aria-hidden="true" />
-            </button>
+        <div className="card-section-header">
+          <h2 className="section-title-with-icon">
+            <Atom size={18} aria-hidden="true" />
+            Current idle time
+          </h2>
+          <button
+            type="button"
+            className="info-icon-button"
+            onClick={onNavigateCollectionHistory}
+            aria-label="View collection history"
+            title="View collection history"
+          >
+            <ChevronRight size={16} aria-hidden="true" />
+          </button>
+        </div>
+        <FlipDurationDisplay
+          totalSeconds={uncollectedIdleSeconds}
+          collectFlashNonce={collectFlashNonce}
+        />
+        <div className="idle-rate-meta">
+          <div className="idle-rate-lines">
+            <p className="subtle">Realtime: {formatSeconds(realtimeElapsedSeconds)}</p>
+            <p className="subtle">Multiplier: {effectiveIdleSecondsRate.toFixed(2)}x</p>
           </div>
+          <button
+            type="button"
+            className="info-icon-button"
+            aria-label="Show current rate factors"
+            onClick={() => setShowRateInfo(true)}
+          >
+            <CircleHelp size={15} aria-hidden="true" />
+          </button>
+        </div>
 
-          <div className="collect-row collect-row--primary">
-            <button
-              type="button"
-              className={
-                "collect collect-primary" +
-                (collecting ? " collect-primary--collecting" : "") +
-                (collectReady ? " collect-primary--ready" : "")
-              }
-              onClick={() => void handleCollect()}
-              disabled={collecting || collectBlockedByRestraint}
-            >
-              <span className="collect-primary-label">
-                {collecting
-                  ? "Collecting..."
-                  : collectBlockedByRestraint
-                    ? `Collect (wait ${formatSeconds(restraintWaitRemainingSeconds)})`
-                    : "Collect idle time"}
-              </span>
-            </button>
-            <button
-              type="button"
-              className="info-icon-button"
-              onClick={onNavigateCollectionHistory}
-              aria-label="View collection history"
-              title="View collection history"
-            >
-              <History size={16} aria-hidden="true" />
-            </button>
-          </div>
+        <div className="collect-row collect-row--primary">
+          <button
+            type="button"
+            className={
+              "collect collect-primary" +
+              (collecting ? " collect-primary--collecting" : "") +
+              (collectReady ? " collect-primary--ready" : "")
+            }
+            onClick={() => void handleCollect()}
+            disabled={collecting || collectBlockedByRestraint}
+          >
+            <span className="collect-primary-label">
+              {collecting
+                ? "Collecting..."
+                : collectBlockedByRestraint
+                  ? `Collect (wait ${formatSeconds(restraintWaitRemainingSeconds)})`
+                  : "Collect idle time"}
+            </span>
+          </button>
+        </div>
       </section>
 
       <section className="card">
@@ -257,7 +259,7 @@ export function HomePage({
       </section>
       {isDailyBonusFeatureUnlocked(playerState.shop) ? (
         <section className="card">
-          <div className="daily-bonus-header">
+          <div className="card-section-header">
             <h2 className="section-title-with-icon">
               <Gift size={18} aria-hidden="true" />
               Daily Bonus
@@ -267,9 +269,9 @@ export function HomePage({
               className="info-icon-button"
               onClick={onNavigateDailyBonusHistory}
               aria-label="View daily bonus history"
-              title="View history"
+              title="View daily bonus details"
             >
-              <History size={14} aria-hidden="true" />
+              <ChevronRight size={16} aria-hidden="true" />
             </button>
           </div>
           <p className="shop-currency-value">{dailyBonusDescription}</p>
