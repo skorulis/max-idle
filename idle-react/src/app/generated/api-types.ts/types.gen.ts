@@ -204,6 +204,17 @@ export type TournamentOutstandingResult = {
     playerCount: number;
 };
 
+export type TournamentHistoryItem = {
+    drawAt: string;
+    finalRank: number;
+    playerCount: number;
+    gemsAwarded: number | null;
+};
+
+export type TournamentHistoryResponse = {
+    history: Array<TournamentHistoryItem>;
+};
+
 export type TournamentCurrentResponse = {
     drawAt: string;
     isActive: boolean;
@@ -667,6 +678,35 @@ export type GetTournamentCurrentResponses = {
 };
 
 export type GetTournamentCurrentResponse = GetTournamentCurrentResponses[keyof GetTournamentCurrentResponses];
+
+export type GetTournamentHistoryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/tournament/history';
+};
+
+export type GetTournamentHistoryErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Weekly tournament shop upgrade required
+     */
+    403: ErrorResponse;
+};
+
+export type GetTournamentHistoryError = GetTournamentHistoryErrors[keyof GetTournamentHistoryErrors];
+
+export type GetTournamentHistoryResponses = {
+    /**
+     * Tournament history rows from tournament_entries
+     */
+    200: TournamentHistoryResponse;
+};
+
+export type GetTournamentHistoryResponse = GetTournamentHistoryResponses[keyof GetTournamentHistoryResponses];
 
 export type PostTournamentEnterData = {
     body?: never;

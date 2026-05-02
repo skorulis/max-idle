@@ -12,7 +12,8 @@ import type {
   PlayerResponse,
   TournamentCollectRewardResponse,
   TournamentCurrentResponse,
-  TournamentEnterResponse
+  TournamentEnterResponse,
+  TournamentHistoryItem
 } from "./types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000";
@@ -258,6 +259,32 @@ export async function getCurrentTournament(token: string | null): Promise<Tourna
     throw new Error("Failed to load tournament");
   }
   return (await response.json()) as TournamentCurrentResponse;
+}
+
+export async function getTournamentHistory(token: string | null): Promise<TournamentHistoryItem[]> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/tournament/history`, {
+    credentials: "include",
+    headers
+  });
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (response.status === 403) {
+    const payload = (await response.json().catch(() => null)) as { code?: string } | null;
+    if (payload?.code === "TOURNAMENT_FEATURE_LOCKED") {
+      throw new Error("TOURNAMENT_FEATURE_LOCKED");
+    }
+  }
+  if (!response.ok) {
+    throw new Error("Failed to load tournament history");
+  }
+  const payload = (await response.json()) as { history?: TournamentHistoryItem[] } | null;
+  return payload?.history ?? [];
 }
 
 export async function enterTournament(token: string | null): Promise<TournamentEnterResponse> {

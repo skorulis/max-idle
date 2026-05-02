@@ -315,6 +315,23 @@ const tournamentOutstandingResultSchema = registry.register(
   })
 );
 
+const tournamentHistoryItemSchema = registry.register(
+  "TournamentHistoryItem",
+  z.object({
+    drawAt: z.string().datetime(),
+    finalRank: z.number().int().positive(),
+    playerCount: z.number().int().positive(),
+    gemsAwarded: z.number().int().min(0).max(5).nullable()
+  })
+);
+
+const tournamentHistoryResponseSchema = registry.register(
+  "TournamentHistoryResponse",
+  z.object({
+    history: z.array(tournamentHistoryItemSchema)
+  })
+);
+
 const tournamentCurrentResponseSchema = registry.register(
   "TournamentCurrentResponse",
   z.object({
@@ -796,6 +813,34 @@ registry.registerPath({
       description: "Current tournament details for the user",
       content: {
         "application/json": { schema: tournamentCurrentResponseSchema }
+      }
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    },
+    403: {
+      description: "Weekly tournament shop upgrade required",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    }
+  }
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/tournament/history",
+  tags: ["Tournament"],
+  summary: "Get the player's last 50 finalized tournament results",
+  security: authViaCookieOrBearer,
+  responses: {
+    200: {
+      description: "Tournament history rows from tournament_entries",
+      content: {
+        "application/json": { schema: tournamentHistoryResponseSchema }
       }
     },
     401: {

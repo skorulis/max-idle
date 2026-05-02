@@ -121,6 +121,49 @@ async function creditTimeGemsForTournamentReward(
   }
 }
 
+export type TournamentHistoryItem = {
+  drawAt: string;
+  finalRank: number;
+  playerCount: number;
+  gemsAwarded: number | null;
+};
+
+export async function getTournamentHistoryForUser(pool: Pool, userId: string): Promise<TournamentHistoryItem[]> {
+  const result = await pool.query<{
+    draw_at_utc: Date;
+    final_rank: string | number;
+    player_count: string | number;
+    gems_awarded: string | number | null;
+  }>(
+    `
+    SELECT
+      t.draw_at_utc,
+      te.final_rank,
+      cnt.player_count,
+      te.gems_awarded
+    FROM tournament_entries te
+    INNER JOIN tournaments t ON t.id = te.tournament_id
+    INNER JOIN (
+      SELECT tournament_id, COUNT(*)::bigint AS player_count
+      FROM tournament_entries
+      GROUP BY tournament_id
+    ) cnt ON cnt.tournament_id = te.tournament_id
+    WHERE te.user_id = $1
+      AND te.finalized_at IS NOT NULL
+      AND te.final_rank IS NOT NULL
+    ORDER BY t.draw_at_utc DESC
+    LIMIT 50
+    `,
+    [userId]
+  );
+  return result.rows.map((row) => ({
+    drawAt: row.draw_at_utc.toISOString(),
+    finalRank: toNumber(row.final_rank),
+    playerCount: toNumber(row.player_count),
+    gemsAwarded: row.gems_awarded === null || row.gems_awarded === undefined ? null : toNumber(row.gems_awarded)
+  }));
+}
+
 export async function getOutstandingTournamentResult(pool: Pool, userId: string): Promise<TournamentOutstandingResult | null> {
   const result = await pool.query<{
     tournament_id: string | number;

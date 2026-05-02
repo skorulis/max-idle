@@ -115,6 +115,13 @@ export type TournamentCollectRewardResponse = {
   gemsCollected: number;
 };
 
+export type TournamentHistoryItem = {
+  drawAt: string;
+  finalRank: number;
+  playerCount: number;
+  gemsAwarded: number | null;
+};
+
 export type LeaderboardType = "current" | "collected" | "time_gems";
 
 export type LeaderboardResponse = {

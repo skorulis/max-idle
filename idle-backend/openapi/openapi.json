@@ -979,6 +979,51 @@
           "playerCount"
         ]
       },
+      "TournamentHistoryItem": {
+        "type": "object",
+        "properties": {
+          "drawAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finalRank": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "playerCount": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "gemsAwarded": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "drawAt",
+          "finalRank",
+          "playerCount",
+          "gemsAwarded"
+        ]
+      },
+      "TournamentHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TournamentHistoryItem"
+            }
+          }
+        },
+        "required": [
+          "history"
+        ]
+      },
       "TournamentCurrentResponse": {
         "type": "object",
         "properties": {
@@ -1820,6 +1865,54 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TournamentCurrentResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Weekly tournament shop upgrade required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tournament/history": {
+      "get": {
+        "tags": [
+          "Tournament"
+        ],
+        "summary": "Get the player's last 50 finalized tournament results",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tournament history rows from tournament_entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentHistoryResponse"
                 }
               }
             }

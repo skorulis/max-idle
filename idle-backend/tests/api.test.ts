@@ -571,6 +571,45 @@ describe("auth + player lifecycle", () => {
     const collectLocked = await request(app).post("/tournament/collect-reward").set("Authorization", `Bearer ${token}`);
     expect(collectLocked.status).toBe(403);
     expect(collectLocked.body.code).toBe("TOURNAMENT_FEATURE_LOCKED");
+
+    const historyLocked = await request(app).get("/tournament/history").set("Authorization", `Bearer ${token}`);
+    expect(historyLocked.status).toBe(403);
+    expect(historyLocked.body.code).toBe("TOURNAMENT_FEATURE_LOCKED");
+  });
+
+  it("returns tournament history after a finalized tournament", async () => {
+    const app = createApp(pool, config);
+    await pool.query("DELETE FROM tournament_entries");
+    await pool.query("DELETE FROM tournaments");
+    const entrant = await createTournamentEntrant(app, 600);
+
+    const emptyHistory = await request(app).get("/tournament/history").set("Authorization", `Bearer ${entrant.token}`);
+    expect(emptyHistory.status).toBe(200);
+    expect(emptyHistory.body.history).toEqual([]);
+
+    await pool.query(
+      `
+      UPDATE tournaments
+      SET draw_at_utc = NOW() - INTERVAL '1 second'
+      WHERE is_active = TRUE
+      `
+    );
+    const finalizedCount = await finalizeDueTournaments(pool, new Date());
+    expect(finalizedCount).toBe(1);
+
+    const historyResponse = await request(app).get("/tournament/history").set("Authorization", `Bearer ${entrant.token}`);
+    expect(historyResponse.status).toBe(200);
+    expect(historyResponse.body.history).toHaveLength(1);
+    const row = historyResponse.body.history[0] as {
+      drawAt: string;
+      finalRank: number;
+      playerCount: number;
+      gemsAwarded: number;
+    };
+    expect(row.finalRank).toBe(1);
+    expect(row.playerCount).toBe(1);
+    expect(row.gemsAwarded).toBe(5);
+    expect(typeof row.drawAt).toBe("string");
   });
 
   it("returns current weekly tournament state and allows entering once", async () => {

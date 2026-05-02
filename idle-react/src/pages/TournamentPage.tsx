@@ -1,8 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import type { SyncedPlayerState, SyncedTournamentState } from "../app/types";
+import type { SyncedPlayerState, SyncedTournamentState, TournamentHistoryItem } from "../app/types";
 import { isTournamentFeatureUnlocked } from "../shop";
 import { TournamentPanel } from "./TournamentPanel";
 import { RankedPlayerRow } from "./RankedPlayerRow";
+import { ClipboardClock, Trophy } from "lucide-react";
 
 type TournamentPageProps = {
   playerState: SyncedPlayerState | null;
@@ -10,9 +11,23 @@ type TournamentPageProps = {
   tournamentSecondsUntilDraw: number;
   enteringTournament: boolean;
   collectingTournamentReward: boolean;
+  tournamentHistory: TournamentHistoryItem[];
+  tournamentHistoryLoading: boolean;
   onEnterTournament: () => Promise<void>;
   onCollectTournamentReward: () => Promise<void>;
 };
+
+function formatTournamentDrawDate(iso: string): string {
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) {
+    return iso;
+  }
+  return parsed.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  });
+}
 
 export function TournamentPage({
   playerState,
@@ -20,6 +35,8 @@ export function TournamentPage({
   tournamentSecondsUntilDraw,
   enteringTournament,
   collectingTournamentReward,
+  tournamentHistory,
+  tournamentHistoryLoading,
   onEnterTournament,
   onCollectTournamentReward
 }: TournamentPageProps) {
@@ -69,7 +86,10 @@ export function TournamentPage({
         />
       </section>
       <section className="card tournament-stack">
-        <p className="shop-currency-title">Current Tournament Details</p>
+        <h2 className="section-title-with-icon">
+          <Trophy size={18} aria-hidden="true" />
+          Current Tournament Details
+        </h2>
         <p className="subtle">Total Players: {tournamentState.playerCount}</p>
         {tournamentState.hasEntered ? (
           <p className="subtle">
@@ -103,6 +123,34 @@ export function TournamentPage({
                 : "Scores will appear here when available."}
           </p>
         )}
+      </section>
+      <section className="card tournament-stack">
+        <h2 className="section-title-with-icon">
+          <ClipboardClock size={18} aria-hidden="true" />
+          Tournament history
+        </h2>
+        {tournamentHistoryLoading ? <p className="subtle">Loading history…</p> : null}
+        {!tournamentHistoryLoading && tournamentHistory.length === 0 ? (
+          <p className="subtle">No finished tournaments yet.</p>
+        ) : null}
+        {!tournamentHistoryLoading && tournamentHistory.length > 0 ? (
+          <div className="achievements-list">
+            {tournamentHistory.map((item) => (
+              <div key={`${item.drawAt}-${item.finalRank}`} className="achievement-row">
+                <div className="achievement-copy">
+                  <p className="achievement-name">{formatTournamentDrawDate(item.drawAt)}</p>
+                  <p className="achievement-description">
+                    {item.finalRank} of {item.playerCount} players
+                    {" · "}
+                    {item.gemsAwarded === null
+                      ? "—"
+                      : `${item.gemsAwarded} Time Gem${item.gemsAwarded === 1 ? "" : "s"}`}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </section>
     </>
   );

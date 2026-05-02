@@ -8,7 +8,8 @@ import {
   debugFinalizeCurrentTournament,
   enterCurrentTournament,
   finalizeDueTournaments,
-  getCurrentTournamentForUser
+  getCurrentTournamentForUser,
+  getTournamentHistoryForUser
 } from "../tournaments.js";
 
 type RegisterTournamentRoutesOptions = {
@@ -46,6 +47,26 @@ export function registerTournamentRoutes({ app, pool, resolveIdentity, isProduct
       }
       const tournament = await getCurrentTournamentForUser(pool, identity.claims.sub);
       res.json(tournament);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/tournament/history", async (req, res, next) => {
+    try {
+      const identity = await resolveIdentity(req);
+      req.auth = identity.claims;
+      await finalizeDueTournaments(pool);
+      const shop = await loadShopForUser(pool, identity.claims.sub);
+      if (!shop || !isTournamentFeatureUnlocked(shop)) {
+        res.status(403).json({
+          error: "Purchase Weekly Tournament in the shop to enter.",
+          code: "TOURNAMENT_FEATURE_LOCKED"
+        });
+        return;
+      }
+      const history = await getTournamentHistoryForUser(pool, identity.claims.sub);
+      res.json({ history });
     } catch (error) {
       next(error);
     }

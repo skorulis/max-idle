@@ -47,6 +47,7 @@ import {
   grantClientDrivenAchievement,
   getPushConfig,
   getCurrentTournament,
+  getTournamentHistory,
   getPublicPlayerProfile,
   loginWithEmail,
   markAchievementsSeen,
@@ -79,7 +80,8 @@ import type {
   PlayerProfileResponse,
   DailyBonusHistoryItem,
   SyncedTournamentState,
-  SyncedPlayerState
+  SyncedPlayerState,
+  TournamentHistoryItem
 } from "./types";
 
 const TOKEN_KEY = "max-idle-token";
@@ -189,6 +191,8 @@ export function AppShell() {
   const [dailyBonusHistoryLoading, setDailyBonusHistoryLoading] = useState(false);
   const [collectionHistory, setCollectionHistory] = useState<CollectionHistoryItem[]>([]);
   const [collectionHistoryLoading, setCollectionHistoryLoading] = useState(false);
+  const [tournamentHistory, setTournamentHistory] = useState<TournamentHistoryItem[]>([]);
+  const [tournamentHistoryLoading, setTournamentHistoryLoading] = useState(false);
   const [, setStatus] = useState("Press start when you are ready to do nothing.");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -331,6 +335,53 @@ export function AppShell() {
       cancelled = true;
     };
   }, [location.pathname, token, account?.gameUserId]);
+
+  useEffect(() => {
+    if (location.pathname !== "/tournament") {
+      return;
+    }
+
+    if (!playerState || !isTournamentFeatureUnlocked(playerState.shop)) {
+      return;
+    }
+
+    let cancelled = false;
+    const loadTournamentHistory = async () => {
+      setTournamentHistoryLoading(true);
+      setError(null);
+      try {
+        const nextHistory = await getTournamentHistory(token);
+        if (!cancelled) {
+          setTournamentHistory(nextHistory);
+        }
+      } catch (tournamentHistoryError) {
+        if (cancelled) {
+          return;
+        }
+        setTournamentHistory([]);
+        if (tournamentHistoryError instanceof Error && tournamentHistoryError.message === "UNAUTHORIZED") {
+          setError("Login or start idling to view tournament history.");
+          return;
+        }
+        if (tournamentHistoryError instanceof Error && tournamentHistoryError.message === "TOURNAMENT_FEATURE_LOCKED") {
+          setError("Purchase Weekly Tournament in the shop to view history.");
+          return;
+        }
+        setError(
+          tournamentHistoryError instanceof Error ? tournamentHistoryError.message : "Failed to load tournament history."
+        );
+      } finally {
+        if (!cancelled) {
+          setTournamentHistoryLoading(false);
+        }
+      }
+    };
+
+    void loadTournamentHistory();
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname, token, account?.gameUserId, playerState]);
 
   useEffect(() => {
     if (location.pathname !== "/leaderboard") {
@@ -1568,6 +1619,8 @@ export function AppShell() {
                 tournamentSecondsUntilDraw={tournamentSecondsUntilDraw}
                 enteringTournament={enteringTournament}
                 collectingTournamentReward={collectingTournamentReward}
+                tournamentHistory={tournamentHistory}
+                tournamentHistoryLoading={tournamentHistoryLoading}
                 onEnterTournament={onEnterTournament}
                 onCollectTournamentReward={onCollectTournamentReward}
               />
