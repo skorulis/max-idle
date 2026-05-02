@@ -22,6 +22,7 @@ export function toSyncedState(data: PlayerResponse): SyncedPlayerState {
 }
 
 export function toSyncedTournamentState(data: TournamentCurrentResponse): SyncedTournamentState {
+  const outstanding = data.outstanding_result;
   return {
     drawAtMs: Date.parse(data.drawAt),
     isActive: data.isActive,
@@ -37,6 +38,16 @@ export function toSyncedTournamentState(data: TournamentCurrentResponse): Synced
           timeScoreSeconds: data.entry.timeScoreSeconds,
           gemsAwarded: data.entry.gemsAwarded,
           finalizedAtMs: data.entry.finalizedAt ? Date.parse(data.entry.finalizedAt) : null
+        }
+      : null,
+    outstandingResult: outstanding
+      ? {
+          tournamentId: outstanding.tournamentId,
+          drawAtMs: Date.parse(outstanding.drawAt),
+          finalizedAtMs: Date.parse(outstanding.finalizedAt),
+          finalRank: outstanding.finalRank,
+          gemsAwarded: outstanding.gemsAwarded,
+          playerCount: outstanding.playerCount
         }
       : null,
     syncedAtClientMs: Date.now()

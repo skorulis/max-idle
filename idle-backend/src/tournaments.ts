@@ -45,6 +45,20 @@ export type TournamentCurrentSummary = {
   nearbyEntries: TournamentRankedEntry[];
   entry: TournamentEntrySummary | null;
 };
+
+export type TournamentOutstandingResult = {
+  tournamentId: number;
+  drawAt: string;
+  finalizedAt: string;
+  finalRank: number;
+  gemsAwarded: number;
+  playerCount: number;
+};
+
+/** Current-week tournament snapshot plus optional uncollected reward from a prior finalized tournament. */
+export type TournamentCurrentWithOutstanding = TournamentCurrentSummary & {
+  outstanding_result: TournamentOutstandingResult | null;
+};
 export type TournamentRankedEntry = {
   rank: number;
   userId: string;
@@ -55,12 +69,153 @@ export type TournamentRankedEntry = {
 
 
 export type TournamentEnterResult = {
-  tournament: TournamentCurrentSummary;
+  tournament: TournamentCurrentWithOutstanding;
   enteredNow: boolean;
 };
 
 function toNumber(value: string | number): number {
   return typeof value === "number" ? value : Number(value);
+}
+
+async function creditTimeGemsForTournamentReward(
+  client: PoolClient,
+  userId: string,
+  gemsAwarded: number,
+  now: Date
+): Promise<void> {
+  const gemUpdate = await client.query<{
+    time_gems_available: string | number;
+    achievement_levels: unknown;
+    achievement_count: string | number;
+    has_unseen_achievements: boolean;
+  }>(
+    `
+    UPDATE player_states
+    SET
+      time_gems_total = time_gems_total + $2,
+      time_gems_available = time_gems_available + $2,
+      updated_at = $3
+    WHERE user_id = $1
+    RETURNING
+      time_gems_available,
+      achievement_levels,
+      achievement_count,
+      has_unseen_achievements
+    `,
+    [userId, gemsAwarded, now]
+  );
+  const afterGems = gemUpdate.rows[0];
+  if (afterGems && toNumber(afterGems.time_gems_available) >= GEM_HOARDER_MIN_AVAILABLE_GEMS) {
+    const achievementLevels = normalizeAchievementLevels(afterGems.achievement_levels, now);
+    const currentLevelById = new Map<AchievementId, number>(
+      achievementLevels.map((entry) => [entry.id, entry.level] as const)
+    );
+    if (!isAchievementMaxed(currentLevelById.get(ACHIEVEMENT_IDS.GEM_HOARDER) ?? 0, ACHIEVEMENT_IDS.GEM_HOARDER)) {
+      const nextAchievementLevels = mergeAchievementLevels(
+        afterGems.achievement_levels,
+        new Map([[ACHIEVEMENT_IDS.GEM_HOARDER, 1]]),
+        now
+      );
+      await updatePlayerAchievementLevels(client, userId, nextAchievementLevels);
+    }
+  }
+}
+
+export async function getOutstandingTournamentResult(pool: Pool, userId: string): Promise<TournamentOutstandingResult | null> {
+  const result = await pool.query<{
+    tournament_id: string | number;
+    draw_at_utc: Date;
+    finalized_at: Date;
+    final_rank: string | number;
+    gems_awarded: string | number;
+    player_count: string | number;
+  }>(
+    `
+    SELECT
+      te.tournament_id,
+      t.draw_at_utc,
+      te.finalized_at,
+      te.final_rank,
+      te.gems_awarded,
+      cnt.player_count
+    FROM tournament_entries te
+    INNER JOIN tournaments t ON t.id = te.tournament_id
+    INNER JOIN (
+      SELECT tournament_id, COUNT(*)::bigint AS player_count
+      FROM tournament_entries
+      GROUP BY tournament_id
+    ) cnt ON cnt.tournament_id = te.tournament_id
+    WHERE te.user_id = $1
+      AND te.finalized_at IS NOT NULL
+      AND te.gems_awarded IS NOT NULL
+      AND te.reward_collected_at IS NULL
+    ORDER BY te.finalized_at ASC
+    LIMIT 1
+    `,
+    [userId]
+  );
+  const row = result.rows[0];
+  if (!row) {
+    return null;
+  }
+  return {
+    tournamentId: toNumber(row.tournament_id),
+    drawAt: row.draw_at_utc.toISOString(),
+    finalizedAt: row.finalized_at.toISOString(),
+    finalRank: toNumber(row.final_rank),
+    gemsAwarded: toNumber(row.gems_awarded),
+    playerCount: toNumber(row.player_count)
+  };
+}
+
+export type CollectTournamentRewardResult = {
+  gemsCollected: number;
+};
+
+export async function collectTournamentReward(pool: Pool, userId: string, now = new Date()): Promise<CollectTournamentRewardResult> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const lockResult = await client.query<{
+      id: number;
+      gems_awarded: string | number;
+    }>(
+      `
+      SELECT te.id, te.gems_awarded
+      FROM tournament_entries te
+      WHERE te.user_id = $1
+        AND te.finalized_at IS NOT NULL
+        AND te.gems_awarded IS NOT NULL
+        AND te.reward_collected_at IS NULL
+      ORDER BY te.finalized_at ASC
+      LIMIT 1
+      FOR UPDATE
+      `,
+      [userId]
+    );
+    const row = lockResult.rows[0];
+    if (!row) {
+      await client.query("ROLLBACK");
+      throw new Error("NO_TOURNAMENT_REWARD_TO_COLLECT");
+    }
+    const gemsAwarded = toNumber(row.gems_awarded);
+    await creditTimeGemsForTournamentReward(client, userId, gemsAwarded, now);
+    await client.query(
+      `
+      UPDATE tournament_entries
+      SET reward_collected_at = $2
+      WHERE id = $1
+      `,
+      [row.id, now]
+    );
+    await client.query("COMMIT");
+    return { gemsCollected: gemsAwarded };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 function isUniqueViolation(error: unknown): boolean {
@@ -345,14 +500,15 @@ export async function getCurrentTournamentForUser(
   userId: string,
   now = new Date(),
   options?: { includeNearbyEntries?: boolean }
-): Promise<TournamentCurrentSummary> {
+): Promise<TournamentCurrentWithOutstanding> {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
     const tournament = await ensureActiveTournament(client, now);
     const summary = await buildTournamentSummary(client, tournament, userId, now, options);
     await client.query("COMMIT");
-    return summary;
+    const outstanding_result = await getOutstandingTournamentResult(pool, userId);
+    return { ...summary, outstanding_result };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -371,6 +527,23 @@ export async function enterCurrentTournament(pool: Pool, userId: string, now = n
       throw new Error("TOURNAMENT_DRAW_IN_PROGRESS");
     }
 
+    const uncollectedReward = await client.query(
+      `
+      SELECT 1 AS ok
+      FROM tournament_entries
+      WHERE user_id = $1
+        AND finalized_at IS NOT NULL
+        AND gems_awarded IS NOT NULL
+        AND reward_collected_at IS NULL
+      LIMIT 1
+      `,
+      [userId]
+    );
+    if (uncollectedReward.rows.length > 0) {
+      await client.query("ROLLBACK");
+      throw new Error("TOURNAMENT_REWARD_UNCOLLECTED");
+    }
+
     const existingEntry = await getTournamentEntry(client, tournament.id, userId);
     let enteredNow = false;
     if (!existingEntry) {
@@ -385,9 +558,10 @@ export async function enterCurrentTournament(pool: Pool, userId: string, now = n
       enteredNow = true;
     }
     const summary = await buildTournamentSummary(client, tournament, userId, now);
+    const outstanding_result = await getOutstandingTournamentResult(pool, userId);
     await client.query("COMMIT");
     return {
-      tournament: summary,
+      tournament: { ...summary, outstanding_result },
       enteredNow
     };
   } catch (error) {
@@ -481,42 +655,6 @@ async function finalizeTournamentCore(client: PoolClient, tournament: Tournament
       `,
       [entry.id, rank, gemsAwarded, now]
     );
-    const gemUpdate = await client.query<{
-      time_gems_available: string | number;
-      achievement_levels: unknown;
-      achievement_count: string | number;
-      has_unseen_achievements: boolean;
-    }>(
-      `
-      UPDATE player_states
-      SET
-        time_gems_total = time_gems_total + $2,
-        time_gems_available = time_gems_available + $2,
-        updated_at = $3
-      WHERE user_id = $1
-      RETURNING
-        time_gems_available,
-        achievement_levels,
-        achievement_count,
-        has_unseen_achievements
-      `,
-      [entry.user_id, gemsAwarded, now]
-    );
-    const afterGems = gemUpdate.rows[0];
-    if (afterGems && toNumber(afterGems.time_gems_available) >= GEM_HOARDER_MIN_AVAILABLE_GEMS) {
-      const achievementLevels = normalizeAchievementLevels(afterGems.achievement_levels, now);
-      const currentLevelById = new Map<AchievementId, number>(
-        achievementLevels.map((entry) => [entry.id, entry.level] as const)
-      );
-      if (!isAchievementMaxed(currentLevelById.get(ACHIEVEMENT_IDS.GEM_HOARDER) ?? 0, ACHIEVEMENT_IDS.GEM_HOARDER)) {
-        const nextAchievementLevels = mergeAchievementLevels(
-          afterGems.achievement_levels,
-          new Map([[ACHIEVEMENT_IDS.GEM_HOARDER, 1]]),
-          now
-        );
-        await updatePlayerAchievementLevels(client, entry.user_id, nextAchievementLevels);
-      }
-    }
   }
 
   await client.query(

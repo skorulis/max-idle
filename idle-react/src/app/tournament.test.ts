@@ -26,7 +26,8 @@ describe("tournament state helpers", () => {
         timeScoreSeconds: null,
         gemsAwarded: null,
         finalizedAt: null
-      }
+      },
+      outstanding_result: null
     });
 
     expect(synced.isActive).toBe(true);

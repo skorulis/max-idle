@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetAccountData, GetAccountErrors, GetAccountResponses, GetAchievementsData, GetAchievementsErrors, GetAchievementsResponses, GetHealthData, GetHealthResponses, GetHomeData, GetHomeErrors, GetHomeResponses, GetLeaderboardData, GetLeaderboardErrors, GetLeaderboardResponses, GetPlayerCollectionHistoryData, GetPlayerCollectionHistoryErrors, GetPlayerCollectionHistoryResponses, GetPlayerDailyBonusHistoryData, GetPlayerDailyBonusHistoryErrors, GetPlayerDailyBonusHistoryResponses, GetPlayerData, GetPlayerErrors, GetPlayerResponses, GetPlayersByIdData, GetPlayersByIdErrors, GetPlayersByIdResponses, GetTournamentCurrentData, GetTournamentCurrentErrors, GetTournamentCurrentResponses, PostAccountUpgradeData, PostAccountUpgradeErrors, PostAccountUpgradeResponses, PostAccountUsernameData, PostAccountUsernameErrors, PostAccountUsernameResponses, PostAchievementsGrantData, PostAchievementsGrantErrors, PostAchievementsGrantResponses, PostAchievementsSeenData, PostAchievementsSeenErrors, PostAchievementsSeenResponses, PostAuthAnonymousData, PostAuthAnonymousErrors, PostAuthAnonymousResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutData, PostAuthLogoutResponses, PostAuthRegisterData, PostAuthRegisterErrors, PostAuthRegisterResponses, PostPlayerCollectData, PostPlayerCollectErrors, PostPlayerCollectResponses, PostPlayerDailyBonusCollectData, PostPlayerDailyBonusCollectErrors, PostPlayerDailyBonusCollectResponses, PostPlayerDailyRewardCollectData, PostPlayerDailyRewardCollectErrors, PostPlayerDailyRewardCollectResponses, PostShopPurchaseData, PostShopPurchaseErrors, PostShopPurchaseResponses, PostTournamentEnterData, PostTournamentEnterErrors, PostTournamentEnterResponses } from './types.gen';
+import type { GetAccountData, GetAccountErrors, GetAccountResponses, GetAchievementsData, GetAchievementsErrors, GetAchievementsResponses, GetHealthData, GetHealthResponses, GetHomeData, GetHomeErrors, GetHomeResponses, GetLeaderboardData, GetLeaderboardErrors, GetLeaderboardResponses, GetPlayerCollectionHistoryData, GetPlayerCollectionHistoryErrors, GetPlayerCollectionHistoryResponses, GetPlayerDailyBonusHistoryData, GetPlayerDailyBonusHistoryErrors, GetPlayerDailyBonusHistoryResponses, GetPlayerData, GetPlayerErrors, GetPlayerResponses, GetPlayersByIdData, GetPlayersByIdErrors, GetPlayersByIdResponses, GetTournamentCurrentData, GetTournamentCurrentErrors, GetTournamentCurrentResponses, PostAccountUpgradeData, PostAccountUpgradeErrors, PostAccountUpgradeResponses, PostAccountUsernameData, PostAccountUsernameErrors, PostAccountUsernameResponses, PostAchievementsGrantData, PostAchievementsGrantErrors, PostAchievementsGrantResponses, PostAchievementsSeenData, PostAchievementsSeenErrors, PostAchievementsSeenResponses, PostAuthAnonymousData, PostAuthAnonymousErrors, PostAuthAnonymousResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutData, PostAuthLogoutResponses, PostAuthRegisterData, PostAuthRegisterErrors, PostAuthRegisterResponses, PostPlayerCollectData, PostPlayerCollectErrors, PostPlayerCollectResponses, PostPlayerDailyBonusCollectData, PostPlayerDailyBonusCollectErrors, PostPlayerDailyBonusCollectResponses, PostPlayerDailyRewardCollectData, PostPlayerDailyRewardCollectErrors, PostPlayerDailyRewardCollectResponses, PostShopPurchaseData, PostShopPurchaseErrors, PostShopPurchaseResponses, PostTournamentCollectRewardData, PostTournamentCollectRewardErrors, PostTournamentCollectRewardResponses, PostTournamentEnterData, PostTournamentEnterErrors, PostTournamentEnterResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -222,6 +222,19 @@ export const postTournamentEnter = <ThrowOnError extends boolean = false>(option
             type: 'apiKey'
         }, { scheme: 'bearer', type: 'http' }],
     url: '/tournament/enter',
+    ...options
+});
+
+/**
+ * Collect Time Gems from the oldest finalized tournament reward
+ */
+export const postTournamentCollectReward = <ThrowOnError extends boolean = false>(options?: Options<PostTournamentCollectRewardData, ThrowOnError>) => (options?.client ?? client).post<PostTournamentCollectRewardResponses, PostTournamentCollectRewardErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'better-auth.session_token',
+            type: 'apiKey'
+        }, { scheme: 'bearer', type: 'http' }],
+    url: '/tournament/collect-reward',
     ...options
 });
 

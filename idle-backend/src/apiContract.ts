@@ -303,6 +303,18 @@ const tournamentRankedEntrySchema = registry.register(
   })
 );
 
+const tournamentOutstandingResultSchema = registry.register(
+  "TournamentOutstandingResult",
+  z.object({
+    tournamentId: z.number().int().positive(),
+    drawAt: z.string().datetime(),
+    finalizedAt: z.string().datetime(),
+    finalRank: z.number().int().positive(),
+    gemsAwarded: z.number().int().min(1).max(5),
+    playerCount: z.number().int().nonnegative()
+  })
+);
+
 const tournamentCurrentResponseSchema = registry.register(
   "TournamentCurrentResponse",
   z.object({
@@ -313,7 +325,15 @@ const tournamentCurrentResponseSchema = registry.register(
     currentRank: z.number().int().positive().nullable(),
     expectedRewardGems: z.number().int().min(1).max(5).nullable(),
     nearbyEntries: z.array(tournamentRankedEntrySchema),
-    entry: tournamentEntrySchema.nullable()
+    entry: tournamentEntrySchema.nullable(),
+    outstanding_result: tournamentOutstandingResultSchema.nullable()
+  })
+);
+
+const tournamentCollectRewardResponseSchema = registry.register(
+  "TournamentCollectRewardResponse",
+  z.object({
+    gemsCollected: z.number().int().min(1).max(5)
   })
 );
 
@@ -819,7 +839,42 @@ registry.registerPath({
       }
     },
     409: {
-      description: "Draw is currently being finalized",
+      description:
+        "Conflict: tournament draw is being finalized (code TOURNAMENT_DRAW_IN_PROGRESS), or a prior reward must be collected first (code TOURNAMENT_REWARD_UNCOLLECTED).",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    }
+  }
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/tournament/collect-reward",
+  tags: ["Tournament"],
+  summary: "Collect Time Gems from the oldest finalized tournament reward",
+  security: authViaCookieOrBearer,
+  responses: {
+    200: {
+      description: "Reward credited to the player",
+      content: {
+        "application/json": { schema: tournamentCollectRewardResponseSchema }
+      }
+    },
+    400: {
+      description: "No uncollected tournament reward (code NO_TOURNAMENT_REWARD_TO_COLLECT)",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    },
+    403: {
+      description: "Weekly tournament shop upgrade required",
       content: {
         "application/json": { schema: errorResponseSchema }
       }

@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS tournament_entries (
   time_score_seconds BIGINT,
   gems_awarded INTEGER,
   finalized_at TIMESTAMPTZ,
+  reward_collected_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

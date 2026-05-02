@@ -195,6 +195,15 @@ export type TournamentRankedEntry = {
     isCurrentPlayer: boolean;
 };
 
+export type TournamentOutstandingResult = {
+    tournamentId: number;
+    drawAt: string;
+    finalizedAt: string;
+    finalRank: number;
+    gemsAwarded: number;
+    playerCount: number;
+};
+
 export type TournamentCurrentResponse = {
     drawAt: string;
     isActive: boolean;
@@ -204,6 +213,11 @@ export type TournamentCurrentResponse = {
     expectedRewardGems: number | null;
     nearbyEntries: Array<TournamentRankedEntry>;
     entry: TournamentEntry & unknown;
+    outstanding_result: TournamentOutstandingResult & unknown;
+};
+
+export type TournamentCollectRewardResponse = {
+    gemsCollected: number;
 };
 
 export type TournamentEnterResponse = {
@@ -514,7 +528,7 @@ export type GetHomeError = GetHomeErrors[keyof GetHomeErrors];
 
 export type GetHomeResponses = {
     /**
-     * Aggregated home payload
+     * Aggregated home payload. When tournament is present, nearbyEntries is always an empty array (use GET /tournament/current for leaderboard neighbors).
      */
     200: HomeResponse;
 };
@@ -671,7 +685,7 @@ export type PostTournamentEnterErrors = {
      */
     403: ErrorResponse;
     /**
-     * Draw is currently being finalized
+     * Conflict: tournament draw is being finalized (code TOURNAMENT_DRAW_IN_PROGRESS), or a prior reward must be collected first (code TOURNAMENT_REWARD_UNCOLLECTED).
      */
     409: ErrorResponse;
 };
@@ -686,6 +700,39 @@ export type PostTournamentEnterResponses = {
 };
 
 export type PostTournamentEnterResponse = PostTournamentEnterResponses[keyof PostTournamentEnterResponses];
+
+export type PostTournamentCollectRewardData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/tournament/collect-reward';
+};
+
+export type PostTournamentCollectRewardErrors = {
+    /**
+     * No uncollected tournament reward (code NO_TOURNAMENT_REWARD_TO_COLLECT)
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Weekly tournament shop upgrade required
+     */
+    403: ErrorResponse;
+};
+
+export type PostTournamentCollectRewardError = PostTournamentCollectRewardErrors[keyof PostTournamentCollectRewardErrors];
+
+export type PostTournamentCollectRewardResponses = {
+    /**
+     * Reward credited to the player
+     */
+    200: TournamentCollectRewardResponse;
+};
+
+export type PostTournamentCollectRewardResponse = PostTournamentCollectRewardResponses[keyof PostTournamentCollectRewardResponses];
 
 export type GetPlayersByIdData = {
     body?: never;

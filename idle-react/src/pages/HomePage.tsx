@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { formatSeconds } from "../formatSeconds";
 import { Atom, ChevronRight, CircleHelp, Clock3, Gem, Gift, PiggyBank } from "lucide-react";
-import type { SyncedPlayerState } from "../app/types";
+import type { SyncedOutstandingTournamentResult, SyncedPlayerState } from "../app/types";
 import {
   getRestraintMinRealtimeSeconds,
   isDailyBonusFeatureUnlocked,
@@ -36,6 +36,9 @@ type HomePageProps = {
   tournamentHasEntered: boolean;
   tournamentSecondsUntilDraw: number;
   enteringTournament: boolean;
+  tournamentOutstandingResult: SyncedOutstandingTournamentResult | null;
+  collectingTournamentReward: boolean;
+  onCollectTournamentReward: () => Promise<void>;
   onStartIdling: () => Promise<void>;
   onCollect: () => Promise<{ collectedSeconds: number; realSecondsCollected: number } | undefined>;
   onCollectDailyReward: () => Promise<void>;
@@ -63,6 +66,9 @@ export function HomePage({
   tournamentHasEntered,
   tournamentSecondsUntilDraw,
   enteringTournament,
+  tournamentOutstandingResult,
+  collectingTournamentReward,
+  onCollectTournamentReward,
   onStartIdling,
   onCollect,
   onCollectDailyReward,
@@ -305,9 +311,12 @@ export function HomePage({
         <section className="card">
           <TournamentPanel
             hasEntered={tournamentHasEntered}
+            outstandingResult={tournamentOutstandingResult}
             secondsUntilDraw={tournamentSecondsUntilDraw}
             enteringTournament={enteringTournament}
+            collectingTournamentReward={collectingTournamentReward}
             onEnterTournament={onEnterTournament}
+            onCollectTournamentReward={onCollectTournamentReward}
             onNavigateTournament={onNavigateTournament}
           />
         </section>

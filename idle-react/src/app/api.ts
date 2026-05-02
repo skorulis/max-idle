@@ -10,6 +10,7 @@ import type {
   LeaderboardType,
   PlayerProfileResponse,
   PlayerResponse,
+  TournamentCollectRewardResponse,
   TournamentCurrentResponse,
   TournamentEnterResponse
 } from "./types";
@@ -285,11 +286,47 @@ export async function enterTournament(token: string | null): Promise<TournamentE
     if (payload?.code === "TOURNAMENT_DRAW_IN_PROGRESS") {
       throw new Error("TOURNAMENT_DRAW_IN_PROGRESS");
     }
+    if (payload?.code === "TOURNAMENT_REWARD_UNCOLLECTED") {
+      throw new Error("TOURNAMENT_REWARD_UNCOLLECTED");
+    }
   }
   if (!response.ok) {
     throw new Error("Failed to enter tournament");
   }
   return (await response.json()) as TournamentEnterResponse;
+}
+
+export async function collectTournamentReward(token: string | null): Promise<TournamentCollectRewardResponse> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/tournament/collect-reward`, {
+    method: "POST",
+    credentials: "include",
+    headers
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (response.status === 403) {
+    const payload = (await response.json().catch(() => null)) as { code?: string } | null;
+    if (payload?.code === "TOURNAMENT_FEATURE_LOCKED") {
+      throw new Error("TOURNAMENT_FEATURE_LOCKED");
+    }
+  }
+  if (response.status === 400) {
+    const payload = (await response.json().catch(() => null)) as { code?: string } | null;
+    if (payload?.code === "NO_TOURNAMENT_REWARD_TO_COLLECT") {
+      throw new Error("NO_TOURNAMENT_REWARD_TO_COLLECT");
+    }
+  }
+  if (!response.ok) {
+    throw new Error("Failed to collect tournament reward");
+  }
+  return (await response.json()) as TournamentCollectRewardResponse;
 }
 
 export async function getAccount(token: string | null): Promise<AccountResponse> {

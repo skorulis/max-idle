@@ -4,6 +4,7 @@ import type { ShopState } from "@maxidle/shared/shop";
 import { isTournamentFeatureUnlocked } from "@maxidle/shared/shop";
 import type { AuthClaims } from "../types.js";
 import {
+  collectTournamentReward,
   debugFinalizeCurrentTournament,
   enterCurrentTournament,
   finalizeDueTournaments,
@@ -70,6 +71,40 @@ export function registerTournamentRoutes({ app, pool, resolveIdentity, isProduct
         res.status(409).json({
           error: "Tournament draw is being finalized. Please retry in a moment.",
           code: "TOURNAMENT_DRAW_IN_PROGRESS"
+        });
+        return;
+      }
+      if (error instanceof Error && error.message === "TOURNAMENT_REWARD_UNCOLLECTED") {
+        res.status(409).json({
+          error: "Collect your prior tournament reward before entering a new one.",
+          code: "TOURNAMENT_REWARD_UNCOLLECTED"
+        });
+        return;
+      }
+      next(error);
+    }
+  });
+
+  app.post("/tournament/collect-reward", async (req, res, next) => {
+    try {
+      const identity = await resolveIdentity(req);
+      req.auth = identity.claims;
+      await finalizeDueTournaments(pool);
+      const shop = await loadShopForUser(pool, identity.claims.sub);
+      if (!shop || !isTournamentFeatureUnlocked(shop)) {
+        res.status(403).json({
+          error: "Purchase Weekly Tournament in the shop to enter.",
+          code: "TOURNAMENT_FEATURE_LOCKED"
+        });
+        return;
+      }
+      const result = await collectTournamentReward(pool, identity.claims.sub);
+      res.json(result);
+    } catch (error) {
+      if (error instanceof Error && error.message === "NO_TOURNAMENT_REWARD_TO_COLLECT") {
+        res.status(400).json({
+          error: "No tournament reward to collect.",
+          code: "NO_TOURNAMENT_REWARD_TO_COLLECT"
         });
         return;
       }

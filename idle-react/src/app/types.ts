@@ -85,6 +85,15 @@ export type TournamentEntryResponse = {
   finalizedAt: string | null;
 };
 
+export type TournamentOutstandingResult = {
+  tournamentId: number;
+  drawAt: string;
+  finalizedAt: string;
+  finalRank: number;
+  gemsAwarded: number;
+  playerCount: number;
+};
+
 export type TournamentCurrentResponse = {
   drawAt: string;
   isActive: boolean;
@@ -94,11 +103,16 @@ export type TournamentCurrentResponse = {
   expectedRewardGems: number | null;
   nearbyEntries: TournamentRankedEntry[];
   entry: TournamentEntryResponse | null;
+  outstanding_result: TournamentOutstandingResult | null;
 };
 
 export type TournamentEnterResponse = {
   tournament: TournamentCurrentResponse;
   enteredNow: boolean;
+};
+
+export type TournamentCollectRewardResponse = {
+  gemsCollected: number;
 };
 
 export type LeaderboardType = "current" | "collected" | "time_gems";
@@ -178,6 +192,15 @@ export type SyncedTournamentEntry = {
   finalizedAtMs: number | null;
 };
 
+export type SyncedOutstandingTournamentResult = {
+  tournamentId: number;
+  drawAtMs: number;
+  finalizedAtMs: number;
+  finalRank: number;
+  gemsAwarded: number;
+  playerCount: number;
+};
+
 export type SyncedTournamentState = {
   drawAtMs: number;
   isActive: boolean;
@@ -187,6 +210,7 @@ export type SyncedTournamentState = {
   expectedRewardGems: number | null;
   nearbyEntries: TournamentRankedEntry[];
   entry: SyncedTournamentEntry | null;
+  outstandingResult: SyncedOutstandingTournamentResult | null;
   syncedAtClientMs: number;
 };
 

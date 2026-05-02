@@ -26,6 +26,7 @@ import {
   collectDailyBonus,
   collectDailyReward,
   collectIdleTime,
+  collectTournamentReward,
   createAnonymousSession,
   deletePushSubscription,
   debugAddGems,
@@ -196,6 +197,7 @@ export function AppShell() {
   const [collectingDailyReward, setCollectingDailyReward] = useState(false);
   const [collectingDailyBonus, setCollectingDailyBonus] = useState(false);
   const [enteringTournament, setEnteringTournament] = useState(false);
+  const [collectingTournamentReward, setCollectingTournamentReward] = useState(false);
   const [authPending, setAuthPending] = useState(false);
   const [usernamePending, setUsernamePending] = useState(false);
   const [usernameDraft, setUsernameDraft] = useState("");
@@ -1214,11 +1216,47 @@ export function AppShell() {
         });
       } else if (tournamentError instanceof Error && tournamentError.message === "TOURNAMENT_FEATURE_LOCKED") {
         setError("Purchase Weekly Tournament in the shop to enter.");
+      } else if (tournamentError instanceof Error && tournamentError.message === "TOURNAMENT_REWARD_UNCOLLECTED") {
+        setError("Collect your last tournament reward before entering this week's draw.");
       } else {
         setError(tournamentError instanceof Error ? tournamentError.message : "Failed to enter tournament");
       }
     } finally {
       setEnteringTournament(false);
+    }
+  };
+
+  const onCollectTournamentReward = async () => {
+    if (!playerState) {
+      return;
+    }
+    setCollectingTournamentReward(true);
+    setError(null);
+    try {
+      const result = await collectTournamentReward(token);
+      await refreshHome(token);
+      toast.success(`Collected ${result.gemsCollected} Time Gem${result.gemsCollected === 1 ? "" : "s"}.`);
+      setStatus("Tournament reward collected.");
+    } catch (collectError) {
+      if (collectError instanceof Error && collectError.message === "UNAUTHORIZED") {
+        localStorage.removeItem(TOKEN_KEY);
+        setToken(null);
+        setPlayerState(null);
+        setTournamentState(null);
+        setAccount(null);
+        setStatus("Press start when you are ready to do nothing.");
+      } else if (collectError instanceof Error && collectError.message === "TOURNAMENT_FEATURE_LOCKED") {
+        setError("Purchase Weekly Tournament in the shop.");
+      } else if (collectError instanceof Error && collectError.message === "NO_TOURNAMENT_REWARD_TO_COLLECT") {
+        setError("No tournament reward to collect.");
+        void refreshHome(token).catch(() => {
+          // Ignore refresh errors.
+        });
+      } else {
+        setError(collectError instanceof Error ? collectError.message : "Failed to collect tournament reward");
+      }
+    } finally {
+      setCollectingTournamentReward(false);
     }
   };
 
@@ -1471,6 +1509,9 @@ export function AppShell() {
                 tournamentHasEntered={tournamentHasEntered}
                 tournamentSecondsUntilDraw={tournamentSecondsUntilDraw}
                 enteringTournament={enteringTournament}
+                tournamentOutstandingResult={tournamentState?.outstandingResult ?? null}
+                collectingTournamentReward={collectingTournamentReward}
+                onCollectTournamentReward={onCollectTournamentReward}
                 onStartIdling={onStartIdling}
                 onCollect={onCollect}
                 onCollectDailyReward={onCollectDailyReward}
@@ -1521,7 +1562,9 @@ export function AppShell() {
                 tournamentState={tournamentState}
                 tournamentSecondsUntilDraw={tournamentSecondsUntilDraw}
                 enteringTournament={enteringTournament}
+                collectingTournamentReward={collectingTournamentReward}
                 onEnterTournament={onEnterTournament}
+                onCollectTournamentReward={onCollectTournamentReward}
               />
             )}
           />

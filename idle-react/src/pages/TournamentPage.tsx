@@ -9,7 +9,9 @@ type TournamentPageProps = {
   tournamentState: SyncedTournamentState | null;
   tournamentSecondsUntilDraw: number;
   enteringTournament: boolean;
+  collectingTournamentReward: boolean;
   onEnterTournament: () => Promise<void>;
+  onCollectTournamentReward: () => Promise<void>;
 };
 
 export function TournamentPage({
@@ -17,7 +19,9 @@ export function TournamentPage({
   tournamentState,
   tournamentSecondsUntilDraw,
   enteringTournament,
-  onEnterTournament
+  collectingTournamentReward,
+  onEnterTournament,
+  onCollectTournamentReward
 }: TournamentPageProps) {
   const navigate = useNavigate();
 
@@ -56,20 +60,27 @@ export function TournamentPage({
       <section className="card">
         <TournamentPanel
           hasEntered={tournamentState.hasEntered}
+          outstandingResult={tournamentState.outstandingResult}
           secondsUntilDraw={tournamentSecondsUntilDraw}
           enteringTournament={enteringTournament}
+          collectingTournamentReward={collectingTournamentReward}
           onEnterTournament={onEnterTournament}
+          onCollectTournamentReward={onCollectTournamentReward}
         />
       </section>
       <section className="card tournament-stack">
         <p className="shop-currency-title">Current Tournament Details</p>
         <p className="subtle">Total Players: {tournamentState.playerCount}</p>
-        <p className="subtle">
-          Expected reward:{" "}
-          {tournamentState.expectedRewardGems === null
-            ? "Enter the tournament to estimate your reward"
-            : `${tournamentState.expectedRewardGems} Time Gem${tournamentState.expectedRewardGems === 1 ? "" : "s"}`}
-        </p>
+        {tournamentState.hasEntered ? (
+          <p className="subtle">
+            Expected reward:{" "}
+            {tournamentState.outstandingResult
+              ? "Collect your last tournament reward to enter this week and see your estimate."
+              : tournamentState.expectedRewardGems === null
+                ? "—"
+                : `${tournamentState.expectedRewardGems} Time Gem${tournamentState.expectedRewardGems === 1 ? "" : "s"}`}
+          </p>
+        ) : null}
         {tournamentState.nearbyEntries.length > 0 ? (
           <div className="leaderboard-list">
             {tournamentState.nearbyEntries.map((entry) => (
@@ -84,7 +95,11 @@ export function TournamentPage({
             ))}
           </div>
         ) : (
-          <p className="subtle">Enter the tournament to see nearby ranked players.</p>
+          <p className="subtle">
+            {tournamentState.outstandingResult
+              ? "Collect your prior reward to enter this week and view nearby ranks."
+              : "Enter the tournament to see nearby ranked players."}
+          </p>
         )}
       </section>
     </>

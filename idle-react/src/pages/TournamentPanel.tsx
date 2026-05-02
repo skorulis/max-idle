@@ -1,19 +1,36 @@
 import { ChevronRight, Trophy } from "lucide-react";
+import type { SyncedOutstandingTournamentResult } from "../app/types";
 import { formatSeconds } from "../formatSeconds";
 
 type TournamentPanelProps = {
   hasEntered: boolean;
+  outstandingResult: SyncedOutstandingTournamentResult | null;
   secondsUntilDraw: number;
   enteringTournament: boolean;
+  collectingTournamentReward: boolean;
   onEnterTournament: () => Promise<void>;
+  onCollectTournamentReward: () => Promise<void>;
   onNavigateTournament?: () => void;
 };
 
+/** Stable UTC label without dateStyle/timeStyle + timeZoneName (invalid mix in some runtimes). */
+function formatUtcDateTime(ms: number): string {
+  const d = new Date(ms);
+  if (Number.isNaN(d.getTime())) {
+    return "—";
+  }
+  const iso = d.toISOString();
+  return `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`;
+}
+
 export function TournamentPanel({
   hasEntered,
+  outstandingResult,
   secondsUntilDraw,
   enteringTournament,
+  collectingTournamentReward,
   onEnterTournament,
+  onCollectTournamentReward,
   onNavigateTournament
 }: TournamentPanelProps) {
   return (
@@ -36,14 +53,35 @@ export function TournamentPanel({
         ) : null}
       </div>
       <p className="shop-currency-value">Compete for time gem rewards</p>
-      {hasEntered ? (
+      {outstandingResult ? (
+        <>
+          <p className="subtle">
+            You placed{" "}
+            <strong>
+              {outstandingResult.finalRank} of {outstandingResult.playerCount} 
+            </strong>
+            {" "}in the last tournament.
+          </p>
+          <p className="shop-currency-value">
+            Reward: {outstandingResult.gemsAwarded} Time Gem{outstandingResult.gemsAwarded === 1 ? "" : "s"}
+          </p>
+          <button
+            className="collect"
+            type="button"
+            onClick={() => void onCollectTournamentReward()}
+            disabled={collectingTournamentReward}
+          >
+            {collectingTournamentReward ? "Collecting…" : "Collect winnings"}
+          </button>
+        </>
+      ) : hasEntered ? (
         <p className="subtle">You are entered for this week.</p>
       ) : (
         <button className="collect" onClick={() => void onEnterTournament()} disabled={enteringTournament}>
           {enteringTournament ? "Entering tournament..." : "Enter tournament"}
         </button>
       )}
-      <p className="subtle">Draw in {formatSeconds(secondsUntilDraw)} (Sunday 00:00:00 UTC)</p>
+      <p className="subtle">Next draw in {formatSeconds(secondsUntilDraw)} (Sunday 00:00:00 UTC)</p>
     </div>
   );
 }

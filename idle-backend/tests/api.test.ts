@@ -340,6 +340,7 @@ describe("auth + player lifecycle", () => {
     expect(homeResponse.status).toBe(200);
     expect(typeof homeResponse.body.tournament?.drawAt).toBe("string");
     expect(homeResponse.body.tournament?.nearbyEntries).toEqual([]);
+    expect(homeResponse.body.tournament?.outstanding_result).toBeNull();
 
     const enterResponse = await request(app).post("/tournament/enter").set("Authorization", `Bearer ${token}`);
     expect(enterResponse.status).toBe(200);
@@ -566,6 +567,10 @@ describe("auth + player lifecycle", () => {
     const enterLocked = await request(app).post("/tournament/enter").set("Authorization", `Bearer ${token}`);
     expect(enterLocked.status).toBe(403);
     expect(enterLocked.body.code).toBe("TOURNAMENT_FEATURE_LOCKED");
+
+    const collectLocked = await request(app).post("/tournament/collect-reward").set("Authorization", `Bearer ${token}`);
+    expect(collectLocked.status).toBe(403);
+    expect(collectLocked.body.code).toBe("TOURNAMENT_FEATURE_LOCKED");
   });
 
   it("returns current weekly tournament state and allows entering once", async () => {
@@ -586,6 +591,7 @@ describe("auth + player lifecycle", () => {
     expect(currentBeforeEntry.body.expectedRewardGems).toBeNull();
     expect(currentBeforeEntry.body.nearbyEntries).toEqual([]);
     expect(currentBeforeEntry.body.entry).toBeNull();
+    expect(currentBeforeEntry.body.outstanding_result).toBeNull();
     expect(typeof currentBeforeEntry.body.drawAt).toBe("string");
     expect(currentBeforeEntry.body.isActive).toBe(true);
 
@@ -684,20 +690,51 @@ describe("auth + player lifecycle", () => {
     expect(rankingResult.rows.map((row) => Number(row.gems_awarded))).toEqual([5, 5, 4, 3, 2, 1]);
     expect(rankingResult.rows.map((row) => Number(row.final_rank))).toEqual([1, 2, 3, 4, 5, 6]);
 
+    const finalizedTournamentIdResult = await pool.query<{ id: string }>(
+      `
+      SELECT id
+      FROM tournaments
+      WHERE finalized_at IS NOT NULL
+      ORDER BY finalized_at DESC, id DESC
+      LIMIT 1
+      `
+    );
+    const finalizedTournamentId = Number(finalizedTournamentIdResult.rows[0]?.id ?? 0);
+
+    const gemsBeforeCollect = await pool.query<{ user_id: string; time_gems_total: string }>(
+      `
+      SELECT ps.user_id, ps.time_gems_total
+      FROM player_states ps
+      INNER JOIN tournament_entries te ON te.user_id = ps.user_id AND te.tournament_id = $1
+      `,
+      [finalizedTournamentId]
+    );
+    expect(gemsBeforeCollect.rows.every((row) => Number(row.time_gems_total) === 0)).toBe(true);
+
+    const tokenByUserId = new Map<string, string>();
+    for (const entrant of entrants) {
+      tokenByUserId.set(entrant.userId, entrant.token);
+    }
+
+    for (const row of rankingResult.rows) {
+      const token = tokenByUserId.get(row.user_id);
+      expect(token).toBeTruthy();
+      const collectResponse = await request(app).post("/tournament/collect-reward").set("Authorization", `Bearer ${token!}`);
+      expect(collectResponse.status).toBe(200);
+      expect(collectResponse.body.gemsCollected).toBe(Number(row.gems_awarded));
+      const dupCollect = await request(app).post("/tournament/collect-reward").set("Authorization", `Bearer ${token!}`);
+      expect(dupCollect.status).toBe(400);
+      expect(dupCollect.body.code).toBe("NO_TOURNAMENT_REWARD_TO_COLLECT");
+    }
+
     const gemsResult = await pool.query<{ user_id: string; time_gems_total: string }>(
       `
       SELECT ps.user_id, ps.time_gems_total
       FROM player_states ps
-      INNER JOIN tournament_entries te ON te.user_id = ps.user_id
-      WHERE te.tournament_id = (
-        SELECT id
-        FROM tournaments
-        WHERE finalized_at IS NOT NULL
-        ORDER BY finalized_at DESC, id DESC
-        LIMIT 1
-      )
+      INNER JOIN tournament_entries te ON te.user_id = ps.user_id AND te.tournament_id = $1
       ORDER BY ps.time_gems_total DESC, ps.user_id ASC
-      `
+      `,
+      [finalizedTournamentId]
     );
     expect(gemsResult.rows.map((row) => Number(row.time_gems_total))).toEqual([5, 5, 4, 3, 2, 1]);
 
@@ -707,15 +744,9 @@ describe("auth + player lifecycle", () => {
       `
       SELECT COALESCE(SUM(ps.time_gems_total), 0) AS total_gems
       FROM player_states ps
-      INNER JOIN tournament_entries te ON te.user_id = ps.user_id
-      WHERE te.tournament_id = (
-        SELECT id
-        FROM tournaments
-        WHERE finalized_at IS NOT NULL
-        ORDER BY finalized_at DESC, id DESC
-        LIMIT 1
-      )
-      `
+      INNER JOIN tournament_entries te ON te.user_id = ps.user_id AND te.tournament_id = $1
+      `,
+      [finalizedTournamentId]
     );
     expect(Number(gemSumResult.rows[0]?.total_gems ?? 0)).toBe(20);
 
@@ -772,6 +803,30 @@ describe("auth + player lifecycle", () => {
       [tournamentIdBefore]
     );
     expect(finalizedRow.rows[0]?.finalized_at).not.toBeNull();
+
+    const gemsRowAfterFinalize = await pool.query<{ time_gems_total: string; time_gems_available: string }>(
+      `SELECT time_gems_total, time_gems_available FROM player_states WHERE user_id = $1`,
+      [userId]
+    );
+    expect(Number(gemsRowAfterFinalize.rows[0]?.time_gems_total)).toBe(0);
+    expect(Number(gemsRowAfterFinalize.rows[0]?.time_gems_available)).toBe(0);
+
+    const currentAfterFinalize = await request(app).get("/tournament/current").set("Authorization", `Bearer ${token}`);
+    expect(currentAfterFinalize.status).toBe(200);
+    expect(currentAfterFinalize.body.outstanding_result).toBeTruthy();
+    expect(currentAfterFinalize.body.outstanding_result.gemsAwarded).toBe(5);
+    expect(currentAfterFinalize.body.outstanding_result.playerCount).toBe(1);
+
+    const homeAfterFinalize = await request(app).get("/home").set("Authorization", `Bearer ${token}`);
+    expect(homeAfterFinalize.body.tournament?.outstanding_result?.gemsAwarded).toBe(5);
+
+    const enterAfterFinalize = await request(app).post("/tournament/enter").set("Authorization", `Bearer ${token}`);
+    expect(enterAfterFinalize.status).toBe(409);
+    expect(enterAfterFinalize.body.code).toBe("TOURNAMENT_REWARD_UNCOLLECTED");
+
+    const collectResponse = await request(app).post("/tournament/collect-reward").set("Authorization", `Bearer ${token}`);
+    expect(collectResponse.status).toBe(200);
+    expect(collectResponse.body.gemsCollected).toBe(5);
 
     const gemsRow = await pool.query<{ time_gems_total: string; time_gems_available: string }>(
       `SELECT time_gems_total, time_gems_available FROM player_states WHERE user_id = $1`,
