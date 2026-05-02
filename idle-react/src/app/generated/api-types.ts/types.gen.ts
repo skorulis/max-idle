@@ -528,7 +528,7 @@ export type GetHomeError = GetHomeErrors[keyof GetHomeErrors];
 
 export type GetHomeResponses = {
     /**
-     * Aggregated home payload. When tournament is present, nearbyEntries is always an empty array (use GET /tournament/current for leaderboard neighbors).
+     * Aggregated home payload. When tournament is present, nearbyEntries is always an empty array (use GET /tournament/current for nearby ranks or top players when not entered).
      */
     200: HomeResponse;
 };

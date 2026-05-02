@@ -624,6 +624,30 @@ describe("auth + player lifecycle", () => {
     expect(Number(entryCountResult.rows[0]?.entry_count ?? 0)).toBe(1);
   });
 
+  it("returns top players on GET /tournament/current when the viewer has not entered", async () => {
+    const app = createApp(pool, config);
+    await pool.query("DELETE FROM tournament_entries");
+    await pool.query("DELETE FROM tournaments");
+
+    const entrantA = await createTournamentEntrant(app, 5000);
+
+    const authB = await request(app).post("/auth/anonymous");
+    expect(authB.status).toBe(201);
+    const tokenB = authB.body.token as string;
+    const userIdB = authB.body.userId as string;
+    await unlockTournamentFeature(app, tokenB, userIdB);
+
+    const currentB = await request(app).get("/tournament/current").set("Authorization", `Bearer ${tokenB}`);
+    expect(currentB.status).toBe(200);
+    expect(currentB.body.hasEntered).toBe(false);
+    expect(currentB.body.playerCount).toBe(1);
+    expect(currentB.body.nearbyEntries).toHaveLength(1);
+    expect(currentB.body.nearbyEntries[0].rank).toBe(1);
+    expect(currentB.body.nearbyEntries[0].userId).toBe(entrantA.userId);
+    expect(currentB.body.nearbyEntries[0].isCurrentPlayer).toBe(false);
+    expect(userIdB).not.toBe(entrantA.userId);
+  });
+
   it("returns 20 tournament players above and below the current player rank", async () => {
     const app = createApp(pool, config);
     await pool.query("DELETE FROM tournament_entries");

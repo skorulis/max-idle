@@ -98,7 +98,9 @@ export function TournamentPage({
           <p className="subtle">
             {tournamentState.outstandingResult
               ? "Collect your prior reward to enter this week and view nearby ranks."
-              : "Enter the tournament to see nearby ranked players."}
+              : tournamentState.playerCount === 0
+                ? "No one has entered this week yet."
+                : "Scores will appear here when available."}
           </p>
         )}
       </section>

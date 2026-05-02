@@ -13,16 +13,6 @@ type TournamentPanelProps = {
   onNavigateTournament?: () => void;
 };
 
-/** Stable UTC label without dateStyle/timeStyle + timeZoneName (invalid mix in some runtimes). */
-function formatUtcDateTime(ms: number): string {
-  const d = new Date(ms);
-  if (Number.isNaN(d.getTime())) {
-    return "—";
-  }
-  const iso = d.toISOString();
-  return `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`;
-}
-
 export function TournamentPanel({
   hasEntered,
   outstandingResult,

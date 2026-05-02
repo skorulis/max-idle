@@ -391,53 +391,22 @@ function calculateExpectedGemsByRank(rankIndexZeroBased: number, totalEntries: n
   return 6 - rewardBucket;
 }
 
-async function buildTournamentSummary(
-  client: PoolClient,
-  tournament: TournamentRow,
-  userId: string,
-  now: Date,
-  options?: { includeNearbyEntries?: boolean }
-): Promise<TournamentCurrentSummary> {
-  const includeNearbyEntries = options?.includeNearbyEntries !== false;
-  const entry = await getTournamentEntry(client, tournament.id, userId);
-  const playerCountResult = await client.query<{ player_count: string | number }>(
-    `
-    SELECT COUNT(*) AS player_count
-    FROM tournament_entries
-    WHERE tournament_id = $1
-    `,
-    [tournament.id]
-  );
-  const playerCount = toNumber(playerCountResult.rows[0]?.player_count ?? 0);
+const TOURNAMENT_NEARBY_RADIUS = 20;
+/** When the viewer has not entered, `nearbyEntries` lists the top ranks (same ordering as the live leaderboard). */
+const TOURNAMENT_TOP_PLAYERS_PREVIEW = 20;
 
-  if (!entry) {
-    return {
-      drawAt: tournament.draw_at_utc.toISOString(),
-      isActive: tournament.is_active,
-      hasEntered: false,
-      playerCount,
-      currentRank: null,
-      expectedRewardGems: null,
-      nearbyEntries: [],
-      entry: null
-    };
-  }
+type ScoredTournamentRow = {
+  userId: string;
+  username: string;
+  enteredAtMs: number;
+  score: number;
+};
 
-  if (entry.finalRank !== null && entry.gemsAwarded !== null) {
-    return {
-      drawAt: tournament.draw_at_utc.toISOString(),
-      isActive: tournament.is_active,
-      hasEntered: true,
-      playerCount,
-      currentRank: entry.finalRank,
-      expectedRewardGems: entry.gemsAwarded,
-      nearbyEntries: [],
-      entry
-    };
-  }
-
-  const entriesForScoring = await getTournamentEntriesForScoring(client, tournament.id);
-  const scoredEntries = entriesForScoring
+function scoreAndSortTournamentEntries(
+  rows: Awaited<ReturnType<typeof getTournamentEntriesForScoring>>,
+  now: Date
+): ScoredTournamentRow[] {
+  return rows
     .map((row) => {
       const achievementCount = toNumber(row.achievement_count);
       const score = boostedUncollectedIdleSeconds(
@@ -463,6 +432,68 @@ async function buildTournamentSummary(
       }
       return a.userId.localeCompare(b.userId);
     });
+}
+
+async function buildTournamentSummary(
+  client: PoolClient,
+  tournament: TournamentRow,
+  userId: string,
+  now: Date,
+  options?: { includeNearbyEntries?: boolean }
+): Promise<TournamentCurrentSummary> {
+  const includeNearbyEntries = options?.includeNearbyEntries !== false;
+  const entry = await getTournamentEntry(client, tournament.id, userId);
+  const playerCountResult = await client.query<{ player_count: string | number }>(
+    `
+    SELECT COUNT(*) AS player_count
+    FROM tournament_entries
+    WHERE tournament_id = $1
+    `,
+    [tournament.id]
+  );
+  const playerCount = toNumber(playerCountResult.rows[0]?.player_count ?? 0);
+
+  if (!entry) {
+    const entriesForScoring = await getTournamentEntriesForScoring(client, tournament.id);
+    const scoredEntries = scoreAndSortTournamentEntries(entriesForScoring, now);
+    const nearbyEntries =
+      includeNearbyEntries && scoredEntries.length > 0
+        ? scoredEntries.slice(0, Math.min(TOURNAMENT_TOP_PLAYERS_PREVIEW, scoredEntries.length)).map((row, index) => ({
+            rank: index + 1,
+            userId: row.userId,
+            username: row.username,
+            timeScoreSeconds: row.score,
+            isCurrentPlayer: false
+          }))
+        : [];
+
+    return {
+      drawAt: tournament.draw_at_utc.toISOString(),
+      isActive: tournament.is_active,
+      hasEntered: false,
+      playerCount,
+      currentRank: null,
+      expectedRewardGems: null,
+      nearbyEntries,
+      entry: null
+    };
+  }
+
+  if (entry.finalRank !== null && entry.gemsAwarded !== null) {
+    return {
+      drawAt: tournament.draw_at_utc.toISOString(),
+      isActive: tournament.is_active,
+      hasEntered: true,
+      playerCount,
+      currentRank: entry.finalRank,
+      expectedRewardGems: entry.gemsAwarded,
+      nearbyEntries: [],
+      entry
+    };
+  }
+
+  const entriesForScoring = await getTournamentEntriesForScoring(client, tournament.id);
+  const scoredEntries = scoreAndSortTournamentEntries(entriesForScoring, now);
 
   const userRankIndex = scoredEntries.findIndex((row) => row.userId === userId);
   const currentRank = userRankIndex >= 0 ? userRankIndex + 1 : null;
@@ -470,9 +501,12 @@ async function buildTournamentSummary(
   const nearbyEntries =
     includeNearbyEntries && userRankIndex >= 0
       ? scoredEntries
-          .slice(Math.max(0, userRankIndex - 20), Math.min(scoredEntries.length, userRankIndex + 21))
+          .slice(
+            Math.max(0, userRankIndex - TOURNAMENT_NEARBY_RADIUS),
+            Math.min(scoredEntries.length, userRankIndex + TOURNAMENT_NEARBY_RADIUS + 1)
+          )
           .map((row, index) => {
-            const absoluteIndex = Math.max(0, userRankIndex - 20) + index;
+            const absoluteIndex = Math.max(0, userRankIndex - TOURNAMENT_NEARBY_RADIUS) + index;
             return {
               rank: absoluteIndex + 1,
               userId: row.userId,
