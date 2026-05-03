@@ -18,7 +18,8 @@ async function run(): Promise<void> {
       "004_add_daily_bonuses_collected_count.sql",
       "005_tournament_reward_collected_at.sql",
       "006_survey_answers.sql",
-      "007_add_tutorial_progress.sql"
+      "007_add_tutorial_progress.sql",
+      "008_add_last_active.sql"
     ] as const;
     for (const file of migrationFiles) {
       const sql = await readFile(resolve(process.cwd(), "sql", file), "utf-8");

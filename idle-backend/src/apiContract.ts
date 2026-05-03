@@ -147,6 +147,7 @@ const playerProfileResponseSchema = registry.register(
       username: z.string(),
       accountAgeSeconds: z.number().int().nonnegative(),
       currentIdleSeconds: z.number().int().nonnegative(),
+      timeAwaySeconds: z.number().int().nonnegative(),
       idleTime: timeCurrencyBalancesSchema,
       realTime: timeCurrencyBalancesSchema,
       timeGems: timeCurrencyBalancesSchema,

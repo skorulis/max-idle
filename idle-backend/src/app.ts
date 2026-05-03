@@ -312,6 +312,7 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
         upgrades_purchased: string;
         current_seconds_last_updated: Date;
         last_collected_at: Date;
+        last_active: Date;
         achievement_count: string;
         shop: ShopState;
         server_time: Date;
@@ -331,6 +332,7 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
           ps.upgrades_purchased,
           ps.current_seconds_last_updated,
           ps.last_collected_at,
+          ps.last_active,
           ps.achievement_count,
           ps.shop,
         NOW() AS server_time
@@ -356,6 +358,7 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
         achievementCount,
         toNumber(row.real_time_available)
       );
+      const timeAwaySeconds = calculateElapsedSeconds(row.last_active, row.server_time);
 
       res.json({
         player: {
@@ -363,6 +366,7 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
           username: row.username,
           accountAgeSeconds,
           currentIdleSeconds,
+          timeAwaySeconds,
           idleTime: {
             total: toNumber(row.idle_time_total),
             available: toNumber(row.idle_time_available)

@@ -401,6 +401,10 @@
                 "type": "integer",
                 "minimum": 0
               },
+              "timeAwaySeconds": {
+                "type": "integer",
+                "minimum": 0
+              },
               "idleTime": {
                 "$ref": "#/components/schemas/TimeCurrencyBalances"
               },
@@ -424,6 +428,7 @@
               "username",
               "accountAgeSeconds",
               "currentIdleSeconds",
+              "timeAwaySeconds",
               "idleTime",
               "realTime",
               "timeGems",

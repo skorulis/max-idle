@@ -99,6 +99,7 @@ export type PlayerProfileResponse = {
         username: string;
         accountAgeSeconds: number;
         currentIdleSeconds: number;
+        timeAwaySeconds: number;
         idleTime: TimeCurrencyBalances;
         realTime: TimeCurrencyBalances;
         timeGems: TimeCurrencyBalances;

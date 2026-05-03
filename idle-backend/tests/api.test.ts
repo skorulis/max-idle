@@ -1782,6 +1782,7 @@ describe("auth + player lifecycle", () => {
         upgrades_purchased = 7,
         current_seconds = 0,
         last_collected_at = NOW() - INTERVAL '35 seconds',
+        last_active = NOW() - INTERVAL '90 seconds',
         shop = '{"seconds_multiplier": 0}'::jsonb
       WHERE user_id = $1
       `,
@@ -1800,6 +1801,8 @@ describe("auth + player lifecycle", () => {
     expect(profileResponse.body.player.idleTime.total).toBe(1234);
     expect(profileResponse.body.player.upgradesPurchased).toBe(7);
     expect(profileResponse.body.player.achievementCount).toBe(0);
+    expect(profileResponse.body.player.timeAwaySeconds).toBeGreaterThanOrEqual(85);
+    expect(profileResponse.body.player.timeAwaySeconds).toBeLessThanOrEqual(120);
     expect(profileResponse.body.meta.serverTime).toBeTypeOf("string");
   });
 

@@ -38,8 +38,9 @@ export function registerHomeRoutes({
       }
 
       req.auth = identity.claims;
-      await finalizeDueTournaments(pool);
       const userId = identity.claims.sub;
+      await pool.query(`UPDATE player_states SET last_active = NOW(), updated_at = NOW() WHERE user_id = $1`, [userId]);
+      await finalizeDueTournaments(pool);
 
       const playerPayload = await buildPlayerStatePayload(pool, userId, toNumber);
 

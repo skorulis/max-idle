@@ -387,6 +387,7 @@ export function registerPlayerRoutes({
           current_seconds = $4::BIGINT,
           current_seconds_last_updated = $5,
           last_collected_at = $6,
+          last_active = $5,
           shop = $7::jsonb,
           updated_at = $5
         WHERE user_id = $1

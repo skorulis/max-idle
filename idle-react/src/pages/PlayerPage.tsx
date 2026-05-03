@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { formatSeconds } from "../formatSeconds";
 import { Atom, Clock3, Gem } from "lucide-react";
 import type { PlayerProfileResponse } from "../app/types";
@@ -9,6 +10,29 @@ type PlayerPageProps = {
 };
 
 export function PlayerPage({ publicPlayerLoading, publicPlayerProfile, hasError }: PlayerPageProps) {
+  const [timeAwayBaseline, setTimeAwayBaseline] = useState<{ seconds: number; atMs: number } | null>(null);
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    if (!publicPlayerProfile) {
+      setTimeAwayBaseline(null);
+      return;
+    }
+    setTimeAwayBaseline({ seconds: publicPlayerProfile.timeAwaySeconds, atMs: Date.now() });
+  }, [publicPlayerProfile?.id, publicPlayerProfile?.timeAwaySeconds]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setTick((t) => t + 1), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const displayedTimeAwaySeconds = useMemo(() => {
+    if (timeAwayBaseline === null) {
+      return 0;
+    }
+    return timeAwayBaseline.seconds + Math.floor((Date.now() - timeAwayBaseline.atMs) / 1000);
+  }, [timeAwayBaseline, tick]);
+
   return (
     <section className="card">
       <h2>{publicPlayerProfile?.username ?? "Player"}</h2>
@@ -39,6 +63,9 @@ export function PlayerPage({ publicPlayerLoading, publicPlayerProfile, hasError 
               <p className="shop-currency-value">{publicPlayerProfile.timeGems.total}</p>
             </div>
           </div>
+          <p>
+            <span>Time away:</span> {formatSeconds(displayedTimeAwaySeconds, 2, "floor")}
+          </p>
           <p>
             <span>Account age:</span> {formatSeconds(publicPlayerProfile.accountAgeSeconds)}
           </p>
