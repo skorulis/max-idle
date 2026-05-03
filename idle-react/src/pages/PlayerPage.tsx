@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
+import { useClientNowMs } from "../app/clientClock";
 import { formatSeconds } from "../formatSeconds";
 import { Atom, Clock3, Gem } from "lucide-react";
 import type { PlayerProfileResponse } from "../app/types";
@@ -10,28 +11,32 @@ type PlayerPageProps = {
 };
 
 export function PlayerPage({ publicPlayerLoading, publicPlayerProfile, hasError }: PlayerPageProps) {
+  const nowMs = useClientNowMs();
+
+  const awaySnapshotKey =
+    publicPlayerProfile == null
+      ? ""
+      : `${publicPlayerProfile.id}:${publicPlayerProfile.timeAwaySeconds}`;
+
+  const [storedAwayKey, setStoredAwayKey] = useState<string | null>(null);
   const [timeAwayBaseline, setTimeAwayBaseline] = useState<{ seconds: number; atMs: number } | null>(null);
-  const [tick, setTick] = useState(0);
 
-  useEffect(() => {
-    if (!publicPlayerProfile) {
+  if (awaySnapshotKey !== storedAwayKey) {
+    setStoredAwayKey(awaySnapshotKey);
+    if (!publicPlayerProfile || awaySnapshotKey === "") {
       setTimeAwayBaseline(null);
-      return;
+    } else {
+      setTimeAwayBaseline({
+        seconds: publicPlayerProfile.timeAwaySeconds,
+        atMs: nowMs,
+      });
     }
-    setTimeAwayBaseline({ seconds: publicPlayerProfile.timeAwaySeconds, atMs: Date.now() });
-  }, [publicPlayerProfile?.id, publicPlayerProfile?.timeAwaySeconds]);
+  }
 
-  useEffect(() => {
-    const id = window.setInterval(() => setTick((t) => t + 1), 1000);
-    return () => window.clearInterval(id);
-  }, []);
-
-  const displayedTimeAwaySeconds = useMemo(() => {
-    if (timeAwayBaseline === null) {
-      return 0;
-    }
-    return timeAwayBaseline.seconds + Math.floor((Date.now() - timeAwayBaseline.atMs) / 1000);
-  }, [timeAwayBaseline, tick]);
+  const displayedTimeAwaySeconds =
+    !publicPlayerProfile || timeAwayBaseline === null
+      ? 0
+      : timeAwayBaseline.seconds + Math.floor((nowMs - timeAwayBaseline.atMs) / 1000);
 
   return (
     <section className="card">

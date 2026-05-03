@@ -1,0 +1,15 @@
+---
+description: Run ESLint after editing idle-react
+globs: idle-react/**/*
+alwaysApply: false
+---
+
+# idle-react lint
+
+After changing any file under `idle-react/`, run lint from that package before finishing:
+
+```bash
+cd idle-react && npm run lint
+```
+
+Fix all reported errors and warnings in the files you touched (or related fixes if the change surfaced new issues). Do not leave the package in a failing lint state.
