@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   calculateBoostedIdleSecondsGain,
   calculateIdleSecondsGain,
+  getEffectiveIdleSecondsRate,
   getIdleSecondsRate,
   isIdleCollectionBlockedByRestraint,
   shouldPreserveIdleTimerOnCollect
 } from "./idleRate.js";
+import { getMaxIdleCollectionRealtimeSeconds } from "./shop.js";
 import type { ShopState } from "./shop.js";
 
 function shopWithPatience(patience: number): ShopState {
@@ -134,5 +136,62 @@ describe("luck + boosted gain", () => {
       realTimeAvailable: 180
     });
     expect(withIdleHoarderAtCap).toBe(Math.floor(baseline * 2.5));
+  });
+
+  it("does not increase boosted gain past the max wall-clock storage window", () => {
+    const shop: ShopState = { seconds_multiplier: 0, restraint: 0, idle_hoarder: 0, luck: 0, storage_extension: 0 };
+    const week = 7 * 24 * 60 * 60;
+    const capSeconds = getMaxIdleCollectionRealtimeSeconds(shop);
+    const atCap = calculateBoostedIdleSecondsGain({
+      secondsSinceLastCollection: capSeconds,
+      shop,
+      achievementCount: 0
+    });
+    const wayPastCap = calculateBoostedIdleSecondsGain({
+      secondsSinceLastCollection: 4 * week,
+      shop,
+      achievementCount: 0
+    });
+    expect(wayPastCap).toBe(atCap);
+  });
+
+  it("extends the storage window with storage_extension tiers", () => {
+    const week = 7 * 24 * 60 * 60;
+    const baseShop: ShopState = { seconds_multiplier: 0, restraint: 0, idle_hoarder: 0, luck: 0, storage_extension: 0 };
+    const extendedShop: ShopState = { ...baseShop, storage_extension: 1 };
+    const elapsedPastBaseCap = 3 * week;
+    const baseCapped = calculateBoostedIdleSecondsGain({
+      secondsSinceLastCollection: elapsedPastBaseCap,
+      shop: baseShop,
+      achievementCount: 0
+    });
+    const extendedUncapped = calculateBoostedIdleSecondsGain({
+      secondsSinceLastCollection: elapsedPastBaseCap,
+      shop: extendedShop,
+      achievementCount: 0
+    });
+    expect(extendedUncapped).toBeGreaterThan(baseCapped);
+  });
+});
+
+describe("getEffectiveIdleSecondsRate", () => {
+  it("tracks patience and multipliers from full elapsed time (not storage-capped like boosted gain)", () => {
+    const shop: ShopState = {
+      seconds_multiplier: 0,
+      restraint: 0,
+      idle_hoarder: 0,
+      luck: 0,
+      patience: 8,
+      storage_extension: 0
+    };
+    const cap = getMaxIdleCollectionRealtimeSeconds(shop);
+    const player = {
+      secondsSinceLastCollection: cap,
+      shop,
+      achievementCount: 0,
+      realTimeAvailable: 0
+    };
+    expect(getEffectiveIdleSecondsRate(player)).toBeCloseTo(getIdleSecondsRate(player), 10);
+    expect(getEffectiveIdleSecondsRate(player)).toBeGreaterThan(0);
   });
 });

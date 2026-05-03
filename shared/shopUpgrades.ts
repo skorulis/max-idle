@@ -45,7 +45,12 @@ export const SHOP_UPGRADE_IDS = {
   /** Spend 1 gem to unlock the daily bonus feature (activation still costs idle time). */
   DAILY_BONUS_FEATURE: "daily_bonus_feature",
   /** Spend 1 gem to unlock weekly tournaments (entering competes for Time Gems). */
-  TOURNAMENT_FEATURE: "tournament_feature"
+  TOURNAMENT_FEATURE: "tournament_feature",
+  /**
+   * Real-time purchase: each tier adds one more week of wall-clock time that can accrue toward uncollected idle before the bar stops.
+   * See {@link getMaxIdleCollectionRealtimeSeconds}.
+   */
+  STORAGE_EXTENSION: "storage_extension"
 } as const;
 
 export type ShopUpgradeId = (typeof SHOP_UPGRADE_IDS)[keyof typeof SHOP_UPGRADE_IDS];
@@ -313,6 +318,34 @@ export const TOURNAMENT_FEATURE_SHOP_UPGRADE: ShopUpgradeDefinition = defineShop
   currencyType: SHOP_CURRENCY_TYPES.GEM
 });
 
+/**
+ * Each tier raises the ceiling on boosted idle you can hold: uncollected idle is `min` of the full boosted integral and
+ * the boosted integral at {@link getMaxIdleCollectionRealtimeSeconds} of real time. `levels[i].value` is that cap in seconds.
+ */
+export const STORAGE_EXTENSION_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
+  id: SHOP_UPGRADE_IDS.STORAGE_EXTENSION,
+  name: "Temporal expanse",
+  icon: "archive",
+  description: "Raise the maximum idle time that can be collected",
+  longDescription:
+    "Without upgrades, only two weeks of real time since your last collection counts toward your uncollected idle bar; after that, gains stop until you collect. Each tier adds another 2 weeks to that limit.",
+  valueDescription: "Up to %s stored",
+  levels: [
+    { cost: SECONDS_PER_HOUR, value: 4 * SECONDS_PER_WEEK },
+    { cost: SECONDS_PER_DAY, value: 6 * SECONDS_PER_WEEK },
+    { cost: 2 * SECONDS_PER_DAY, value: 8 * SECONDS_PER_WEEK },
+    { cost: 3 * SECONDS_PER_DAY, value: 10 * SECONDS_PER_WEEK },
+    { cost: 4 * SECONDS_PER_DAY, value: 12 * SECONDS_PER_WEEK },
+    { cost: 5 * SECONDS_PER_DAY, value: 14 * SECONDS_PER_WEEK },
+    { cost: 6 * SECONDS_PER_DAY, value: 16 * SECONDS_PER_WEEK },
+    { cost: 7 * SECONDS_PER_DAY, value: 18 * SECONDS_PER_WEEK },
+    { cost: 8 * SECONDS_PER_DAY, value: 20 * SECONDS_PER_WEEK },
+    { cost: 9 * SECONDS_PER_DAY, value: 22 * SECONDS_PER_WEEK },
+    { cost: 10 * SECONDS_PER_DAY, value: 24 * SECONDS_PER_WEEK }
+  ],
+  currencyType: SHOP_CURRENCY_TYPES.REAL
+});
+
 /** Ten levels: bonus per achievement rises by 0.02 per level, from 0.02 to 0.2; multiplier is 1 + value × achievementCount. */
 export const WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS,
@@ -343,6 +376,7 @@ export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   PATIENCE_SHOP_UPGRADE,
   RESTRAINT_SHOP_UPGRADE,
   IDLE_HOARDER_SHOP_UPGRADE,
+  STORAGE_EXTENSION_SHOP_UPGRADE,
   LUCK_SHOP_UPGRADE,
   WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
   EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
@@ -364,7 +398,8 @@ export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> =
   [SHOP_UPGRADE_IDS.PURCHASE_REFUND]: PURCHASE_REFUND_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS]: WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.DAILY_BONUS_FEATURE]: DAILY_BONUS_FEATURE_SHOP_UPGRADE,
-  [SHOP_UPGRADE_IDS.TOURNAMENT_FEATURE]: TOURNAMENT_FEATURE_SHOP_UPGRADE
+  [SHOP_UPGRADE_IDS.TOURNAMENT_FEATURE]: TOURNAMENT_FEATURE_SHOP_UPGRADE,
+  [SHOP_UPGRADE_IDS.STORAGE_EXTENSION]: STORAGE_EXTENSION_SHOP_UPGRADE
 };
 
 export function getShopUpgradeDefinition(upgradeType: string): ShopUpgradeDefinition | null {

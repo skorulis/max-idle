@@ -222,6 +222,7 @@ export function AppShell() {
     | "purchase_refund"
     | "daily_bonus_feature"
     | "tournament_feature"
+    | "storage_extension"
     | null
   >(null);
   const [resettingDailyBonus, setResettingDailyBonus] = useState(false);

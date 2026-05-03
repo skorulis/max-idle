@@ -46,6 +46,7 @@ type ShopPageProps = {
     | "purchase_refund"
     | "daily_bonus_feature"
     | "tournament_feature"
+    | "storage_extension"
     | null;
   /** Purchase flow for any shop upgrade row; `upgradeId` matches {@link SHOP_UPGRADE_IDS}. */
   onPurchase: (upgradeId: ShopUpgradeId) => Promise<void>;
@@ -99,6 +100,9 @@ function formatUpgradeValue(upgrade: ShopUpgradeDefinition, value: number): stri
   }
   if (upgrade.id === SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS) {
     return `${value.toFixed(2)}×`;
+  }
+  if (upgrade.id === SHOP_UPGRADE_IDS.STORAGE_EXTENSION) {
+    return formatSeconds(value, 2, "floor");
   }
   return value.toString();
 }

@@ -2154,7 +2154,8 @@ describe("auth + player lifecycle", () => {
       worthwhile_achievements: 0,
       collect_gem_time_boost: 0,
       daily_bonus_feature: 0,
-      tournament_feature: 0
+      tournament_feature: 0,
+      storage_extension: 0
     });
   });
 

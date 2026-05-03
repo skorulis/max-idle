@@ -6,6 +6,7 @@ import {
   RESTRAINT_SHOP_UPGRADE,
   SHOP_UPGRADES_BY_ID,
   SECONDS_MULTIPLIER_SHOP_UPGRADE,
+  STORAGE_EXTENSION_SHOP_UPGRADE,
   WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
   SHOP_UPGRADES,
   SHOP_CURRENCY_TYPES,
@@ -14,6 +15,7 @@ import {
 } from "./shopUpgrades.js";
 import type { ShopUpgradeDefinition, ShopUpgradeId } from "./shopUpgrades.js";
 import { safeNumber } from "./safeNumber.js";
+import { SECONDS_PER_WEEK } from "./timeConstants.js";
 
 const DEFAULT_SECONDS_MULTIPLIER_LEVEL = 0;
 const DEFAULT_SECONDS_MULTIPLIER_VALUE = 1;
@@ -28,6 +30,8 @@ export type ShopState = {
   /** Resets to 0 on collect. Same key as {@link SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST}. */
   collect_gem_time_boost?: number;
   worthwhile_achievements?: number;
+  /** {@link SHOP_UPGRADE_IDS.STORAGE_EXTENSION} — raises boosted-idle storage ceiling (see {@link getMaxIdleCollectionRealtimeSeconds}). */
+  storage_extension?: number;
   [key: string]: unknown;
 };
 
@@ -39,7 +43,8 @@ export const DEFAULT_SHOP_STATE: ShopState = {
   [SHOP_UPGRADE_IDS.IDLE_HOARDER]: 0,
   [SHOP_UPGRADE_IDS.LUCK]: 0,
   [SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS]: 0,
-  [SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST]: 0
+  [SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST]: 0,
+  [SHOP_UPGRADE_IDS.STORAGE_EXTENSION]: 0
 };
 
 export function getDefaultShopState(): ShopState {
@@ -143,6 +148,18 @@ export function getLuckPreserveChance(shop: ShopState): number {
     return 0;
   }
   return LUCK_SHOP_UPGRADE.levels[luckLevel - 1]?.value ?? 0;
+}
+
+/**
+ * Reference wall-clock window for the storage ceiling: boosted idle never exceeds what this many real seconds would produce
+ * (same multipliers), with tier-specific caps from the shop definition.
+ */
+export function getMaxIdleCollectionRealtimeSeconds(shop: ShopState): number {
+  const level = STORAGE_EXTENSION_SHOP_UPGRADE.currentLevel(shop);
+  if (level <= 0) {
+    return 2 * SECONDS_PER_WEEK;
+  }
+  return STORAGE_EXTENSION_SHOP_UPGRADE.levels[level - 1]?.value ?? 0;
 }
 
 export function multiplierToLevel(secondsMultiplier: number): number {

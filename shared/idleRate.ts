@@ -2,6 +2,7 @@ import {
   getLuckEnabled,
   getLuckPreserveChance,
   getDefaultShopState,
+  getMaxIdleCollectionRealtimeSeconds,
   getRestraintBonusMultiplier,
   getRestraintMinRealtimeSeconds,
   getSecondsMultiplier,
@@ -122,7 +123,8 @@ export function calculateBoostedIdleSecondsGain(player: IdleCollectionPlayer): n
     safeNumber(player.realTimeAvailable, 0),
     elapsedSeconds
   );
-  return Math.floor(boostedGainBeforeIdleHoarder * idleHoarderMultiplier);
+  const total = Math.floor(boostedGainBeforeIdleHoarder * idleHoarderMultiplier);
+  return Math.min(total, getMaxIdleCollectionRealtimeSeconds(player.shop));
 }
 
 export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): number {
