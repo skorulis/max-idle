@@ -132,6 +132,11 @@ export function HomePage({
 
   const collectReady = !collecting && !collectBlockedByRestraint;
 
+  const showSpendableTimeSection =
+    playerState.idleTime.total > 0 ||
+    playerState.realTime.total > 0 ||
+    playerState.timeGems.total > 0;
+
   return (
     <>
       <section className="card idle-collect-card">
@@ -191,61 +196,63 @@ export function HomePage({
         </div>
       </section>
 
-      <section className="card">
-        <h2 className="section-title-with-icon">
-          <PiggyBank size={18} aria-hidden="true" />
-          Spendable time
-        </h2>
-        <div className="shop-currencies">
-          <div className="shop-currency-card">
-            <p className="shop-currency-title">
-              <Atom size={16} aria-hidden="true" />
-              Idle Time
-            </p>
-            <p className="shop-currency-value">{formatSeconds(playerState.idleTime.available, 2, "floor")}</p>
+      {showSpendableTimeSection ? (
+        <section className="card">
+          <h2 className="section-title-with-icon">
+            <PiggyBank size={18} aria-hidden="true" />
+            Spendable time
+          </h2>
+          <div className="shop-currencies">
+            <div className="shop-currency-card">
+              <p className="shop-currency-title">
+                <Atom size={16} aria-hidden="true" />
+                Idle Time
+              </p>
+              <p className="shop-currency-value">{formatSeconds(playerState.idleTime.available, 2, "floor")}</p>
+            </div>
+            <div className="shop-currency-card">
+              <p className="shop-currency-title">
+                <Clock3 size={16} aria-hidden="true" />
+                Real Time
+              </p>
+              <p className="shop-currency-value">{formatSeconds(playerState.realTime.available, 2, "floor")}</p>
+            </div>
+            <div className="shop-currency-card">
+              <p className="shop-currency-title">
+                <Gem size={16} aria-hidden="true" />
+                Time Gems
+              </p>
+              <p className="shop-currency-value">{playerState.timeGems.available}</p>
+            </div>
           </div>
-          <div className="shop-currency-card">
-            <p className="shop-currency-title">
-              <Clock3 size={16} aria-hidden="true" />
-              Real Time
-            </p>
-            <p className="shop-currency-value">{formatSeconds(playerState.realTime.available, 2, "floor")}</p>
+          <p className="subtle" style={{ marginTop: "1rem" }}>
+            Total earned
+          </p>
+          <div className="shop-currencies">
+            <div className="shop-currency-card">
+              <p className="shop-currency-title">
+                <Atom size={16} aria-hidden="true" />
+                Idle Time
+              </p>
+              <p className="shop-currency-value">{formatSeconds(playerState.idleTime.total, 2, "floor")}</p>
+            </div>
+            <div className="shop-currency-card">
+              <p className="shop-currency-title">
+                <Clock3 size={16} aria-hidden="true" />
+                Real Time
+              </p>
+              <p className="shop-currency-value">{formatSeconds(playerState.realTime.total, 2, "floor")}</p>
+            </div>
+            <div className="shop-currency-card">
+              <p className="shop-currency-title">
+                <Gem size={16} aria-hidden="true" />
+                Time Gems
+              </p>
+              <p className="shop-currency-value">{playerState.timeGems.total}</p>
+            </div>
           </div>
-          <div className="shop-currency-card">
-            <p className="shop-currency-title">
-              <Gem size={16} aria-hidden="true" />
-              Time Gems
-            </p>
-            <p className="shop-currency-value">{playerState.timeGems.available}</p>
-          </div>
-        </div>
-        <p className="subtle" style={{ marginTop: "1rem" }}>
-          Total earned
-        </p>
-        <div className="shop-currencies">
-          <div className="shop-currency-card">
-            <p className="shop-currency-title">
-              <Atom size={16} aria-hidden="true" />
-              Idle Time
-            </p>
-            <p className="shop-currency-value">{formatSeconds(playerState.idleTime.total, 2, "floor")}</p>
-          </div>
-          <div className="shop-currency-card">
-            <p className="shop-currency-title">
-              <Clock3 size={16} aria-hidden="true" />
-              Real Time
-            </p>
-            <p className="shop-currency-value">{formatSeconds(playerState.realTime.total, 2, "floor")}</p>
-          </div>
-          <div className="shop-currency-card">
-            <p className="shop-currency-title">
-              <Gem size={16} aria-hidden="true" />
-              Time Gems
-            </p>
-            <p className="shop-currency-value">{playerState.timeGems.total}</p>
-          </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       {availableSurvey ? (
         <section className="card">
@@ -269,7 +276,7 @@ export function HomePage({
         </h2>
         {dailyRewardAvailable ? (
           <>
-            <p className="shop-currency-value">
+            <p>
               Ready to collect ({isDailyRewardDoubledToday(dailyBonus) ? "+2 Time Gems" : "+1 Time Gem"})
             </p>
             <button className="collect" onClick={() => void onCollectDailyReward()} disabled={collectingDailyReward}>
@@ -278,7 +285,7 @@ export function HomePage({
           </>
         ) : (
           <>
-            <p className="shop-currency-value">+1 Time Gem</p>
+            <p>+1 Time Gem</p>
             <p className="subtle">Resets in {formatSeconds(dailyRewardSecondsUntilAvailable)}</p>
           </>
         )}
