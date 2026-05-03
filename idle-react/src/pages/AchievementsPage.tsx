@@ -16,9 +16,10 @@ export function AchievementsPage({ achievements, achievementsLoading, hasError }
   const renderAchievementStatus = (achievement: AchievementsResponse["achievements"][number], isCompleted: boolean) => {
     const hasLevels = achievement.maxLevel > 1;
     if (hasLevels && !isCompleted) {
+      const inProgressTier = achievement.level + 1;
       return (
-        <span className="achievement-status" aria-label={`Level ${achievement.level} of ${achievement.maxLevel}`}>
-          {achievement.level}/{achievement.maxLevel}
+        <span className="achievement-status" aria-label={`Level ${inProgressTier} of ${achievement.maxLevel}`}>
+          {inProgressTier}/{achievement.maxLevel}
         </span>
       );
     }
@@ -36,14 +37,50 @@ export function AchievementsPage({ achievements, achievementsLoading, hasError }
     );
   };
 
-  const inProgressAchievements = achievements?.achievements.filter((achievement) => !achievement.completed) ?? [];
-  const collectedAchievements = (achievements?.achievements.filter((achievement) => achievement.completed) ?? []).sort(
-    (left, right) => {
-      const leftGrantedAtMs = left.grantedAt ? new Date(left.grantedAt).getTime() : Number.NEGATIVE_INFINITY;
-      const rightGrantedAtMs = right.grantedAt ? new Date(right.grantedAt).getTime() : Number.NEGATIVE_INFINITY;
-      return rightGrantedAtMs - leftGrantedAtMs;
-    }
+  const renderCollectedLeveledTierStatus = (achievement: AchievementsResponse["achievements"][number]) => (
+    <span
+      className="achievement-status"
+      aria-label={`Collected level ${achievement.level} of ${achievement.maxLevel}`}
+    >
+      <GameIcon icon={Check} /> {achievement.level}/{achievement.maxLevel}
+    </span>
   );
+
+  const inProgressAchievements = achievements?.achievements.filter((achievement) => !achievement.completed) ?? [];
+
+  type CollectedRow = {
+    key: string;
+    achievement: AchievementsResponse["achievements"][number];
+    /** Highest completed tier (0-based), only for partial leveled rows shown in Collected */
+    collectedTierIndex: number | null;
+  };
+
+  const collectedRows: CollectedRow[] = (() => {
+    const maxed = achievements?.achievements.filter((achievement) => achievement.completed) ?? [];
+    const partialLeveledCollected =
+      achievements?.achievements.filter(
+        (achievement) => !achievement.completed && achievement.maxLevel > 1 && achievement.level > 0
+      ) ?? [];
+    return [...maxed, ...partialLeveledCollected]
+      .map((achievement) =>
+        achievement.completed
+          ? { key: achievement.id, achievement, collectedTierIndex: null as number | null }
+          : {
+              key: `${achievement.id}-collected-progress`,
+              achievement,
+              collectedTierIndex: achievement.level - 1
+            }
+      )
+      .sort((left, right) => {
+        const leftGrantedAtMs = left.achievement.grantedAt
+          ? new Date(left.achievement.grantedAt).getTime()
+          : Number.NEGATIVE_INFINITY;
+        const rightGrantedAtMs = right.achievement.grantedAt
+          ? new Date(right.achievement.grantedAt).getTime()
+          : Number.NEGATIVE_INFINITY;
+        return rightGrantedAtMs - leftGrantedAtMs;
+      });
+  })();
   const formatGrantedDate = (grantedAt: string | null): string | null => {
     if (!grantedAt) {
       return null;
@@ -55,9 +92,21 @@ export function AchievementsPage({ achievements, achievementsLoading, hasError }
     return parsed.toLocaleDateString();
   };
 
-  const renderAchievementDisplayName = (achievement: AchievementsResponse["achievements"][number]): string => {
+  const renderAchievementDisplayName = (
+    achievement: AchievementsResponse["achievements"][number],
+    collectedTierIndex: number | null = null
+  ): string => {
     const definition = achievementDefinitionById.get(achievement.id as AchievementId);
     const levels = definition?.levels;
+    if (
+      collectedTierIndex !== null &&
+      levels &&
+      collectedTierIndex >= 0 &&
+      collectedTierIndex < levels.length
+    ) {
+      const tier = levels[collectedTierIndex];
+      return tier?.name ?? achievement.name;
+    }
     if (!levels || levels.length === 0) {
       return achievement.name;
     }
@@ -75,7 +124,10 @@ export function AchievementsPage({ achievements, achievementsLoading, hasError }
     return achievement.name;
   };
 
-  const renderAchievementDescription = (achievement: AchievementsResponse["achievements"][number]): string => {
+  const renderAchievementDescription = (
+    achievement: AchievementsResponse["achievements"][number],
+    collectedTierIndex: number | null = null
+  ): string => {
     const definition = achievementDefinitionById.get(achievement.id as AchievementId);
     const levels = definition?.levels;
     if (!definition || !levels || levels.length === 0) {
@@ -89,6 +141,13 @@ export function AchievementsPage({ achievements, achievementsLoading, hasError }
         definition.levelValueDisplay === "time_seconds" ? formatSeconds(value) : String(value);
       return definition.description.replace("%s", display);
     };
+    if (
+      collectedTierIndex !== null &&
+      collectedTierIndex >= 0 &&
+      collectedTierIndex < levels.length
+    ) {
+      return formatWithValue(levels[collectedTierIndex].value);
+    }
     if (achievement.level < levels.length) {
       return formatWithValue(levels[achievement.level].value);
     }
@@ -120,21 +179,29 @@ export function AchievementsPage({ achievements, achievementsLoading, hasError }
           </div>
           <h3>Collected</h3>
           <div className="achievements-list">
-            {collectedAchievements.map((achievement) => {
+            {collectedRows.map(({ key, achievement, collectedTierIndex }) => {
               const grantedDate = formatGrantedDate(achievement.grantedAt);
+              const isPartialLeveledCollected =
+                collectedTierIndex !== null && achievement.maxLevel > 1 && !achievement.completed;
               return (
-              <div key={achievement.id} className="achievement-row achievement-row-completed">
-                <GameIcon icon={getLucidIcon(achievement.icon)} className="achievement-icon" />
-                <div className="achievement-copy">
-                  <p className="achievement-name">{renderAchievementDisplayName(achievement)}</p>
-                  <p className="achievement-description">{renderAchievementDescription(achievement)}</p>
-                  {grantedDate ? (
-                    <p className="achievement-description">Granted {grantedDate}</p>
-                  ) : null}
+                <div key={key} className="achievement-row achievement-row-completed">
+                  <GameIcon icon={getLucidIcon(achievement.icon)} className="achievement-icon" />
+                  <div className="achievement-copy">
+                    <p className="achievement-name">
+                      {renderAchievementDisplayName(achievement, collectedTierIndex)}
+                    </p>
+                    <p className="achievement-description">
+                      {renderAchievementDescription(achievement, collectedTierIndex)}
+                    </p>
+                    {grantedDate ? (
+                      <p className="achievement-description">Granted {grantedDate}</p>
+                    ) : null}
+                  </div>
+                  {isPartialLeveledCollected
+                    ? renderCollectedLeveledTierStatus(achievement)
+                    : renderAchievementStatus(achievement, true)}
                 </div>
-                {renderAchievementStatus(achievement, true)}
-              </div>
-            );
+              );
             })}
           </div>
         </>
