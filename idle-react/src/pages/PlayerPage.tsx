@@ -1,5 +1,3 @@
-import { useState } from "react";
-import { useClientNowMs } from "../app/clientClock";
 import { formatSeconds } from "../formatSeconds";
 import { Atom, Clock3, Gem } from "lucide-react";
 import type { PlayerProfileResponse } from "../app/types";
@@ -11,33 +9,6 @@ type PlayerPageProps = {
 };
 
 export function PlayerPage({ publicPlayerLoading, publicPlayerProfile, hasError }: PlayerPageProps) {
-  const nowMs = useClientNowMs();
-
-  const awaySnapshotKey =
-    publicPlayerProfile == null
-      ? ""
-      : `${publicPlayerProfile.id}:${publicPlayerProfile.timeAwaySeconds}`;
-
-  const [storedAwayKey, setStoredAwayKey] = useState<string | null>(null);
-  const [timeAwayBaseline, setTimeAwayBaseline] = useState<{ seconds: number; atMs: number } | null>(null);
-
-  if (awaySnapshotKey !== storedAwayKey) {
-    setStoredAwayKey(awaySnapshotKey);
-    if (!publicPlayerProfile || awaySnapshotKey === "") {
-      setTimeAwayBaseline(null);
-    } else {
-      setTimeAwayBaseline({
-        seconds: publicPlayerProfile.timeAwaySeconds,
-        atMs: nowMs,
-      });
-    }
-  }
-
-  const displayedTimeAwaySeconds =
-    !publicPlayerProfile || timeAwayBaseline === null
-      ? 0
-      : timeAwayBaseline.seconds + Math.floor((nowMs - timeAwayBaseline.atMs) / 1000);
-
   return (
     <section className="card">
       <h2>{publicPlayerProfile?.username ?? "Player"}</h2>
@@ -69,7 +40,7 @@ export function PlayerPage({ publicPlayerLoading, publicPlayerProfile, hasError 
             </div>
           </div>
           <p>
-            <span>Time away:</span> {formatSeconds(displayedTimeAwaySeconds, 2, "floor")}
+            <span>Time away:</span> {formatSeconds(publicPlayerProfile.timeAwaySeconds, 2, "floor")}
           </p>
           <p>
             <span>Account age:</span> {formatSeconds(publicPlayerProfile.accountAgeSeconds)}
