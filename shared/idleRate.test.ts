@@ -7,15 +7,12 @@ import {
   isIdleCollectionBlockedByRestraint,
   shouldPreserveIdleTimerOnCollect
 } from "./idleRate.js";
-import { getMaxIdleCollectionRealtimeSeconds } from "./shop.js";
+import { DEFAULT_SHOP_STATE, getMaxIdleCollectionRealtimeSeconds } from "./shop.js";
 import type { ShopState } from "./shop.js";
 
 function shopWithPatience(patience: number): ShopState {
   return {
-    seconds_multiplier: 0,
-    restraint: 0,
-    idle_hoarder: 0,
-    luck: 0,
+    ...DEFAULT_SHOP_STATE,
     patience
   };
 }
@@ -67,7 +64,7 @@ describe("calculateIdleSecondsGain", () => {
 });
 
 describe("isIdleCollectionBlockedByRestraint", () => {
-  const baseShop = { seconds_multiplier: 0, restraint: 0, idle_hoarder: 0, luck: 0 };
+  const baseShop = DEFAULT_SHOP_STATE;
 
   it("requires realtime equal to restraint tier value2 hours", () => {
     expect(
@@ -100,22 +97,22 @@ describe("isIdleCollectionBlockedByRestraint", () => {
 
 describe("luck + boosted gain", () => {
   it("preserves timer only when luck is enabled and roll succeeds", () => {
-    expect(shouldPreserveIdleTimerOnCollect({ seconds_multiplier: 0, restraint: 0, luck: 0 }, 0.02)).toBe(false);
-    expect(shouldPreserveIdleTimerOnCollect({ seconds_multiplier: 0, restraint: 0, luck: 1 }, 0.02)).toBe(true);
-    expect(shouldPreserveIdleTimerOnCollect({ seconds_multiplier: 0, restraint: 0, luck: 1 }, 0.9)).toBe(false);
+    expect(shouldPreserveIdleTimerOnCollect(DEFAULT_SHOP_STATE, 0.02)).toBe(false);
+    expect(shouldPreserveIdleTimerOnCollect({ ...DEFAULT_SHOP_STATE, luck: 1 }, 0.02)).toBe(true);
+    expect(shouldPreserveIdleTimerOnCollect({ ...DEFAULT_SHOP_STATE, luck: 1 }, 0.9)).toBe(false);
   });
 
   it("applies restraint/luck-aware boosted gain", () => {
     const gainWithoutRestraint = calculateBoostedIdleSecondsGain({
       secondsSinceLastCollection: 60,
-      shop: { seconds_multiplier: 0, restraint: 0, idle_hoarder: 0, luck: 0 },
+      shop: DEFAULT_SHOP_STATE,
       achievementCount: 0
     });
     expect(gainWithoutRestraint).toBeGreaterThan(0);
 
     const gainWithRestraint = calculateBoostedIdleSecondsGain({
       secondsSinceLastCollection: 60,
-      shop: { seconds_multiplier: 0, restraint: 1, idle_hoarder: 0, luck: 0 },
+      shop: { ...DEFAULT_SHOP_STATE, restraint: 1 },
       achievementCount: 0
     });
     expect(gainWithRestraint).toBe(Math.floor(gainWithoutRestraint * 1.1));
@@ -124,13 +121,13 @@ describe("luck + boosted gain", () => {
   it("applies idle hoarder multiplier last", () => {
     const baseline = calculateBoostedIdleSecondsGain({
       secondsSinceLastCollection: 60,
-      shop: { seconds_multiplier: 0, restraint: 0, idle_hoarder: 0, luck: 0 },
+      shop: DEFAULT_SHOP_STATE,
       achievementCount: 0,
       realTimeAvailable: 0
     });
     const withIdleHoarderAtCap = calculateBoostedIdleSecondsGain({
       secondsSinceLastCollection: 60,
-      shop: { seconds_multiplier: 0, restraint: 0, idle_hoarder: 5, luck: 0 },
+      shop: { ...DEFAULT_SHOP_STATE, idle_hoarder: 5 },
       achievementCount: 0,
       /** Level 5 needs stored/realtime ratio ≥ 3 (value2); 180/60 = 3 */
       realTimeAvailable: 180
@@ -139,7 +136,7 @@ describe("luck + boosted gain", () => {
   });
 
   it("does not increase boosted gain past the max wall-clock storage window", () => {
-    const shop: ShopState = { seconds_multiplier: 0, restraint: 0, idle_hoarder: 0, luck: 0, storage_extension: 0 };
+    const shop: ShopState = DEFAULT_SHOP_STATE;
     const week = 7 * 24 * 60 * 60;
     const capSeconds = getMaxIdleCollectionRealtimeSeconds(shop);
     const atCap = calculateBoostedIdleSecondsGain({
@@ -157,7 +154,7 @@ describe("luck + boosted gain", () => {
 
   it("extends the storage window with storage_extension tiers", () => {
     const week = 7 * 24 * 60 * 60;
-    const baseShop: ShopState = { seconds_multiplier: 0, restraint: 0, idle_hoarder: 0, luck: 0, storage_extension: 0 };
+    const baseShop: ShopState = DEFAULT_SHOP_STATE;
     const extendedShop: ShopState = { ...baseShop, storage_extension: 1 };
     const elapsedPastBaseCap = 3 * week;
     const baseCapped = calculateBoostedIdleSecondsGain({
@@ -176,14 +173,7 @@ describe("luck + boosted gain", () => {
 
 describe("getEffectiveIdleSecondsRate", () => {
   it("tracks patience and multipliers from full elapsed time (not storage-capped like boosted gain)", () => {
-    const shop: ShopState = {
-      seconds_multiplier: 0,
-      restraint: 0,
-      idle_hoarder: 0,
-      luck: 0,
-      patience: 8,
-      storage_extension: 0
-    };
+    const shop: ShopState = { ...DEFAULT_SHOP_STATE, patience: 8 };
     const cap = getMaxIdleCollectionRealtimeSeconds(shop);
     const player = {
       secondsSinceLastCollection: cap,

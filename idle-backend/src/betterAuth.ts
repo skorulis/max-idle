@@ -7,6 +7,7 @@ import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import type { AppConfig } from "./types.js";
 import { grantAchievement } from "./achievementUpdates.js";
 import { generateAnonymousUsername, isUsernameTakenError } from "./username.js";
+import { DEFAULT_SHOP_STATE } from "@maxidle/shared/shop";
 
 function buildSocialProviders(config: AppConfig) {
   const providers: Record<string, { clientId: string; clientSecret: string }> = {};
@@ -143,14 +144,7 @@ export async function ensureGameIdentityForAuthUser(
         `INSERT INTO player_states (user_id, achievement_count, achievement_levels, shop, seconds_multiplier) VALUES ($1, 0, '[]'::jsonb, $2::jsonb, 0)`,
         [
           gameUserId,
-          JSON.stringify({
-            seconds_multiplier: 0,
-            restraint: 0,
-            idle_hoarder: 0,
-            luck: 0,
-            worthwhile_achievements: 0,
-            collect_gem_time_boost: 0
-          })
+          JSON.stringify(DEFAULT_SHOP_STATE)
         ]
       );
       await db.query(`INSERT INTO auth_identities (auth_user_id, game_user_id) VALUES ($1, $2)`, [authUserId, gameUserId]);

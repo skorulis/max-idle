@@ -7,6 +7,7 @@ import { signAnonymousToken } from "../auth.js";
 import { ensureGameIdentityForAuthUser, getRequestHeaders, type BetterAuthInstance } from "../betterAuth.js";
 import { grantAchievement } from "../achievementUpdates.js";
 import { generateAnonymousUsername, isUsernameTakenError } from "../username.js";
+import { DEFAULT_SHOP_STATE } from "@maxidle/shared/shop";
 
 type RegisterAuthRoutesOptions = {
   app: express.Express;
@@ -44,14 +45,7 @@ export function registerAuthRoutes({
             `INSERT INTO player_states (user_id, achievement_count, achievement_levels, shop, seconds_multiplier) VALUES ($1, 0, '[]'::jsonb, $2::jsonb, 0)`,
             [
               userId,
-              JSON.stringify({
-                seconds_multiplier: 0,
-                restraint: 0,
-                idle_hoarder: 0,
-                luck: 0,
-                worthwhile_achievements: 0,
-                collect_gem_time_boost: 0
-              })
+              JSON.stringify(DEFAULT_SHOP_STATE)
             ]
           );
           await client.query("COMMIT");

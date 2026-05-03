@@ -11,6 +11,7 @@ import { createTestPool } from "./testDb.js";
 import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import { getRestraintBonusMultiplier } from "@maxidle/shared/shop";
 import { LUCK_SHOP_UPGRADE, RESTRAINT_SHOP_UPGRADE, SECONDS_MULTIPLIER_SHOP_UPGRADE } from "@maxidle/shared/shopUpgrades";
+import { DEFAULT_SHOP_STATE } from "@maxidle/shared/shop";
 
 describe("auth + player lifecycle", () => {
   const config: AppConfig = {
@@ -1859,7 +1860,7 @@ describe("auth + player lifecycle", () => {
         last_collected_at = NOW() - INTERVAL '120 seconds'
       WHERE user_id = $1
       `,
-      [userId, JSON.stringify({ seconds_multiplier: 0, restraint: 0, idle_hoarder: 0, luck: 0, worthwhile_achievements: 1 })]
+      [userId, JSON.stringify({ ...DEFAULT_SHOP_STATE, worthwhile_achievements: 1 })]
     );
 
     const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
@@ -1891,7 +1892,7 @@ describe("auth + player lifecycle", () => {
     const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
     expect(playerResponse.status).toBe(200);
     const minExpectedCurrent = Math.floor(
-      calculateIdleSecondsGain(120) * getRestraintBonusMultiplier({ restraint: 1, seconds_multiplier: 0, idle_hoarder: 0, luck: 0 })
+      calculateIdleSecondsGain(120) * getRestraintBonusMultiplier({ ...DEFAULT_SHOP_STATE, restraint: 1 })
     );
     expect(playerResponse.body.currentSeconds).toBeGreaterThanOrEqual(minExpectedCurrent);
     expect(playerResponse.body.idleSecondsRate).toBeGreaterThan(0);
@@ -1942,7 +1943,7 @@ describe("auth + player lifecycle", () => {
 
     const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
     expect(playerResponse.status).toBe(200);
-    const restraintBonus = getRestraintBonusMultiplier({ restraint: 1, seconds_multiplier: 0, idle_hoarder: 0, luck: 0 });
+    const restraintBonus = getRestraintBonusMultiplier({ ...DEFAULT_SHOP_STATE, restraint: 1 });
     const expectedCurrent = Math.floor(calculateIdleSecondsGain(7200) * restraintBonus);
     expect(playerResponse.body.currentSeconds).toBeGreaterThanOrEqual(expectedCurrent);
     expect(playerResponse.body.currentSeconds).toBeLessThanOrEqual(Math.floor(calculateIdleSecondsGain(7220) * restraintBonus));
@@ -2070,7 +2071,7 @@ describe("auth + player lifecycle", () => {
     expect(purchaseResponse.body.timeGems.available).toBe(1);
     const expectedCurrent = calculateBoostedIdleSecondsGain({
       secondsSinceLastCollection: 1000 + 6 * 60 * 60,
-      shop: { seconds_multiplier: 0, restraint: 0, luck: 0 },
+      shop: DEFAULT_SHOP_STATE,
       achievementCount: purchaseResponse.body.achievementCount
     });
     expect(purchaseResponse.body.currentSeconds).toBe(expectedCurrent);

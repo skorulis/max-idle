@@ -17,8 +17,6 @@ function getTotalUpgradeCost(upgradeLevel: number, quantity: number): number {
 }
 
 describe("shop pricing", () => {
-  const baseShop = { seconds_multiplier: 0, restraint: 0, luck: 0 };
-
   it("uses per-level costs from the seconds multiplier table", () => {
     expect(SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(0)).toBe(60);
     expect(SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(1)).toBe(120);
