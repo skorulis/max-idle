@@ -34,6 +34,8 @@ export type AchievementDefinition = {
   levelValueDisplay?: "time_seconds";
   levels?: Array<{
     value: number;
+    /** When set, achievement UIs show this for the current tier instead of the top-level `name`. */
+    name?: string;
   }>;
 };
 
@@ -60,11 +62,15 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
   },
   {
     id: ACHIEVEMENT_IDS.BEGINNER_SHOPPER,
-    name: "Beginner shopper",
+    name: "Shopper",
     description: "Purchase %s upgrades from the shop.",
     icon: "shopping-cart",
     clientDriven: false,
-    levels: [{ value: 4 }, { value: 14 }, { value: 34 }]
+    levels: [
+      { value: 4, name: "Beginner shopper" },
+      { value: 14, name: "Intermediate shopper" },
+      { value: 34, name: "Advanced shopper" }
+    ]
   },
   {
     id: ACHIEVEMENT_IDS.REAL_TIME_COLLECTOR_65_MINUTES,
@@ -74,13 +80,13 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     clientDriven: false,
     levelValueDisplay: "time_seconds",
     levels: [
-      { value: 65 * SECONDS_PER_MINUTE },
-      { value: 9 * SECONDS_PER_HOUR + 5 * SECONDS_PER_MINUTE },
-      { value: 26 * SECONDS_PER_HOUR },
-      { value: 4 * SECONDS_PER_DAY },
-      { value: 19 * SECONDS_PER_DAY },
-      { value: 97 * SECONDS_PER_DAY },
-      { value: 366 * SECONDS_PER_DAY },
+      { value: 65 * SECONDS_PER_MINUTE, name: "Baby collector" },
+      { value: 9 * SECONDS_PER_HOUR + 5 * SECONDS_PER_MINUTE, name: "Regular collector" },
+      { value: 26 * SECONDS_PER_HOUR, name: "Daily collector" },
+      { value: 4 * SECONDS_PER_DAY, name: "Weekly collector" },
+      { value: 19 * SECONDS_PER_DAY, name: "Real collector"},
+      { value: 97 * SECONDS_PER_DAY, name: "Patient collector"},
+      { value: 366 * SECONDS_PER_DAY, name: "Yearly collector"},
     ]
   },
   {
@@ -91,12 +97,12 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     clientDriven: false,
     levelValueDisplay: "time_seconds",
     levels: [
-      { value: 3 * SECONDS_PER_HOUR + 7 * SECONDS_PER_MINUTE },
-      { value: 25 * SECONDS_PER_HOUR },
-      { value: 6 * SECONDS_PER_DAY },
-      { value: 19 * SECONDS_PER_DAY },
-      { value: 364 * SECONDS_PER_DAY },
-      { value: 2 * 364 * SECONDS_PER_DAY },
+      { value: 3 * SECONDS_PER_HOUR + 7 * SECONDS_PER_MINUTE, name: "Just a little idling" },
+      { value: 25 * SECONDS_PER_HOUR, name: "Daily idler" },
+      { value: 6 * SECONDS_PER_DAY, name: "Weekly idler" },
+      { value: 19 * SECONDS_PER_DAY, name: "Bored idler" },
+      { value: 364 * SECONDS_PER_DAY, name: "Yearly idler" },
+      { value: 2 * 364 * SECONDS_PER_DAY, name: "Committed idler" },
     ]
   },
   {
@@ -107,11 +113,11 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     clientDriven: false,
     levelValueDisplay: "time_seconds",
     levels: [
-      { value: 59 * SECONDS_PER_MINUTE },
-      { value: SECONDS_PER_DAY },
-      { value: 2 * SECONDS_PER_DAY + 14 * SECONDS_PER_HOUR },
-      { value: 6 * SECONDS_PER_DAY },
-      { value: 15 * SECONDS_PER_DAY }
+      { value: 59 * SECONDS_PER_MINUTE, name: "Baby hibernator" },
+      { value: SECONDS_PER_DAY, name: "Regular hibernator" },
+      { value: 2 * SECONDS_PER_DAY + 14 * SECONDS_PER_HOUR, name: "Daily hibernator" },
+      { value: 6 * SECONDS_PER_DAY, name: "Weekly hibernator" },
+      { value: 15 * SECONDS_PER_DAY, name: "Patient hibernator" }
     ]
   },
   {
@@ -120,7 +126,11 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: "Press collect %s times.",
     icon: "repeat",
     clientDriven: false,
-    levels: [{ value: 15 }, { value: 150 }, { value: 1500 }]
+    levels: [
+      { value: 15, name: "You're doing it wrong" },
+      { value: 150, name: "You don't need to click this much" },
+      { value: 1500, name: "Please stop" }
+    ]
   },
   {
     id: ACHIEVEMENT_IDS.CONTEMPLATION,
@@ -149,6 +159,12 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     description: "Activate %s daily bonuses.",
     icon: "gift",
     clientDriven: false,
-    levels: [{ value: 1 }, { value: 13 }, { value: 27 }, { value: 41 }, { value: 77 }]
+    levels: [
+      { value: 1, name: "Daily ritual" },
+      { value: 13, name: "Regular ritualist" },
+      { value: 27, name: "Frequent ritualist" },
+      { value: 41, name: "Long time ritualist" },
+      { value: 77, name: "Big gem earner" }
+    ]
   }
 ];

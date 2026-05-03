@@ -314,6 +314,29 @@
           "clientDriven": {
             "type": "boolean"
           },
+          "levelValueDisplay": {
+            "type": "string",
+            "enum": [
+              "time_seconds"
+            ]
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "number"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "value"
+              ]
+            }
+          },
           "level": {
             "type": "integer",
             "minimum": 0

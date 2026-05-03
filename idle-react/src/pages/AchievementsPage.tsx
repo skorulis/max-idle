@@ -55,6 +55,26 @@ export function AchievementsPage({ achievements, achievementsLoading, hasError }
     return parsed.toLocaleDateString();
   };
 
+  const renderAchievementDisplayName = (achievement: AchievementsResponse["achievements"][number]): string => {
+    const definition = achievementDefinitionById.get(achievement.id as AchievementId);
+    const levels = definition?.levels;
+    if (!levels || levels.length === 0) {
+      return achievement.name;
+    }
+    if (achievement.completed) {
+      const lastTier = levels[achievement.maxLevel - 1];
+      if (lastTier?.name) {
+        return lastTier.name;
+      }
+    } else if (achievement.level < levels.length) {
+      const tier = levels[achievement.level];
+      if (tier?.name) {
+        return tier.name;
+      }
+    }
+    return achievement.name;
+  };
+
   const renderAchievementDescription = (achievement: AchievementsResponse["achievements"][number]): string => {
     const definition = achievementDefinitionById.get(achievement.id as AchievementId);
     const levels = definition?.levels;
@@ -91,7 +111,7 @@ export function AchievementsPage({ achievements, achievementsLoading, hasError }
               <div key={achievement.id} className="achievement-row">
                 <GameIcon icon={getLucidIcon(achievement.icon)} className="achievement-icon" />
                 <div className="achievement-copy">
-                  <p className="achievement-name">{achievement.name}</p>
+                  <p className="achievement-name">{renderAchievementDisplayName(achievement)}</p>
                   <p className="achievement-description">{renderAchievementDescription(achievement)}</p>
                 </div>
                 {renderAchievementStatus(achievement, false)}
@@ -106,7 +126,7 @@ export function AchievementsPage({ achievements, achievementsLoading, hasError }
               <div key={achievement.id} className="achievement-row achievement-row-completed">
                 <GameIcon icon={getLucidIcon(achievement.icon)} className="achievement-icon" />
                 <div className="achievement-copy">
-                  <p className="achievement-name">{achievement.name}</p>
+                  <p className="achievement-name">{renderAchievementDisplayName(achievement)}</p>
                   <p className="achievement-description">{renderAchievementDescription(achievement)}</p>
                   {grantedDate ? (
                     <p className="achievement-description">Granted {grantedDate}</p>

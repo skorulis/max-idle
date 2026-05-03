@@ -108,6 +108,11 @@ const accountResponseSchema = registry.register(
   })
 );
 
+const achievementLevelSchema = z.object({
+  value: z.number(),
+  name: z.string().optional()
+});
+
 const achievementSchema = registry.register(
   "Achievement",
   z.object({
@@ -116,6 +121,8 @@ const achievementSchema = registry.register(
     description: z.string(),
     icon: z.string(),
     clientDriven: z.boolean(),
+    levelValueDisplay: z.literal("time_seconds").optional(),
+    levels: z.array(achievementLevelSchema).optional(),
     level: z.number().int().nonnegative(),
     maxLevel: z.number().int().positive(),
     completed: z.boolean(),

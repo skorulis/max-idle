@@ -142,6 +142,8 @@ export type Achievement = {
   description: string;
   icon: string;
   clientDriven: boolean;
+  levelValueDisplay?: "time_seconds";
+  levels?: Array<{ value: number; name?: string }>;
   level: number;
   maxLevel: number;
   completed: boolean;
