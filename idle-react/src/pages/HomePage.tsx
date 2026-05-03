@@ -92,6 +92,11 @@ export function HomePage({
   const [collectFlashNonce, setCollectFlashNonce] = useState(0);
   const [tutorialSubmitting, setTutorialSubmitting] = useState(false);
 
+  const completedTutorialIds = useMemo(
+    () => parseCompletedTutorialIds(playerState?.tutorialProgress ?? ""),
+    [playerState?.tutorialProgress]
+  );
+
   const handleCollect = async () => {
     if (realtimeElapsedSeconds < 15) {
       toast.warning(EARLY_COLLECT_WARNING_MESSAGES[collectWarningIndex]);
@@ -141,10 +146,6 @@ export function HomePage({
     playerState.realTime.total > 0 ||
     playerState.timeGems.total > 0;
 
-  const completedTutorialIds = useMemo(
-    () => parseCompletedTutorialIds(playerState.tutorialProgress),
-    [playerState.tutorialProgress]
-  );
   const remainingTutorials = TUTORIAL_STEPS.filter((s) => !completedTutorialIds.has(s.id));
   const currentTutorial = remainingTutorials[0];
   const isLastTutorialStep = remainingTutorials.length <= 1;
