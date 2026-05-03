@@ -27,6 +27,8 @@ import {
   collectDailyBonus,
   collectDailyReward,
   collectIdleTime,
+  completeTutorialStep,
+  resetTutorialProgress,
   collectTournamentReward,
   createAnonymousSession,
   deletePushSubscription,
@@ -1222,6 +1224,55 @@ export function AppShell() {
     }
   };
 
+  const onCompleteTutorialStep = async (tutorialId: string) => {
+    if (!playerState) {
+      return;
+    }
+    setError(null);
+    try {
+      const nextPlayer = await completeTutorialStep(token, tutorialId);
+      const synced = toSyncedState(nextPlayer);
+      alignClientClock();
+      setPlayerState(synced);
+    } catch (tutorialError) {
+      if (tutorialError instanceof Error && tutorialError.message === "UNAUTHORIZED") {
+        localStorage.removeItem(TOKEN_KEY);
+        setToken(null);
+        setPlayerState(null);
+        setAccount(null);
+        setStatus("Press start when you are ready to do nothing.");
+      } else {
+        setError(tutorialError instanceof Error ? tutorialError.message : "Could not update tutorial progress");
+        toast.error("Could not save tutorial progress.");
+      }
+    }
+  };
+
+  const onResetTutorial = async () => {
+    if (!playerState) {
+      return;
+    }
+    setError(null);
+    try {
+      const nextPlayer = await resetTutorialProgress(token);
+      const synced = toSyncedState(nextPlayer);
+      alignClientClock();
+      setPlayerState(synced);
+      toast.success("Tutorial reset. You will see the intro again on the home page.");
+    } catch (tutorialError) {
+      if (tutorialError instanceof Error && tutorialError.message === "UNAUTHORIZED") {
+        localStorage.removeItem(TOKEN_KEY);
+        setToken(null);
+        setPlayerState(null);
+        setAccount(null);
+        setStatus("Press start when you are ready to do nothing.");
+      } else {
+        setError(tutorialError instanceof Error ? tutorialError.message : "Could not reset tutorial");
+        toast.error("Could not reset tutorial.");
+      }
+    }
+  };
+
   const onCollectDailyBonus = async () => {
     if (!playerState) {
       return;
@@ -1587,6 +1638,7 @@ export function AppShell() {
                 onNavigateLogin={() => navigate("/login")}
                 availableSurvey={availableSurveyForUi}
                 onNavigateSurvey={() => navigate("/survey")}
+                onCompleteTutorialStep={onCompleteTutorialStep}
               />
             }
           />
@@ -1730,6 +1782,7 @@ export function AppShell() {
                 onToggleDailyRewardNotifications={onToggleDailyRewardNotifications}
                 onNavigateLogin={() => navigate("/login")}
                 renderAuthButtons={renderUpgradeAuthButtons}
+                onResetTutorial={onResetTutorial}
               />
             )}
           />

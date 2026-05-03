@@ -118,6 +118,7 @@ export function registerShopRoutes({
         current_seconds_last_updated: Date;
         last_collected_at: Date;
         last_daily_reward_collected_at: Date | null;
+        tutorial_progress: string;
       }>(
         `
         SELECT
@@ -135,7 +136,8 @@ export function registerShopRoutes({
           current_seconds,
           current_seconds_last_updated,
           last_collected_at,
-          last_daily_reward_collected_at
+          last_daily_reward_collected_at,
+          tutorial_progress
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -257,6 +259,7 @@ export function registerShopRoutes({
         shop: ShopState;
         last_daily_reward_collected_at: Date | null;
         last_daily_bonus_claimed_at: Date | null;
+        tutorial_progress: string;
       }>(
         `
         UPDATE player_states
@@ -287,7 +290,8 @@ export function registerShopRoutes({
           last_collected_at,
           shop,
           last_daily_reward_collected_at,
-          last_daily_bonus_claimed_at
+          last_daily_bonus_claimed_at,
+          tutorial_progress
         `,
         [
           userId,
@@ -354,6 +358,7 @@ export function registerShopRoutes({
         lastDailyRewardCollectedAt: updated.last_daily_reward_collected_at?.toISOString() ?? null,
         dailyBonus: toDailyBonusResponse(currentDailyBonusAfterPurchase, updated.last_daily_bonus_claimed_at),
         serverTime: now.toISOString(),
+        tutorialProgress: updated.tutorial_progress ?? "",
         purchase: {
           upgradeType,
           quantity,
@@ -391,6 +396,7 @@ export function registerShopRoutes({
         shop: ShopState;
         last_collected_at: Date;
         last_daily_reward_collected_at: Date | null;
+        tutorial_progress: string;
       }>(
         `
         SELECT
@@ -405,7 +411,8 @@ export function registerShopRoutes({
           has_unseen_achievements,
           shop,
           last_collected_at,
-          last_daily_reward_collected_at
+          last_daily_reward_collected_at,
+          tutorial_progress
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -441,6 +448,7 @@ export function registerShopRoutes({
         last_collected_at: Date;
         shop: ShopState;
         last_daily_reward_collected_at: Date | null;
+        tutorial_progress: string;
       }>(
         `
         UPDATE player_states
@@ -463,7 +471,8 @@ export function registerShopRoutes({
           current_seconds_last_updated,
           last_collected_at,
           shop,
-          last_daily_reward_collected_at
+          last_daily_reward_collected_at,
+          tutorial_progress
         `,
         [userId, syncedCurrentSeconds, now]
       );
@@ -531,7 +540,8 @@ export function registerShopRoutes({
         currentSecondsLastUpdated: updated.current_seconds_last_updated.toISOString(),
         lastCollectedAt: updated.last_collected_at.toISOString(),
         lastDailyRewardCollectedAt: updated.last_daily_reward_collected_at?.toISOString() ?? null,
-        serverTime: now.toISOString()
+        serverTime: now.toISOString(),
+        tutorialProgress: updated.tutorial_progress ?? ""
       });
     } catch (error) {
       await client.query("ROLLBACK");

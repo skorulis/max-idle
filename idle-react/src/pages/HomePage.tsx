@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { formatSeconds } from "../formatSeconds";
 import { formatRewardAmount } from "../formatReward";
-import { Atom, ChevronRight, CircleHelp, ClipboardList, Clock3, Gem, Gift, PiggyBank } from "lucide-react";
+import { Atom, ChevronRight, CircleHelp, ClipboardList, Clock3, Gem, Gift, PiggyBank, Sparkles } from "lucide-react";
 import type { AvailableSurveySummary, SyncedOutstandingTournamentResult, SyncedPlayerState } from "../app/types";
+import { parseCompletedTutorialIds, TUTORIAL_STEPS } from "@maxidle/shared/tutorialSteps";
 import {
   getRestraintMinRealtimeSeconds,
   isDailyBonusFeatureUnlocked,
@@ -51,6 +52,7 @@ type HomePageProps = {
   onNavigateLogin: () => void;
   availableSurvey: AvailableSurveySummary | null;
   onNavigateSurvey: () => void;
+  onCompleteTutorialStep: (tutorialId: string) => Promise<void>;
 };
 
 export function HomePage({
@@ -82,11 +84,13 @@ export function HomePage({
   onNavigateCollectionHistory,
   onNavigateLogin,
   availableSurvey,
-  onNavigateSurvey
+  onNavigateSurvey,
+  onCompleteTutorialStep
 }: HomePageProps) {
   const [collectWarningIndex, setCollectWarningIndex] = useState(0);
   const [showRateInfo, setShowRateInfo] = useState(false);
   const [collectFlashNonce, setCollectFlashNonce] = useState(0);
+  const [tutorialSubmitting, setTutorialSubmitting] = useState(false);
 
   const handleCollect = async () => {
     if (realtimeElapsedSeconds < 15) {
@@ -137,8 +141,48 @@ export function HomePage({
     playerState.realTime.total > 0 ||
     playerState.timeGems.total > 0;
 
+  const completedTutorialIds = useMemo(
+    () => parseCompletedTutorialIds(playerState.tutorialProgress),
+    [playerState.tutorialProgress]
+  );
+  const remainingTutorials = TUTORIAL_STEPS.filter((s) => !completedTutorialIds.has(s.id));
+  const currentTutorial = remainingTutorials[0];
+  const isLastTutorialStep = remainingTutorials.length <= 1;
+
   return (
     <>
+      {currentTutorial ? (
+        <section className="card">
+          <h2 className="section-title-with-icon">
+            <Sparkles size={18} aria-hidden="true" />
+            Max Idle
+          </h2>
+          <h3 className="subtle" style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.05rem", fontWeight: 600 }}>
+            {currentTutorial.title}
+          </h3>
+          <p style={{ marginTop: 0 }}>{currentTutorial.body}</p>
+          <div className="collect-row" style={{ marginTop: "1rem" }}>
+            <button
+              type="button"
+              className="collect collect-primary"
+              disabled={tutorialSubmitting}
+              onClick={() => {
+                void (async () => {
+                  setTutorialSubmitting(true);
+                  try {
+                    await onCompleteTutorialStep(currentTutorial.id);
+                  } finally {
+                    setTutorialSubmitting(false);
+                  }
+                })();
+              }}
+            >
+              {tutorialSubmitting ? "Saving..." : isLastTutorialStep ? "Done" : "Next"}
+            </button>
+          </div>
+        </section>
+      ) : null}
+      
       <section className="card idle-collect-card">
         <div className="card-section-header">
           <h2 className="section-title-with-icon">

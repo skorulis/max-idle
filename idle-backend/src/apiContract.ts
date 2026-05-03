@@ -81,7 +81,15 @@ const playerStateSchema = registry.register(
         activationCostIdleSeconds: z.number().int().positive()
       })
       .nullable(),
-    serverTime: z.string().datetime()
+    serverTime: z.string().datetime(),
+    tutorialProgress: z.string()
+  })
+);
+
+const tutorialCompleteRequestSchema = registry.register(
+  "TutorialCompleteRequest",
+  z.object({
+    tutorialId: z.string().min(1)
   })
 );
 
@@ -706,6 +714,78 @@ registry.registerPath({
   responses: {
     200: {
       description: "Current player state",
+      content: {
+        "application/json": { schema: playerStateSchema }
+      }
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    },
+    404: {
+      description: "Player not found",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    }
+  }
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/player/tutorial/complete",
+  tags: ["Player"],
+  summary: "Record a completed tutorial step and return updated player state",
+  security: authViaCookieOrBearer,
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: tutorialCompleteRequestSchema
+        }
+      }
+    }
+  },
+  responses: {
+    200: {
+      description: "Updated player state",
+      content: {
+        "application/json": { schema: playerStateSchema }
+      }
+    },
+    400: {
+      description: "Invalid tutorial id or body",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    },
+    404: {
+      description: "Player not found",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    }
+  }
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/player/tutorial/reset",
+  tags: ["Player"],
+  summary: "Clear tutorial progress so the intro can be shown again",
+  security: authViaCookieOrBearer,
+  responses: {
+    200: {
+      description: "Updated player state",
       content: {
         "application/json": { schema: playerStateSchema }
       }

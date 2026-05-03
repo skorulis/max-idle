@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { DataType, newDb } from "pg-mem";
 import type { Pool } from "pg";
@@ -58,6 +59,7 @@ export async function createTestPool(): Promise<Pool> {
   const pool = new MemPool() as unknown as Pool;
 
   const schemaSql = readFileSync(resolve(process.cwd(), "sql/001_schema.sql"), "utf-8");
+  const tutorialProgressSql = await readFile(resolve(process.cwd(), "sql/007_add_tutorial_progress.sql"), "utf-8");
   const betterAuthSql = `
     CREATE TABLE IF NOT EXISTS "user" (
       id TEXT PRIMARY KEY,
@@ -107,6 +109,7 @@ export async function createTestPool(): Promise<Pool> {
     );
   `;
   await pool.query(schemaSql);
+  await pool.query(tutorialProgressSql);
   await pool.query(betterAuthSql);
   return pool;
 }

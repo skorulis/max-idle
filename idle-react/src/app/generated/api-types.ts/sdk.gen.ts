@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetAccountData, GetAccountErrors, GetAccountResponses, GetAchievementsData, GetAchievementsErrors, GetAchievementsResponses, GetHealthData, GetHealthResponses, GetHomeData, GetHomeErrors, GetHomeResponses, GetLeaderboardData, GetLeaderboardErrors, GetLeaderboardResponses, GetPlayerCollectionHistoryData, GetPlayerCollectionHistoryErrors, GetPlayerCollectionHistoryResponses, GetPlayerDailyBonusHistoryData, GetPlayerDailyBonusHistoryErrors, GetPlayerDailyBonusHistoryResponses, GetPlayerData, GetPlayerErrors, GetPlayerResponses, GetPlayersByIdData, GetPlayersByIdErrors, GetPlayersByIdResponses, GetSurveysActiveData, GetSurveysActiveErrors, GetSurveysActiveResponses, GetTournamentCurrentData, GetTournamentCurrentErrors, GetTournamentCurrentResponses, GetTournamentHistoryData, GetTournamentHistoryErrors, GetTournamentHistoryResponses, PostAccountUpgradeData, PostAccountUpgradeErrors, PostAccountUpgradeResponses, PostAccountUsernameData, PostAccountUsernameErrors, PostAccountUsernameResponses, PostAchievementsGrantData, PostAchievementsGrantErrors, PostAchievementsGrantResponses, PostAchievementsSeenData, PostAchievementsSeenErrors, PostAchievementsSeenResponses, PostAuthAnonymousData, PostAuthAnonymousErrors, PostAuthAnonymousResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutData, PostAuthLogoutResponses, PostAuthRegisterData, PostAuthRegisterErrors, PostAuthRegisterResponses, PostPlayerCollectData, PostPlayerCollectErrors, PostPlayerCollectResponses, PostPlayerDailyBonusCollectData, PostPlayerDailyBonusCollectErrors, PostPlayerDailyBonusCollectResponses, PostPlayerDailyRewardCollectData, PostPlayerDailyRewardCollectErrors, PostPlayerDailyRewardCollectResponses, PostShopPurchaseData, PostShopPurchaseErrors, PostShopPurchaseResponses, PostSurveysAnswerData, PostSurveysAnswerErrors, PostSurveysAnswerResponses, PostTournamentCollectRewardData, PostTournamentCollectRewardErrors, PostTournamentCollectRewardResponses, PostTournamentEnterData, PostTournamentEnterErrors, PostTournamentEnterResponses } from './types.gen';
+import type { GetAccountData, GetAccountErrors, GetAccountResponses, GetAchievementsData, GetAchievementsErrors, GetAchievementsResponses, GetHealthData, GetHealthResponses, GetHomeData, GetHomeErrors, GetHomeResponses, GetLeaderboardData, GetLeaderboardErrors, GetLeaderboardResponses, GetPlayerCollectionHistoryData, GetPlayerCollectionHistoryErrors, GetPlayerCollectionHistoryResponses, GetPlayerDailyBonusHistoryData, GetPlayerDailyBonusHistoryErrors, GetPlayerDailyBonusHistoryResponses, GetPlayerData, GetPlayerErrors, GetPlayerResponses, GetPlayersByIdData, GetPlayersByIdErrors, GetPlayersByIdResponses, GetSurveysActiveData, GetSurveysActiveErrors, GetSurveysActiveResponses, GetTournamentCurrentData, GetTournamentCurrentErrors, GetTournamentCurrentResponses, GetTournamentHistoryData, GetTournamentHistoryErrors, GetTournamentHistoryResponses, PostAccountUpgradeData, PostAccountUpgradeErrors, PostAccountUpgradeResponses, PostAccountUsernameData, PostAccountUsernameErrors, PostAccountUsernameResponses, PostAchievementsGrantData, PostAchievementsGrantErrors, PostAchievementsGrantResponses, PostAchievementsSeenData, PostAchievementsSeenErrors, PostAchievementsSeenResponses, PostAuthAnonymousData, PostAuthAnonymousErrors, PostAuthAnonymousResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutData, PostAuthLogoutResponses, PostAuthRegisterData, PostAuthRegisterErrors, PostAuthRegisterResponses, PostPlayerCollectData, PostPlayerCollectErrors, PostPlayerCollectResponses, PostPlayerDailyBonusCollectData, PostPlayerDailyBonusCollectErrors, PostPlayerDailyBonusCollectResponses, PostPlayerDailyRewardCollectData, PostPlayerDailyRewardCollectErrors, PostPlayerDailyRewardCollectResponses, PostPlayerTutorialCompleteData, PostPlayerTutorialCompleteErrors, PostPlayerTutorialCompleteResponses, PostPlayerTutorialResetData, PostPlayerTutorialResetErrors, PostPlayerTutorialResetResponses, PostShopPurchaseData, PostShopPurchaseErrors, PostShopPurchaseResponses, PostSurveysAnswerData, PostSurveysAnswerErrors, PostSurveysAnswerResponses, PostTournamentCollectRewardData, PostTournamentCollectRewardErrors, PostTournamentCollectRewardResponses, PostTournamentEnterData, PostTournamentEnterErrors, PostTournamentEnterResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -131,6 +131,36 @@ export const getPlayer = <ThrowOnError extends boolean = false>(options?: Option
             type: 'apiKey'
         }, { scheme: 'bearer', type: 'http' }],
     url: '/player',
+    ...options
+});
+
+/**
+ * Record a completed tutorial step and return updated player state
+ */
+export const postPlayerTutorialComplete = <ThrowOnError extends boolean = false>(options: Options<PostPlayerTutorialCompleteData, ThrowOnError>) => (options.client ?? client).post<PostPlayerTutorialCompleteResponses, PostPlayerTutorialCompleteErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'better-auth.session_token',
+            type: 'apiKey'
+        }, { scheme: 'bearer', type: 'http' }],
+    url: '/player/tutorial/complete',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Clear tutorial progress so the intro can be shown again
+ */
+export const postPlayerTutorialReset = <ThrowOnError extends boolean = false>(options?: Options<PostPlayerTutorialResetData, ThrowOnError>) => (options?.client ?? client).post<PostPlayerTutorialResetResponses, PostPlayerTutorialResetErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'better-auth.session_token',
+            type: 'apiKey'
+        }, { scheme: 'bearer', type: 'http' }],
+    url: '/player/tutorial/reset',
     ...options
 });
 

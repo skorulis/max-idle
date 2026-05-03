@@ -52,6 +52,11 @@ export type PlayerState = {
         activationCostIdleSeconds: number;
     } | null;
     serverTime: string;
+    tutorialProgress: string;
+};
+
+export type TutorialCompleteRequest = {
+    tutorialId: string;
 };
 
 export type AccountResponse = {
@@ -547,6 +552,68 @@ export type GetPlayerResponses = {
 };
 
 export type GetPlayerResponse = GetPlayerResponses[keyof GetPlayerResponses];
+
+export type PostPlayerTutorialCompleteData = {
+    body: TutorialCompleteRequest;
+    path?: never;
+    query?: never;
+    url: '/player/tutorial/complete';
+};
+
+export type PostPlayerTutorialCompleteErrors = {
+    /**
+     * Invalid tutorial id or body
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Player not found
+     */
+    404: ErrorResponse;
+};
+
+export type PostPlayerTutorialCompleteError = PostPlayerTutorialCompleteErrors[keyof PostPlayerTutorialCompleteErrors];
+
+export type PostPlayerTutorialCompleteResponses = {
+    /**
+     * Updated player state
+     */
+    200: PlayerState;
+};
+
+export type PostPlayerTutorialCompleteResponse = PostPlayerTutorialCompleteResponses[keyof PostPlayerTutorialCompleteResponses];
+
+export type PostPlayerTutorialResetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/player/tutorial/reset';
+};
+
+export type PostPlayerTutorialResetErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Player not found
+     */
+    404: ErrorResponse;
+};
+
+export type PostPlayerTutorialResetError = PostPlayerTutorialResetErrors[keyof PostPlayerTutorialResetErrors];
+
+export type PostPlayerTutorialResetResponses = {
+    /**
+     * Updated player state
+     */
+    200: PlayerState;
+};
+
+export type PostPlayerTutorialResetResponse = PostPlayerTutorialResetResponses[keyof PostPlayerTutorialResetResponses];
 
 export type GetHomeData = {
     body?: never;

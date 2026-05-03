@@ -24,6 +24,7 @@ import {
 import type { AuthClaims } from "../types.js";
 import type { AnalyticsService } from "../analytics.js";
 import { isDailyBonusEffectActiveForUtcDay } from "@maxidle/shared/dailyBonus";
+import { KNOWN_TUTORIAL_IDS, mergedTutorialProgressString } from "@maxidle/shared/tutorialSteps";
 import {
   canCollectDailyReward,
   getOrCreateCurrentDailyBonus,
@@ -59,6 +60,7 @@ type PlayerStateRow = {
   current_seconds_last_updated: Date;
   last_daily_reward_collected_at: Date | null;
   last_daily_bonus_claimed_at: Date | null;
+  tutorial_progress: string;
   server_time: Date;
 };
 
@@ -85,6 +87,7 @@ export async function buildPlayerStatePayload(
       current_seconds_last_updated,
       last_daily_reward_collected_at,
       last_daily_bonus_claimed_at,
+      tutorial_progress,
       NOW() AS server_time
     FROM player_states
     WHERE user_id = $1
@@ -134,7 +137,8 @@ export async function buildPlayerStatePayload(
     lastCollectedAt: row.last_collected_at.toISOString(),
     lastDailyRewardCollectedAt: row.last_daily_reward_collected_at?.toISOString() ?? null,
     dailyBonus: toDailyBonusResponse(dailyBonus, row.last_daily_bonus_claimed_at),
-    serverTime: row.server_time.toISOString()
+    serverTime: row.server_time.toISOString(),
+    tutorialProgress: row.tutorial_progress ?? ""
   };
 }
 
@@ -164,6 +168,115 @@ export function registerPlayerRoutes({
     }
   });
 
+  app.post("/player/tutorial/complete", async (req, res, next) => {
+    let userId: string;
+    try {
+      const identity = await resolveIdentity(req);
+      req.auth = identity.claims;
+      userId = identity.claims.sub;
+    } catch (error) {
+      if (error instanceof Error && error.message === "MISSING_IDENTITY") {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+      next(error);
+      return;
+    }
+
+    const tutorialId = typeof req.body?.tutorialId === "string" ? req.body.tutorialId.trim() : "";
+    if (!tutorialId) {
+      res.status(400).json({ error: "tutorialId is required", code: "TUTORIAL_ID_REQUIRED" });
+      return;
+    }
+    if (!KNOWN_TUTORIAL_IDS.has(tutorialId)) {
+      res.status(400).json({ error: "Unknown tutorial id", code: "TUTORIAL_UNKNOWN_ID" });
+      return;
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const lockResult = await client.query<{ tutorial_progress: string }>(
+        `
+        SELECT tutorial_progress
+        FROM player_states
+        WHERE user_id = $1
+        FOR UPDATE
+        `,
+        [userId]
+      );
+      const locked = lockResult.rows[0];
+      if (!locked) {
+        await client.query("ROLLBACK");
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+      const raw = locked.tutorial_progress ?? "";
+      const merged = mergedTutorialProgressString(raw, tutorialId);
+      if (merged !== raw) {
+        await client.query(
+          `
+          UPDATE player_states
+          SET tutorial_progress = $2, updated_at = NOW()
+          WHERE user_id = $1
+          `,
+          [userId, merged]
+        );
+      }
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => {});
+      next(error);
+      return;
+    } finally {
+      client.release();
+    }
+
+    try {
+      const payload = await buildPlayerStatePayload(pool, userId, toNumber);
+      if (!payload) {
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+      res.json(payload);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/player/tutorial/reset", async (req, res, next) => {
+    try {
+      const identity = await resolveIdentity(req);
+      req.auth = identity.claims;
+      const userId = identity.claims.sub;
+      const updateResult = await pool.query<{ user_id: string }>(
+        `
+        UPDATE player_states
+        SET tutorial_progress = '', updated_at = NOW()
+        WHERE user_id = $1
+        RETURNING user_id
+        `,
+        [userId]
+      );
+      if (!updateResult.rows[0]) {
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+      const payload = await buildPlayerStatePayload(pool, userId, toNumber);
+      if (!payload) {
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+      res.json(payload);
+    } catch (error) {
+      if (error instanceof Error && error.message === "MISSING_IDENTITY") {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+      next(error);
+    }
+  });
+
   app.post("/player/collect", async (req, res, next) => {
     const client = await pool.connect();
     try {
@@ -184,6 +297,7 @@ export function registerPlayerRoutes({
         current_seconds_last_updated: Date;
         last_daily_reward_collected_at: Date | null;
         last_daily_bonus_claimed_at: Date | null;
+        tutorial_progress: string;
       }>(
         `
         SELECT
@@ -198,7 +312,8 @@ export function registerPlayerRoutes({
           current_seconds,
           current_seconds_last_updated,
           last_daily_reward_collected_at,
-          last_daily_bonus_claimed_at
+          last_daily_bonus_claimed_at,
+          tutorial_progress
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -396,7 +511,8 @@ export function registerPlayerRoutes({
         lastCollectedAt: row.last_collected_at.toISOString(),
         lastDailyRewardCollectedAt: row.last_daily_reward_collected_at?.toISOString() ?? null,
         dailyBonus: toDailyBonusResponse(currentDailyBonus, lockedRow.last_daily_bonus_claimed_at),
-        serverTime: row.last_collected_at.toISOString()
+        serverTime: row.last_collected_at.toISOString(),
+        tutorialProgress: lockedRow.tutorial_progress ?? ""
       });
     } catch (error) {
       await client.query("ROLLBACK");
@@ -430,6 +546,7 @@ export function registerPlayerRoutes({
         last_collected_at: Date;
         last_daily_reward_collected_at: Date | null;
         last_daily_bonus_claimed_at: Date | null;
+        tutorial_progress: string;
       }>(
         `
         SELECT
@@ -448,7 +565,8 @@ export function registerPlayerRoutes({
           has_unseen_achievements,
           last_collected_at,
           last_daily_reward_collected_at,
-          last_daily_bonus_claimed_at
+          last_daily_bonus_claimed_at,
+          tutorial_progress
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -493,6 +611,7 @@ export function registerPlayerRoutes({
         last_collected_at: Date;
         last_daily_reward_collected_at: Date | null;
         last_daily_bonus_claimed_at: Date | null;
+        tutorial_progress: string;
       }>(
         `
         UPDATE player_states
@@ -517,7 +636,8 @@ export function registerPlayerRoutes({
           has_unseen_achievements,
           last_collected_at,
           last_daily_reward_collected_at,
-          last_daily_bonus_claimed_at
+          last_daily_bonus_claimed_at,
+          tutorial_progress
         `,
         [
           userId,
@@ -611,7 +731,8 @@ export function registerPlayerRoutes({
         lastCollectedAt: updatedPlayer.last_collected_at.toISOString(),
         lastDailyRewardCollectedAt: updatedPlayer.last_daily_reward_collected_at?.toISOString() ?? null,
         dailyBonus: toDailyBonusResponse(currentDailyBonus, updatedPlayer.last_daily_bonus_claimed_at),
-        serverTime: now.toISOString()
+        serverTime: now.toISOString(),
+        tutorialProgress: updatedPlayer.tutorial_progress ?? ""
       });
     } catch (error) {
       await client.query("ROLLBACK");

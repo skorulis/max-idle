@@ -251,6 +251,7 @@ export function registerDailyBonusRoutes({
         last_daily_reward_collected_at: Date | null;
         last_daily_bonus_claimed_at: Date | null;
         daily_bonuses_collected_count: number | string;
+        tutorial_progress: string;
       }>(
         `
         SELECT
@@ -270,7 +271,8 @@ export function registerDailyBonusRoutes({
           last_collected_at,
           last_daily_reward_collected_at,
           last_daily_bonus_claimed_at,
-          daily_bonuses_collected_count
+          daily_bonuses_collected_count,
+          tutorial_progress
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -347,6 +349,7 @@ export function registerDailyBonusRoutes({
         last_collected_at: Date;
         last_daily_reward_collected_at: Date | null;
         last_daily_bonus_claimed_at: Date | null;
+        tutorial_progress: string;
       }>(
         `
         UPDATE player_states
@@ -382,7 +385,8 @@ export function registerDailyBonusRoutes({
           has_unseen_achievements,
           last_collected_at,
           last_daily_reward_collected_at,
-          last_daily_bonus_claimed_at
+          last_daily_bonus_claimed_at,
+          tutorial_progress
         `,
         [
           userId,
@@ -455,7 +459,8 @@ export function registerDailyBonusRoutes({
         lastCollectedAt: updatedPlayer.last_collected_at.toISOString(),
         lastDailyRewardCollectedAt: updatedPlayer.last_daily_reward_collected_at?.toISOString() ?? null,
         dailyBonus: toDailyBonusResponse(currentDailyBonus, updatedPlayer.last_daily_bonus_claimed_at),
-        serverTime: now.toISOString()
+        serverTime: now.toISOString(),
+        tutorialProgress: updatedPlayer.tutorial_progress ?? ""
       });
     } catch (error) {
       await client.query("ROLLBACK");

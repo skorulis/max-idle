@@ -17,7 +17,8 @@ export function toSyncedState(data: PlayerResponse): SyncedPlayerState {
     lastDailyRewardCollectedAtMs: data.lastDailyRewardCollectedAt ? Date.parse(data.lastDailyRewardCollectedAt) : null,
     dailyBonus: data.dailyBonus ?? null,
     serverTimeMs: Date.parse(data.serverTime),
-    syncedAtClientMs: Date.now()
+    syncedAtClientMs: Date.now(),
+    tutorialProgress: data.tutorialProgress ?? ""
   };
 }
 

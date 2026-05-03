@@ -47,6 +47,10 @@
     "./timeConstants": {
       "types": "./dist/timeConstants.d.ts",
       "default": "./dist/timeConstants.js"
+    },
+    "./tutorialSteps": {
+      "types": "./dist/tutorialSteps.d.ts",
+      "default": "./dist/tutorialSteps.js"
     }
   }
 }

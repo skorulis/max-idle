@@ -59,6 +59,7 @@ export type PlayerResponse = {
   lastDailyRewardCollectedAt: string | null;
   dailyBonus?: DailyBonus | null;
   serverTime: string;
+  tutorialProgress: string;
 };
 
 export type LeaderboardEntry = {
@@ -213,6 +214,7 @@ export type SyncedPlayerState = {
   dailyBonus: DailyBonus | null;
   serverTimeMs: number;
   syncedAtClientMs: number;
+  tutorialProgress: string;
 };
 
 export type SyncedTournamentEntry = {

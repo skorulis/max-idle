@@ -154,6 +154,53 @@ export async function submitSurveyAnswer(
   return (await response.json()) as PlayerResponse;
 }
 
+export async function completeTutorialStep(token: string | null, tutorialId: string): Promise<PlayerResponse> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json"
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/player/tutorial/complete`, {
+    method: "POST",
+    credentials: "include",
+    headers,
+    body: JSON.stringify({ tutorialId })
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response));
+  }
+
+  return (await response.json()) as PlayerResponse;
+}
+
+export async function resetTutorialProgress(token: string | null): Promise<PlayerResponse> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/player/tutorial/reset`, {
+    method: "POST",
+    credentials: "include",
+    headers
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response));
+  }
+
+  return (await response.json()) as PlayerResponse;
+}
+
 export async function collectIdleTime(token: string | null): Promise<PlayerResponse> {
   const headers: Record<string, string> = {};
   if (token) {

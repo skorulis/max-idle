@@ -212,6 +212,9 @@
           "serverTime": {
             "type": "string",
             "format": "date-time"
+          },
+          "tutorialProgress": {
+            "type": "string"
           }
         },
         "required": [
@@ -230,7 +233,20 @@
           "lastCollectedAt",
           "lastDailyRewardCollectedAt",
           "dailyBonus",
-          "serverTime"
+          "serverTime",
+          "tutorialProgress"
+        ]
+      },
+      "TutorialCompleteRequest": {
+        "type": "object",
+        "properties": {
+          "tutorialId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "tutorialId"
         ]
       },
       "AccountResponse": {
@@ -1735,6 +1751,122 @@
         "responses": {
           "200": {
             "description": "Current player state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerState"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Player not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/player/tutorial/complete": {
+      "post": {
+        "tags": [
+          "Player"
+        ],
+        "summary": "Record a completed tutorial step and return updated player state",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TutorialCompleteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated player state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid tutorial id or body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Player not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/player/tutorial/reset": {
+      "post": {
+        "tags": [
+          "Player"
+        ],
+        "summary": "Clear tutorial progress so the intro can be shown again",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated player state",
             "content": {
               "application/json": {
                 "schema": {

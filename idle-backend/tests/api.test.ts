@@ -12,6 +12,7 @@ import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import { getRestraintBonusMultiplier } from "@maxidle/shared/shop";
 import { LUCK_SHOP_UPGRADE, RESTRAINT_SHOP_UPGRADE, SECONDS_MULTIPLIER_SHOP_UPGRADE } from "@maxidle/shared/shopUpgrades";
 import { DEFAULT_SHOP_STATE } from "@maxidle/shared/shop";
+import { TUTORIAL_STEPS } from "@maxidle/shared/tutorialSteps";
 
 describe("auth + player lifecycle", () => {
   const config: AppConfig = {
@@ -2467,5 +2468,51 @@ describe("auth + player lifecycle", () => {
     const homeAfter = await request(app).get("/home").set("Authorization", `Bearer ${token}`);
     expect(homeAfter.status).toBe(200);
     expect(homeAfter.body.availableSurvey).toBeNull();
+  });
+
+  it("tutorial: GET /player includes tutorialProgress, POST /player/tutorial/complete updates and is idempotent, unknown id is 400", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    expect(authResponse.status).toBe(201);
+    const token = authResponse.body.token as string;
+    const firstId = TUTORIAL_STEPS[0]?.id;
+    expect(firstId).toBeTruthy();
+
+    const playerBefore = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
+    expect(playerBefore.status).toBe(200);
+    expect(playerBefore.body.tutorialProgress).toBe("");
+
+    const bad = await request(app)
+      .post("/player/tutorial/complete")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ tutorialId: "not_a_real_tutorial" });
+    expect(bad.status).toBe(400);
+    expect(bad.body.code).toBe("TUTORIAL_UNKNOWN_ID");
+
+    const first = await request(app)
+      .post("/player/tutorial/complete")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ tutorialId: firstId });
+    expect(first.status).toBe(200);
+    expect(first.body.tutorialProgress).toBe(firstId);
+
+    const dup = await request(app)
+      .post("/player/tutorial/complete")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ tutorialId: firstId });
+    expect(dup.status).toBe(200);
+    expect(dup.body.tutorialProgress).toBe(firstId);
+
+    const home = await request(app).get("/home").set("Authorization", `Bearer ${token}`);
+    expect(home.status).toBe(200);
+    expect(home.body.player.tutorialProgress).toBe(firstId);
+
+    const reset = await request(app).post("/player/tutorial/reset").set("Authorization", `Bearer ${token}`);
+    expect(reset.status).toBe(200);
+    expect(reset.body.tutorialProgress).toBe("");
+
+    const homeAfterReset = await request(app).get("/home").set("Authorization", `Bearer ${token}`);
+    expect(homeAfterReset.status).toBe(200);
+    expect(homeAfterReset.body.player.tutorialProgress).toBe("");
   });
 });
