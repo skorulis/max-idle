@@ -7,7 +7,7 @@ import {
   Hourglass,
   Plus,
 } from "lucide-react";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import type { SyncedPlayerState } from "../app/types";
 import { safeNaturalNumber } from "@maxidle/shared/safeNumber";
 import {
@@ -141,6 +141,57 @@ function formatValueDescription(
   return result;
 }
 
+function formatShopCategoryTitle(category: string): string {
+  return category
+    .trim()
+    .split(/[\s_-]+/)
+    .filter((word) => word.length > 0)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+}
+
+type ShopUpgradeGroup = {
+  categoryKey: string | null;
+  categoryTitle: string | null;
+  upgrades: ShopUpgradeDefinition[];
+};
+
+/** Uncategorized first (no header), then each distinct category in first-seen order. */
+function groupVisibleShopUpgradesByCategory(upgrades: ShopUpgradeDefinition[]): ShopUpgradeGroup[] {
+  const uncategorized: ShopUpgradeDefinition[] = [];
+  const categoryKeys: string[] = [];
+  const byCategory = new Map<string, ShopUpgradeDefinition[]>();
+
+  for (const upgrade of upgrades) {
+    const raw = upgrade.category?.trim();
+    if (!raw) {
+      uncategorized.push(upgrade);
+      continue;
+    }
+    if (!byCategory.has(raw)) {
+      byCategory.set(raw, []);
+      categoryKeys.push(raw);
+    }
+    byCategory.get(raw)!.push(upgrade);
+  }
+
+  const groups: ShopUpgradeGroup[] = [];
+  if (uncategorized.length > 0) {
+    groups.push({ categoryKey: null, categoryTitle: null, upgrades: uncategorized });
+  }
+  for (const key of categoryKeys) {
+    const list = byCategory.get(key);
+    if (list && list.length > 0) {
+      groups.push({
+        categoryKey: key,
+        categoryTitle: formatShopCategoryTitle(key),
+        upgrades: list
+      });
+    }
+  }
+  return groups;
+}
+
 export function ShopPage({
   playerState,
   shopPendingQuantity,
@@ -167,6 +218,7 @@ export function ShopPage({
   const realPurchasedLevels = getPurchasedShopUpgradeLevelCount(syncedPlayer.shop, SHOP_CURRENCY_TYPES.REAL);
 
   const visibleUpgrades = SHOP_UPGRADES.filter((upgrade) => upgrade.currencyType === selectedCurrencyType);
+  const visibleUpgradeGroups = groupVisibleShopUpgradesByCategory(visibleUpgrades);
   const secondsMultiplierLevel = SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(syncedPlayer.shop);
   const hasRefundablePurchases = hasRefundableShopPurchases(syncedPlayer.shop);
 
@@ -373,79 +425,90 @@ export function ShopPage({
           <p className="subtle">No upgrades currently available for this currency.</p>
         ) : (
           <div className="shop-upgrade-list">
-            {visibleUpgrades.map((upgrade) => {
-              const upgradeState = getUpgradeRowState(upgrade);
-              const currentLevel = getUpgradeCurrentLevel(upgrade);
-              const upgradeAvailableBalance = getCurrencyAmount(syncedPlayer, upgrade.currencyType);
-              const cannotAfford = upgradeState.cost !== null && upgradeAvailableBalance < upgradeState.cost;
-              const refundUnavailable =
-                upgrade.id === SHOP_UPGRADE_IDS.PURCHASE_REFUND && !hasRefundablePurchases;
-              const isDisabled =
-                shopPendingQuantity !== null ||
-                upgradeState.isOwned ||
-                upgradeState.cost === null ||
-                cannotAfford ||
-                refundUnavailable;
-              const isPurchasable = !isDisabled && !upgradeState.isPending;
-              return (
-                <div key={upgrade.id} className={`shop-upgrade-row${upgradeState.isOwned ? " shop-upgrade-row-owned" : ""}`}>
-                  <div className="shop-upgrade-main">
-                    <GameIcon icon={getLucidIcon(upgrade.icon)} className="shop-upgrade-icon" />
-                    <div className="shop-upgrade-copy">
-                      <div className="shop-upgrade-name-row">
-                        <p className="shop-upgrade-name">
-                          {upgrade.name}
-                          {currentLevel !== null ? ` (Lvl ${currentLevel})` : ""}
-                        </p>
+            {visibleUpgradeGroups.map((group) => (
+              <Fragment key={group.categoryKey ?? "__uncategorized__"}>
+                {group.categoryTitle ? (
+                  <div className="shop-upgrade-category">
+                    <hr className="shop-upgrade-category-rule" aria-hidden="true" />
+                    <h3 className="shop-upgrade-category-title">{group.categoryTitle}</h3>
+                    <hr className="shop-upgrade-category-rule" aria-hidden="true" />
+                  </div>
+                ) : null}
+                {group.upgrades.map((upgrade) => {
+                  const upgradeState = getUpgradeRowState(upgrade);
+                  const currentLevel = getUpgradeCurrentLevel(upgrade);
+                  const upgradeAvailableBalance = getCurrencyAmount(syncedPlayer, upgrade.currencyType);
+                  const cannotAfford = upgradeState.cost !== null && upgradeAvailableBalance < upgradeState.cost;
+                  const refundUnavailable =
+                    upgrade.id === SHOP_UPGRADE_IDS.PURCHASE_REFUND && !hasRefundablePurchases;
+                  const isDisabled =
+                    shopPendingQuantity !== null ||
+                    upgradeState.isOwned ||
+                    upgradeState.cost === null ||
+                    cannotAfford ||
+                    refundUnavailable;
+                  const isPurchasable = !isDisabled && !upgradeState.isPending;
+                  return (
+                    <div key={upgrade.id} className={`shop-upgrade-row${upgradeState.isOwned ? " shop-upgrade-row-owned" : ""}`}>
+                      <div className="shop-upgrade-main">
+                        <GameIcon icon={getLucidIcon(upgrade.icon)} className="shop-upgrade-icon" />
+                        <div className="shop-upgrade-copy">
+                          <div className="shop-upgrade-name-row">
+                            <p className="shop-upgrade-name">
+                              {upgrade.name}
+                              {currentLevel !== null ? ` (Lvl ${currentLevel})` : ""}
+                            </p>
+                            <button
+                              type="button"
+                              className="info-icon-button shop-upgrade-info-button"
+                              aria-label={`Show details for ${upgrade.name}`}
+                              onClick={() => setSelectedUpgradeForInfo(upgrade)}
+                            >
+                              <CircleHelp size={14} aria-hidden="true" />
+                            </button>
+                          </div>
+                          <p className="shop-upgrade-description">{upgradeState.description}</p>
+                          {upgradeState.currentValueDescription ? (
+                            <p className="shop-upgrade-description subtle">Current: {upgradeState.currentValueDescription}</p>
+                          ) : null}
+                          {upgradeState.nextValueDescription ? (
+                            <p className="shop-upgrade-description subtle">Next: {upgradeState.nextValueDescription}</p>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className="shop-upgrade-action">
                         <button
                           type="button"
-                          className="info-icon-button shop-upgrade-info-button"
-                          aria-label={`Show details for ${upgrade.name}`}
-                          onClick={() => setSelectedUpgradeForInfo(upgrade)}
+                          className={`secondary shop-upgrade-buy-button${isPurchasable ? " shop-upgrade-buy-button-purchasable" : ""}`}
+                          onClick={() => void upgradeState.onPurchase()}
+                          disabled={isDisabled}
+                          aria-label={upgradeState.isPending ? "Purchase in progress" : undefined}
                         >
-                          <CircleHelp size={14} aria-hidden="true" />
+                          {upgradeState.isOwned ? (
+                            "Owned"
+                          ) : upgradeState.isPending ? (
+                            <Hourglass
+                              size={16}
+                              aria-hidden="true"
+                              className="shop-upgrade-buy-hourglass-spin"
+                            />
+                          ) : upgradeState.cost === null ? (
+                            "Max level"
+                          ) : (
+                            <>
+                              <Plus size={18} aria-hidden="true" className="shop-upgrade-buy-plus" />
+                              <span className="shop-upgrade-buy-cost">
+                                {formatUpgradeCost(upgrade.currencyType, upgradeState.cost)}
+                              </span>
+                            </>
+                          )}
                         </button>
                       </div>
-                      <p className="shop-upgrade-description">{upgradeState.description}</p>
-                      {upgradeState.currentValueDescription ? (
-                        <p className="shop-upgrade-description subtle">Current: {upgradeState.currentValueDescription}</p>
-                      ) : null}
-                      {upgradeState.nextValueDescription ? (
-                        <p className="shop-upgrade-description subtle">Next: {upgradeState.nextValueDescription}</p>
-                      ) : null}
                     </div>
-                  </div>
-                  <div className="shop-upgrade-action">
-                    <button
-                      type="button"
-                      className={`secondary shop-upgrade-buy-button${isPurchasable ? " shop-upgrade-buy-button-purchasable" : ""}`}
-                      onClick={() => void upgradeState.onPurchase()}
-                      disabled={isDisabled}
-                      aria-label={upgradeState.isPending ? "Purchase in progress" : undefined}
-                    >
-                      {upgradeState.isOwned ? (
-                        "Owned"
-                      ) : upgradeState.isPending ? (
-                        <Hourglass
-                          size={16}
-                          aria-hidden="true"
-                          className="shop-upgrade-buy-hourglass-spin"
-                        />
-                      ) : upgradeState.cost === null ? (
-                        "Max level"
-                      ) : (
-                        <>
-                          <Plus size={18} aria-hidden="true" className="shop-upgrade-buy-plus" />
-                          <span className="shop-upgrade-buy-cost">
-                            {formatUpgradeCost(upgrade.currencyType, upgradeState.cost)}
-                          </span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                  );
+                })}
+              </Fragment>
+            ))}
           </div>
         )}
       </section>

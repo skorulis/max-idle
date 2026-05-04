@@ -67,6 +67,7 @@ export type ShopUpgradeDefinition = {
   id: ShopUpgradeId;
   name: string;
   icon: string;
+  category?: string;
   description: string;
   longDescription: string;
   valueDescription: string | null;
@@ -255,6 +256,7 @@ export const EXTRA_REALTIME_WAIT_SHOP_UPGRADE: ShopUpgradeDefinition = defineSho
   id: SHOP_UPGRADE_IDS.EXTRA_REALTIME_WAIT,
   name: "Time skip",
   icon: "hourglass",
+  category: "cheats",
   description: "Add %s realtime to your current collection",
   longDescription:
     "Spend a time gem to instantly extend the current run's real-time wait by a fixed amount. This can increase the current uncollected idle value without waiting in real time.",
@@ -268,6 +270,7 @@ export const COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE: ShopUpgradeDefinition = define
   id: SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST,
   name: "Idle boost",
   icon: "timer",
+  category: "cheats",
   description: "Apply an idle multiplier to your next collection",
   longDescription:
     "Temporarily boosts your next collection. On the next collection this bonus will be reset.",
@@ -285,7 +288,8 @@ export const COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE: ShopUpgradeDefinition = define
 export const PURCHASE_REFUND_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.PURCHASE_REFUND,
   name: "Purchase refund",
-  icon: "undo-2",
+  icon: "undo-2",   
+  category: "refunds",
   description: "Refund all idle and real time purchases",
   longDescription:
     "Spend a time gem to reset purchased idle and real-time shop upgrades, refunding the spent time into your balances. Use this to re-spec your upgrade path.",
@@ -298,6 +302,7 @@ export const DAILY_BONUS_FEATURE_SHOP_UPGRADE: ShopUpgradeDefinition = defineSho
   id: SHOP_UPGRADE_IDS.DAILY_BONUS_FEATURE,
   name: "Daily Bonus",
   icon: "gift",
+  category: "features",
   description: "Unlock the daily bonus feature",
   longDescription:
     "Each day there will be a random bonus that can be purchased for 24h of idle time. The bonus will be available for collection from the home page",
@@ -310,6 +315,7 @@ export const TOURNAMENT_FEATURE_SHOP_UPGRADE: ShopUpgradeDefinition = defineShop
   id: SHOP_UPGRADE_IDS.TOURNAMENT_FEATURE,
   name: "Weekly Tournament",
   icon: "medal",
+  category: "features",
   description: "Unlock weekly tournaments",
   longDescription:
     "Compete each week by total idle collected since joining the current draw. Rankings pay up to five Time Gems when the round ends (Sunday 00:00 UTC).",

@@ -874,6 +874,31 @@ input {
   margin-top: 10px;
 }
 
+.shop-upgrade-category {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.shop-upgrade-category-rule {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 0;
+  margin: 0;
+  border: none;
+  border-top: 1px solid #e5e7eb;
+}
+
+.shop-upgrade-category-title {
+  flex-shrink: 0;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+}
+
 .shop-upgrade-row {
   display: grid;
   grid-template-columns: 1fr auto;
