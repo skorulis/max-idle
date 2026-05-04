@@ -7,8 +7,8 @@ import {
   getSecondsMultiplier,
   getWorthwhileAchievementsMultiplier
 } from "../shop";
-import { getIdleSecondsRate } from "../idleRate";
-import { ANTI_CONSUMERIST_SHOP_UPGRADE, getIdleHoarderMultiplier, IDLE_HOARDER_SHOP_UPGRADE } from "../shopUpgrades";
+import { getPatienceRate } from "../idleRate";
+import { ANTI_CONSUMERIST_SHOP_UPGRADE, getCollectGemIdleSecondsMultiplier, getIdleHoarderMultiplier, IDLE_HOARDER_SHOP_UPGRADE } from "../shopUpgrades";
 import { safeNumber } from "@maxidle/shared/safeNumber";
 
 type CurrentRateInfoOverlayProps = {
@@ -51,13 +51,14 @@ export function CurrentRateInfoOverlay({
   }, [open, onClose]);
 
   const factors = useMemo(() => {
-    const patienceRate = getIdleSecondsRate({
+    const patienceRate = getPatienceRate({
       secondsSinceLastCollection: Math.max(0, secondsSinceLastCollection),
       shop,
       achievementCount,
       realTimeAvailable
     });
     const secondsMultiplier = getSecondsMultiplier(shop);
+    const gemBonus = getCollectGemIdleSecondsMultiplier(shop)
     const shopBonusMultiplier = getRestraintBonusMultiplier(shop);
     const antiConsumeristLevel = ANTI_CONSUMERIST_SHOP_UPGRADE.currentLevel(shop);
     const antiConsumeristMultiplier =
@@ -67,7 +68,12 @@ export function CurrentRateInfoOverlay({
       safeNumber(achievementCount, 0)
     );
     const rateBeforeIdleHoarder =
-      patienceRate * secondsMultiplier * shopBonusMultiplier * antiConsumeristMultiplier * worthwhileAchievementsMultiplier;
+      patienceRate *
+      secondsMultiplier *
+      shopBonusMultiplier *
+      antiConsumeristMultiplier *
+      gemBonus *
+      worthwhileAchievementsMultiplier;
     const idleHoarderLevel = IDLE_HOARDER_SHOP_UPGRADE.currentLevel(shop);
     const idleHoarderMultiplier = getIdleHoarderMultiplier(
       idleHoarderLevel,
@@ -84,7 +90,8 @@ export function CurrentRateInfoOverlay({
       worthwhileAchievementsMultiplier,
       idleHoarderLevel,
       idleHoarderMultiplier,
-      calculatedRate: rateBeforeIdleHoarder * idleHoarderMultiplier
+      gemBonus,
+      calculatedRate: rateBeforeIdleHoarder * idleHoarderMultiplier,
     };
   }, [achievementCount, estimatedServerNowMs, realTimeAvailable, secondsSinceLastCollection, shop]);
 
@@ -134,6 +141,12 @@ export function CurrentRateInfoOverlay({
           <p className="rate-factor-row">
             <span>Achivement multiplier</span>
             <span>{factors.worthwhileAchievementsMultiplier.toFixed(2)}x</span>
+          </p>
+        ) : null}
+        {shouldShowFactor(factors.gemBonus) ? (
+          <p className="rate-factor-row">
+            <span>Time Gem Bonus</span>
+            <span>{factors.gemBonus.toFixed(2)}x</span>
           </p>
         ) : null}
         {factors.idleHoarderLevel > 0 ? (

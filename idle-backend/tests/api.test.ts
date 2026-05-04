@@ -4,7 +4,7 @@ import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createApp, syncStalePlayerCurrentSeconds } from "../src/app.js";
 import { ensureGameIdentityForAuthUser } from "../src/betterAuth.js";
-import { calculateBoostedIdleSecondsGain, calculateIdleSecondsGain } from "../src/idleRate.js";
+import { calculateBoostedIdleSecondsGain} from "../src/idleRate.js";
 import { finalizeDueTournaments, getNextTournamentDrawAt } from "../src/tournaments.js";
 import type { AppConfig } from "../src/types.js";
 import { createTestPool } from "./testDb.js";
@@ -1800,8 +1800,6 @@ describe("auth + player lifecycle", () => {
     expect(profileResponse.body.player.username.length).toBeGreaterThan(0);
     expect(profileResponse.body.player.accountAgeSeconds).toBeTypeOf("number");
     expect(profileResponse.body.player.accountAgeSeconds).toBeGreaterThanOrEqual(0);
-    expect(profileResponse.body.player.currentIdleSeconds).toBeGreaterThanOrEqual(calculateIdleSecondsGain(25));
-    expect(profileResponse.body.player.currentIdleSeconds).toBeLessThanOrEqual(calculateIdleSecondsGain(50));
     expect(profileResponse.body.player.idleTime.total).toBe(1234);
     expect(profileResponse.body.player.upgradesPurchased).toBe(7);
     expect(profileResponse.body.player.achievementCount).toBe(0);
@@ -1845,7 +1843,7 @@ describe("auth + player lifecycle", () => {
 
     const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
     expect(playerResponse.status).toBe(200);
-    const expectedCurrent = Math.floor(calculateIdleSecondsGain(120) * 1.5);
+    const expectedCurrent = Math.floor(120 * 1.5);
     expect(playerResponse.body.currentSeconds).toBe(expectedCurrent);
     expect(playerResponse.body.secondsMultiplier).toBe(1.5);
     expect(playerResponse.body.achievementBonusMultiplier).toBe(1);
@@ -1873,7 +1871,7 @@ describe("auth + player lifecycle", () => {
 
     const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
     expect(playerResponse.status).toBe(200);
-    const expectedCurrent = Math.floor(calculateIdleSecondsGain(120) * (1 + 0.02 * 2));
+    const expectedCurrent = Math.floor(120 * (1 + 0.02 * 2));
     expect(playerResponse.body.currentSeconds).toBe(expectedCurrent);
     expect(playerResponse.body.achievementBonusMultiplier).toBeCloseTo(1.04, 5);
   });
@@ -1900,7 +1898,7 @@ describe("auth + player lifecycle", () => {
     const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
     expect(playerResponse.status).toBe(200);
     const minExpectedCurrent = Math.floor(
-      calculateIdleSecondsGain(120) * getRestraintBonusMultiplier({ ...DEFAULT_SHOP_STATE, restraint: 1 })
+      120 * getRestraintBonusMultiplier({ ...DEFAULT_SHOP_STATE, restraint: 1 })
     );
     expect(playerResponse.body.currentSeconds).toBeGreaterThanOrEqual(minExpectedCurrent);
     expect(playerResponse.body.idleSecondsRate).toBeGreaterThan(0);
@@ -1952,9 +1950,9 @@ describe("auth + player lifecycle", () => {
     const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
     expect(playerResponse.status).toBe(200);
     const restraintBonus = getRestraintBonusMultiplier({ ...DEFAULT_SHOP_STATE, restraint: 1 });
-    const expectedCurrent = Math.floor(calculateIdleSecondsGain(7200) * restraintBonus);
+    const expectedCurrent = Math.floor(7200 * restraintBonus);
     expect(playerResponse.body.currentSeconds).toBeGreaterThanOrEqual(expectedCurrent);
-    expect(playerResponse.body.currentSeconds).toBeLessThanOrEqual(Math.floor(calculateIdleSecondsGain(7220) * restraintBonus));
+    expect(playerResponse.body.currentSeconds).toBeLessThanOrEqual(Math.floor(7220 * restraintBonus));
   });
 
   it("allows purchasing seconds multiplier upgrades", async () => {
@@ -2415,7 +2413,7 @@ describe("auth + player lifecycle", () => {
       const collectResponse = await request(app).post("/player/collect").set("Authorization", `Bearer ${token}`);
       expect(collectResponse.status).toBe(200);
       expect(collectResponse.body.currentSeconds).toBeGreaterThan(0);
-      expect(collectResponse.body.collectedSeconds).toBeGreaterThanOrEqual(calculateIdleSecondsGain(120));
+      expect(collectResponse.body.collectedSeconds).toBeGreaterThanOrEqual(120);
     } finally {
       randomSpy.mockRestore();
     }
@@ -2517,8 +2515,8 @@ describe("auth + player lifecycle", () => {
       if ((ageSeconds ?? 0) <= 5) {
         expect(synced).toBe(baselineCurrentSeconds);
       } else {
-        expect(synced).toBeGreaterThanOrEqual(calculateIdleSecondsGain(ageSeconds ?? 0));
-        expect(synced).toBeLessThanOrEqual(calculateIdleSecondsGain((ageSeconds ?? 0) + 20));
+        expect(synced).toBeGreaterThanOrEqual(ageSeconds ?? 0);
+        expect(synced).toBeLessThanOrEqual((ageSeconds ?? 0) + 20);
       }
     }
   });

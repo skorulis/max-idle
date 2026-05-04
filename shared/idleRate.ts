@@ -11,6 +11,7 @@ import {
 import type { ShopState } from "./shop.js";
 import {
   getAntiConsumeristMultiplier,
+  getCollectGemIdleSecondsMultiplier,
   getIdleHoarderMultiplier,
   IDLE_HOARDER_SHOP_UPGRADE,
   PATIENCE_SHOP_UPGRADE
@@ -55,7 +56,7 @@ function getAccessibleIdleRateSteps(shop: ShopState): IdleRateStep[] {
   return [BASE_IDLE_RATE_STEP, ...unlockedPatienceSteps];
 }
 
-export function getIdleSecondsRate(player: IdleCollectionPlayer): number {
+export function getPatienceRate(player: IdleCollectionPlayer): number {
   const elapsedSeconds = safeNaturalNumber(player.secondsSinceLastCollection);
   const accessibleSteps = getAccessibleIdleRateSteps(player.shop);
   if (elapsedSeconds <= 0) {
@@ -72,39 +73,6 @@ export function getIdleSecondsRate(player: IdleCollectionPlayer): number {
   return accessibleSteps[accessibleSteps.length - 1].rate;
 }
 
-export function calculateIdleSecondsGain(secondsSinceLastCollection: number, shop: ShopState = getDefaultShopState()): number {
-  const elapsedSeconds = safeNaturalNumber(secondsSinceLastCollection);
-  const accessibleSteps = getAccessibleIdleRateSteps(shop);
-  if (elapsedSeconds <= 0) {
-    return 0;
-  }
-
-  let total = 0;
-  for (let i = 1; i < accessibleSteps.length; i += 1) {
-    const start = accessibleSteps[i - 1];
-    const end = accessibleSteps[i];
-    if (elapsedSeconds <= start.seconds) {
-      break;
-    }
-
-    const segmentEnd = Math.min(elapsedSeconds, end.seconds);
-    const delta = segmentEnd - start.seconds;
-    if (delta <= 0) {
-      continue;
-    }
-
-    const slope = (end.rate - start.rate) / (end.seconds - start.seconds);
-    total += start.rate * delta + 0.5 * slope * delta * delta;
-  }
-
-  const lastStep = accessibleSteps[accessibleSteps.length - 1];
-  if (elapsedSeconds > lastStep.seconds) {
-    total += (elapsedSeconds - lastStep.seconds) * lastStep.rate;
-  }
-
-  return Math.floor(total);
-}
-
 export function isIdleCollectionBlockedByRestraint(player: {
   secondsSinceLastCollection: number;
   shop: ShopState;
@@ -116,28 +84,8 @@ export function isIdleCollectionBlockedByRestraint(player: {
 
 export function calculateBoostedIdleSecondsGain(player: IdleCollectionPlayer): number {
   const elapsedSeconds = safeNaturalNumber(player.secondsSinceLastCollection);
-  const baseGain = calculateIdleSecondsGain(elapsedSeconds, player.shop);
-  const secondsMultiplier = getSecondsMultiplier(player.shop);
-  const worthwhileAchievementsMultiplier = getWorthwhileAchievementsMultiplier(
-    player.shop,
-    safeNumber(player.achievementCount, 0)
-  );
-  const shopBonusMultiplier = getRestraintBonusMultiplier(player.shop);
-  const antiConsumeristMultiplier = Number.isFinite(player.wallClockMs)
-    ? getAntiConsumeristMultiplier(player.shop, player.wallClockMs as number)
-    : 1;
-  const boostedGainBeforeIdleHoarder =
-    baseGain *
-    secondsMultiplier *
-    shopBonusMultiplier *
-    worthwhileAchievementsMultiplier *
-    antiConsumeristMultiplier;
-  const idleHoarderMultiplier = getIdleHoarderMultiplier(
-    IDLE_HOARDER_SHOP_UPGRADE.currentLevel(player.shop),
-    safeNumber(player.realTimeAvailable, 0),
-    elapsedSeconds
-  );
-  const total = Math.floor(boostedGainBeforeIdleHoarder * idleHoarderMultiplier);
+  const multiplier = getEffectiveIdleSecondsRate(player)
+  const total = Math.floor(elapsedSeconds * multiplier);
   return Math.min(total, getMaxIdleCollectionRealtimeSeconds(player.shop));
 }
 
@@ -149,20 +97,22 @@ export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): numbe
   const antiConsumeristMultiplier = Number.isFinite(player.wallClockMs)
     ? getAntiConsumeristMultiplier(player.shop, player.wallClockMs as number)
     : 1;
-  const rateBeforeIdleHoarder =
-    getIdleSecondsRate(player) *
-    getSecondsMultiplier(player.shop) *
-    getRestraintBonusMultiplier(player.shop) *
-    worthwhileAchievementsMultiplier *
-    antiConsumeristMultiplier;
+
   const idleHoarderMultiplier = getIdleHoarderMultiplier(
     IDLE_HOARDER_SHOP_UPGRADE.currentLevel(player.shop),
     safeNumber(player.realTimeAvailable, 0),
     safeNaturalNumber(player.secondsSinceLastCollection)
   );
-  return (
-    rateBeforeIdleHoarder * idleHoarderMultiplier
-  );
+
+  const rate =
+    getPatienceRate(player) *
+    getSecondsMultiplier(player.shop) *
+    getRestraintBonusMultiplier(player.shop) *
+    getCollectGemIdleSecondsMultiplier(player.shop) *
+    worthwhileAchievementsMultiplier *
+    idleHoarderMultiplier *
+    antiConsumeristMultiplier;
+  return rate
 }
 
 export function shouldPreserveIdleTimerOnCollect(shop: ShopState, randomValue = Math.random()): boolean {

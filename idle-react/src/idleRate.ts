@@ -1,9 +1,8 @@
 export type { IdleCollectionPlayer } from "@maxidle/shared/idleRate";
 export {
   calculateBoostedIdleSecondsGain,
-  calculateIdleSecondsGain,
   getEffectiveIdleSecondsRate,
-  getIdleSecondsRate,
+  getPatienceRate,
   isIdleCollectionBlockedByRestraint,
   shouldPreserveIdleTimerOnCollect
 } from "@maxidle/shared/idleRate";

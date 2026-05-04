@@ -18,12 +18,6 @@ export type ShopCurrencyType = (typeof SHOP_CURRENCY_TYPES)[keyof typeof SHOP_CU
 /** Wall-clock second shift applied to last_collected_at (purchase moves collection time back by this much). */
 export const REALTIME_WAIT_EXTENSION_SECONDS = 6 * 60 * 60;
 
-/**
- * Per purchased level, realtime "wait" to your current uncollected bar is multiplied by this (idle shown/collected is scaled inversely; {@link getCollectGemIdleSecondsMultiplier}).
- * Level resets to 0 on collect.
- */
-export const COLLECT_GEM_TIME_PER_LEVEL_WAIT_FACTOR = 0.5;
-
 export const SHOP_UPGRADE_IDS = {
   SECONDS_MULTIPLIER: "seconds_multiplier",
   ANOTHER_SECONDS_MULTIPLIER: "another_seconds_multiplier",
@@ -34,7 +28,7 @@ export const SHOP_UPGRADE_IDS = {
   /** Spend 1 gem to move last_collected_at back by {@link REALTIME_WAIT_EXTENSION_SECONDS} real seconds (recalculates uncollected idle). */
   EXTRA_REALTIME_WAIT: "extra_realtime_wait",
   /**
-   * Gem upgrade: 0.5× realtime wait per level on current collection (stacks; resets to level 0 on collect).
+   * Gem upgrade: idle multiplier on current collection per tier (see {@link COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE}; resets to level 0 on collect).
    * See {@link getCollectGemIdleSecondsMultiplier}.
    */
   COLLECT_GEM_TIME_BOOST: "collect_gem_time_boost",
@@ -269,22 +263,22 @@ export const EXTRA_REALTIME_WAIT_SHOP_UPGRADE: ShopUpgradeDefinition = defineSho
   currencyType: SHOP_CURRENCY_TYPES.GEM
 });
 
-/** Five levels: gem costs 1, 2, 4, 8, 16. `value` = idle mult after purchasing that level (2^level). */
+/** Five levels: gem costs 1, 2, 4, 8, 16. `value` = idle multiplier with that many tiers purchased ({@link getCollectGemIdleSecondsMultiplier}). */
 export const COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST,
   name: "Idle boost",
   icon: "timer",
   category: "cheats",
-  description: "Apply an idle multiplier to your next collection",
+  description: "Apply a temporary idle multiplier",
   longDescription:
     "Temporarily boosts your next collection. On the next collection this bonus will be reset.",
   valueDescription: "%s",
   levels: [
-    { cost: 1, value: 0.5 },
-    { cost: 2, value: 1 },
-    { cost: 4, value: 1.5 },
+    { cost: 1, value: 1.25 },
+    { cost: 2, value: 1.5 },
+    { cost: 4, value: 1.75 },
     { cost: 8, value: 2 },
-    { cost: 16, value: 2.5 }
+    { cost: 16, value: 2.25 }
   ],
   currencyType: SHOP_CURRENCY_TYPES.GEM
 });
@@ -516,16 +510,16 @@ export function getIdleHoarderMultiplier(level: number, realTimeAvailable: numbe
 }
 
 /**
- * Max level 5. Multiplier on uncollected idle (and on collect) for `collectGemBoostLevel` purchased tiers.
- * Each level is a 0.5× on realtime wait, i.e. ×2 on idle for that tier (2^L overall).
+ * Multiplier on uncollected idle (and on collect) for `collectGemBoostLevel` purchased tiers.
+ * Uses {@link COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE} tier `value` for that level count.
  */
-export function getCollectGemIdleSecondsMultiplier(collectGemBoostLevel: number): number {
-  const maxLevel = getCollectGemTimeBoostMaxLevel();
-  const L = Math.max(0, Math.min(maxLevel, Math.floor(Number(collectGemBoostLevel) || 0)));
+export function getCollectGemIdleSecondsMultiplier(shop: ShopState): number {
+  const L = COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.currentLevel(shop);
   if (L <= 0) {
     return 1;
   }
-  return Math.pow(1 / COLLECT_GEM_TIME_PER_LEVEL_WAIT_FACTOR, L);
+  const tier = COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.levels[L - 1];
+  return safeNumber(tier?.value, 1);
 }
 
 export function formatShopUpgradeDescription(upgrade: ShopUpgradeDefinition, value: string): string {

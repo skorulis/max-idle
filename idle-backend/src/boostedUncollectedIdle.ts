@@ -1,5 +1,4 @@
 import type { ShopState } from "@maxidle/shared/shop";
-import { COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE, getCollectGemIdleSecondsMultiplier } from "@maxidle/shared/shopUpgrades";
 import { calculateBoostedIdleSecondsGain } from "./idleRate.js";
 import { calculateElapsedSeconds } from "./time.js";
 
@@ -12,12 +11,11 @@ export function boostedUncollectedIdleSeconds(
   realTimeAvailable = 0
 ): number {
   const elapsedSinceLastCollection = calculateElapsedSeconds(lastCollectedAt, refTime);
-  const base = calculateBoostedIdleSecondsGain({
+  return calculateBoostedIdleSecondsGain({
     secondsSinceLastCollection: elapsedSinceLastCollection,
     shop,
     achievementCount,
     realTimeAvailable,
     wallClockMs: refTime.getTime()
   });
-  return Math.floor(base * getCollectGemIdleSecondsMultiplier(COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.currentLevel(shop)));
 }

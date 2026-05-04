@@ -3,9 +3,8 @@ import { Link, Navigate, Route, Routes, useLocation, useMatch, useNavigate } fro
 import { AppNav } from "./AppNav";
 import { toast, toastCollectIdle } from "../gameToast";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
-import { getCollectGemIdleSecondsMultiplier } from "../shopUpgrades";
 import { isDailyBonusFeatureUnlocked, isTournamentFeatureUnlocked } from "../shop";
-import { COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE, SHOP_UPGRADE_IDS, SHOP_UPGRADES_BY_ID } from "../shopUpgrades";
+import { SHOP_UPGRADE_IDS, SHOP_UPGRADES_BY_ID } from "../shopUpgrades";
 import {
   type ShopUpgradeId
 } from "../shopUpgrades";
@@ -782,16 +781,13 @@ export function AppShell() {
     }
 
     const elapsedSinceLastCollection = Math.floor((estimatedServerNowMs - playerState.lastCollectedAtMs) / 1000);
-    const base = calculateBoostedIdleSecondsGain({
+    return calculateBoostedIdleSecondsGain({
       secondsSinceLastCollection: Math.max(0, elapsedSinceLastCollection),
       shop: playerState.shop,
       achievementCount: playerState.achievementCount,
       realTimeAvailable: playerState.realTime.available,
       wallClockMs: estimatedServerNowMs
     });
-    return Math.floor(
-      base * getCollectGemIdleSecondsMultiplier(COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.currentLevel(playerState.shop))
-    );
   }, [estimatedServerNowMs, playerState]);
 
   const realtimeElapsedSeconds = useMemo(() => {
