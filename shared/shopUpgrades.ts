@@ -73,6 +73,7 @@ export type ShopUpgradeDefinition = {
   levels: ShopUpgradeLevel[];
   currencyType: ShopCurrencyType;
   maxLevel(): number;
+  /** Gem-priced tiers only; idle/real tiers use the shared currency cost table (`shopCurrencyCostTable.ts`), so this is always 0 for those upgrades. */
   costAtLevel(level: number): number;
   currentLevel(shop: ShopState): number;
   currentValue(shop: ShopState): number;
@@ -99,10 +100,14 @@ function normalizeCostLevel(level: number, maxLevel: number): number {
 
 function defineShopUpgrade(upgrade: ShopUpgradeDefinitionConfig): ShopUpgradeDefinition {
   const maxLevel = upgrade.levels.length;
+  const usesGemPricing = upgrade.currencyType === SHOP_CURRENCY_TYPES.GEM;
   return {
     ...upgrade,
     maxLevel: () => maxLevel,
     costAtLevel: (level: number) => {
+      if (!usesGemPricing) {
+        return 0;
+      }
       const safeLevel = normalizeCostLevel(level, maxLevel);
       if (safeLevel >= maxLevel) {
         return 0;
@@ -467,10 +472,6 @@ export function getShopUpgradeDefinition(upgradeType: string): ShopUpgradeDefini
 
 export function getIdleHoarderMaxLevel(): number {
   return IDLE_HOARDER_SHOP_UPGRADE.maxLevel();
-}
-
-export function getIdleHoarderUpgradeCostAtLevel(currentLevel: number): number {
-  return IDLE_HOARDER_SHOP_UPGRADE.costAtLevel(currentLevel);
 }
 
 export function getIdleHoarderMaxMultiplierForLevel(level: number): number {

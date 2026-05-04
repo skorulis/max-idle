@@ -21,6 +21,7 @@ import {
 import type { ShopCurrencyType } from "../shopUpgrades";
 import {
   getPurchasedShopUpgradeLevelCount,
+  getShopCurrencyTierPurchaseCostSum,
   getWorthwhileAchievementsMultiplier,
   hasRefundableIdleShopPurchases,
   hasRefundableRealShopPurchases,
@@ -329,6 +330,16 @@ export function ShopPage({
     const isOwned = currentLevel >= maxLevel;
     const isPending = shopPendingQuantity === upgrade.id;
     const nextLevel = upgrade.levels[currentLevel] ?? null;
+    const cost =
+      upgrade.currencyType === SHOP_CURRENCY_TYPES.GEM
+        ? nextLevel?.cost ?? null
+        : isOwned
+          ? null
+          : getShopCurrencyTierPurchaseCostSum(
+              upgrade.currencyType,
+              upgrade.currencyType === SHOP_CURRENCY_TYPES.IDLE ? idlePurchasedLevels : realPurchasedLevels,
+              1
+            );
     return {
       description:
         isOwned
@@ -336,7 +347,7 @@ export function ShopPage({
             : upgrade.description,
       currentValueDescription,
       nextValueDescription,
-      cost: nextLevel?.cost ?? null,
+      cost,
       isPending,
       isOwned,
       onPurchase: () => onPurchase(upgrade.id)

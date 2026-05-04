@@ -28,6 +28,10 @@
       "types": "./dist/shopUpgrades.d.ts",
       "default": "./dist/shopUpgrades.js"
     },
+    "./shopCurrencyCostTable": {
+      "types": "./dist/shopCurrencyCostTable.d.ts",
+      "default": "./dist/shopCurrencyCostTable.js"
+    },
     "./appVersion": {
       "types": "./dist/appVersion.d.ts",
       "default": "./dist/appVersion.js"

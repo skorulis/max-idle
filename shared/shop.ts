@@ -12,6 +12,10 @@ import {
   SHOP_CURRENCY_TYPES,
   SHOP_UPGRADE_IDS,
 } from "./shopUpgrades.js";
+import {
+  getShopCurrencyTierPurchaseCostSum,
+  getTotalShopCurrencySpentForPurchaseCount,
+} from "./shopCurrencyCostTable.js";
 import type { ShopCurrencyType, ShopUpgradeDefinition, ShopUpgradeId } from "./shopUpgrades.js";
 import { safeNumber } from "./safeNumber.js";
 import { SECONDS_PER_WEEK } from "./timeConstants.js";
@@ -153,29 +157,13 @@ export function multiplierToLevel(secondsMultiplier: number): number {
   return 0;
 }
 
-function getTotalUpgradeCostPurchased(upgrade: ShopUpgradeDefinition, shop: ShopState): number {
-  const safeLevel = upgrade.currentLevel(shop);
-  let total = 0;
-  for (let i = 0; i < safeLevel; i += 1) {
-    total += upgrade.costAtLevel(i);
-  }
-  return total;
-}
-
 export function getShopPurchaseRefundTotals(shop: ShopState): { idle: number; real: number } {
-  const totals = { idle: 0, real: 0 };
-  for (const upgrade of SHOP_UPGRADES) {
-    if (upgrade.currencyType === SHOP_CURRENCY_TYPES.GEM) {
-      continue;
-    }
-    const refund = getTotalUpgradeCostPurchased(upgrade, shop);
-    if (upgrade.currencyType === SHOP_CURRENCY_TYPES.IDLE) {
-      totals.idle += refund;
-    } else {
-      totals.real += refund;
-    }
-  }
-  return totals;
+  const idleCount = getPurchasedShopUpgradeLevelCount(shop, SHOP_CURRENCY_TYPES.IDLE);
+  const realCount = getPurchasedShopUpgradeLevelCount(shop, SHOP_CURRENCY_TYPES.REAL);
+  return {
+    idle: getTotalShopCurrencySpentForPurchaseCount(SHOP_CURRENCY_TYPES.IDLE, idleCount),
+    real: getTotalShopCurrencySpentForPurchaseCount(SHOP_CURRENCY_TYPES.REAL, realCount)
+  };
 }
 
 export function hasRefundableIdleShopPurchases(shop: ShopState): boolean {
@@ -246,7 +234,11 @@ export function hasAffordableIdleOrRealTimeShopPurchase(
     if (currentLevel >= upgrade.maxLevel()) {
       continue;
     }
-    const cost = upgrade.costAtLevel(currentLevel);
+    const cost = getShopCurrencyTierPurchaseCostSum(
+      upgrade.currencyType,
+      getPurchasedShopUpgradeLevelCount(shop, upgrade.currencyType),
+      1
+    );
     if (!(cost > 0)) {
       continue;
     }
@@ -259,3 +251,11 @@ export function hasAffordableIdleOrRealTimeShopPurchase(
 }
 
 export { getAntiConsumeristMultiplier } from "./shopUpgrades.js";
+export {
+  getIdleShopCostTable,
+  getRealShopCostTable,
+  getShopCurrencyCostAtPurchaseIndex,
+  getShopCurrencyTierPurchaseCostSum,
+  getTotalShopCurrencySpentForPurchaseCount,
+  getMaxShopPurchasesForCurrency
+} from "./shopCurrencyCostTable.js";

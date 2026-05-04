@@ -1,5 +1,9 @@
 export type { ShopState } from "@maxidle/shared/shop";
 export {
+  getIdleShopCostTable,
+  getShopCurrencyTierPurchaseCostSum
+} from "@maxidle/shared/shopCurrencyCostTable";
+export {
   hasAffordableIdleOrRealTimeShopPurchase,
   hasRefundableIdleShopPurchases,
   hasRefundableRealShopPurchases,

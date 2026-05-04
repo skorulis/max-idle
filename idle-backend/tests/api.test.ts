@@ -12,10 +12,11 @@ import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import {
   DEFAULT_SHOP_STATE,
   getRestraintBonusMultiplier,
+  getShopCurrencyTierPurchaseCostSum,
   getShopPurchaseRefundTotals,
   type ShopState
 } from "@maxidle/shared/shop";
-import { SECONDS_MULTIPLIER_SHOP_UPGRADE } from "@maxidle/shared/shopUpgrades";
+import { SHOP_CURRENCY_TYPES } from "@maxidle/shared/shopUpgrades";
 import { TUTORIAL_STEPS } from "@maxidle/shared/tutorialSteps";
 
 describe("auth + player lifecycle", () => {
@@ -1961,7 +1962,7 @@ describe("auth + player lifecycle", () => {
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
 
-    await pool.query(`UPDATE player_states SET idle_time_available = 10000 WHERE user_id = $1`, [userId]);
+    await pool.query(`UPDATE player_states SET idle_time_available = 100000 WHERE user_id = $1`, [userId]);
 
     const purchaseResponse = await request(app)
       .post("/shop/purchase")
@@ -1969,9 +1970,9 @@ describe("auth + player lifecycle", () => {
       .send({ upgradeType: "seconds_multiplier", quantity: 5 });
 
     expect(purchaseResponse.status).toBe(200);
-    const fiveLevelCost = SECONDS_MULTIPLIER_SHOP_UPGRADE.levels.slice(0, 5).reduce((sum, level) => sum + level.cost, 0);
+    const fiveLevelCost = getShopCurrencyTierPurchaseCostSum(SHOP_CURRENCY_TYPES.IDLE, 0, 5);
     expect(purchaseResponse.body.purchase.totalCost).toBe(fiveLevelCost);
-    expect(purchaseResponse.body.idleTime.available).toBe(10000 - fiveLevelCost);
+    expect(purchaseResponse.body.idleTime.available).toBe(100000 - fiveLevelCost);
     expect(purchaseResponse.body.upgradesPurchased).toBe(5);
     expect(purchaseResponse.body.secondsMultiplier).toBe(1.25);
     expect(purchaseResponse.body.achievementBonusMultiplier).toBe(0);

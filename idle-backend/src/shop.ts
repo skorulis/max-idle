@@ -3,6 +3,8 @@ import type { Pool } from "pg";
 import { ACHIEVEMENT_IDS, GEM_HOARDER_MIN_AVAILABLE_GEMS } from "@maxidle/shared/achievements";
 import type { AchievementId } from "@maxidle/shared/achievements";
 import {
+  getPurchasedShopUpgradeLevelCount,
+  getShopCurrencyTierPurchaseCostSum,
   getShopPurchaseRefundTotals,
   getSecondsMultiplier,
   getWorthwhileAchievementsMultiplier,
@@ -65,13 +67,23 @@ function wouldExceedUpgradeMaxLevel(upgrade: ShopUpgradeDefinition, shop: ShopSt
   return upgrade.currentLevel(shop) + safeQuantity > upgrade.maxLevel();
 }
 
-function getUpgradePurchaseCost(upgrade: ShopUpgradeDefinition, currentLevel: number, quantity: number): number {
-  const safeQuantity = safeNaturalNumber(quantity)
-  let totalCost = 0;
-  for (let i = 0; i < safeQuantity; i += 1) {
-    totalCost += upgrade.costAtLevel(currentLevel + i);
+function getUpgradePurchaseCost(
+  upgrade: ShopUpgradeDefinition,
+  shop: ShopState,
+  currentLevel: number,
+  quantity: number
+): number {
+  const safeQuantity = safeNaturalNumber(quantity);
+  if (upgrade.currencyType === SHOP_CURRENCY_TYPES.GEM) {
+    let totalCost = 0;
+    for (let i = 0; i < safeQuantity; i += 1) {
+      totalCost += upgrade.costAtLevel(currentLevel + i);
+    }
+    return totalCost;
   }
-  return totalCost;
+  const currency = upgrade.currencyType;
+  const globalStart = getPurchasedShopUpgradeLevelCount(shop, currency);
+  return getShopCurrencyTierPurchaseCostSum(currency, globalStart, safeQuantity);
 }
 
 export function registerShopRoutes({
@@ -183,7 +195,7 @@ export function registerShopRoutes({
         res.status(400).json({ error: "Upgrade already maxed", code: "ALREADY_OWNED" });
         return;
       }
-      const totalCost = getUpgradePurchaseCost(boundedUpgrade, currentLevel, quantity);
+      const totalCost = getUpgradePurchaseCost(boundedUpgrade, row.shop, currentLevel, quantity);
       const idleTimeAvailable = toNumber(row.idle_time_available);
       const realTimeAvailable = toNumber(row.real_time_available);
       const timeGemsAvailable = toNumber(row.time_gems_available);
