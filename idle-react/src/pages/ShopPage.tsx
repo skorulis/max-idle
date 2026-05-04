@@ -383,9 +383,6 @@ export function ShopPage({
             <p className="shop-currency-value">{syncedPlayer.timeGems.available}</p>
           </button>
         </div>
-        {selectedCurrencyType === SHOP_CURRENCY_TYPES.IDLE ? (
-          <p className="subtle">Current multiplier: {formatMultiplier(syncedPlayer.secondsMultiplier)}</p>
-        ) : null}
         {visibleUpgrades.length === 0 ? (
           <p className="subtle">No upgrades currently available for this currency.</p>
         ) : (

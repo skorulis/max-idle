@@ -1,6 +1,9 @@
 import { APP_VERSION } from "@maxidle/shared/appVersion";
 import { flush, init, track } from "@amplitude/analytics-node";
 
+const analyticsAppVersion =
+  process.env.NODE_ENV === "production" ? APP_VERSION : `${APP_VERSION}_DEBUG`;
+
 type AnalyticsIdentityContext = {
   userId: string;
   isAnonymous: boolean;
@@ -78,7 +81,7 @@ export function createAnalyticsService(apiKey: string): AnalyticsService {
     void track({
       event_type: eventType,
       user_id: identity.userId,
-      app_version: APP_VERSION,
+      app_version: analyticsAppVersion,
       event_properties: {
         ...createBaseEventProperties(identity),
         ...properties
