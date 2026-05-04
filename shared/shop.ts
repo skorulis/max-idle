@@ -203,15 +203,42 @@ export function getShopPurchaseRefundTotals(shop: ShopState): { idle: number; re
   return totals;
 }
 
-export function hasRefundableShopPurchases(shop: ShopState): boolean {
-  const refundTotals = getShopPurchaseRefundTotals(shop);
-  return (
-    refundTotals[SHOP_CURRENCY_TYPES.IDLE] > 0 ||
-    refundTotals[SHOP_CURRENCY_TYPES.REAL] > 0
-  );
+export function hasRefundableIdleShopPurchases(shop: ShopState): boolean {
+  return getShopPurchaseRefundTotals(shop).idle > 0;
 }
 
-/** True when the player can buy at least one upgrade priced in idle or real time (not gems). */
+export function hasRefundableRealShopPurchases(shop: ShopState): boolean {
+  return getShopPurchaseRefundTotals(shop).real > 0;
+}
+
+export function hasRefundableShopPurchases(shop: ShopState): boolean {
+  return hasRefundableIdleShopPurchases(shop) || hasRefundableRealShopPurchases(shop);
+}
+
+/** Reset tiers for upgrades priced in idle time; leaves real-priced and gem-priced shop keys unchanged. */
+export function withIdleCurrencyShopUpgradesReset(shop: ShopState): ShopState {
+  const next: ShopState = { ...shop };
+  const defaults = DEFAULT_SHOP_STATE as Record<string, number | undefined>;
+  for (const upgrade of SHOP_UPGRADES) {
+    if (upgrade.currencyType === SHOP_CURRENCY_TYPES.IDLE) {
+      next[upgrade.id] = defaults[upgrade.id] ?? 0;
+    }
+  }
+  return next;
+}
+
+/** Reset tiers for upgrades priced in real time; leaves idle-priced and gem-priced shop keys unchanged. */
+export function withRealCurrencyShopUpgradesReset(shop: ShopState): ShopState {
+  const next: ShopState = { ...shop };
+  const defaults = DEFAULT_SHOP_STATE as Record<string, number | undefined>;
+  for (const upgrade of SHOP_UPGRADES) {
+    if (upgrade.currencyType === SHOP_CURRENCY_TYPES.REAL) {
+      next[upgrade.id] = defaults[upgrade.id] ?? 0;
+    }
+  }
+  return next;
+}
+
 /**
  * Sum of purchased tiers for every shop upgrade priced in `currencyType` (from {@link SHOP_UPGRADES}).
  * Each stored level counts as one; matches how refund totals are derived from the same shop JSON.
@@ -228,6 +255,7 @@ export function getPurchasedShopUpgradeLevelCount(shop: ShopState, currencyType:
   return total;
 }
 
+/** True when the player can buy at least one upgrade priced in idle or real time (not gems). */
 export function hasAffordableIdleOrRealTimeShopPurchase(
   shop: ShopState,
   idleAvailable: number,

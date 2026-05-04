@@ -25,7 +25,8 @@ import type { ShopCurrencyType } from "../shopUpgrades";
 import {
   getPurchasedShopUpgradeLevelCount,
   getWorthwhileAchievementsMultiplier,
-  hasRefundableShopPurchases,
+  hasRefundableIdleShopPurchases,
+  hasRefundableRealShopPurchases,
   withShopUpgradeLevel
 } from "../shop";
 import GameIcon from "../GameIcon";
@@ -44,7 +45,8 @@ type ShopPageProps = {
     | "luck"
     | "extra_realtime_wait"
     | "collect_gem_time_boost"
-    | "purchase_refund"
+    | "idle_refund"
+    | "real_refund"
     | "daily_bonus_feature"
     | "tournament_feature"
     | "storage_extension"
@@ -220,8 +222,6 @@ export function ShopPage({
   const visibleUpgrades = SHOP_UPGRADES.filter((upgrade) => upgrade.currencyType === selectedCurrencyType);
   const visibleUpgradeGroups = groupVisibleShopUpgradesByCategory(visibleUpgrades);
   const secondsMultiplierLevel = SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(syncedPlayer.shop);
-  const hasRefundablePurchases = hasRefundableShopPurchases(syncedPlayer.shop);
-
   function getValueDescriptionParts(
     upgrade: ShopUpgradeDefinition,
     playerState: SyncedPlayerState,
@@ -326,7 +326,10 @@ export function ShopPage({
       };
     }
 
-    if (upgrade.id === SHOP_UPGRADE_IDS.PURCHASE_REFUND) {
+    if (
+      upgrade.id === SHOP_UPGRADE_IDS.IDLE_REFUND ||
+      upgrade.id === SHOP_UPGRADE_IDS.REAL_REFUND
+    ) {
       return {
         description: upgrade.description,
         currentValueDescription,
@@ -440,7 +443,10 @@ export function ShopPage({
                   const upgradeAvailableBalance = getCurrencyAmount(syncedPlayer, upgrade.currencyType);
                   const cannotAfford = upgradeState.cost !== null && upgradeAvailableBalance < upgradeState.cost;
                   const refundUnavailable =
-                    upgrade.id === SHOP_UPGRADE_IDS.PURCHASE_REFUND && !hasRefundablePurchases;
+                    (upgrade.id === SHOP_UPGRADE_IDS.IDLE_REFUND &&
+                      !hasRefundableIdleShopPurchases(syncedPlayer.shop)) ||
+                    (upgrade.id === SHOP_UPGRADE_IDS.REAL_REFUND &&
+                      !hasRefundableRealShopPurchases(syncedPlayer.shop));
                   const isDisabled =
                     shopPendingQuantity !== null ||
                     upgradeState.isOwned ||

@@ -2116,7 +2116,7 @@ describe("auth + player lifecycle", () => {
     expect(maxedPurchaseResponse.body.code).toBe("ALREADY_OWNED");
   });
 
-  it("resets shop to default and refunds spent idle and real time", async () => {
+  it("idle_refund resets idle-priced tiers and refunds idle time only", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
@@ -2139,32 +2139,74 @@ describe("auth + player lifecycle", () => {
     const purchaseResponse = await request(app)
       .post("/shop/purchase")
       .set("Authorization", `Bearer ${token}`)
-      .send({ upgradeType: "purchase_refund" });
+      .send({ upgradeType: "idle_refund" });
 
     expect(purchaseResponse.status).toBe(200);
-    expect(purchaseResponse.body.purchase.upgradeType).toBe("purchase_refund");
+    expect(purchaseResponse.body.purchase.upgradeType).toBe("idle_refund");
     expect(purchaseResponse.body.purchase.quantity).toBe(1);
     expect(purchaseResponse.body.purchase.totalCost).toBe(1);
     expect(purchaseResponse.body.timeGems.available).toBe(1);
     const refundedIdle = SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(0) + SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(1) + LUCK_SHOP_UPGRADE.costAtLevel(0);
     expect(purchaseResponse.body.idleTime.available).toBe(100 + refundedIdle);
-    expect(purchaseResponse.body.realTime.available).toBe(200 + RESTRAINT_SHOP_UPGRADE.costAtLevel(0));
-    expect(purchaseResponse.body.shop).toEqual({
-      another_seconds_multiplier: 0,
-      seconds_multiplier: 0,
-      patience: 0,
-      restraint: 0,
-      idle_hoarder: 0,
-      luck: 0,
-      worthwhile_achievements: 0,
-      collect_gem_time_boost: 0,
-      daily_bonus_feature: 0,
-      tournament_feature: 0,
-      storage_extension: 0
-    });
+    expect(purchaseResponse.body.realTime.available).toBe(200);
+    expect(purchaseResponse.body.shop).toEqual(
+      expect.objectContaining({
+        seconds_multiplier: 0,
+        patience: 0,
+        restraint: 1,
+        luck: 0,
+        worthwhile_achievements: 0,
+        collect_gem_time_boost: 3
+      })
+    );
   });
 
-  it("rejects purchase_refund when no refundable upgrades are active", async () => {
+  it("real_refund resets real-priced tiers and refunds real time only", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(
+      `
+      UPDATE player_states
+      SET
+        time_gems_available = 2,
+        time_gems_total = 2,
+        idle_time_available = 100,
+        real_time_available = 200,
+        shop = '{"seconds_multiplier": 2, "restraint": 1, "luck": 1, "collect_gem_time_boost": 3}'::jsonb
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+
+    const purchaseResponse = await request(app)
+      .post("/shop/purchase")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ upgradeType: "real_refund" });
+
+    expect(purchaseResponse.status).toBe(200);
+    expect(purchaseResponse.body.purchase.upgradeType).toBe("real_refund");
+    expect(purchaseResponse.body.purchase.quantity).toBe(1);
+    expect(purchaseResponse.body.purchase.totalCost).toBe(1);
+    expect(purchaseResponse.body.timeGems.available).toBe(1);
+    expect(purchaseResponse.body.idleTime.available).toBe(100);
+    expect(purchaseResponse.body.realTime.available).toBe(200 + RESTRAINT_SHOP_UPGRADE.costAtLevel(0));
+    expect(purchaseResponse.body.shop).toEqual(
+      expect.objectContaining({
+        seconds_multiplier: 2,
+        restraint: 0,
+        luck: 1,
+        collect_gem_time_boost: 3,
+        storage_extension: 0,
+        idle_hoarder: 0,
+        another_seconds_multiplier: 0
+      })
+    );
+  });
+
+  it("rejects idle_refund when no idle-priced purchases to refund", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
@@ -2185,7 +2227,34 @@ describe("auth + player lifecycle", () => {
     const purchaseResponse = await request(app)
       .post("/shop/purchase")
       .set("Authorization", `Bearer ${token}`)
-      .send({ upgradeType: "purchase_refund" });
+      .send({ upgradeType: "idle_refund" });
+
+    expect(purchaseResponse.status).toBe(400);
+    expect(purchaseResponse.body.code).toBe("NO_REFUNDABLE_PURCHASES");
+  });
+
+  it("rejects real_refund when no real-priced purchases to refund", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(
+      `
+      UPDATE player_states
+      SET
+        time_gems_available = 2,
+        time_gems_total = 2,
+        shop = '{"seconds_multiplier": 2, "restraint": 0, "luck": 0}'::jsonb
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+
+    const purchaseResponse = await request(app)
+      .post("/shop/purchase")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ upgradeType: "real_refund" });
 
     expect(purchaseResponse.status).toBe(400);
     expect(purchaseResponse.body.code).toBe("NO_REFUNDABLE_PURCHASES");

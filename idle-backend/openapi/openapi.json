@@ -689,7 +689,21 @@
               "upgradeType": {
                 "type": "string",
                 "enum": [
-                  "purchase_refund"
+                  "idle_refund"
+                ]
+              }
+            },
+            "required": [
+              "upgradeType"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "upgradeType": {
+                "type": "string",
+                "enum": [
+                  "real_refund"
                 ]
               }
             },
@@ -771,7 +785,13 @@
                       {
                         "type": "string",
                         "enum": [
-                          "purchase_refund"
+                          "idle_refund"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "real_refund"
                         ]
                       },
                       {

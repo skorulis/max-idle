@@ -3,18 +3,18 @@ import type { Pool } from "pg";
 import { ACHIEVEMENT_IDS, GEM_HOARDER_MIN_AVAILABLE_GEMS } from "@maxidle/shared/achievements";
 import type { AchievementId } from "@maxidle/shared/achievements";
 import {
-  getDefaultShopState,
   getShopPurchaseRefundTotals,
-  hasRefundableShopPurchases,
   getSecondsMultiplier,
   getWorthwhileAchievementsMultiplier,
+  hasRefundableIdleShopPurchases,
+  hasRefundableRealShopPurchases,
+  withIdleCurrencyShopUpgradesReset,
+  withRealCurrencyShopUpgradesReset,
   withShopUpgradeLevel,
 } from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
 import {
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
-  DAILY_BONUS_FEATURE_SHOP_UPGRADE,
-  TOURNAMENT_FEATURE_SHOP_UPGRADE,
   getShopUpgradeDefinition,
   REALTIME_WAIT_EXTENSION_SECONDS,
   SHOP_CURRENCY_TYPES,
@@ -155,7 +155,9 @@ export function registerShopRoutes({
       const now = new Date();
       const isExtraRealtimeWait = upgradeType === SHOP_UPGRADE_IDS.EXTRA_REALTIME_WAIT;
       const isCollectGemTimeBoost = upgradeType === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST;
-      const isPurchaseRefund = upgradeType === SHOP_UPGRADE_IDS.PURCHASE_REFUND;
+      const isIdleRefund = upgradeType === SHOP_UPGRADE_IDS.IDLE_REFUND;
+      const isRealRefund = upgradeType === SHOP_UPGRADE_IDS.REAL_REFUND;
+      const isPurchaseRefund = isIdleRefund || isRealRefund;
       const isGemPurchase = boundedUpgrade.currencyType === SHOP_CURRENCY_TYPES.GEM;
       const isMaxLevelBoundedUpgrade = !isExtraRealtimeWait && !isPurchaseRefund;
       const collectGemLevel = COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.currentLevel(row.shop);
@@ -166,9 +168,14 @@ export function registerShopRoutes({
           : 1;
 
       const currentLevel = boundedUpgrade.currentLevel(row.shop);
-      if (isPurchaseRefund && !hasRefundableShopPurchases(row.shop)) {
+      if (isIdleRefund && !hasRefundableIdleShopPurchases(row.shop)) {
         await client.query("ROLLBACK");
-        res.status(400).json({ error: "No idle or real purchases to refund", code: "NO_REFUNDABLE_PURCHASES" });
+        res.status(400).json({ error: "No idle time purchases to refund", code: "NO_REFUNDABLE_PURCHASES" });
+        return;
+      }
+      if (isRealRefund && !hasRefundableRealShopPurchases(row.shop)) {
+        await client.query("ROLLBACK");
+        res.status(400).json({ error: "No real time purchases to refund", code: "NO_REFUNDABLE_PURCHASES" });
         return;
       }
       
@@ -196,20 +203,21 @@ export function registerShopRoutes({
         return;
       }
 
-      const refundTotals = isPurchaseRefund ? getShopPurchaseRefundTotals(row.shop) : { idle: 0, real: 0 };
-      const preservedDailyBonusFeatureLevel = DAILY_BONUS_FEATURE_SHOP_UPGRADE.currentLevel(row.shop);
-      const preservedTournamentFeatureLevel = TOURNAMENT_FEATURE_SHOP_UPGRADE.currentLevel(row.shop);
+      const refundTotalsFull = getShopPurchaseRefundTotals(row.shop);
+      const refundTotals = isIdleRefund
+        ? { idle: refundTotalsFull.idle, real: 0 }
+        : isRealRefund
+          ? { idle: 0, real: refundTotalsFull.real }
+          : { idle: 0, real: 0 };
       const nextShopState = isExtraRealtimeWait
         ? row.shop
         : isCollectGemTimeBoost
           ? withShopUpgradeLevel(row.shop, SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST, collectGemLevel + quantity)
-          : isPurchaseRefund
-            ? {
-                ...getDefaultShopState(),
-                [SHOP_UPGRADE_IDS.DAILY_BONUS_FEATURE]: preservedDailyBonusFeatureLevel,
-                [SHOP_UPGRADE_IDS.TOURNAMENT_FEATURE]: preservedTournamentFeatureLevel
-              }
-            : withShopUpgradeLevel(row.shop, boundedUpgrade.id, currentLevel + quantity)
+          : isIdleRefund
+            ? withIdleCurrencyShopUpgradesReset(row.shop)
+            : isRealRefund
+              ? withRealCurrencyShopUpgradesReset(row.shop)
+              : withShopUpgradeLevel(row.shop, boundedUpgrade.id, currentLevel + quantity)
       const nextLastCollectedAt = isExtraRealtimeWait
         ? new Date(row.last_collected_at.getTime() - REALTIME_WAIT_EXTENSION_SECONDS * 1000)
         : row.last_collected_at;

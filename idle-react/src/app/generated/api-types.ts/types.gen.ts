@@ -151,14 +151,16 @@ export type ShopPurchaseRequest = {
 } | {
     upgradeType: 'collect_gem_time_boost';
 } | {
-    upgradeType: 'purchase_refund';
+    upgradeType: 'idle_refund';
+} | {
+    upgradeType: 'real_refund';
 } | {
     upgradeType: 'daily_bonus_feature';
 };
 
 export type ShopPurchaseResponse = PlayerState & {
     purchase: {
-        upgradeType: 'seconds_multiplier' | 'another_seconds_multiplier' | 'restraint' | 'idle_hoarder' | 'luck' | 'extra_realtime_wait' | 'collect_gem_time_boost' | 'purchase_refund' | 'daily_bonus_feature';
+        upgradeType: 'seconds_multiplier' | 'another_seconds_multiplier' | 'restraint' | 'idle_hoarder' | 'luck' | 'extra_realtime_wait' | 'collect_gem_time_boost' | 'idle_refund' | 'real_refund' | 'daily_bonus_feature';
         quantity: number;
         totalCost: number;
     };

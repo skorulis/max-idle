@@ -38,8 +38,10 @@ export const SHOP_UPGRADE_IDS = {
    * See {@link getCollectGemIdleSecondsMultiplier}.
    */
   COLLECT_GEM_TIME_BOOST: "collect_gem_time_boost",
-  /** Spend 1 gem to reset purchased idle/real shop upgrades and refund their spent time. */
-  PURCHASE_REFUND: "purchase_refund",
+  /** Spend 1 gem to reset idle-priced shop tiers and refund spent idle time. */
+  IDLE_REFUND: "idle_refund",
+  /** Spend 1 gem to reset real-priced shop tiers and refund spent real time. */
+  REAL_REFUND: "real_refund",
   /** Idle multiplier bonus per unlocked achievement: ×(1 + value × achievementCount). */
   WORTHWHILE_ACHIEVEMENTS: "worthwhile_achievements",
   /** Spend 1 gem to unlock the daily bonus feature (activation still costs idle time). */
@@ -285,14 +287,27 @@ export const COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE: ShopUpgradeDefinition = define
   currencyType: SHOP_CURRENCY_TYPES.GEM
 });
 
-export const PURCHASE_REFUND_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
-  id: SHOP_UPGRADE_IDS.PURCHASE_REFUND,
-  name: "Purchase refund",
-  icon: "undo-2",   
+export const IDLE_REFUND_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
+  id: SHOP_UPGRADE_IDS.IDLE_REFUND,
+  name: "Idle refund",
+  icon: "undo-2",
   category: "refunds",
-  description: "Refund all idle and real time purchases",
+  description: "Refund idle time spent on idle-priced upgrades",
   longDescription:
-    "Spend a time gem to reset purchased idle and real-time shop upgrades, refunding the spent time into your balances. Use this to re-spec your upgrade path.",
+    "Spend a time gem to reset idle-priced shop upgrades (base multipliers, patience, luck, worthwhile achievements, etc.) and return the idle time you spent on them.",
+  valueDescription: null,
+  levels: [{ cost: 1, value: 0 }],
+  currencyType: SHOP_CURRENCY_TYPES.GEM
+});
+
+export const REAL_REFUND_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
+  id: SHOP_UPGRADE_IDS.REAL_REFUND,
+  name: "Real refund",
+  icon: "undo-2",
+  category: "refunds",
+  description: "Refund real time spent on real-priced upgrades",
+  longDescription:
+    "Spend a time gem to reset real-priced shop upgrades (second multiplier line, restraint, hoarder, temporal expanse, etc.) and return the real time you spent on them.",
   valueDescription: null,
   levels: [{ cost: 1, value: 0 }],
   currencyType: SHOP_CURRENCY_TYPES.GEM
@@ -387,7 +402,8 @@ export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
   EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
-  PURCHASE_REFUND_SHOP_UPGRADE,
+  IDLE_REFUND_SHOP_UPGRADE,
+  REAL_REFUND_SHOP_UPGRADE,
   DAILY_BONUS_FEATURE_SHOP_UPGRADE,
   TOURNAMENT_FEATURE_SHOP_UPGRADE
 ];
@@ -401,7 +417,8 @@ export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> =
   [SHOP_UPGRADE_IDS.LUCK]: LUCK_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.EXTRA_REALTIME_WAIT]: EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST]: COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
-  [SHOP_UPGRADE_IDS.PURCHASE_REFUND]: PURCHASE_REFUND_SHOP_UPGRADE,
+  [SHOP_UPGRADE_IDS.IDLE_REFUND]: IDLE_REFUND_SHOP_UPGRADE,
+  [SHOP_UPGRADE_IDS.REAL_REFUND]: REAL_REFUND_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS]: WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.DAILY_BONUS_FEATURE]: DAILY_BONUS_FEATURE_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.TOURNAMENT_FEATURE]: TOURNAMENT_FEATURE_SHOP_UPGRADE,
