@@ -25,11 +25,12 @@ function UpgradeExtraInfo({
   estimatedServerNowMs: number | undefined;
 }) {
   if (upgrade.id === SHOP_UPGRADE_IDS.ANTI_CONSUMERIST) {
-    if (!shop || !Number.isFinite(estimatedServerNowMs) || estimatedServerNowMs <= 0) {
+    const serverNowMs = estimatedServerNowMs;
+    if (!shop || typeof serverNowMs !== "number" || !Number.isFinite(serverNowMs) || serverNowMs <= 0) {
       return null;
     }
     const lastUtcSeconds = shop.last_purchase;
-    if (!Number.isFinite(lastUtcSeconds)) {
+    if (typeof lastUtcSeconds !== "number" || !Number.isFinite(lastUtcSeconds)) {
       return (
         <p className="shop-upgrade-info-extra subtle">
           No idle or real shop purchase is recorded yet, so the streak timer has not started (bonus stays at ×1 until
@@ -37,7 +38,7 @@ function UpgradeExtraInfo({
         </p>
       );
     }
-    const nowUtcSeconds = Math.floor(estimatedServerNowMs / 1000);
+    const nowUtcSeconds = Math.floor(serverNowMs / 1000);
     const elapsedSeconds = Math.max(0, nowUtcSeconds - Math.floor(lastUtcSeconds));
     return (
       <p className="shop-upgrade-info-extra subtle">

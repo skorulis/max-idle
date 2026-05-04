@@ -1685,7 +1685,6 @@ export function AppShell() {
               <CollectionHistoryPage
                 history={collectionHistory}
                 loading={collectionHistoryLoading}
-                playerState={playerState}
               />
             )}
           />
