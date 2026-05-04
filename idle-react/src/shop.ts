@@ -12,6 +12,7 @@ export {
   getSecondsMultiplierUpgradeValue,
   getShopPurchaseRefundTotals,
   getDefaultShopState,
+  getPurchasedShopUpgradeLevelCount,
   getWorthwhileAchievementsMultiplier,
   multiplierToLevel,
   isDailyBonusFeatureUnlocked,

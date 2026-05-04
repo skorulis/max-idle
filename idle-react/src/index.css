@@ -862,6 +862,12 @@ input {
   font-weight: 600;
 }
 
+.shop-currency-purchased {
+  margin: 4px 0 0;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
 .shop-upgrade-list {
   display: grid;
   gap: 8px;

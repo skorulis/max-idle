@@ -13,7 +13,7 @@ import {
   SHOP_UPGRADE_IDS,
   getWorthwhileAchievementsBonusPerAchievement
 } from "./shopUpgrades.js";
-import type { ShopUpgradeDefinition, ShopUpgradeId } from "./shopUpgrades.js";
+import type { ShopCurrencyType, ShopUpgradeDefinition, ShopUpgradeId } from "./shopUpgrades.js";
 import { safeNumber } from "./safeNumber.js";
 import { SECONDS_PER_WEEK } from "./timeConstants.js";
 
@@ -212,6 +212,22 @@ export function hasRefundableShopPurchases(shop: ShopState): boolean {
 }
 
 /** True when the player can buy at least one upgrade priced in idle or real time (not gems). */
+/**
+ * Sum of purchased tiers for every shop upgrade priced in `currencyType` (from {@link SHOP_UPGRADES}).
+ * Each stored level counts as one; matches how refund totals are derived from the same shop JSON.
+ * Gem-only purchases that do not persist in shop (e.g. time skip) are not included.
+ */
+export function getPurchasedShopUpgradeLevelCount(shop: ShopState, currencyType: ShopCurrencyType): number {
+  let total = 0;
+  for (const upgrade of SHOP_UPGRADES) {
+    if (upgrade.currencyType !== currencyType) {
+      continue;
+    }
+    total += upgrade.currentLevel(shop);
+  }
+  return total;
+}
+
 export function hasAffordableIdleOrRealTimeShopPurchase(
   shop: ShopState,
   idleAvailable: number,

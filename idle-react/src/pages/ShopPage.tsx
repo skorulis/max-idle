@@ -23,6 +23,7 @@ import {
 } from "../shopUpgrades";
 import type { ShopCurrencyType } from "../shopUpgrades";
 import {
+  getPurchasedShopUpgradeLevelCount,
   getWorthwhileAchievementsMultiplier,
   hasRefundableShopPurchases,
   withShopUpgradeLevel
@@ -161,6 +162,9 @@ export function ShopPage({
   }
 
   const syncedPlayer = playerState;
+
+  const idlePurchasedLevels = getPurchasedShopUpgradeLevelCount(syncedPlayer.shop, SHOP_CURRENCY_TYPES.IDLE);
+  const realPurchasedLevels = getPurchasedShopUpgradeLevelCount(syncedPlayer.shop, SHOP_CURRENCY_TYPES.REAL);
 
   const visibleUpgrades = SHOP_UPGRADES.filter((upgrade) => upgrade.currencyType === selectedCurrencyType);
   const secondsMultiplierLevel = SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(syncedPlayer.shop);
@@ -326,6 +330,9 @@ export function ShopPage({
               Idle Time
             </p>
             <p className="shop-currency-value">{formatSeconds(syncedPlayer.idleTime.available, 2, "floor")}</p>
+            <p className="subtle shop-currency-purchased">
+              {idlePurchasedLevels} purchase{idlePurchasedLevels === 1 ? "" : "s"} made
+            </p>
           </button>
           <button
             type="button"
@@ -340,6 +347,9 @@ export function ShopPage({
               Real Time
             </p>
             <p className="shop-currency-value">{formatSeconds(syncedPlayer.realTime.available, 2, "floor")}</p>
+            <p className="subtle shop-currency-purchased">
+              {realPurchasedLevels} purchase{realPurchasedLevels === 1 ? "" : "s"} made
+            </p>
           </button>
           <button
             type="button"
