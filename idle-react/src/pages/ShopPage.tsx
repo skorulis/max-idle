@@ -12,7 +12,6 @@ import type { SyncedPlayerState } from "../app/types";
 import { safeNaturalNumber } from "@maxidle/shared/safeNumber";
 import {
   formatShopUpgradeDescription,
-  SECONDS_MULTIPLIER_SHOP_UPGRADE,
   SHOP_CURRENCY_TYPES,
   SHOP_UPGRADE_IDS,
   SHOP_UPGRADES,
@@ -227,7 +226,6 @@ export function ShopPage({
 
   const visibleUpgrades = SHOP_UPGRADES.filter((upgrade) => upgrade.currencyType === selectedCurrencyType);
   const visibleUpgradeGroups = groupVisibleShopUpgradesByCategory(visibleUpgrades);
-  const secondsMultiplierLevel = SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(syncedPlayer.shop);
   function getValueDescriptionParts(
     upgrade: ShopUpgradeDefinition,
     playerState: SyncedPlayerState,
