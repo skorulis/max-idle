@@ -209,13 +209,13 @@ export const RESTRAINT_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
     "Adds a constant idle multiplier, but enforces a minimum real-time wait before collecting. Collecting too early is blocked, trading flexibility for a higher payout.",
   valueDescription: "%s, collect after %s hours",
   levels: [
-    { cost: 2 * 60 * 60, value: 1.1, value2: 1 },
-    { cost: 4 * 60 * 60, value: 1.2, value2: 2 },
-    { cost: 8 * 60 * 60, value: 1.3, value2: 6 },
-    { cost: 12 * 60 * 60, value: 1.4, value2: 12 },
-    { cost: 16 * 60 * 60, value: 1.5, value2: 24 },
+    { cost: 6 * SECONDS_PER_HOUR, value: 1.1, value2: 1 },
+    { cost: 12 * SECONDS_PER_HOUR, value: 1.2, value2: 2 },
+    { cost: 24 * SECONDS_PER_HOUR, value: 1.3, value2: 6 },
+    { cost: 2 * SECONDS_PER_DAY, value: 1.4, value2: 12 },
+    { cost: 7 * SECONDS_PER_DAY, value: 1.5, value2: 24 },
   ],
-  currencyType: SHOP_CURRENCY_TYPES.REAL
+  currencyType: SHOP_CURRENCY_TYPES.IDLE
 });
 
 export const IDLE_HOARDER_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
@@ -240,7 +240,7 @@ export const LUCK_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.LUCK,
   name: "Luck",
   icon: "dice-5",
-  description: "Chance to not reset when collecting",
+  description: "Chance to not reset time when collecting",
   longDescription:
     "Gives each collection a chance to avoid the usual reset behavior. Higher levels increase the probability, letting you preserve progress more often across collections.",
   valueDescription: "%s",
@@ -251,7 +251,7 @@ export const LUCK_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
     { cost: 56 * 24 * 60 * 60, value: 0.2 },
     { cost: 365 * 24 * 60 * 60, value: 0.25 }
   ],
-  currencyType: SHOP_CURRENCY_TYPES.IDLE
+  currencyType: SHOP_CURRENCY_TYPES.REAL
 });
 
 export const EXTRA_REALTIME_WAIT_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
@@ -294,7 +294,7 @@ export const IDLE_REFUND_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade
   category: "refunds",
   description: "Refund idle time spent on idle-priced upgrades",
   longDescription:
-    "Spend a time gem to reset idle-priced shop upgrades (base multipliers, patience, luck, worthwhile achievements, etc.) and return the idle time you spent on them.",
+    "Spend a time gem to reset idle-priced shop upgrades and return the idle time you spent on them.",
   valueDescription: null,
   levels: [{ cost: 1, value: 0 }],
   currencyType: SHOP_CURRENCY_TYPES.GEM
@@ -307,7 +307,7 @@ export const REAL_REFUND_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade
   category: "refunds",
   description: "Refund real time spent on real-priced upgrades",
   longDescription:
-    "Spend a time gem to reset real-priced shop upgrades (second multiplier line, restraint, hoarder, temporal expanse, etc.) and return the real time you spent on them.",
+    "Spend a time gem to reset real-priced shop upgrades and return the real time you spent on them.",
   valueDescription: null,
   levels: [{ cost: 1, value: 0 }],
   currencyType: SHOP_CURRENCY_TYPES.GEM
