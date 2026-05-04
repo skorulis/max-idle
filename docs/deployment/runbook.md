@@ -54,6 +54,17 @@ Restore is destructive for live data. Take a fresh backup before restoring.
 
 For unhealthy containers, failed Compose dependencies, and how to read logs and health probes on the VPS, see [production-debugging.md](./production-debugging.md).
 
+## Optional: Discord release notifications
+
+After a successful production deploy, the workflow can post to a Discord channel.
+
+1. In Discord: **Server settings → Integrations → Webhooks → New Webhook** — pick the channel, copy the webhook URL.
+2. In GitHub: **Repository → Settings → Secrets and variables → Actions → New repository secret**
+   - Name: `DISCORD_RELEASE_WEBHOOK_URL`
+   - Value: the full webhook URL (`https://discord.com/api/webhooks/...`).
+
+If this secret is unset, deploys behave as before and the “Notify Discord” step is skipped.
+
 ## Required GitHub secrets
 
 - `PROD_BACKEND_IMAGE_REPO`

@@ -149,3 +149,22 @@ jobs:
             fi
             chmod +x /opt/maxidle/deploy/scripts/*.sh
             /opt/maxidle/deploy/scripts/deploy-release.sh
+
+      - name: Notify Discord
+        if: success()
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_RELEASE_WEBHOOK_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DISCORD_WEBHOOK:-}" ]; then
+            echo "DISCORD_RELEASE_WEBHOOK_URL not configured; skipping Discord notification."
+            exit 0
+          fi
+          BODY="$(jq -nc \
+            --arg title "Production release: ${GITHUB_REF_NAME}" \
+            --arg url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --arg actor "${GITHUB_ACTOR}" \
+            '{embeds: [{title: $title, url: $url, description: ("Deployed by " + $actor + "."), color: 3066993}]}')"
+          curl -fsS -X POST "$DISCORD_WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d "$BODY"

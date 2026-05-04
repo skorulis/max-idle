@@ -16,7 +16,7 @@ export function HelpPage() {
         <h3>Support and Suggestions</h3>
         <p>
           Need help, found a bug, or have an idea to improve the game? Email us at{" "}
-          <a href="mailto:support@max-idle.com">support@max-idle.com</a>.
+          <a href="mailto:support@max-idle.com">support@max-idle.com</a> or join the <a href="https://discordapp.com/channels/1500691745850134532/1500691747133587539">Discord</a>.
         </p>
       </div>
       <p style={{ marginTop: "1.25rem", fontSize: "0.85rem", color: "#6b7280" }}>
