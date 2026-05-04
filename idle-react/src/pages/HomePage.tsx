@@ -7,6 +7,7 @@ import { getLucidIcon } from "../getLucidIcon";
 import type { AvailableSurveySummary, SyncedOutstandingTournamentResult, SyncedPlayerState } from "../app/types";
 import { parseCompletedTutorialIds, TUTORIAL_STEPS } from "@maxidle/shared/tutorialSteps";
 import {
+  getMaxIdleCollectionRealtimeSeconds,
   getRestraintMinRealtimeSeconds,
   isDailyBonusFeatureUnlocked,
   isTournamentFeatureUnlocked
@@ -141,6 +142,9 @@ export function HomePage({
       ? Math.max(0, restraintRequiredRealtimeSeconds - realtimeElapsedSeconds)
       : 0;
 
+  const maxUncollectedIdleSeconds = getMaxIdleCollectionRealtimeSeconds(playerState.shop);
+  const maxIdleCollectionReached = uncollectedIdleSeconds >= maxUncollectedIdleSeconds;
+
   const collectReady = !collecting && !collectBlockedByRestraint;
 
   const showSpendableTimeSection =
@@ -220,6 +224,8 @@ export function HomePage({
             <CircleHelp size={15} aria-hidden="true" />
           </button>
         </div>
+
+        {maxIdleCollectionReached ? <p className="warning-alert">Max idle time reached</p> : null}
 
         <div className="collect-row collect-row--primary">
           <button

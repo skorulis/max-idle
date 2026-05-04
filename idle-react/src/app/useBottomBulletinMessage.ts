@@ -20,6 +20,7 @@ const HUMOROUS_MESSAGES: ReadonlyArray<string | BulletinPlain> = [
   "To catch up, try doing nothing faster.",
   "You are now officially better at waiting than before. Don't brag too much.",
   "Something exciting is happening. But not in this game.",
+  "Push the limits of doing nothing.",
   "The system appreciates your continued lack of input.",
   "This is what peak inactivity looks like.",
   "Your absence of action has been noted.",
@@ -27,6 +28,7 @@ const HUMOROUS_MESSAGES: ReadonlyArray<string | BulletinPlain> = [
   "You could leave. But then who would watch the numbers?",
   "If you keep going, you’ll waste a full day in only 24 hours.",
   "If you're wondering what the point of this is, you're not alone.",
+  "Your inactivity is appreciated",
   "The numbers are going up. What else could you want in life.",
   {
     kind: "plain",

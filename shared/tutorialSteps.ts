@@ -11,7 +11,13 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
     id: "1",
     title: "Welcome",
     icon: "sparkles",
-    body: "Welcome to Max Idle! This game is a race to do nothing. Unlike other idle games, you don't win by playing constantly but by proving yourself more patient than any other."
+    body: "Welcome to Max Idle! This game is a race to do nothing. This is a minimalist approach to competitive idle games which skips straight to the core mechanic of being the most committed. Unlike other idle games, you don't win by playing constantly but by proving yourself more patient than any other."
+  },
+  {
+    id: "1-dev",
+    title: "Alpha version",
+    icon: "construction",
+    body: "This game is in early development and I have no idea where it's going. Feel free to suggest outlandish features."
   },
   {
     id: "2",

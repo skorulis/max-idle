@@ -1,10 +1,11 @@
 import {
   Atom,
-  Archive,
+  Archive, 
   BadgeCheck,
   CalendarX,
   CircleHelp,
   Clock3,
+  Construction,
   Dice5,
   Gem,
   Gift,
@@ -25,6 +26,8 @@ export function getLucidIcon(iconName: string): LucideIcon {
   switch (iconName) {
     case "atom":
       return Atom;
+    case "construction":
+      return Construction;
     case "user-plus":
       return UserPlus;
     case "badge-check":
