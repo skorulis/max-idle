@@ -1260,7 +1260,7 @@ describe("auth + player lifecycle", () => {
     const response = await request(app).get("/achievements").set("Authorization", `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(response.body.completedCount).toBe(0);
-    expect(response.body.earningsBonusMultiplier).toBe(1);
+    expect(response.body.earningsBonusMultiplier).toBe(0);
     expect(response.body.achievements).toHaveLength(11);
     expect(response.body.achievements[0].id).toBe("account_creation");
     expect(response.body.achievements[1].id).toBe("username_selected");
@@ -1585,7 +1585,7 @@ describe("auth + player lifecycle", () => {
     const response = await request(app).get("/achievements").set("Authorization", `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(response.body.completedCount).toBe(1);
-    expect(response.body.earningsBonusMultiplier).toBe(1);
+    expect(response.body.earningsBonusMultiplier).toBe(0);
     const accountCreation = response.body.achievements.find((achievement: { id: string }) => achievement.id === "account_creation");
     const usernameSelected = response.body.achievements.find((achievement: { id: string }) => achievement.id === "username_selected");
     expect(accountCreation?.completed).toBe(true);
@@ -1846,7 +1846,7 @@ describe("auth + player lifecycle", () => {
     const expectedCurrent = Math.floor(120 * 1.5);
     expect(playerResponse.body.currentSeconds).toBe(expectedCurrent);
     expect(playerResponse.body.secondsMultiplier).toBe(1.5);
-    expect(playerResponse.body.achievementBonusMultiplier).toBe(1);
+    expect(playerResponse.body.achievementBonusMultiplier).toBe(0);
   });
 
   it("applies worthwhile achievements multiplier when shop tier and achievement count are set", async () => {
@@ -1873,7 +1873,7 @@ describe("auth + player lifecycle", () => {
     expect(playerResponse.status).toBe(200);
     const expectedCurrent = Math.floor(120 * (1 + 0.02 * 2));
     expect(playerResponse.body.currentSeconds).toBe(expectedCurrent);
-    expect(playerResponse.body.achievementBonusMultiplier).toBeCloseTo(1.04, 5);
+    expect(playerResponse.body.achievementBonusMultiplier).toBeCloseTo(0.04, 5);
   });
 
   it("continues idle generation under 1 hour when restraint is enabled", async () => {
@@ -1898,7 +1898,7 @@ describe("auth + player lifecycle", () => {
     const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
     expect(playerResponse.status).toBe(200);
     const minExpectedCurrent = Math.floor(
-      120 * getRestraintBonusMultiplier({ ...DEFAULT_SHOP_STATE, restraint: 1 })
+      120 * (1 + getRestraintBonusMultiplier({ ...DEFAULT_SHOP_STATE, restraint: 1 }))
     );
     expect(playerResponse.body.currentSeconds).toBeGreaterThanOrEqual(minExpectedCurrent);
     expect(playerResponse.body.idleSecondsRate).toBeGreaterThan(0);
@@ -1949,10 +1949,10 @@ describe("auth + player lifecycle", () => {
 
     const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
     expect(playerResponse.status).toBe(200);
-    const restraintBonus = getRestraintBonusMultiplier({ ...DEFAULT_SHOP_STATE, restraint: 1 });
-    const expectedCurrent = Math.floor(7200 * restraintBonus);
+    const restraintMult = 1 + getRestraintBonusMultiplier({ ...DEFAULT_SHOP_STATE, restraint: 1 });
+    const expectedCurrent = Math.floor(7200 * restraintMult);
     expect(playerResponse.body.currentSeconds).toBeGreaterThanOrEqual(expectedCurrent);
-    expect(playerResponse.body.currentSeconds).toBeLessThanOrEqual(Math.floor(7220 * restraintBonus));
+    expect(playerResponse.body.currentSeconds).toBeLessThanOrEqual(Math.floor(7220 * restraintMult));
   });
 
   it("allows purchasing seconds multiplier upgrades", async () => {
@@ -1974,7 +1974,7 @@ describe("auth + player lifecycle", () => {
     expect(purchaseResponse.body.idleTime.available).toBe(10000 - fiveLevelCost);
     expect(purchaseResponse.body.upgradesPurchased).toBe(5);
     expect(purchaseResponse.body.secondsMultiplier).toBe(1.25);
-    expect(purchaseResponse.body.achievementBonusMultiplier).toBe(1);
+    expect(purchaseResponse.body.achievementBonusMultiplier).toBe(0);
 
     const achievementState = await pool.query<{
       upgrades_purchased: string;

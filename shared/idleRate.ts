@@ -1,7 +1,6 @@
 import {
   getLuckEnabled,
   getLuckPreserveChance,
-  getDefaultShopState,
   getMaxIdleCollectionRealtimeSeconds,
   getRestraintBonusMultiplier,
   getRestraintMinRealtimeSeconds,
@@ -23,7 +22,7 @@ type IdleRateStep = {
   rate: number;
 };
 
-const BASE_IDLE_RATE_STEP: IdleRateStep = { seconds: 0, rate: 1 };
+const BASE_IDLE_RATE_STEP: IdleRateStep = { seconds: 0, rate: 0 };
 export type IdleCollectionPlayer = {
   secondsSinceLastCollection: number;
   shop: ShopState;
@@ -49,7 +48,7 @@ function getAccessibleIdleRateSteps(shop: ShopState): IdleRateStep[] {
     .slice(0, unlockedLevels)
     .map((level) => ({
       seconds: safeNaturalNumber(level.value2, 0),
-      rate: safeNumber(level.value, BASE_IDLE_RATE_STEP.rate)
+      rate: safeNumber(level.value, 0)
     }))
     .filter((step) => step.seconds > 0 && step.rate > 0)
     .sort((a, b) => a.seconds - b.seconds);
@@ -89,15 +88,13 @@ export function calculateBoostedIdleSecondsGain(player: IdleCollectionPlayer): n
   return Math.min(total, getMaxIdleCollectionRealtimeSeconds(player.shop));
 }
 
-/** Combines upgrade multipliers additively: 1 + Σ(mᵢ − 1) (bonuses stack by adding their excess over ×1). */
-function combineIdleSecondaryMultipliers(...multipliers: number[]): number {
+/** Combines secondary bonuses additively: 1 + Σ bᵢ (each `bᵢ` is excess over ×1; base seconds multipliers pass `sum − 1` first). */
+function combineIdleSecondaryMultipliers(...bonuses: number[]): number {
   let bonusSum = 0;
-  for (const m of multipliers) {
-    const safe = Number.isFinite(m) && m > 0 ? m : 1;
-    bonusSum += safe - 1;
+  for (const b of bonuses) {
+    bonusSum += Number.isFinite(b) ? b : 0;
   }
-  const combined = 1 + bonusSum;
-  return combined > 0 ? combined : 0;
+  return Math.max(bonusSum, 1)
 }
 
 export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): number {
@@ -105,9 +102,6 @@ export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): numbe
     player.shop,
     safeNumber(player.achievementCount, 0)
   );
-  const antiConsumeristMultiplier = Number.isFinite(player.wallClockMs)
-    ? getAntiConsumeristMultiplier(player.shop, player.wallClockMs as number)
-    : 1;
 
   const idleHoarderMultiplier = getIdleHoarderMultiplier(
     IDLE_HOARDER_SHOP_UPGRADE.currentLevel(player.shop),
@@ -119,9 +113,9 @@ export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): numbe
     getSecondsMultiplier(player.shop),
     getRestraintBonusMultiplier(player.shop),
     getCollectGemIdleSecondsMultiplier(player.shop),
+    getAntiConsumeristMultiplier(player.shop, player.wallClockMs ?? 0),
     worthwhileAchievementsMultiplier,
-    idleHoarderMultiplier,
-    antiConsumeristMultiplier,
+    idleHoarderMultiplier - 1,
     getPatienceRate(player)
   );
 

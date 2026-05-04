@@ -11,7 +11,6 @@ import {
   SHOP_UPGRADES,
   SHOP_CURRENCY_TYPES,
   SHOP_UPGRADE_IDS,
-  getWorthwhileAchievementsBonusPerAchievement
 } from "./shopUpgrades.js";
 import type { ShopCurrencyType, ShopUpgradeDefinition, ShopUpgradeId } from "./shopUpgrades.js";
 import { safeNumber } from "./safeNumber.js";
@@ -76,12 +75,9 @@ export function getRestraintEnabled(shop: ShopState): boolean {
   return RESTRAINT_SHOP_UPGRADE.currentLevel(shop) > 0;
 }
 
+/** Additive bonus over ×1 from Restraint tier `value` (excess over ×1), not the full multiplier. */
 export function getRestraintBonusMultiplier(shop: ShopState): number {
-  const restraintLevel = RESTRAINT_SHOP_UPGRADE.currentLevel(shop);
-  if (restraintLevel <= 0) {
-    return 1;
-  }
-  return RESTRAINT_SHOP_UPGRADE.levels[restraintLevel - 1]?.value ?? 1;
+  return RESTRAINT_SHOP_UPGRADE.currentValue(shop);
 }
 
 /** Realtime seconds required before collect when restraint is active; from current tier's `value2` (hours). */
@@ -108,9 +104,9 @@ export function formatRestraintBlockedCollectMessage(shop: ShopState): string {
 
 /** ×(1 + bonusPerAchievement × achievementCount), from Worthwhile Achievements tier and unlock count. */
 export function getWorthwhileAchievementsMultiplier(shop: ShopState, achievementCount: number): number {
-  const bonusPer = getWorthwhileAchievementsBonusPerAchievement(WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.currentLevel(shop));
+  const bonusPer = WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.currentValue(shop);
   const count = Math.max(0, Math.floor(safeNumber(achievementCount, 0)));
-  return 1 + bonusPer * count;
+  return bonusPer * count;
 }
 
 export function getLuckEnabled(shop: ShopState): boolean {

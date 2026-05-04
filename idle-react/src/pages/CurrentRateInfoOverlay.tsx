@@ -32,7 +32,7 @@ export function CurrentRateInfoOverlay({
   realTimeAvailable,
   estimatedServerNowMs
 }: CurrentRateInfoOverlayProps) {
-  const shouldShowFactor = (value: number): boolean => Math.abs(value - 1) > Number.EPSILON;
+  const shouldShowFactor = (value: number): boolean => value != 0;
 
   useEffect(() => {
     if (!open) {
@@ -59,7 +59,7 @@ export function CurrentRateInfoOverlay({
     });
     const secondsMultiplier = getSecondsMultiplier(shop);
     const gemBonus = getCollectGemIdleSecondsMultiplier(shop)
-    const shopBonusMultiplier = getRestraintBonusMultiplier(shop);
+    const restraintMultiplier = getRestraintBonusMultiplier(shop);
     const antiConsumeristLevel = ANTI_CONSUMERIST_SHOP_UPGRADE.currentLevel(shop);
     const antiConsumeristMultiplier =
       antiConsumeristLevel > 0 ? getAntiConsumeristMultiplier(shop, estimatedServerNowMs) : 1;
@@ -77,7 +77,7 @@ export function CurrentRateInfoOverlay({
     return {
       patienceRate,
       secondsMultiplier,
-      shopBonusMultiplier,
+      restraintMultiplier,
       antiConsumeristLevel,
       antiConsumeristMultiplier,
       worthwhileAchievementsMultiplier,
@@ -107,22 +107,20 @@ export function CurrentRateInfoOverlay({
           </button>
         </div>
         <p className="subtle">Your effective rate is the sum of these bonuses</p>
-        {shouldShowFactor(factors.secondsMultiplier) ? (
-          <p className="rate-factor-row">
-            <span>Base collection rate</span>
-            <span>{factors.secondsMultiplier.toFixed(2)}x</span>
-          </p>
-        ) : null}
+        <p className="rate-factor-row">
+          <span>Base collection rate</span>
+          <span>{factors.secondsMultiplier.toFixed(2)}x</span>
+        </p>
         {shouldShowFactor(factors.patienceRate) ? (
         <p className="rate-factor-row">
           <span>Patience bonus</span>
           <span>{factors.patienceRate.toFixed(2)}x</span>
         </p>
         ) : null}
-        {shouldShowFactor(factors.shopBonusMultiplier) ? (
+        {shouldShowFactor(factors.restraintMultiplier) ? (
           <p className="rate-factor-row">
             <span>Restraint multiplier</span>
-            <span>{factors.shopBonusMultiplier.toFixed(2)}x</span>
+            <span>{factors.restraintMultiplier.toFixed(2)}x</span>
           </p>
         ) : null}
         {factors.antiConsumeristLevel > 0 ? (
