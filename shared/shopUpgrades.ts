@@ -69,14 +69,19 @@ export type ShopUpgradeDefinition = {
   description: string;
   longDescription: string;
   valueDescription: string | null;
+  zeroLevel?: ShopUpgradeLevel; // Optional level 0 information
   levels: ShopUpgradeLevel[];
   currencyType: ShopCurrencyType;
   maxLevel(): number;
   costAtLevel(level: number): number;
   currentLevel(shop: ShopState): number;
+  currentValue(shop: ShopState): number;
 };
 
-type ShopUpgradeDefinitionConfig = Omit<ShopUpgradeDefinition, "maxLevel" | "costAtLevel" | "currentLevel">;
+type ShopUpgradeDefinitionConfig = Omit<
+  ShopUpgradeDefinition,
+  "maxLevel" | "costAtLevel" | "currentLevel" | "currentValue"
+>;
 
 function normalizeUpgradeLevel(rawLevel: unknown, maxLevel: number): number {
   if (typeof rawLevel !== "number" || !Number.isFinite(rawLevel)) {
@@ -104,18 +109,26 @@ function defineShopUpgrade(upgrade: ShopUpgradeDefinitionConfig): ShopUpgradeDef
       }
       return upgrade.levels[safeLevel]?.cost ?? 0;
     },
-    currentLevel: (shop: ShopState) => normalizeUpgradeLevel(shop[upgrade.id], maxLevel)
+    currentLevel: (shop: ShopState) => normalizeUpgradeLevel(shop[upgrade.id], maxLevel),
+    currentValue: (shop: ShopState) => {
+      const level = normalizeUpgradeLevel(shop[upgrade.id], maxLevel);
+      if (level <= 0) {
+        return upgrade.zeroLevel?.value ?? 0;
+      }
+      return upgrade.levels[level - 1]?.value ?? 0;
+    }
   };
 }
 
 export const SECONDS_MULTIPLIER_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER,
-  name: "Base Multiplier",
+  name: "Base Collection Rate",
   icon: "gauge",
-  description: "Constant idle time multiplier",
+  description: "Your base collection rate",
   longDescription:
     "Increases your idle production at all times. Each level raises your always-on multiplier. There are no downsides to this.",
   valueDescription: "%s",
+  zeroLevel: { cost: 0, value: 1 },
   levels: [
     { cost: 60, value: 1.05 },
     { cost: 120, value: 1.1 },
@@ -143,33 +156,33 @@ export const SECONDS_MULTIPLIER_SHOP_UPGRADE: ShopUpgradeDefinition = defineShop
 
 export const ANOTHER_SECONDS_MULTIPLIER_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.ANOTHER_SECONDS_MULTIPLIER,
-  name: "Another Base Multiplier",
+  name: "Base Collection Rate Boost",
   icon: "gauge",
-  description: "Constant idle time multiplier",
+  description: "A little boost to the base collection rate",
   longDescription:
     "Increases your idle production at all times. Each level raises your always-on multiplier. This stacks with the base multiplier upgrade.",
   valueDescription: "%s",
   levels: [
-    { cost: 60, value: 1.05 },
-    { cost: 120, value: 1.1 },
-    { cost: 300, value: 1.15 },
-    { cost: 30 * 60, value: 1.2 },
-    { cost: SECONDS_PER_HOUR, value: 1.25 },
-    { cost: 2 * SECONDS_PER_HOUR, value: 1.3 },
-    { cost: 5 * SECONDS_PER_HOUR, value: 1.35 },
-    { cost: 10 * SECONDS_PER_HOUR, value: 1.4 },
-    { cost: 24 * SECONDS_PER_HOUR, value: 1.45 },
-    { cost: 48 * SECONDS_PER_HOUR, value: 1.5 },
-    { cost: 1 * SECONDS_PER_WEEK, value: 1.55 },
-    { cost: 2 * SECONDS_PER_WEEK, value: 1.6 },
-    { cost: 4 * SECONDS_PER_WEEK, value: 1.65 },
-    { cost: 7 * SECONDS_PER_WEEK, value: 1.7 },
-    { cost: 10 * SECONDS_PER_WEEK, value: 1.75 },
-    { cost: 20 * SECONDS_PER_WEEK, value: 1.8 },
-    { cost: 30 * SECONDS_PER_WEEK, value: 1.85 },
-    { cost: 40 * SECONDS_PER_WEEK, value: 1.9 },
-    { cost: 52 * SECONDS_PER_WEEK, value: 1.95 },
-    { cost: 2 * SECONDS_PER_YEAR, value: 2.0 },
+    { cost: 60, value: 0.05 },
+    { cost: 120, value: 0.1 },
+    { cost: 300, value: 0.15 },
+    { cost: 30 * 60, value: 0.2 },
+    { cost: SECONDS_PER_HOUR, value: 0.25 },
+    { cost: 2 * SECONDS_PER_HOUR, value: 0.3 },
+    { cost: 5 * SECONDS_PER_HOUR, value: 0.35 },
+    { cost: 10 * SECONDS_PER_HOUR, value: 0.4 },
+    { cost: 24 * SECONDS_PER_HOUR, value: 0.45 },
+    { cost: 48 * SECONDS_PER_HOUR, value: 0.5 },
+    { cost: 1 * SECONDS_PER_WEEK, value: 0.55 },
+    { cost: 2 * SECONDS_PER_WEEK, value: 0.6 },
+    { cost: 4 * SECONDS_PER_WEEK, value: 0.65 },
+    { cost: 7 * SECONDS_PER_WEEK, value: 0.7 },
+    { cost: 10 * SECONDS_PER_WEEK, value: 0.75 },
+    { cost: 20 * SECONDS_PER_WEEK, value: 0.8 },
+    { cost: 30 * SECONDS_PER_WEEK, value: 0.85 },
+    { cost: 40 * SECONDS_PER_WEEK, value: 0.9 },
+    { cost: 52 * SECONDS_PER_WEEK, value: 0.95 },
+    { cost: 2 * SECONDS_PER_YEAR, value: 1.0 },
   ],
   currencyType: SHOP_CURRENCY_TYPES.REAL
 });
@@ -178,7 +191,7 @@ export const PATIENCE_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.PATIENCE,
   name: "Patience",
   icon: "hourglass",
-  description: "Idle time multiplier that increases over time",
+  description: "Bonus that increases for longer collections",
   longDescription:
     "This idle multiplier increases over time up to a certain limit. The longer you wait before collecting the higher the bonus will be up to a maximum.",
   valueDescription: "%sx at %s",

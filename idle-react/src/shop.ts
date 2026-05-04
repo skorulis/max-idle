@@ -13,7 +13,6 @@ export {
   getRestraintMinRealtimeSeconds,
   getMaxIdleCollectionRealtimeSeconds,
   getSecondsMultiplier,
-  getSecondsMultiplierUpgradeValue,
   getShopPurchaseRefundTotals,
   getDefaultShopState,
   getPurchasedShopUpgradeLevelCount,

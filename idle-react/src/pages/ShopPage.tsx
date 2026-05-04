@@ -235,7 +235,7 @@ export function ShopPage({
     if (typeof valueDescription !== "string" || valueDescription.length === 0) {
       return null;
     }
-    if (level <= 0 || level > upgrade.maxLevel()) {
+    if (level > upgrade.maxLevel()) {
       return null;
     }
     if (upgrade.id === SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS) {
@@ -244,6 +244,27 @@ export function ShopPage({
         withShopUpgradeLevel(playerState.shop, SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS, level),
         achievementCount
       );
+      return { value };
+    }
+    if (level <= 0) {
+      const zl = upgrade.zeroLevel;
+      if (!zl) {
+        return null;
+      }
+      if (upgrade.id === SHOP_UPGRADE_IDS.PATIENCE) {
+        if (!Number.isFinite(zl.value) || !Number.isFinite(zl.value2)) {
+          return null;
+        }
+        return { value: zl.value, value2: zl.value2 };
+      }
+      const value = zl.value;
+      if (value === undefined || value === null || !Number.isFinite(value)) {
+        return null;
+      }
+      const rawV2 = zl.value2;
+      if (rawV2 !== undefined && Number.isFinite(rawV2)) {
+        return { value, value2: rawV2 };
+      }
       return { value };
     }
     if (upgrade.id === SHOP_UPGRADE_IDS.PATIENCE) {

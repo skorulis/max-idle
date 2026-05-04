@@ -43,7 +43,6 @@ export {
   getShopPurchaseRefundTotals,
   hasRefundableShopPurchases,
   getSecondsMultiplier,
-  levelToMultiplier,
   multiplierToLevel,
   withShopUpgradeLevel
 } from "@maxidle/shared/shop";

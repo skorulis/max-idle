@@ -89,6 +89,17 @@ export function calculateBoostedIdleSecondsGain(player: IdleCollectionPlayer): n
   return Math.min(total, getMaxIdleCollectionRealtimeSeconds(player.shop));
 }
 
+/** Combines upgrade multipliers additively: 1 + Σ(mᵢ − 1) (bonuses stack by adding their excess over ×1). */
+function combineIdleSecondaryMultipliers(...multipliers: number[]): number {
+  let bonusSum = 0;
+  for (const m of multipliers) {
+    const safe = Number.isFinite(m) && m > 0 ? m : 1;
+    bonusSum += safe - 1;
+  }
+  const combined = 1 + bonusSum;
+  return combined > 0 ? combined : 0;
+}
+
 export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): number {
   const worthwhileAchievementsMultiplier = getWorthwhileAchievementsMultiplier(
     player.shop,
@@ -104,15 +115,17 @@ export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): numbe
     safeNaturalNumber(player.secondsSinceLastCollection)
   );
 
-  const rate =
-    getPatienceRate(player) *
-    getSecondsMultiplier(player.shop) *
-    getRestraintBonusMultiplier(player.shop) *
-    getCollectGemIdleSecondsMultiplier(player.shop) *
-    worthwhileAchievementsMultiplier *
-    idleHoarderMultiplier *
-    antiConsumeristMultiplier;
-  return rate
+  const secondaryMultiplier = combineIdleSecondaryMultipliers(
+    getSecondsMultiplier(player.shop),
+    getRestraintBonusMultiplier(player.shop),
+    getCollectGemIdleSecondsMultiplier(player.shop),
+    worthwhileAchievementsMultiplier,
+    idleHoarderMultiplier,
+    antiConsumeristMultiplier,
+    getPatienceRate(player)
+  );
+
+  return secondaryMultiplier;
 }
 
 export function shouldPreserveIdleTimerOnCollect(shop: ShopState, randomValue = Math.random()): boolean {

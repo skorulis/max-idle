@@ -67,13 +67,6 @@ export function CurrentRateInfoOverlay({
       shop,
       safeNumber(achievementCount, 0)
     );
-    const rateBeforeIdleHoarder =
-      patienceRate *
-      secondsMultiplier *
-      shopBonusMultiplier *
-      antiConsumeristMultiplier *
-      gemBonus *
-      worthwhileAchievementsMultiplier;
     const idleHoarderLevel = IDLE_HOARDER_SHOP_UPGRADE.currentLevel(shop);
     const idleHoarderMultiplier = getIdleHoarderMultiplier(
       idleHoarderLevel,
@@ -91,7 +84,6 @@ export function CurrentRateInfoOverlay({
       idleHoarderLevel,
       idleHoarderMultiplier,
       gemBonus,
-      calculatedRate: rateBeforeIdleHoarder * idleHoarderMultiplier,
     };
   }, [achievementCount, estimatedServerNowMs, realTimeAvailable, secondsSinceLastCollection, shop]);
 
@@ -114,18 +106,18 @@ export function CurrentRateInfoOverlay({
             <CircleX size={16} aria-hidden="true" />
           </button>
         </div>
-        <p className="subtle">Your current rate is multiplied from these values:</p>
+        <p className="subtle">Your effective rate is the sum of these bonuses</p>
+        {shouldShowFactor(factors.secondsMultiplier) ? (
+          <p className="rate-factor-row">
+            <span>Base collection rate</span>
+            <span>{factors.secondsMultiplier.toFixed(2)}x</span>
+          </p>
+        ) : null}
         {shouldShowFactor(factors.patienceRate) ? (
         <p className="rate-factor-row">
           <span>Patience bonus</span>
           <span>{factors.patienceRate.toFixed(2)}x</span>
         </p>
-        ) : null}
-        {shouldShowFactor(factors.secondsMultiplier) ? (
-          <p className="rate-factor-row">
-            <span>Basic multiplier</span>
-            <span>{factors.secondsMultiplier.toFixed(2)}x</span>
-          </p>
         ) : null}
         {shouldShowFactor(factors.shopBonusMultiplier) ? (
           <p className="rate-factor-row">
@@ -161,7 +153,6 @@ export function CurrentRateInfoOverlay({
           <span>Total effective rate</span>
           <span>{effectiveIdleSecondsRate.toFixed(2)}x</span>
         </p>
-        <p className="subtle">Calculated total: {factors.calculatedRate.toFixed(2)}x</p>
       </div>
     </div>
   );

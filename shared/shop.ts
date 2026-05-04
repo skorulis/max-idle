@@ -17,9 +17,6 @@ import type { ShopCurrencyType, ShopUpgradeDefinition, ShopUpgradeId } from "./s
 import { safeNumber } from "./safeNumber.js";
 import { SECONDS_PER_WEEK } from "./timeConstants.js";
 
-const DEFAULT_SECONDS_MULTIPLIER_LEVEL = 0;
-const DEFAULT_SECONDS_MULTIPLIER_VALUE = 1;
-
 export type ShopState = {
   seconds_multiplier: number;
   another_seconds_multiplier?: number;
@@ -59,16 +56,6 @@ export function getDefaultShopState(): ShopState {
   return { ...DEFAULT_SHOP_STATE };
 }
 
-function clampSecondsMultiplierLevel(level: number): number {
-  if (!Number.isFinite(level)) {
-    return DEFAULT_SECONDS_MULTIPLIER_LEVEL;
-  }
-  return Math.max(
-    DEFAULT_SECONDS_MULTIPLIER_LEVEL,
-    Math.min(SECONDS_MULTIPLIER_SHOP_UPGRADE.maxLevel(), Math.floor(level))
-  );
-}
-
 export function withShopUpgradeLevel(shop: ShopState, upgradeId: ShopUpgradeId, level: number): ShopState {
   const upgrade = SHOP_UPGRADES_BY_ID[upgradeId];
   const safeLevel = Number.isFinite(level)
@@ -80,21 +67,9 @@ export function withShopUpgradeLevel(shop: ShopState, upgradeId: ShopUpgradeId, 
   };
 }
 
-export function getSecondsMultiplierUpgradeValue(level: number): number {
-  const safeLevel = clampSecondsMultiplierLevel(level);
-  if (safeLevel <= DEFAULT_SECONDS_MULTIPLIER_LEVEL) {
-    return DEFAULT_SECONDS_MULTIPLIER_VALUE;
-  }
-  const definition = SECONDS_MULTIPLIER_SHOP_UPGRADE.levels[safeLevel - 1];
-  return definition?.value ?? DEFAULT_SECONDS_MULTIPLIER_VALUE;
-}
-
 export function getSecondsMultiplier(shop: ShopState): number {
-  const baseMultiplier = getSecondsMultiplierUpgradeValue(SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(shop));
-  const anotherBaseMultiplier = getSecondsMultiplierUpgradeValue(
-    ANOTHER_SECONDS_MULTIPLIER_SHOP_UPGRADE.currentLevel(shop)
-  );
-  return baseMultiplier * anotherBaseMultiplier;
+  return SECONDS_MULTIPLIER_SHOP_UPGRADE.currentValue(shop) +
+    ANOTHER_SECONDS_MULTIPLIER_SHOP_UPGRADE.currentValue(shop);
 }
 
 export function getRestraintEnabled(shop: ShopState): boolean {
@@ -180,10 +155,6 @@ export function multiplierToLevel(secondsMultiplier: number): number {
     }
   }
   return 0;
-}
-
-export function levelToMultiplier(level: number): number {
-  return getSecondsMultiplierUpgradeValue(level);
 }
 
 function getTotalUpgradeCostPurchased(upgrade: ShopUpgradeDefinition, shop: ShopState): number {

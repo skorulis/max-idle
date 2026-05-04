@@ -91,22 +91,15 @@ describe("luck + boosted gain", () => {
   });
 
   it("applies restraint/luck-aware boosted gain", () => {
-    const gainWithoutRestraint = calculateBoostedIdleSecondsGain({
-      secondsSinceLastCollection: 60,
-      shop: DEFAULT_SHOP_STATE,
-      achievementCount: 0
-    });
-    expect(gainWithoutRestraint).toBeGreaterThan(0);
-
     const gainWithRestraint = calculateBoostedIdleSecondsGain({
       secondsSinceLastCollection: 60,
       shop: { ...DEFAULT_SHOP_STATE, restraint: 1 },
       achievementCount: 0
     });
-    expect(gainWithRestraint).toBe(Math.floor(gainWithoutRestraint * 1.1));
+    expect(gainWithRestraint).toBe(Math.floor(66));
   });
 
-  it("applies idle hoarder multiplier last", () => {
+  it("applies full idle hoarder tier multiplier when stored-realtime ratio meets the tier threshold", () => {
     const baseline = calculateBoostedIdleSecondsGain({
       secondsSinceLastCollection: 60,
       shop: DEFAULT_SHOP_STATE,
@@ -121,6 +114,31 @@ describe("luck + boosted gain", () => {
       realTimeAvailable: 180
     });
     expect(withIdleHoarderAtCap).toBe(Math.floor(baseline * 2.5));
+  });
+
+  it("stacks secondary multipliers additively (bonuses sum, not multiply)", () => {
+    const elapsed = 60;
+    const baseline = calculateBoostedIdleSecondsGain({
+      secondsSinceLastCollection: elapsed,
+      shop: DEFAULT_SHOP_STATE,
+      achievementCount: 0,
+      realTimeAvailable: 0
+    });
+    const withRestraintOnly = calculateBoostedIdleSecondsGain({
+      secondsSinceLastCollection: elapsed,
+      shop: { ...DEFAULT_SHOP_STATE, restraint: 1 },
+      achievementCount: 0,
+      realTimeAvailable: 0
+    });
+    const withBoth = calculateBoostedIdleSecondsGain({
+      secondsSinceLastCollection: elapsed,
+      shop: { ...DEFAULT_SHOP_STATE, restraint: 1, idle_hoarder: 5 },
+      achievementCount: 0,
+      realTimeAvailable: 180
+    });
+    const restraintBonus = withRestraintOnly - baseline;
+    const hoarderBonusAtCap = Math.floor(baseline * (1 + (2.5 - 1))) - baseline;
+    expect(withBoth).toBe(baseline + restraintBonus + hoarderBonusAtCap);
   });
 
   it("does not increase boosted gain past the max wall-clock storage window", () => {
@@ -169,6 +187,7 @@ describe("getEffectiveIdleSecondsRate", () => {
       achievementCount: 0,
       realTimeAvailable: 0
     };
+
     expect(getEffectiveIdleSecondsRate(player)).toBeCloseTo(getPatienceRate(player), 10);
     expect(getEffectiveIdleSecondsRate(player)).toBeGreaterThan(0);
   });

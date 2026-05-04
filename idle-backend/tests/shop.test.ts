@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  getLuckEnabled,
-  levelToMultiplier,
   multiplierToLevel
 } from "../src/shop.js";
 import { LUCK_SHOP_UPGRADE, PATIENCE_SHOP_UPGRADE, RESTRAINT_SHOP_UPGRADE, SECONDS_MULTIPLIER_SHOP_UPGRADE } from "@maxidle/shared/shopUpgrades";
@@ -30,13 +28,6 @@ describe("shop pricing", () => {
     expect(getTotalUpgradeCost(3, 2)).toBe(
       SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(3) + SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(4)
     );
-  });
-
-  it("maps levels and multipliers consistently", () => {
-    expect(multiplierToLevel(1)).toBe(0);
-    expect(multiplierToLevel(1.3)).toBe(6);
-    expect(levelToMultiplier(0)).toBe(1);
-    expect(levelToMultiplier(7)).toBe(1.35);
   });
 
   it("uses fixed restraint upgrade cost", () => {
