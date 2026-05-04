@@ -115,10 +115,12 @@ export function CurrentRateInfoOverlay({
           </button>
         </div>
         <p className="subtle">Your current rate is multiplied from these values:</p>
+        {shouldShowFactor(factors.patienceRate) ? (
         <p className="rate-factor-row">
           <span>Patience bonus</span>
           <span>{factors.patienceRate.toFixed(2)}x</span>
         </p>
+        ) : null}
         {shouldShowFactor(factors.secondsMultiplier) ? (
           <p className="rate-factor-row">
             <span>Basic multiplier</span>

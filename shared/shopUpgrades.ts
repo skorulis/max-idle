@@ -183,15 +183,15 @@ export const PATIENCE_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
     "This idle multiplier increases over time up to a certain limit. The longer you wait before collecting the higher the bonus will be up to a maximum.",
   valueDescription: "%sx at %s",
   levels: [
-    { cost: 60, value: 1.5, value2: 60 },
-    { cost: 5 * 60, value: 2, value2: 10 * 60 },
-    { cost: SECONDS_PER_HOUR, value: 3, value2: SECONDS_PER_HOUR },
-    { cost: 5 * SECONDS_PER_HOUR, value: 4, value2: 3 * SECONDS_PER_HOUR },
-    { cost: SECONDS_PER_DAY, value: 5, value2: 6 * SECONDS_PER_HOUR },
-    { cost: 4 * SECONDS_PER_DAY, value: 10, value2: SECONDS_PER_DAY },
-    { cost: 14 * SECONDS_PER_DAY, value: 12, value2: SECONDS_PER_WEEK },
-    { cost: SECONDS_PER_YEAR, value: 15, value2: 4 * SECONDS_PER_WEEK },
-    { cost: 2 * SECONDS_PER_YEAR, value: 20, value2: SECONDS_PER_YEAR }
+    { cost: 60, value: 1.25, value2: 60 },
+    { cost: 5 * 60, value: 1.5, value2: 10 * 60 },
+    { cost: SECONDS_PER_HOUR, value: 1.75, value2: SECONDS_PER_HOUR },
+    { cost: 5 * SECONDS_PER_HOUR, value: 2, value2: 3 * SECONDS_PER_HOUR },
+    { cost: SECONDS_PER_DAY, value: 3, value2: 6 * SECONDS_PER_HOUR },
+    { cost: 4 * SECONDS_PER_DAY, value: 4, value2: SECONDS_PER_DAY },
+    { cost: 14 * SECONDS_PER_DAY, value: 5, value2: SECONDS_PER_WEEK },
+    { cost: SECONDS_PER_YEAR, value: 10, value2: 4 * SECONDS_PER_WEEK },
+    { cost: 2 * SECONDS_PER_YEAR, value: 15, value2: SECONDS_PER_YEAR }
   ],
   currencyType: SHOP_CURRENCY_TYPES.IDLE
 });
@@ -449,14 +449,6 @@ export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> =
 
 export function getShopUpgradeDefinition(upgradeType: string): ShopUpgradeDefinition | null {
   return SHOP_UPGRADES_BY_ID[upgradeType as ShopUpgradeId] ?? null;
-}
-
-export function getCollectGemTimeBoostMaxLevel(): number {
-  return COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.maxLevel();
-}
-
-export function getCollectGemTimeBoostUpgradeCostAtLevel(currentLevel: number): number {
-  return COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.costAtLevel(currentLevel);
 }
 
 export function getIdleHoarderMaxLevel(): number {

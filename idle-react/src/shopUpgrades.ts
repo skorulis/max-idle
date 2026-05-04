@@ -7,8 +7,6 @@ export {
   PATIENCE_SHOP_UPGRADE,
   getIdleHoarderMultiplier,
   getCollectGemIdleSecondsMultiplier,
-  getCollectGemTimeBoostMaxLevel,
-  getCollectGemTimeBoostUpgradeCostAtLevel,
   LUCK_SHOP_UPGRADE,
   REALTIME_WAIT_EXTENSION_SECONDS,
   RESTRAINT_SHOP_UPGRADE,

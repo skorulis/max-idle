@@ -12,8 +12,6 @@ import type { SyncedPlayerState } from "../app/types";
 import { safeNaturalNumber } from "@maxidle/shared/safeNumber";
 import {
   formatShopUpgradeDescription,
-  getCollectGemTimeBoostMaxLevel,
-  getCollectGemTimeBoostUpgradeCostAtLevel,
   SECONDS_MULTIPLIER_SHOP_UPGRADE,
   SHOP_CURRENCY_TYPES,
   SHOP_UPGRADE_IDS,
@@ -292,18 +290,6 @@ export function ShopPage({
         ? formatValueDescription(upgrade, nextParts.value, nextParts.value2)
         : null;
 
-    if (upgrade.id === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER) {
-      return {
-        description: upgrade.description,
-        currentValueDescription,
-        nextValueDescription,
-        cost: upgrade.costAtLevel(secondsMultiplierLevel),
-        isPending: shopPendingQuantity === upgrade.id,
-        isOwned: secondsMultiplierLevel >= upgrade.maxLevel(),
-        onPurchase: () => onPurchase(upgrade.id)
-      };
-    }
-
     if (upgrade.id === SHOP_UPGRADE_IDS.EXTRA_REALTIME_WAIT) {
       const level = upgrade.levels[0] ?? null;
       return {
@@ -313,36 +299,6 @@ export function ShopPage({
         currentValueDescription,
         nextValueDescription,
         cost: level?.cost ?? null,
-        isPending: shopPendingQuantity === upgrade.id,
-        isOwned: false,
-        onPurchase: () => onPurchase(upgrade.id)
-      };
-    }
-
-    if (upgrade.id === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST) {
-      const collectGemBoostLevel = upgrade.currentLevel(syncedPlayer.shop);
-      const maxCollectGemBoostLevel = getCollectGemTimeBoostMaxLevel();
-      const nextLevelDef = upgrade.levels[collectGemBoostLevel] ?? null;
-      return {
-        description: nextLevelDef ? upgrade.description : "Maximum level reached.",
-        currentValueDescription,
-        nextValueDescription,
-        cost: getCollectGemTimeBoostUpgradeCostAtLevel(collectGemBoostLevel) || null,
-        isPending: shopPendingQuantity === upgrade.id,
-        isOwned: collectGemBoostLevel >= maxCollectGemBoostLevel,
-        onPurchase: () => onPurchase(upgrade.id)
-      };
-    }
-
-    if (
-      upgrade.id === SHOP_UPGRADE_IDS.IDLE_REFUND ||
-      upgrade.id === SHOP_UPGRADE_IDS.REAL_REFUND
-    ) {
-      return {
-        description: upgrade.description,
-        currentValueDescription,
-        nextValueDescription,
-        cost: upgrade.levels[0]?.cost ?? null,
         isPending: shopPendingQuantity === upgrade.id,
         isOwned: false,
         onPurchase: () => onPurchase(upgrade.id)

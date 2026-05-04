@@ -33,21 +33,21 @@ describe("getPatienceRate", () => {
   });
 
   it("unlocks one additional step per patience level", () => {
-    expect(getPatienceRate(idleCollectionPlayer(60, shopWithPatience(1)))).toBe(1.5);
-    expect(getPatienceRate(idleCollectionPlayer(10 * 60, shopWithPatience(2)))).toBe(2);
-    expect(getPatienceRate(idleCollectionPlayer(60 * 60, shopWithPatience(3)))).toBe(3);
-    expect(getPatienceRate(idleCollectionPlayer(6 * 60 * 60, shopWithPatience(4)))).toBe(4);
-    expect(getPatienceRate(idleCollectionPlayer(24 * 60 * 60, shopWithPatience(5)))).toBe(5);
-    expect(getPatienceRate(idleCollectionPlayer(7 * 24 * 60 * 60, shopWithPatience(6)))).toBe(10);
-    expect(getPatienceRate(idleCollectionPlayer(4 * 7 * 24 * 60 * 60, shopWithPatience(7)))).toBe(12);
-    expect(getPatienceRate(idleCollectionPlayer(365 * 24 * 60 * 60, shopWithPatience(8)))).toBe(15);
+    expect(getPatienceRate(idleCollectionPlayer(60, shopWithPatience(1)))).toBe(1.25);
+    expect(getPatienceRate(idleCollectionPlayer(10 * 60, shopWithPatience(2)))).toBe(1.5);
+    expect(getPatienceRate(idleCollectionPlayer(60 * 60, shopWithPatience(3)))).toBe(1.75);
+    expect(getPatienceRate(idleCollectionPlayer(6 * 60 * 60, shopWithPatience(4)))).toBe(2);
+    expect(getPatienceRate(idleCollectionPlayer(24 * 60 * 60, shopWithPatience(5)))).toBe(3);
+    expect(getPatienceRate(idleCollectionPlayer(7 * 24 * 60 * 60, shopWithPatience(6)))).toBe(4);
+    expect(getPatienceRate(idleCollectionPlayer(4 * 7 * 24 * 60 * 60, shopWithPatience(7)))).toBe(5);
+    expect(getPatienceRate(idleCollectionPlayer(365 * 24 * 60 * 60, shopWithPatience(8)))).toBe(10);
   });
 
   it("interpolates linearly within unlocked steps and caps at unlocked max", () => {
-    expect(getPatienceRate(idleCollectionPlayer(30, shopWithPatience(1)))).toBeCloseTo(1.25, 6);
-    expect(getPatienceRate(idleCollectionPlayer(330, shopWithPatience(2)))).toBeCloseTo(1.75, 6);
-    expect(getPatienceRate(idleCollectionPlayer(2 * 365 * 24 * 60 * 60, shopWithPatience(8)))).toBe(15);
-    expect(getPatienceRate(idleCollectionPlayer(2 * 365 * 24 * 60 * 60, shopWithPatience(3)))).toBe(3);
+    expect(getPatienceRate(idleCollectionPlayer(30, shopWithPatience(1)))).toBeCloseTo(1.125, 6);
+    expect(getPatienceRate(idleCollectionPlayer(330, shopWithPatience(2)))).toBeCloseTo(1.375, 6);
+    expect(getPatienceRate(idleCollectionPlayer(2 * 365 * 24 * 60 * 60, shopWithPatience(8)))).toBe(10);
+    expect(getPatienceRate(idleCollectionPlayer(2 * 365 * 24 * 60 * 60, shopWithPatience(3)))).toBe(1.75);
   });
 });
 
