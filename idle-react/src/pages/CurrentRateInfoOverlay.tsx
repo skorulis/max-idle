@@ -1,9 +1,14 @@
 import { useEffect, useMemo } from "react";
 import { CircleX } from "lucide-react";
 import type { ShopState } from "../shop";
-import { getRestraintBonusMultiplier, getSecondsMultiplier, getWorthwhileAchievementsMultiplier } from "../shop";
+import {
+  getAntiConsumeristMultiplier,
+  getRestraintBonusMultiplier,
+  getSecondsMultiplier,
+  getWorthwhileAchievementsMultiplier
+} from "../shop";
 import { getIdleSecondsRate } from "../idleRate";
-import { getIdleHoarderMultiplier, IDLE_HOARDER_SHOP_UPGRADE } from "../shopUpgrades";
+import { ANTI_CONSUMERIST_SHOP_UPGRADE, getIdleHoarderMultiplier, IDLE_HOARDER_SHOP_UPGRADE } from "../shopUpgrades";
 import { safeNumber } from "@maxidle/shared/safeNumber";
 
 type CurrentRateInfoOverlayProps = {
@@ -14,6 +19,7 @@ type CurrentRateInfoOverlayProps = {
   shop: ShopState;
   achievementCount: number;
   realTimeAvailable: number;
+  estimatedServerNowMs: number;
 };
 
 export function CurrentRateInfoOverlay({
@@ -23,7 +29,8 @@ export function CurrentRateInfoOverlay({
   effectiveIdleSecondsRate,
   shop,
   achievementCount,
-  realTimeAvailable
+  realTimeAvailable,
+  estimatedServerNowMs
 }: CurrentRateInfoOverlayProps) {
   const shouldShowFactor = (value: number): boolean => Math.abs(value - 1) > Number.EPSILON;
 
@@ -52,11 +59,15 @@ export function CurrentRateInfoOverlay({
     });
     const secondsMultiplier = getSecondsMultiplier(shop);
     const shopBonusMultiplier = getRestraintBonusMultiplier(shop);
+    const antiConsumeristLevel = ANTI_CONSUMERIST_SHOP_UPGRADE.currentLevel(shop);
+    const antiConsumeristMultiplier =
+      antiConsumeristLevel > 0 ? getAntiConsumeristMultiplier(shop, estimatedServerNowMs) : 1;
     const worthwhileAchievementsMultiplier = getWorthwhileAchievementsMultiplier(
       shop,
       safeNumber(achievementCount, 0)
     );
-    const rateBeforeIdleHoarder = patienceRate * secondsMultiplier * shopBonusMultiplier * worthwhileAchievementsMultiplier;
+    const rateBeforeIdleHoarder =
+      patienceRate * secondsMultiplier * shopBonusMultiplier * antiConsumeristMultiplier * worthwhileAchievementsMultiplier;
     const idleHoarderLevel = IDLE_HOARDER_SHOP_UPGRADE.currentLevel(shop);
     const idleHoarderMultiplier = getIdleHoarderMultiplier(
       idleHoarderLevel,
@@ -68,12 +79,14 @@ export function CurrentRateInfoOverlay({
       patienceRate,
       secondsMultiplier,
       shopBonusMultiplier,
+      antiConsumeristLevel,
+      antiConsumeristMultiplier,
       worthwhileAchievementsMultiplier,
       idleHoarderLevel,
       idleHoarderMultiplier,
       calculatedRate: rateBeforeIdleHoarder * idleHoarderMultiplier
     };
-  }, [achievementCount, realTimeAvailable, secondsSinceLastCollection, shop]);
+  }, [achievementCount, estimatedServerNowMs, realTimeAvailable, secondsSinceLastCollection, shop]);
 
   if (!open) {
     return null;
@@ -109,6 +122,12 @@ export function CurrentRateInfoOverlay({
           <p className="rate-factor-row">
             <span>Restraint multiplier</span>
             <span>{factors.shopBonusMultiplier.toFixed(2)}x</span>
+          </p>
+        ) : null}
+        {factors.antiConsumeristLevel > 0 ? (
+          <p className="rate-factor-row">
+            <span>Anti-consumerist multiplier</span>
+            <span>{factors.antiConsumeristMultiplier.toFixed(2)}x</span>
           </p>
         ) : null}
         {shouldShowFactor(factors.worthwhileAchievementsMultiplier) ? (

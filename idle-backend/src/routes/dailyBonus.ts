@@ -417,7 +417,8 @@ export function registerDailyBonusRoutes({
         secondsSinceLastCollection: elapsedSinceLastCollection,
         shop: updatedPlayer.shop,
         achievementCount,
-        realTimeAvailable: toNumber(updatedPlayer.real_time_available)
+        realTimeAvailable: toNumber(updatedPlayer.real_time_available),
+        wallClockMs: now.getTime()
       });
       await client.query("COMMIT");
       const awardedSeconds =

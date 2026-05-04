@@ -16,7 +16,8 @@ export function boostedUncollectedIdleSeconds(
     secondsSinceLastCollection: elapsedSinceLastCollection,
     shop,
     achievementCount,
-    realTimeAvailable
+    realTimeAvailable,
+    wallClockMs: refTime.getTime()
   });
   return Math.floor(base * getCollectGemIdleSecondsMultiplier(COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.currentLevel(shop)));
 }

@@ -35,6 +35,7 @@ type HomePageProps = {
   uncollectedIdleSeconds: number;
   realtimeElapsedSeconds: number;
   effectiveIdleSecondsRate: number;
+  estimatedServerNowMs: number;
   dailyRewardAvailable: boolean;
   dailyRewardSecondsUntilAvailable: number;
   dailyBonusSecondsUntilUtcReset: number;
@@ -68,6 +69,7 @@ export function HomePage({
   uncollectedIdleSeconds,
   realtimeElapsedSeconds,
   effectiveIdleSecondsRate,
+  estimatedServerNowMs,
   dailyRewardAvailable,
   dailyRewardSecondsUntilAvailable,
   dailyBonusSecondsUntilUtcReset,
@@ -409,6 +411,7 @@ export function HomePage({
         shop={playerState.shop}
         achievementCount={playerState.achievementCount}
         realTimeAvailable={playerState.realTime.available}
+        estimatedServerNowMs={estimatedServerNowMs}
       />
     </>
   );

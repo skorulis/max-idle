@@ -9,7 +9,12 @@ import {
   getWorthwhileAchievementsMultiplier
 } from "./shop.js";
 import type { ShopState } from "./shop.js";
-import { getIdleHoarderMultiplier, IDLE_HOARDER_SHOP_UPGRADE, PATIENCE_SHOP_UPGRADE } from "./shopUpgrades.js";
+import {
+  getAntiConsumeristMultiplier,
+  getIdleHoarderMultiplier,
+  IDLE_HOARDER_SHOP_UPGRADE,
+  PATIENCE_SHOP_UPGRADE
+} from "./shopUpgrades.js";
 import { safeNaturalNumber, safeNumber } from "./safeNumber.js";
 
 type IdleRateStep = {
@@ -23,6 +28,8 @@ export type IdleCollectionPlayer = {
   shop: ShopState;
   achievementCount: number;
   realTimeAvailable?: number;
+  /** Milliseconds since Unix epoch; required for Anti-consumerist (otherwise that multiplier is treated as ×1). */
+  wallClockMs?: number;
 };
 
 function interpolateRate(start: IdleRateStep, end: IdleRateStep, elapsedSeconds: number): number {
@@ -116,8 +123,15 @@ export function calculateBoostedIdleSecondsGain(player: IdleCollectionPlayer): n
     safeNumber(player.achievementCount, 0)
   );
   const shopBonusMultiplier = getRestraintBonusMultiplier(player.shop);
+  const antiConsumeristMultiplier = Number.isFinite(player.wallClockMs)
+    ? getAntiConsumeristMultiplier(player.shop, player.wallClockMs as number)
+    : 1;
   const boostedGainBeforeIdleHoarder =
-    baseGain * secondsMultiplier * shopBonusMultiplier * worthwhileAchievementsMultiplier;
+    baseGain *
+    secondsMultiplier *
+    shopBonusMultiplier *
+    worthwhileAchievementsMultiplier *
+    antiConsumeristMultiplier;
   const idleHoarderMultiplier = getIdleHoarderMultiplier(
     IDLE_HOARDER_SHOP_UPGRADE.currentLevel(player.shop),
     safeNumber(player.realTimeAvailable, 0),
@@ -132,11 +146,15 @@ export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): numbe
     player.shop,
     safeNumber(player.achievementCount, 0)
   );
+  const antiConsumeristMultiplier = Number.isFinite(player.wallClockMs)
+    ? getAntiConsumeristMultiplier(player.shop, player.wallClockMs as number)
+    : 1;
   const rateBeforeIdleHoarder =
     getIdleSecondsRate(player) *
     getSecondsMultiplier(player.shop) *
     getRestraintBonusMultiplier(player.shop) *
-    worthwhileAchievementsMultiplier;
+    worthwhileAchievementsMultiplier *
+    antiConsumeristMultiplier;
   const idleHoarderMultiplier = getIdleHoarderMultiplier(
     IDLE_HOARDER_SHOP_UPGRADE.currentLevel(player.shop),
     safeNumber(player.realTimeAvailable, 0),

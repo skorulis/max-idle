@@ -35,6 +35,8 @@ import { ShopUpgradeInfoOverlay } from "./ShopUpgradeInfoOverlay";
 
 type ShopPageProps = {
   playerState: SyncedPlayerState | null;
+  /** Estimated server clock for live streak labels (e.g. Anti-consumerist overlay) */
+  estimatedServerNowMs: number;
   shopPendingQuantity:
     | "seconds_multiplier"
     | "another_seconds_multiplier"
@@ -42,6 +44,7 @@ type ShopPageProps = {
     | "restraint"
     | "idle_hoarder"
     | "worthwhile_achievements"
+    | "anti_consumerist"
     | "luck"
     | "extra_realtime_wait"
     | "collect_gem_time_boost"
@@ -104,6 +107,10 @@ function formatUpgradeValue(upgrade: ShopUpgradeDefinition, value: number): stri
   if (upgrade.id === SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS) {
     return `${value.toFixed(2)}×`;
   }
+  /** Template includes literal `x` after placeholder (`%sx`). */
+  if (upgrade.id === SHOP_UPGRADE_IDS.ANTI_CONSUMERIST) {
+    return formatDecimalUpTo2(value);
+  }
   if (upgrade.id === SHOP_UPGRADE_IDS.STORAGE_EXTENSION) {
     return formatSeconds(value, 2, "floor");
   }
@@ -112,7 +119,7 @@ function formatUpgradeValue(upgrade: ShopUpgradeDefinition, value: number): stri
 
 /** Second `%s` in `valueDescription` (e.g. restraint wait hours). */
 function formatUpgradeSecondaryValue(upgrade: ShopUpgradeDefinition, value2: number): string {
-  if (upgrade.id === SHOP_UPGRADE_IDS.PATIENCE) {
+  if (upgrade.id === SHOP_UPGRADE_IDS.PATIENCE || upgrade.id === SHOP_UPGRADE_IDS.ANTI_CONSUMERIST) {
     return formatSeconds(value2, 2, "floor");
   }
   if (upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT) {
@@ -196,6 +203,7 @@ function groupVisibleShopUpgradesByCategory(upgrades: ShopUpgradeDefinition[]): 
 
 export function ShopPage({
   playerState,
+  estimatedServerNowMs,
   shopPendingQuantity,
   onPurchase,
   onNavigateHome
@@ -521,6 +529,8 @@ export function ShopPage({
       <ShopUpgradeInfoOverlay
         open={selectedUpgradeForInfo !== null}
         upgrade={selectedUpgradeForInfo}
+        shop={syncedPlayer.shop}
+        estimatedServerNowMs={estimatedServerNowMs}
         onClose={() => setSelectedUpgradeForInfo(null)}
       />
     </>

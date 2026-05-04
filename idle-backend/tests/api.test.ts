@@ -9,9 +9,13 @@ import { finalizeDueTournaments, getNextTournamentDrawAt } from "../src/tourname
 import type { AppConfig } from "../src/types.js";
 import { createTestPool } from "./testDb.js";
 import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
-import { getRestraintBonusMultiplier } from "@maxidle/shared/shop";
-import { LUCK_SHOP_UPGRADE, RESTRAINT_SHOP_UPGRADE, SECONDS_MULTIPLIER_SHOP_UPGRADE } from "@maxidle/shared/shopUpgrades";
-import { DEFAULT_SHOP_STATE } from "@maxidle/shared/shop";
+import {
+  DEFAULT_SHOP_STATE,
+  getRestraintBonusMultiplier,
+  getShopPurchaseRefundTotals,
+  type ShopState
+} from "@maxidle/shared/shop";
+import { SECONDS_MULTIPLIER_SHOP_UPGRADE } from "@maxidle/shared/shopUpgrades";
 import { TUTORIAL_STEPS } from "@maxidle/shared/tutorialSteps";
 
 describe("auth + player lifecycle", () => {
@@ -1990,7 +1994,7 @@ describe("auth + player lifecycle", () => {
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
 
-    await pool.query(`UPDATE player_states SET real_time_available = 500000 WHERE user_id = $1`, [userId]);
+    await pool.query(`UPDATE player_states SET idle_time_available = 2000000 WHERE user_id = $1`, [userId]);
 
     for (let level = 1; level <= 5; level += 1) {
       const purchaseResponse = await request(app)
@@ -2094,8 +2098,8 @@ describe("auth + player lifecycle", () => {
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
 
-    // LUCK_SHOP_UPGRADE idle costs: 7d + 14d + 28d + 56d + 365d of seconds (final tier is 31_536_000).
-    await pool.query(`UPDATE player_states SET idle_time_available = 50000000 WHERE user_id = $1`, [userId]);
+    // LUCK_SHOP_UPGRADE real-time costs: 7d + 14d + 28d + 56d + 365d of seconds (final tier is 31_536_000).
+    await pool.query(`UPDATE player_states SET real_time_available = 50000000 WHERE user_id = $1`, [userId]);
 
     for (let level = 1; level <= 5; level += 1) {
       const purchaseResponse = await request(app)
@@ -2146,16 +2150,24 @@ describe("auth + player lifecycle", () => {
     expect(purchaseResponse.body.purchase.quantity).toBe(1);
     expect(purchaseResponse.body.purchase.totalCost).toBe(1);
     expect(purchaseResponse.body.timeGems.available).toBe(1);
-    const refundedIdle = SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(0) + SECONDS_MULTIPLIER_SHOP_UPGRADE.costAtLevel(1) + LUCK_SHOP_UPGRADE.costAtLevel(0);
+    const shopBeforeIdleRefund: ShopState = {
+      ...DEFAULT_SHOP_STATE,
+      seconds_multiplier: 2,
+      restraint: 1,
+      luck: 1,
+      collect_gem_time_boost: 3
+    };
+    const refundedIdle = getShopPurchaseRefundTotals(shopBeforeIdleRefund).idle;
     expect(purchaseResponse.body.idleTime.available).toBe(100 + refundedIdle);
     expect(purchaseResponse.body.realTime.available).toBe(200);
     expect(purchaseResponse.body.shop).toEqual(
       expect.objectContaining({
         seconds_multiplier: 0,
         patience: 0,
-        restraint: 1,
-        luck: 0,
+        restraint: 0,
+        luck: 1,
         worthwhile_achievements: 0,
+        anti_consumerist: 0,
         collect_gem_time_boost: 3
       })
     );
@@ -2192,12 +2204,20 @@ describe("auth + player lifecycle", () => {
     expect(purchaseResponse.body.purchase.totalCost).toBe(1);
     expect(purchaseResponse.body.timeGems.available).toBe(1);
     expect(purchaseResponse.body.idleTime.available).toBe(100);
-    expect(purchaseResponse.body.realTime.available).toBe(200 + RESTRAINT_SHOP_UPGRADE.costAtLevel(0));
+    const shopBeforeRealRefund: ShopState = {
+      ...DEFAULT_SHOP_STATE,
+      seconds_multiplier: 2,
+      restraint: 1,
+      luck: 1,
+      collect_gem_time_boost: 3
+    };
+    const refundedReal = getShopPurchaseRefundTotals(shopBeforeRealRefund).real;
+    expect(purchaseResponse.body.realTime.available).toBe(200 + refundedReal);
     expect(purchaseResponse.body.shop).toEqual(
       expect.objectContaining({
         seconds_multiplier: 2,
-        restraint: 0,
-        luck: 1,
+        restraint: 1,
+        luck: 0,
         collect_gem_time_boost: 3,
         storage_extension: 0,
         idle_hoarder: 0,

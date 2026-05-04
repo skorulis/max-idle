@@ -52,7 +52,9 @@ export const SHOP_UPGRADE_IDS = {
    * Real-time purchase: each tier adds one more week of wall-clock time that can accrue toward uncollected idle before the bar stops.
    * See {@link getMaxIdleCollectionRealtimeSeconds}.
    */
-  STORAGE_EXTENSION: "storage_extension"
+  STORAGE_EXTENSION: "storage_extension",
+  /** Idle multiplier that ramps linearly from ×1 up after periods without idle- or real-priced shop buys ({@link getAntiConsumeristMultiplier}). */
+  ANTI_CONSUMERIST: "anti_consumerist"
 } as const;
 
 export type ShopUpgradeId = (typeof SHOP_UPGRADE_IDS)[keyof typeof SHOP_UPGRADE_IDS];
@@ -391,6 +393,30 @@ export const WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE: ShopUpgradeDefinition = defin
   currencyType: SHOP_CURRENCY_TYPES.IDLE
 });
 
+/** `value` = multiplier at full streak; `value2` = wall-clock seconds without idle/real shop purchases to reach it (linear from ×1). */
+export const ANTI_CONSUMERIST_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
+  id: SHOP_UPGRADE_IDS.ANTI_CONSUMERIST,
+  name: "Anti-consumerist",
+  icon: "leaf",
+  description: "Idle multiplier after going without idle or real shop purchases",
+  longDescription:
+    "Raises your idle multiplier the longer you go without buying any shop upgrade priced in idle time or real time. Gem-priced purchases do not reset this streak. Each tier sets the maximum multiplier and how long it takes to reach it; progress scales linearly from ×1.",
+  valueDescription: "%sx after %s without idle or real shop purchases",
+  levels: [
+    { cost: 2 * SECONDS_PER_HOUR, value: 1.1, value2: SECONDS_PER_HOUR },
+    { cost: 6 * SECONDS_PER_HOUR, value: 1.2, value2: 6 * SECONDS_PER_HOUR },
+    { cost: 18 * SECONDS_PER_HOUR, value: 1.3, value2: SECONDS_PER_DAY },
+    { cost: SECONDS_PER_DAY, value: 1.4, value2: 2 * SECONDS_PER_DAY },
+    { cost: 2 * SECONDS_PER_DAY, value: 1.5, value2: 4 * SECONDS_PER_DAY },
+    { cost: 5 * SECONDS_PER_DAY, value: 1.6, value2: SECONDS_PER_WEEK },
+    { cost: 10 * SECONDS_PER_DAY, value: 1.7, value2: 2 * SECONDS_PER_WEEK },
+    { cost: 20 * SECONDS_PER_DAY, value: 1.8, value2: 4 * SECONDS_PER_WEEK },
+    { cost: 40 * SECONDS_PER_DAY, value: 1.9, value2: 8 * SECONDS_PER_WEEK },
+    { cost: 26 * SECONDS_PER_WEEK, value: 2.0, value2: SECONDS_PER_YEAR }
+  ],
+  currencyType: SHOP_CURRENCY_TYPES.IDLE
+});
+
 export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   SECONDS_MULTIPLIER_SHOP_UPGRADE,
   ANOTHER_SECONDS_MULTIPLIER_SHOP_UPGRADE,
@@ -400,6 +426,7 @@ export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   STORAGE_EXTENSION_SHOP_UPGRADE,
   LUCK_SHOP_UPGRADE,
   WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
+  ANTI_CONSUMERIST_SHOP_UPGRADE,
   EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
   IDLE_REFUND_SHOP_UPGRADE,
@@ -422,7 +449,8 @@ export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> =
   [SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS]: WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.DAILY_BONUS_FEATURE]: DAILY_BONUS_FEATURE_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.TOURNAMENT_FEATURE]: TOURNAMENT_FEATURE_SHOP_UPGRADE,
-  [SHOP_UPGRADE_IDS.STORAGE_EXTENSION]: STORAGE_EXTENSION_SHOP_UPGRADE
+  [SHOP_UPGRADE_IDS.STORAGE_EXTENSION]: STORAGE_EXTENSION_SHOP_UPGRADE,
+  [SHOP_UPGRADE_IDS.ANTI_CONSUMERIST]: ANTI_CONSUMERIST_SHOP_UPGRADE
 };
 
 export function getShopUpgradeDefinition(upgradeType: string): ShopUpgradeDefinition | null {
@@ -511,4 +539,29 @@ export function getWorthwhileAchievementsBonusPerAchievement(level: number): num
     return 0;
   }
   return WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.levels[L - 1]?.value ?? 0;
+}
+
+/**
+ * Idle multiplier from Anti-consumerist: ramps linearly from ×1 at last idle/real shop purchase to tier `value` after `value2` seconds (wall clock).
+ * Gem-priced shop purchases do not update {@link ShopState.last_purchase}. Requires finite `wallClockMs`; otherwise returns 1.
+ */
+export function getAntiConsumeristMultiplier(shop: ShopState, wallClockMs: number): number {
+  if (!Number.isFinite(wallClockMs)) {
+    return 1;
+  }
+  const level = ANTI_CONSUMERIST_SHOP_UPGRADE.currentLevel(shop);
+  if (level <= 0) {
+    return 1;
+  }
+  const tier = ANTI_CONSUMERIST_SHOP_UPGRADE.levels[level - 1];
+  const maxMult = safeNumber(tier?.value, 1);
+  const durationSec = safeNaturalNumber(tier?.value2, 1);
+  const lastPurchaseUtcSeconds = shop.last_purchase;
+  if (!Number.isFinite(lastPurchaseUtcSeconds)) {
+    return 1;
+  }
+  const lastMs = Math.floor(lastPurchaseUtcSeconds as number) * 1000;
+  const elapsedSec = Math.max(0, (wallClockMs - lastMs) / 1000);
+  const progress = durationSec <= 0 ? 1 : Math.min(1, elapsedSec / durationSec);
+  return 1 + Math.max(0, maxMult - 1) * progress;
 }

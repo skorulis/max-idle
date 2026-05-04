@@ -18,6 +18,7 @@ export {
   getDefaultShopState,
   getPurchasedShopUpgradeLevelCount,
   getWorthwhileAchievementsMultiplier,
+  getAntiConsumeristMultiplier,
   multiplierToLevel,
   isDailyBonusFeatureUnlocked,
   isTournamentFeatureUnlocked

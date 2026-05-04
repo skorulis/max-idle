@@ -40,7 +40,7 @@ describe("shop pricing", () => {
   });
 
   it("uses fixed restraint upgrade cost", () => {
-    expect(RESTRAINT_SHOP_UPGRADE.costAtLevel(0)).toBe(2 * 60 * 60);
+    expect(RESTRAINT_SHOP_UPGRADE.costAtLevel(0)).toBe(6 * 60 * 60);
   });
 
   it("uses fixed luck upgrade cost", () => {

@@ -11,6 +11,7 @@ import {
   Gift,
   Gauge,
   Hourglass,
+  Leaf,
   Medal,
   Repeat,
   Sparkles,
@@ -50,6 +51,8 @@ export function getLucidIcon(iconName: string): LucideIcon {
       return Gift;
     case "hourglass":
       return Hourglass;
+    case "leaf":
+      return Leaf;
     case "medal":
       return Medal;
     case "calendar-x":

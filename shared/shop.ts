@@ -32,6 +32,13 @@ export type ShopState = {
   worthwhile_achievements?: number;
   /** {@link SHOP_UPGRADE_IDS.STORAGE_EXTENSION} — raises boosted-idle storage ceiling (see {@link getMaxIdleCollectionRealtimeSeconds}). */
   storage_extension?: number;
+  /** {@link SHOP_UPGRADE_IDS.ANTI_CONSUMERIST} — streak multiplier tiers (see {@link getAntiConsumeristMultiplier}). */
+  anti_consumerist?: number;
+  /**
+   * UTC Unix timestamp in seconds for the last shop purchase paid with idle or real time.
+   * Set by the server on those purchases only; gem-priced buys do not update this field.
+   */
+  last_purchase?: number;
   [key: string]: unknown;
 };
 
@@ -44,7 +51,8 @@ export const DEFAULT_SHOP_STATE: ShopState = {
   [SHOP_UPGRADE_IDS.LUCK]: 0,
   [SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS]: 0,
   [SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST]: 0,
-  [SHOP_UPGRADE_IDS.STORAGE_EXTENSION]: 0
+  [SHOP_UPGRADE_IDS.STORAGE_EXTENSION]: 0,
+  [SHOP_UPGRADE_IDS.ANTI_CONSUMERIST]: 0
 };
 
 export function getDefaultShopState(): ShopState {
@@ -282,3 +290,5 @@ export function hasAffordableIdleOrRealTimeShopPurchase(
   }
   return false;
 }
+
+export { getAntiConsumeristMultiplier } from "./shopUpgrades.js";

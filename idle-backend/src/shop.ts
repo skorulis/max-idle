@@ -209,7 +209,8 @@ export function registerShopRoutes({
         : isRealRefund
           ? { idle: 0, real: refundTotalsFull.real }
           : { idle: 0, real: 0 };
-      const nextShopState = isExtraRealtimeWait
+      const shouldRecordLastPurchase = boundedUpgrade.currencyType !== SHOP_CURRENCY_TYPES.GEM;
+      const nextShopStateBase = isExtraRealtimeWait
         ? row.shop
         : isCollectGemTimeBoost
           ? withShopUpgradeLevel(row.shop, SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST, collectGemLevel + quantity)
@@ -217,7 +218,10 @@ export function registerShopRoutes({
             ? withIdleCurrencyShopUpgradesReset(row.shop)
             : isRealRefund
               ? withRealCurrencyShopUpgradesReset(row.shop)
-              : withShopUpgradeLevel(row.shop, boundedUpgrade.id, currentLevel + quantity)
+              : withShopUpgradeLevel(row.shop, boundedUpgrade.id, currentLevel + quantity);
+      const nextShopState = shouldRecordLastPurchase
+        ? { ...nextShopStateBase, last_purchase: Math.floor(now.getTime() / 1000) }
+        : nextShopStateBase;
       const nextLastCollectedAt = isExtraRealtimeWait
         ? new Date(row.last_collected_at.getTime() - REALTIME_WAIT_EXTENSION_SECONDS * 1000)
         : row.last_collected_at;
@@ -329,7 +333,8 @@ export function registerShopRoutes({
         secondsSinceLastCollection: elapsedSinceLastCollection,
         shop: updated.shop,
         achievementCount: nextAchievementCount,
-        realTimeAvailable: toNumber(updated.real_time_available)
+        realTimeAvailable: toNumber(updated.real_time_available),
+        wallClockMs: now.getTime()
       });
       analytics.trackShopPurchase(
         { userId, isAnonymous: identity.claims.isAnonymous },
@@ -522,7 +527,8 @@ export function registerShopRoutes({
         secondsSinceLastCollection: elapsedSinceLastCollection,
         shop: updated.shop,
         achievementCount: achievementCountAfter,
-        realTimeAvailable: toNumber(updated.real_time_available)
+        realTimeAvailable: toNumber(updated.real_time_available),
+        wallClockMs: now.getTime()
       });
       res.json({
         idleTime: {

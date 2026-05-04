@@ -108,7 +108,8 @@ export async function buildPlayerStatePayload(
     secondsSinceLastCollection: elapsedSinceLastCollection,
     shop: row.shop,
     achievementCount,
-    realTimeAvailable: toNumber(row.real_time_available)
+    realTimeAvailable: toNumber(row.real_time_available),
+    wallClockMs: row.server_time.getTime()
   });
   const dailyBonus = await getOrCreateCurrentDailyBonus(pool, row.server_time);
 
@@ -475,7 +476,8 @@ export function registerPlayerRoutes({
         secondsSinceLastCollection: elapsedSinceLastCollectionAfterCollect,
         shop: row.shop,
         achievementCount: achievementCountAfter,
-        realTimeAvailable: toNumber(row.real_time_available)
+        realTimeAvailable: toNumber(row.real_time_available),
+        wallClockMs: collectedAt.getTime()
       });
       await client.query("COMMIT");
       analytics.trackPlayerCollect(
@@ -694,7 +696,8 @@ export function registerPlayerRoutes({
         secondsSinceLastCollection: elapsedSinceLastCollection,
         shop: updatedPlayer.shop,
         achievementCount: achievementCountAfter,
-        realTimeAvailable: toNumber(updatedPlayer.real_time_available)
+        realTimeAvailable: toNumber(updatedPlayer.real_time_available),
+        wallClockMs: now.getTime()
       });
       await client.query("COMMIT");
       const rewardMultiplier =

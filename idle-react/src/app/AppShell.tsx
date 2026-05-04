@@ -125,6 +125,7 @@ const SHOP_ALREADY_OWNED_MESSAGE: Partial<Record<ShopUpgradeId, string>> = {
   luck: "Luck is already active.",
   idle_hoarder: "Idle hoarder is already maxed.",
   worthwhile_achievements: "Worthwhile Achievements is already maxed.",
+  anti_consumerist: "Anti-consumerist is already maxed.",
   collect_gem_time_boost: "Hasty collection is already maxed.",
   daily_bonus_feature: "Daily Bonus is already unlocked.",
   tournament_feature: "Weekly Tournament is already unlocked."
@@ -219,6 +220,7 @@ export function AppShell() {
     | "idle_hoarder"
     | "luck"
     | "worthwhile_achievements"
+    | "anti_consumerist"
     | "extra_realtime_wait"
     | "collect_gem_time_boost"
     | "idle_refund"
@@ -784,7 +786,8 @@ export function AppShell() {
       secondsSinceLastCollection: Math.max(0, elapsedSinceLastCollection),
       shop: playerState.shop,
       achievementCount: playerState.achievementCount,
-      realTimeAvailable: playerState.realTime.available
+      realTimeAvailable: playerState.realTime.available,
+      wallClockMs: estimatedServerNowMs
     });
     return Math.floor(
       base * getCollectGemIdleSecondsMultiplier(COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.currentLevel(playerState.shop))
@@ -809,7 +812,8 @@ export function AppShell() {
       secondsSinceLastCollection: Math.max(0, elapsed),
       shop: playerState.shop,
       achievementCount: playerState.achievementCount,
-      realTimeAvailable: playerState.realTime.available
+      realTimeAvailable: playerState.realTime.available,
+      wallClockMs: estimatedServerNowMs
     });
   }, [estimatedServerNowMs, playerState]);
 
@@ -1617,6 +1621,7 @@ export function AppShell() {
                 uncollectedIdleSeconds={uncollectedIdleSeconds}
                 realtimeElapsedSeconds={realtimeElapsedSeconds}
                 effectiveIdleSecondsRate={effectiveIdleSecondsRate}
+                estimatedServerNowMs={estimatedServerNowMs}
                 collectingDailyReward={collectingDailyReward}
                 collectingDailyBonus={collectingDailyBonus}
                 dailyRewardAvailable={dailyRewardAvailable}
@@ -1684,6 +1689,7 @@ export function AppShell() {
               <CollectionHistoryPage
                 history={collectionHistory}
                 loading={collectionHistoryLoading}
+                playerState={playerState}
               />
             )}
           />
@@ -1712,6 +1718,7 @@ export function AppShell() {
             element={requireAuthenticatedRoute(
               <ShopPage
                 playerState={playerState}
+                estimatedServerNowMs={estimatedServerNowMs}
                 shopPendingQuantity={shopPendingQuantity}
                 onPurchase={onPurchaseUpgrade}
                 onNavigateHome={() => navigate("/")}
