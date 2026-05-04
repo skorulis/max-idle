@@ -1,4 +1,5 @@
 import {
+  Atom,
   Archive,
   BadgeCheck,
   CalendarX,
@@ -11,6 +12,7 @@ import {
   Hourglass,
   Medal,
   Repeat,
+  Sparkles,
   ShieldAlert,
   Timer,
   Trophy,
@@ -21,6 +23,8 @@ import {
 
 export function getLucidIcon(iconName: string): LucideIcon {
   switch (iconName) {
+    case "atom":
+      return Atom;
     case "user-plus":
       return UserPlus;
     case "badge-check":
@@ -29,6 +33,8 @@ export function getLucidIcon(iconName: string): LucideIcon {
       return Clock3;
     case "repeat":
       return Repeat;
+    case "sparkles":
+      return Sparkles;
     case "gauge":
       return Gauge;
     case "shield-alert":

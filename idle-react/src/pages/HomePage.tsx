@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import { formatSeconds } from "../formatSeconds";
 import { formatRewardAmount } from "../formatReward";
-import { Atom, ChevronRight, CircleHelp, ClipboardList, Clock3, Gem, Gift, PiggyBank, Sparkles } from "lucide-react";
+import { Atom, ChevronRight, CircleHelp, ClipboardList, Clock3, Gem, Gift, PiggyBank } from "lucide-react";
+import GameIcon from "../GameIcon";
+import { getLucidIcon } from "../getLucidIcon";
 import type { AvailableSurveySummary, SyncedOutstandingTournamentResult, SyncedPlayerState } from "../app/types";
 import { parseCompletedTutorialIds, TUTORIAL_STEPS } from "@maxidle/shared/tutorialSteps";
 import {
@@ -154,13 +156,13 @@ export function HomePage({
     <>
       {currentTutorial ? (
         <section className="card">
-          <h2 className="section-title-with-icon">
-            <Sparkles size={18} aria-hidden="true" />
-            Max Idle
-          </h2>
-          <h3 className="subtle" style={{ marginTop: 0, marginBottom: "0.5rem", fontSize: "1.05rem", fontWeight: 600 }}>
-            {currentTutorial.title}
-          </h3>
+          <div className="card-section-header">
+            <h2 className="section-title-with-icon">
+              <GameIcon icon={getLucidIcon(currentTutorial.icon)} size={18} />
+              {currentTutorial.title}
+            </h2>
+          </div>
+          
           <p style={{ marginTop: 0 }}>{currentTutorial.body}</p>
           <div className="collect-row" style={{ marginTop: "1rem" }}>
             <button
@@ -188,7 +190,7 @@ export function HomePage({
         <div className="card-section-header">
           <h2 className="section-title-with-icon">
             <Atom size={18} aria-hidden="true" />
-            Current idle time
+            Idle time generator
           </h2>
           <button
             type="button"

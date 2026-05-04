@@ -1,14 +1,23 @@
 export type TutorialStep = {
   id: string;
   title: string;
+  icon: string;
   body: string;
+  
 };
 
 export const TUTORIAL_STEPS: readonly TutorialStep[] = [
   {
-    id: "welcome",
+    id: "1",
     title: "Welcome",
+    icon: "sparkles",
     body: "Welcome to Max Idle! This game is a race to do nothing. Unlike other idle games, you don't win by playing constantly but by proving yourself more patient than any other."
+  },
+  {
+    id: "2",
+    title: "Idle time",
+    icon: "atom",
+    body: "Below is the core of the game, your idle time generator. It will accumulate no matter what you are doing so there's no need to stare. Keep it running to move up the leaderboard or collect it to spend on upgrades."
   },
 ] as const;
 
