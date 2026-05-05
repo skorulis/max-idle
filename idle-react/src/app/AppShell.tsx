@@ -1,14 +1,11 @@
 import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { Link, Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "react-router-dom";
 import { AppNav } from "./AppNav";
-import { toast, toastCollectIdle } from "../gameToast";
+import { toast } from "../gameToast";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
 import { isTournamentFeatureUnlocked } from "../shop";
 import { OBLIGATION_IDS } from "@maxidle/shared/obligations";
-import { SHOP_UPGRADE_IDS, SHOP_UPGRADES_BY_ID } from "../shopUpgrades";
-import {
-  type ShopUpgradeId
-} from "../shopUpgrades";
+import { type ShopUpgradeId } from "../shopUpgrades";
 import { AccountPage } from "../pages/AccountPage";
 import { AchievementsPage } from "../pages/AchievementsPage";
 import { CollectionHistoryPage } from "../pages/CollectionHistoryPage";
@@ -24,34 +21,11 @@ import { ShopPage } from "../pages/ShopPage";
 import { TournamentPage } from "../pages/TournamentPage";
 import { SurveyPage } from "../pages/SurveyPage";
 import {
-  collectDailyBonus,
-  collectDailyReward,
-  collectIdleTime,
-  collectObligation,
-  completeTutorialStep,
-  resetTutorialProgress,
-  collectTournamentReward,
-  createAnonymousSession,
-  debugAddGems,
-  debugAddIdleTime,
-  debugAddRealTime,
-  debugFinalizeCurrentTournament,
-  debugResetBalances,
-  debugResetCurrentDailyBonus,
   completeSocialUpgrade,
-  enterTournament,
-  getAchievements,
-  getCollectionHistory,
-  getDailyBonusHistory,
-  getLeaderboard,
   getPlayer,
   grantClientDrivenAchievement,
-  getTournamentHistory,
-  getPublicPlayerProfile,
   loginWithEmail,
-  markAchievementsSeen,
   logoutSession,
-  purchaseUpgrade,
   registerWithEmail,
   updateUsername,
   upgradeAnonymous
@@ -60,28 +34,21 @@ import { formatRestraintBlockedCollectMessage, hasAffordableIdleOrRealTimeShopPu
 import { ACHIEVEMENT_IDS } from "../achievements";
 import { authClient } from "./authClient.ts";
 import { alignClientClock, useClientNowMs } from "./clientClock";
+import { useAppGameplayActions } from "./useAppGameplayActions";
 import { useDailyRewardNotifications } from "./useDailyRewardNotifications";
+import { useAppRouteDataLoaders } from "./useAppRouteDataLoaders";
 import { useAppSession } from "./useAppSession";
 import {
   getSecondsUntilNextUtcDayBoundary,
   getTournamentSecondsUntilDraw,
-  toSyncedState,
-  toSyncedTournamentState
+  toSyncedState
 } from "./playerState";
 import { useBottomBulletinMessage, type BulletinContent } from "./useBottomBulletinMessage";
 import { useReturnAfterAwayMessage } from "./useReturnAfterAwayMessage";
 import { formatRewardAmount } from "../formatReward";
 import type {
-  AchievementsResponse,
   AuthFormState,
-  CollectionHistoryItem,
-  LeaderboardResponse,
-  LeaderboardType,
-  PlayerProfileResponse,
-  DailyBonusHistoryItem,
-  TournamentHistoryItem
 } from "./types";
-import type { ObligationId } from "@maxidle/shared/obligations";
 
 const TOKEN_KEY = "max-idle-token";
 const UPGRADE_SOCIAL_INTENT_KEY = "max-idle-upgrade-social-intent";
@@ -150,51 +117,8 @@ export function AppShell() {
     refreshTournament,
     refreshHome
   } = useAppSession({ tokenStorageKey: TOKEN_KEY });
-  const [publicPlayerProfile, setPublicPlayerProfile] = useState<PlayerProfileResponse["player"] | null>(null);
-  const [publicPlayerLoading, setPublicPlayerLoading] = useState(false);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardResponse | null>(null);
-  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
-  const [leaderboardType, setLeaderboardType] = useState<LeaderboardType>("current");
-  const [achievements, setAchievements] = useState<AchievementsResponse | null>(null);
-  const [achievementsLoading, setAchievementsLoading] = useState(false);
-  const [dailyBonusHistory, setDailyBonusHistory] = useState<DailyBonusHistoryItem[]>([]);
-  const [dailyBonusHistoryLoading, setDailyBonusHistoryLoading] = useState(false);
-  const [collectionHistory, setCollectionHistory] = useState<CollectionHistoryItem[]>([]);
-  const [collectionHistoryLoading, setCollectionHistoryLoading] = useState(false);
-  const [tournamentHistory, setTournamentHistory] = useState<TournamentHistoryItem[]>([]);
-  const [tournamentHistoryLoading, setTournamentHistoryLoading] = useState(false);
-  const [starting, setStarting] = useState(false);
-  const [collecting, setCollecting] = useState(false);
-  const [collectingDailyReward, setCollectingDailyReward] = useState(false);
-  const [collectingDailyBonus, setCollectingDailyBonus] = useState(false);
-  const [collectingObligation, setCollectingObligation] = useState(false);
-  const [enteringTournament, setEnteringTournament] = useState(false);
-  const [collectingTournamentReward, setCollectingTournamentReward] = useState(false);
   const [authPending, setAuthPending] = useState(false);
   const [usernamePending, setUsernamePending] = useState(false);
-  const [shopPendingQuantity, setShopPendingQuantity] = useState<
-    | "seconds_multiplier"
-    | "another_seconds_multiplier"
-    | "patience"
-    | "restraint"
-    | "idle_hoarder"
-    | "luck"
-    | "worthwhile_achievements"
-    | "anti_consumerist"
-    | "consolidation"
-    | "quick_collector"
-    | "extra_realtime_wait"
-    | "collect_gem_time_boost"
-    | "idle_refund"
-    | "real_refund"
-    | "tournament_feature"
-    | "storage_extension"
-    | null
-  >(null);
-  const [resettingDailyBonus, setResettingDailyBonus] = useState(false);
-  const [debugPendingAction, setDebugPendingAction] = useState<"real" | "idle" | "gems" | "balances" | "tournament" | null>(
-    null
-  );
   const [loginForm, setLoginForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const [signupForm, setSignupForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const [upgradeForm, setUpgradeForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
@@ -204,264 +128,37 @@ export function AppShell() {
   const { displayedContent, isFadingOutMessage, isFadingInMessage } = useBottomBulletinMessage(isAuthenticated);
   const showDebugFeatures = !import.meta.env.PROD;
   const clientNowMs = useClientNowMs();
+
+  useReturnAfterAwayMessage();
+
+  const {
+    publicPlayerProfile,
+    publicPlayerLoading,
+    leaderboard,
+    leaderboardLoading,
+    leaderboardType,
+    setLeaderboardType,
+    achievements,
+    achievementsLoading,
+    dailyBonusHistory,
+    dailyBonusHistoryLoading,
+    collectionHistory,
+    collectionHistoryLoading,
+    tournamentHistory,
+    tournamentHistoryLoading
+  } = useAppRouteDataLoaders({
+    locationPathname: location.pathname,
+    token,
+    accountGameUserId: account?.gameUserId,
+    playerState,
+    setPlayerState,
+    routePlayerIdParam: playerRouteMatch?.params.playerId,
+    setError
+  });
   const dailyBonusHistoryUnlocked =
     playerState != null && playerState.obligationsCompleted[OBLIGATION_IDS.RAMP_UP] === true;
   const dailyBonusHistoryForPage = dailyBonusHistoryUnlocked ? dailyBonusHistory : [];
   const dailyBonusHistoryLoadingForPage = dailyBonusHistoryUnlocked ? dailyBonusHistoryLoading : false;
-
-  useReturnAfterAwayMessage();
-
-  const routePlayerId = useMemo(() => {
-    const rawPlayerId = playerRouteMatch?.params.playerId;
-    if (!rawPlayerId) {
-      return null;
-    }
-    try {
-      return decodeURIComponent(rawPlayerId);
-    } catch {
-      return rawPlayerId;
-    }
-  }, [playerRouteMatch?.params.playerId]);
-
-  useEffect(() => {
-    if (location.pathname !== "/dailybonus") {
-      return;
-    }
-
-    if (!playerState || playerState.obligationsCompleted[OBLIGATION_IDS.RAMP_UP] !== true) {
-      return;
-    }
-
-    let cancelled = false;
-    const loadDailyBonusHistory = async () => {
-      setDailyBonusHistoryLoading(true);
-      setError(null);
-      try {
-        const nextHistory = await getDailyBonusHistory(token);
-        if (!cancelled) {
-          setDailyBonusHistory(nextHistory);
-        }
-      } catch (dailyBonusHistoryError) {
-        if (cancelled) {
-          return;
-        }
-        setDailyBonusHistory([]);
-        if (dailyBonusHistoryError instanceof Error && dailyBonusHistoryError.message === "UNAUTHORIZED") {
-          setError("Login or start idling to view daily bonus history.");
-          return;
-        }
-        if (dailyBonusHistoryError instanceof Error && dailyBonusHistoryError.message === "DAILY_BONUS_FEATURE_LOCKED") {
-          setError("Complete the Ramp up obligation to view history.");
-          return;
-        }
-        setError(dailyBonusHistoryError instanceof Error ? dailyBonusHistoryError.message : "Failed to load daily bonus history.");
-      } finally {
-        if (!cancelled) {
-          setDailyBonusHistoryLoading(false);
-        }
-      }
-    };
-
-    void loadDailyBonusHistory();
-    return () => {
-      cancelled = true;
-    };
-  }, [location.pathname, token, account?.gameUserId, playerState, setError]);
-
-  useEffect(() => {
-    if (location.pathname !== "/collection") {
-      return;
-    }
-
-    let cancelled = false;
-    const loadCollectionHistory = async () => {
-      setCollectionHistoryLoading(true);
-      setError(null);
-      try {
-        const nextHistory = await getCollectionHistory(token);
-        if (!cancelled) {
-          setCollectionHistory(nextHistory);
-        }
-      } catch (collectionHistoryError) {
-        if (cancelled) {
-          return;
-        }
-        setCollectionHistory([]);
-        if (collectionHistoryError instanceof Error && collectionHistoryError.message === "UNAUTHORIZED") {
-          setError("Login or start idling to view collection history.");
-          return;
-        }
-        setError(collectionHistoryError instanceof Error ? collectionHistoryError.message : "Failed to load collection history.");
-      } finally {
-        if (!cancelled) {
-          setCollectionHistoryLoading(false);
-        }
-      }
-    };
-
-    void loadCollectionHistory();
-    return () => {
-      cancelled = true;
-    };
-  }, [location.pathname, token, account?.gameUserId, setError]);
-
-  useEffect(() => {
-    if (location.pathname !== "/tournament") {
-      return;
-    }
-
-    if (!playerState || !isTournamentFeatureUnlocked(playerState.shop)) {
-      return;
-    }
-
-    let cancelled = false;
-    const loadTournamentHistory = async () => {
-      setTournamentHistoryLoading(true);
-      setError(null);
-      try {
-        const nextHistory = await getTournamentHistory(token);
-        if (!cancelled) {
-          setTournamentHistory(nextHistory);
-        }
-      } catch (tournamentHistoryError) {
-        if (cancelled) {
-          return;
-        }
-        setTournamentHistory([]);
-        if (tournamentHistoryError instanceof Error && tournamentHistoryError.message === "UNAUTHORIZED") {
-          setError("Login or start idling to view tournament history.");
-          return;
-        }
-        if (tournamentHistoryError instanceof Error && tournamentHistoryError.message === "TOURNAMENT_FEATURE_LOCKED") {
-          setError("Purchase Weekly Tournament in the shop to view history.");
-          return;
-        }
-        setError(
-          tournamentHistoryError instanceof Error ? tournamentHistoryError.message : "Failed to load tournament history."
-        );
-      } finally {
-        if (!cancelled) {
-          setTournamentHistoryLoading(false);
-        }
-      }
-    };
-
-    void loadTournamentHistory();
-    return () => {
-      cancelled = true;
-    };
-  }, [location.pathname, token, account?.gameUserId, playerState, setError]);
-
-  useEffect(() => {
-    if (location.pathname !== "/leaderboard") {
-      return;
-    }
-
-    let cancelled = false;
-    const loadLeaderboard = async () => {
-      setLeaderboardLoading(true);
-      setError(null);
-      try {
-        const nextLeaderboard = await getLeaderboard(token, leaderboardType);
-        if (!cancelled) {
-          setLeaderboard(nextLeaderboard);
-        }
-      } catch (leaderboardError) {
-        if (cancelled) {
-          return;
-        }
-        setLeaderboard(null);
-        if (leaderboardError instanceof Error && leaderboardError.message === "UNAUTHORIZED") {
-          setError("Login or start idling to view the leaderboard.");
-          return;
-        }
-        setError(leaderboardError instanceof Error ? leaderboardError.message : "Failed to load leaderboard.");
-      } finally {
-        if (!cancelled) {
-          setLeaderboardLoading(false);
-        }
-      }
-    };
-
-    void loadLeaderboard();
-    return () => {
-      cancelled = true;
-    };
-  }, [location.pathname, token, account?.gameUserId, leaderboardType, setError]);
-
-  useEffect(() => {
-    if (location.pathname !== "/achievements") {
-      return;
-    }
-
-    let cancelled = false;
-    const loadAchievements = async () => {
-      setAchievementsLoading(true);
-      setError(null);
-      try {
-        const nextAchievements = await getAchievements(token);
-        if (!cancelled) {
-          setAchievements(nextAchievements);
-        }
-      } catch (achievementsError) {
-        if (cancelled) {
-          return;
-        }
-        setAchievements(null);
-        if (achievementsError instanceof Error && achievementsError.message === "UNAUTHORIZED") {
-          setError("Login or start idling to view achievements.");
-          return;
-        }
-        setError(achievementsError instanceof Error ? achievementsError.message : "Failed to load achievements.");
-      } finally {
-        if (!cancelled) {
-          setAchievementsLoading(false);
-        }
-      }
-    };
-
-    void loadAchievements();
-    return () => {
-      cancelled = true;
-    };
-  }, [location.pathname, token, account?.gameUserId, setError]);
-
-  useEffect(() => {
-    if (location.pathname !== "/achievements" || !playerState?.hasUnseenAchievements) {
-      return;
-    }
-
-    let cancelled = false;
-    const clearUnseenAchievements = async () => {
-      try {
-        await markAchievementsSeen(token);
-        if (!cancelled) {
-          setPlayerState((previousState) =>
-            previousState
-              ? {
-                  ...previousState,
-                  hasUnseenAchievements: false
-                }
-              : previousState
-          );
-        }
-      } catch (markSeenError) {
-        if (cancelled) {
-          return;
-        }
-        if (markSeenError instanceof Error && markSeenError.message === "UNAUTHORIZED") {
-          setError("Login or start idling to view achievements.");
-          return;
-        }
-        setError(markSeenError instanceof Error ? markSeenError.message : "Failed to clear achievement badge.");
-      }
-    };
-
-    void clearUnseenAchievements();
-    return () => {
-      cancelled = true;
-    };
-  }, [location.pathname, token, playerState?.hasUnseenAchievements, setError, setPlayerState]);
 
   useEffect(() => {
     if (!isAuthenticated || location.pathname !== "/") {
@@ -496,42 +193,6 @@ export function AppShell() {
       window.clearTimeout(timer);
     };
   }, [isAuthenticated, location.pathname, token, setPlayerState]);
-
-  useEffect(() => {
-    if (!routePlayerId) {
-      return;
-    }
-
-    let cancelled = false;
-    const loadPlayerProfile = async () => {
-      setPublicPlayerLoading(true);
-      setError(null);
-      try {
-        const profileResponse = await getPublicPlayerProfile(routePlayerId);
-        if (!cancelled) {
-          setPublicPlayerProfile(profileResponse.player);
-        }
-      } catch (profileError) {
-        if (cancelled) {
-          return;
-        }
-        setPublicPlayerProfile(null);
-        if (profileError instanceof Error && profileError.message === "PLAYER_NOT_FOUND") {
-          return;
-        }
-        setError(profileError instanceof Error ? profileError.message : "Failed to load player profile.");
-      } finally {
-        if (!cancelled) {
-          setPublicPlayerLoading(false);
-        }
-      }
-    };
-
-    void loadPlayerProfile();
-    return () => {
-      cancelled = true;
-    };
-  }, [location.pathname, routePlayerId, setError]);
 
   const tournamentFeatureUnlocked = Boolean(playerState && isTournamentFeatureUnlocked(playerState.shop));
 
@@ -765,451 +426,51 @@ export function AppShell() {
     };
   }, [playerState, refreshTournament, token, tournamentSecondsUntilDraw, tournamentState]);
 
-  const onCollect = async (): Promise<
-    { collectedSeconds: number; realSecondsCollected: number } | undefined
-  > => {
-    if (!playerState) {
-      return undefined;
-    }
-    if (isCollectBlockedByRestraint) {
-      setError(restraintCollectBlockedMessage);
-      setStatus("Keep idling to satisfy Restraint.");
-      return undefined;
-    }
-
-    setCollecting(true);
-    setError(null);
-    setStatus("Collecting your hard-earned inactivity...");
-
-    try {
-      const nextPlayer = await collectIdleTime(token);
-      const collectedSeconds = nextPlayer.collectedSeconds ?? 0;
-      const realSecondsCollected = nextPlayer.realSecondsCollected ?? 0;
-      toastCollectIdle(collectedSeconds, realSecondsCollected);
-      const synced = toSyncedState(nextPlayer);
-      alignClientClock();
-      setPlayerState(synced);
-      await refreshAccount(token);
-      setStatus("Collected. You may now continue doing nothing.");
-      return { collectedSeconds, realSecondsCollected };
-    } catch (collectError) {
-      if (collectError instanceof Error && collectError.message === "UNAUTHORIZED") {
-        localStorage.removeItem(TOKEN_KEY);
-        setToken(null);
-        setPlayerState(null);
-        setAccount(null);
-        setStatus("Press start when you are ready to do nothing.");
-      } else if (collectError instanceof Error && collectError.message === "RESTRAINT_BLOCKED") {
-        setError(restraintCollectBlockedMessage);
-        return;
-      }
-      setError(collectError instanceof Error ? collectError.message : "Collect failed");
-      setStatus("Your inactivity transfer was interrupted.");
-      return undefined;
-    } finally {
-      setCollecting(false);
-    }
-  };
-
-  const onPurchaseUpgrade = async (upgradeId: ShopUpgradeId) => {
-    if (!playerState) {
-      return;
-    }
-
-    setShopPendingQuantity(upgradeId);
-    setError(null);
-    try {
-      const updatedPlayer = await purchaseUpgrade(token, upgradeId);
-      const synced = toSyncedState(updatedPlayer);
-      alignClientClock();
-      setPlayerState(synced);
-      if (upgradeId === SHOP_UPGRADE_IDS.TOURNAMENT_FEATURE) {
-        void refreshTournament(token).catch(() => {
-          // Ignore; user can refresh from home or tournament page.
-        });
-      }
-      const purchasedUpgrade = SHOP_UPGRADES_BY_ID[upgradeId];
-      const purchasedLevel = purchasedUpgrade.currentLevel(synced.shop);
-      const shopToastMessage =
-        purchasedLevel > 0
-          ? `Purchased ${purchasedUpgrade.name} level ${purchasedLevel}`
-          : `Purchased ${purchasedUpgrade.name}`;
-      toast.success(shopToastMessage);
-    } catch (purchaseError) {
-      if (purchaseError instanceof Error && purchaseError.message === "INSUFFICIENT_FUNDS") {
-        setError("Not enough resources for that purchase.");
-      } else if (purchaseError instanceof Error && purchaseError.message === "ALREADY_OWNED") {
-        setError(SHOP_ALREADY_OWNED_MESSAGE[upgradeId] ?? purchaseError.message);
-      } else {
-        setError(purchaseError instanceof Error ? purchaseError.message : "Purchase failed");
-      }
-      setStatus("Could not complete shop purchase.");
-    } finally {
-      setShopPendingQuantity(null);
-    }
-  };
-
-  const onDebugAddGems = async () => {
-    if (!playerState) {
-      return;
-    }
-
-    setDebugPendingAction("gems");
-    setError(null);
-    setStatus("Adding debug gems...");
-    try {
-      const updatedPlayer = await debugAddGems(token);
-      const synced = toSyncedState(updatedPlayer);
-      alignClientClock();
-      setPlayerState(synced);
-      toast.success("Added 5 debug gems.");
-    } catch (debugError) {
-      setError(debugError instanceof Error ? debugError.message : "Failed to add debug gems");
-      toast.error("Could not add debug gems.");
-    } finally {
-      setDebugPendingAction(null);
-    }
-  };
-
-  const onDebugResetDailyBonus = async () => {
-    if (!playerState) {
-      return;
-    }
-
-    setResettingDailyBonus(true);
-    setError(null);
-    try {
-      await debugResetCurrentDailyBonus(token);
-      await refreshPlayer(token);
-      toast.success("Reset current daily bonus.");
-    } catch (debugError) {
-      setError(debugError instanceof Error ? debugError.message : "Failed to reset daily bonus");
-    } finally {
-      setResettingDailyBonus(false);
-    }
-  };
-
-  const onDebugAddRealTime = async () => {
-    if (!playerState) {
-      return;
-    }
-
-    setDebugPendingAction("real");
-    setError(null);
-    setStatus("Adding debug real time...");
-    try {
-      const updatedPlayer = await debugAddRealTime(token);
-      const synced = toSyncedState(updatedPlayer);
-      alignClientClock();
-      setPlayerState(synced);
-      toast.success("Added 12 hours of real time.");
-    } catch (debugError) {
-      setError(debugError instanceof Error ? debugError.message : "Failed to add debug real time");
-      toast.error("Could not add debug real time.");
-    } finally {
-      setDebugPendingAction(null);
-    }
-  };
-
-  const onDebugAddIdleTime = async () => {
-    if (!playerState) {
-      return;
-    }
-
-    setDebugPendingAction("idle");
-    setError(null);
-    setStatus("Adding debug idle time...");
-    try {
-      const updatedPlayer = await debugAddIdleTime(token);
-      const synced = toSyncedState(updatedPlayer);
-      alignClientClock();
-      setPlayerState(synced);
-      toast.success("Added 12 hours of idle time.");
-    } catch (debugError) {
-      setError(debugError instanceof Error ? debugError.message : "Failed to add debug idle time");
-      toast.error("Could not add debug idle time.");
-    } finally {
-      setDebugPendingAction(null);
-    }
-  };
-
-  const onDebugResetBalances = async () => {
-    if (!playerState) {
-      return;
-    }
-
-    setDebugPendingAction("balances");
-    setError(null);
-    setStatus("Resetting balances...");
-    try {
-      const updatedPlayer = await debugResetBalances(token);
-      const synced = toSyncedState(updatedPlayer);
-      alignClientClock();
-      setPlayerState(synced);
-      toast.success("Reset all balances to zero.");
-    } catch (debugError) {
-      setError(debugError instanceof Error ? debugError.message : "Failed to reset balances");
-      toast.error("Could not reset balances.");
-    } finally {
-      setDebugPendingAction(null);
-    }
-  };
-
-  const onDebugFinalizeTournament = async () => {
-    if (!playerState) {
-      return;
-    }
-
-    setDebugPendingAction("tournament");
-    setError(null);
-    setStatus("Finalizing tournament...");
-    try {
-      const result = await debugFinalizeCurrentTournament(token);
-      if (!result.ok) {
-        toast.error("No active tournament.");
-        return;
-      }
-      await refreshHome(token);
-      toast.success(
-        `Tournament finalized (${result.entryCount} entr${result.entryCount === 1 ? "y" : "ies"}). New round #${result.newTournamentId}.`
-      );
-    } catch (debugError) {
-      setError(debugError instanceof Error ? debugError.message : "Failed to finalize tournament");
-      toast.error("Could not finalize tournament.");
-    } finally {
-      setDebugPendingAction(null);
-    }
-  };
-
-  const onCollectDailyReward = async () => {
-    if (!playerState) {
-      return;
-    }
-
-    setCollectingDailyReward(true);
-    setError(null);
-    try {
-      const nextPlayer = await collectDailyReward(token);
-      const synced = toSyncedState(nextPlayer);
-      alignClientClock();
-      setPlayerState(synced);
-      setStatus("Daily reward collected.");
-    } catch (dailyRewardError) {
-      if (dailyRewardError instanceof Error && dailyRewardError.message === "UNAUTHORIZED") {
-        localStorage.removeItem(TOKEN_KEY);
-        setToken(null);
-        setPlayerState(null);
-        setAccount(null);
-        setStatus("Press start when you are ready to do nothing.");
-      } else if (dailyRewardError instanceof Error && dailyRewardError.message === "DAILY_REWARD_NOT_AVAILABLE") {
-        setError("Daily reward already collected today. Next reset is 00:00:00 UTC.");
-      } else {
-        setError(dailyRewardError instanceof Error ? dailyRewardError.message : "Daily reward collection failed");
-      }
-    } finally {
-      setCollectingDailyReward(false);
-    }
-  };
-
-  const onCollectObligation = async (obligationId: ObligationId) => {
-    if (!playerState) {
-      return;
-    }
-    setCollectingObligation(true);
-    setError(null);
-    try {
-      const nextPlayer = await collectObligation(token, obligationId);
-      const synced = toSyncedState(nextPlayer);
-      alignClientClock();
-      setPlayerState(synced);
-      toast.success("Obligation reward collected.");
-    } catch (obligationError) {
-      if (obligationError instanceof Error && obligationError.message === "UNAUTHORIZED") {
-        localStorage.removeItem(TOKEN_KEY);
-        setToken(null);
-        setPlayerState(null);
-        setAccount(null);
-        setStatus("Press start when you are ready to do nothing.");
-      } else {
-        const message =
-          obligationError instanceof Error ? obligationError.message : "Could not collect obligation reward";
-        setError(message);
-        toast.error(message);
-      }
-    } finally {
-      setCollectingObligation(false);
-    }
-  };
-
-  const onCompleteTutorialStep = async (tutorialId: string) => {
-    if (!playerState) {
-      return;
-    }
-    setError(null);
-    try {
-      const nextPlayer = await completeTutorialStep(token, tutorialId);
-      const synced = toSyncedState(nextPlayer);
-      alignClientClock();
-      setPlayerState(synced);
-    } catch (tutorialError) {
-      if (tutorialError instanceof Error && tutorialError.message === "UNAUTHORIZED") {
-        localStorage.removeItem(TOKEN_KEY);
-        setToken(null);
-        setPlayerState(null);
-        setAccount(null);
-        setStatus("Press start when you are ready to do nothing.");
-      } else {
-        setError(tutorialError instanceof Error ? tutorialError.message : "Could not update tutorial progress");
-        toast.error("Could not save tutorial progress.");
-      }
-    }
-  };
-
-  const onResetTutorial = async () => {
-    if (!playerState) {
-      return;
-    }
-    setError(null);
-    try {
-      const nextPlayer = await resetTutorialProgress(token);
-      const synced = toSyncedState(nextPlayer);
-      alignClientClock();
-      setPlayerState(synced);
-      toast.success("Tutorial reset. You will see the intro again on the home page.");
-    } catch (tutorialError) {
-      if (tutorialError instanceof Error && tutorialError.message === "UNAUTHORIZED") {
-        localStorage.removeItem(TOKEN_KEY);
-        setToken(null);
-        setPlayerState(null);
-        setAccount(null);
-        setStatus("Press start when you are ready to do nothing.");
-      } else {
-        setError(tutorialError instanceof Error ? tutorialError.message : "Could not reset tutorial");
-        toast.error("Could not reset tutorial.");
-      }
-    }
-  };
-
-  const onCollectDailyBonus = async () => {
-    if (!playerState) {
-      return;
-    }
-    setCollectingDailyBonus(true);
-    setError(null);
-    try {
-      const nextPlayer = await collectDailyBonus(token);
-      const synced = toSyncedState(nextPlayer);
-      alignClientClock();
-      setPlayerState(synced);
-      setStatus("Daily bonus activated.");
-    } catch (dailyBonusError) {
-      if (dailyBonusError instanceof Error && dailyBonusError.message === "UNAUTHORIZED") {
-        localStorage.removeItem(TOKEN_KEY);
-        setToken(null);
-        setPlayerState(null);
-        setAccount(null);
-        setStatus("Press start when you are ready to do nothing.");
-      } else if (dailyBonusError instanceof Error && dailyBonusError.message === "DAILY_BONUS_INSUFFICIENT_IDLE") {
-        setError("Not enough idle time in the bank to activate today's daily bonus.");
-      } else if (dailyBonusError instanceof Error && dailyBonusError.message === "DAILY_BONUS_ALREADY_CLAIMED") {
-        setError("Daily bonus already activated today.");
-      } else if (dailyBonusError instanceof Error && dailyBonusError.message === "DAILY_BONUS_FEATURE_LOCKED") {
-        setError("Purchase Daily Bonus in the shop to activate.");
-      } else {
-        setError(dailyBonusError instanceof Error ? dailyBonusError.message : "Daily bonus collection failed");
-      }
-    } finally {
-      setCollectingDailyBonus(false);
-    }
-  };
-
-  const onEnterTournament = async () => {
-    if (!playerState) {
-      return;
-    }
-    setEnteringTournament(true);
-    setError(null);
-    try {
-      const response = await enterTournament(token);
-      setTournamentState(toSyncedTournamentState(response.tournament));
-      setStatus(response.enteredNow ? "Entered weekly tournament." : "Already entered in this week's tournament.");
-    } catch (tournamentError) {
-      if (tournamentError instanceof Error && tournamentError.message === "UNAUTHORIZED") {
-        localStorage.removeItem(TOKEN_KEY);
-        setToken(null);
-        setPlayerState(null);
-        setTournamentState(null);
-        setAccount(null);
-        setStatus("Press start when you are ready to do nothing.");
-      } else if (tournamentError instanceof Error && tournamentError.message === "TOURNAMENT_DRAW_IN_PROGRESS") {
-        setError("Tournament draw is finalizing. Please retry in a moment.");
-        void refreshTournament(token).catch(() => {
-          // Ignore refresh errors and keep current state.
-        });
-      } else if (tournamentError instanceof Error && tournamentError.message === "TOURNAMENT_FEATURE_LOCKED") {
-        setError("Purchase Weekly Tournament in the shop to enter.");
-      } else if (tournamentError instanceof Error && tournamentError.message === "TOURNAMENT_REWARD_UNCOLLECTED") {
-        setError("Collect your last tournament reward before entering this week's draw.");
-      } else {
-        setError(tournamentError instanceof Error ? tournamentError.message : "Failed to enter tournament");
-      }
-    } finally {
-      setEnteringTournament(false);
-    }
-  };
-
-  const onCollectTournamentReward = async () => {
-    if (!playerState) {
-      return;
-    }
-    setCollectingTournamentReward(true);
-    setError(null);
-    try {
-      const result = await collectTournamentReward(token);
-      await refreshHome(token);
-      toast.success(`Collected ${result.gemsCollected} Time Gem${result.gemsCollected === 1 ? "" : "s"}.`);
-      setStatus("Tournament reward collected.");
-    } catch (collectError) {
-      if (collectError instanceof Error && collectError.message === "UNAUTHORIZED") {
-        localStorage.removeItem(TOKEN_KEY);
-        setToken(null);
-        setPlayerState(null);
-        setTournamentState(null);
-        setAccount(null);
-        setStatus("Press start when you are ready to do nothing.");
-      } else if (collectError instanceof Error && collectError.message === "TOURNAMENT_FEATURE_LOCKED") {
-        setError("Purchase Weekly Tournament in the shop.");
-      } else if (collectError instanceof Error && collectError.message === "NO_TOURNAMENT_REWARD_TO_COLLECT") {
-        setError("No tournament reward to collect.");
-        void refreshHome(token).catch(() => {
-          // Ignore refresh errors.
-        });
-      } else {
-        setError(collectError instanceof Error ? collectError.message : "Failed to collect tournament reward");
-      }
-    } finally {
-      setCollectingTournamentReward(false);
-    }
-  };
-
-  const onStartIdling = async () => {
-    setStarting(true);
-    setError(null);
-    setStatus("Creating your anonymous idle identity...");
-
-    try {
-      const auth = await createAnonymousSession();
-      localStorage.setItem(TOKEN_KEY, auth.token);
-      setToken(auth.token);
-      await refreshHome(auth.token);
-      setStatus("You are doing nothing. Excellent.");
-    } catch (startError) {
-      setError(startError instanceof Error ? startError.message : "Failed to start idling");
-      setStatus("Unable to begin idling right now.");
-    } finally {
-      setStarting(false);
-    }
-  };
+  const {
+    starting,
+    collecting,
+    collectingDailyReward,
+    collectingDailyBonus,
+    collectingObligation,
+    enteringTournament,
+    collectingTournamentReward,
+    shopPendingQuantity,
+    resettingDailyBonus,
+    debugPendingAction,
+    onCollect,
+    onPurchaseUpgrade,
+    onDebugAddGems,
+    onDebugResetDailyBonus,
+    onDebugAddRealTime,
+    onDebugAddIdleTime,
+    onDebugResetBalances,
+    onDebugFinalizeTournament,
+    onCollectDailyReward,
+    onCollectObligation,
+    onCompleteTutorialStep,
+    onResetTutorial,
+    onCollectDailyBonus,
+    onEnterTournament,
+    onCollectTournamentReward,
+    onStartIdling
+  } = useAppGameplayActions({
+    token,
+    setToken,
+    playerState,
+    setPlayerState,
+    setTournamentState,
+    setAccount,
+    setStatus,
+    setError,
+    refreshAccount,
+    refreshPlayer,
+    refreshTournament,
+    refreshHome,
+    isCollectBlockedByRestraint,
+    restraintCollectBlockedMessage,
+    tokenStorageKey: TOKEN_KEY,
+    shopAlreadyOwnedMessage: SHOP_ALREADY_OWNED_MESSAGE
+  });
 
   const onStartJourneyFromLeaderboard = async () => {
     await onStartIdling();
