@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { OBLIGATION_IDS } from "@maxidle/shared/obligations";
-import { isTournamentFeatureUnlocked } from "../shop";
+import { OBLIGATION_IDS, isTournamentFeatureUnlocked } from "@maxidle/shared/obligations";
 import {
   getAchievements,
   getCollectionHistory,
@@ -146,7 +145,7 @@ export function useAppRouteDataLoaders({
     if (locationPathname !== "/tournament") {
       return;
     }
-    if (!playerState || !isTournamentFeatureUnlocked(playerState.shop)) {
+    if (!playerState || !isTournamentFeatureUnlocked(playerState.obligationsCompleted)) {
       return;
     }
     let cancelled = false;
@@ -168,7 +167,7 @@ export function useAppRouteDataLoaders({
           return;
         }
         if (tournamentHistoryError instanceof Error && tournamentHistoryError.message === "TOURNAMENT_FEATURE_LOCKED") {
-          setError("Purchase Weekly Tournament in the shop to view history.");
+          setError('Complete "Wait it out" to view tournament history.');
           return;
         }
         setError(

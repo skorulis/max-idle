@@ -4,22 +4,25 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../../src/app.js";
 import { createTestPool, resetTestDatabase } from "../testDb.js";
 import { createTestAppConfig } from "../testAppConfig.js";
+import { OBLIGATION_IDS } from "@maxidle/shared/obligations";
 
 describe("home routes", () => {
   const config = createTestAppConfig();
   let pool: Pool;
 
   async function unlockTournamentFeature(
-    app: ReturnType<typeof createApp>,
-    token: string,
+    _app: ReturnType<typeof createApp>,
+    _token: string,
     userId: string
   ): Promise<void> {
-    await pool.query(`UPDATE player_states SET time_gems_available = time_gems_available + 2 WHERE user_id = $1`, [userId]);
-    const purchase = await request(app)
-      .post("/shop/purchase")
-      .set("Authorization", `Bearer ${token}`)
-      .send({ upgradeType: "tournament_feature" });
-    expect(purchase.status).toBe(200);
+    await pool.query(
+      `
+      UPDATE player_states
+      SET obligations_completed = $2::jsonb
+      WHERE user_id = $1
+      `,
+      [userId, JSON.stringify({ [OBLIGATION_IDS.WAIT_IT_OUT]: true })]
+    );
   }
 
   beforeAll(async () => {

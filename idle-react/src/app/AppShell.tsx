@@ -3,8 +3,7 @@ import { Link, Navigate, Route, Routes, useLocation, useMatch, useNavigate } fro
 import { AppNav } from "./AppNav";
 import { toast } from "../gameToast";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
-import { isTournamentFeatureUnlocked } from "../shop";
-import { OBLIGATION_IDS } from "@maxidle/shared/obligations";
+import { OBLIGATION_IDS, isTournamentFeatureUnlocked } from "@maxidle/shared/obligations";
 import { type ShopUpgradeId } from "../shopUpgrades";
 import { AccountPage } from "../pages/AccountPage";
 import { AchievementsPage } from "../pages/AchievementsPage";
@@ -83,8 +82,7 @@ const SHOP_ALREADY_OWNED_MESSAGE: Partial<Record<ShopUpgradeId, string>> = {
   anti_consumerist: "Anti-consumerist is already maxed.",
   consolidation: "Consolidation is already maxed.",
   quick_collector: "Quick Collector is already maxed.",
-  collect_gem_time_boost: "Hasty collection is already maxed.",
-  tournament_feature: "Weekly Tournament is already unlocked."
+  collect_gem_time_boost: "Hasty collection is already maxed."
 };
 
 export function AppShell() {
@@ -189,7 +187,7 @@ export function AppShell() {
     };
   }, [isAuthenticated, location.pathname, token, setPlayerState]);
 
-  const tournamentFeatureUnlocked = Boolean(playerState && isTournamentFeatureUnlocked(playerState.shop));
+  const tournamentFeatureUnlocked = Boolean(playerState && isTournamentFeatureUnlocked(playerState.obligationsCompleted));
 
   useEffect(() => {
     if (location.pathname !== "/tournament" || !tournamentFeatureUnlocked) {

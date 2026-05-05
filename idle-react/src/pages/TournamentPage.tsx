@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import type { SyncedPlayerState, SyncedTournamentState, TournamentHistoryItem } from "../app/types";
-import { isTournamentFeatureUnlocked } from "../shop";
+import { isTournamentFeatureUnlocked } from "@maxidle/shared/obligations";
 import { TournamentPanel } from "./TournamentPanel";
 import { RankedPlayerRow } from "./RankedPlayerRow";
 import { ClipboardClock, Trophy } from "lucide-react";
@@ -50,15 +50,15 @@ export function TournamentPage({
     );
   }
 
-  if (!isTournamentFeatureUnlocked(playerState.shop)) {
+  if (!isTournamentFeatureUnlocked(playerState.obligationsCompleted)) {
     return (
       <section className="card">
         <h2>Weekly Tournament</h2>
         <p className="subtle">
-          Purchase <strong>Weekly Tournament</strong> in the shop (1 Time Gem) to compete each week for gem rewards.
+          Complete <strong>Wait it out</strong> to compete each week for gem rewards.
         </p>
-        <button type="button" className="collect" onClick={() => navigate("/shop")}>
-          Open shop
+        <button type="button" className="collect" onClick={() => navigate("/")}>
+          View obligations
         </button>
       </section>
     );

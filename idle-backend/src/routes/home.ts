@@ -1,7 +1,6 @@
 import express from "express";
 import type { Pool } from "pg";
-import type { ShopState } from "@maxidle/shared/shop";
-import { isTournamentFeatureUnlocked } from "@maxidle/shared/shop";
+import { isTournamentFeatureUnlocked } from "@maxidle/shared/obligations";
 import type { AuthClaims } from "../types.js";
 import { finalizeDueTournaments, getCurrentTournamentForUser } from "../tournaments.js";
 import type { BetterAuthSession } from "./account.js";
@@ -49,10 +48,10 @@ export function registerHomeRoutes({
         return;
       }
 
-      const shop = playerPayload.shop as ShopState;
+      const obligationsCompleted = (playerPayload.obligationsCompleted ?? {}) as Record<string, boolean>;
       const [accountPayload, tournamentPayload, availableSurvey] = await Promise.all([
         buildAccountPayloadForIdentity(pool, socialConfig, identity),
-        isTournamentFeatureUnlocked(shop)
+        isTournamentFeatureUnlocked(obligationsCompleted)
           ? getCurrentTournamentForUser(pool, userId, new Date(), { includeNearbyEntries: false })
           : Promise.resolve(null),
         getAvailableSurveySummaryForUser(pool, userId)

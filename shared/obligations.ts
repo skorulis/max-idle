@@ -95,6 +95,10 @@ export function getObligationDefinition(id: ObligationId): ObligationDefinition 
   return OBLIGATIONS.find((d) => d.id === id);
 }
 
+export function isTournamentFeatureUnlocked(completed: Readonly<Record<string, boolean | undefined>>): boolean {
+  return completed[OBLIGATION_IDS.WAIT_IT_OUT] === true;
+}
+
 export const OBLIGATIONS: ObligationDefinition[] = [
   {
     id: OBLIGATION_IDS.COLLECT_SOME_TIME,

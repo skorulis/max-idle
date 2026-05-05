@@ -50,7 +50,6 @@ type ShopPageProps = {
     | "collect_gem_time_boost"
     | "idle_refund"
     | "real_refund"
-    | "tournament_feature"
     | "storage_extension"
     | null;
   /** Purchase flow for any shop upgrade row; `upgradeId` matches {@link SHOP_UPGRADE_IDS}. */

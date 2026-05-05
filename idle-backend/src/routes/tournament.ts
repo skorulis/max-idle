@@ -1,8 +1,8 @@
 import express from "express";
 import type { Pool } from "pg";
-import type { ShopState } from "@maxidle/shared/shop";
-import { isTournamentFeatureUnlocked } from "@maxidle/shared/shop";
+import { isTournamentFeatureUnlocked } from "@maxidle/shared/obligations";
 import type { AuthClaims } from "../types.js";
+import { parseObligationsCompleted } from "../obligationsState.js";
 import {
   collectTournamentReward,
   debugFinalizeCurrentTournament,
@@ -19,16 +19,16 @@ type RegisterTournamentRoutesOptions = {
   isProduction: boolean;
 };
 
-async function loadShopForUser(pool: Pool, userId: string): Promise<ShopState | null> {
-  const result = await pool.query<{ shop: ShopState }>(
+async function loadObligationsForUser(pool: Pool, userId: string): Promise<Record<string, boolean>> {
+  const result = await pool.query<{ obligations_completed: unknown }>(
     `
-    SELECT shop
+    SELECT obligations_completed
     FROM player_states
     WHERE user_id = $1
     `,
     [userId]
   );
-  return result.rows[0]?.shop ?? null;
+  return parseObligationsCompleted(result.rows[0]?.obligations_completed);
 }
 
 export function registerTournamentRoutes({ app, pool, resolveIdentity, isProduction }: RegisterTournamentRoutesOptions): void {
@@ -37,10 +37,10 @@ export function registerTournamentRoutes({ app, pool, resolveIdentity, isProduct
       const identity = await resolveIdentity(req);
       req.auth = identity.claims;
       await finalizeDueTournaments(pool);
-      const shop = await loadShopForUser(pool, identity.claims.sub);
-      if (!shop || !isTournamentFeatureUnlocked(shop)) {
+      const obligationsCompleted = await loadObligationsForUser(pool, identity.claims.sub);
+      if (!isTournamentFeatureUnlocked(obligationsCompleted)) {
         res.status(403).json({
-          error: "Purchase Weekly Tournament in the shop to enter.",
+          error: 'Complete "Wait it out" to enter tournaments.',
           code: "TOURNAMENT_FEATURE_LOCKED"
         });
         return;
@@ -57,10 +57,10 @@ export function registerTournamentRoutes({ app, pool, resolveIdentity, isProduct
       const identity = await resolveIdentity(req);
       req.auth = identity.claims;
       await finalizeDueTournaments(pool);
-      const shop = await loadShopForUser(pool, identity.claims.sub);
-      if (!shop || !isTournamentFeatureUnlocked(shop)) {
+      const obligationsCompleted = await loadObligationsForUser(pool, identity.claims.sub);
+      if (!isTournamentFeatureUnlocked(obligationsCompleted)) {
         res.status(403).json({
-          error: "Purchase Weekly Tournament in the shop to enter.",
+          error: 'Complete "Wait it out" to enter tournaments.',
           code: "TOURNAMENT_FEATURE_LOCKED"
         });
         return;
@@ -77,10 +77,10 @@ export function registerTournamentRoutes({ app, pool, resolveIdentity, isProduct
       const identity = await resolveIdentity(req);
       req.auth = identity.claims;
       await finalizeDueTournaments(pool);
-      const shop = await loadShopForUser(pool, identity.claims.sub);
-      if (!shop || !isTournamentFeatureUnlocked(shop)) {
+      const obligationsCompleted = await loadObligationsForUser(pool, identity.claims.sub);
+      if (!isTournamentFeatureUnlocked(obligationsCompleted)) {
         res.status(403).json({
-          error: "Purchase Weekly Tournament in the shop to enter.",
+          error: 'Complete "Wait it out" to enter tournaments.',
           code: "TOURNAMENT_FEATURE_LOCKED"
         });
         return;
@@ -111,10 +111,10 @@ export function registerTournamentRoutes({ app, pool, resolveIdentity, isProduct
       const identity = await resolveIdentity(req);
       req.auth = identity.claims;
       await finalizeDueTournaments(pool);
-      const shop = await loadShopForUser(pool, identity.claims.sub);
-      if (!shop || !isTournamentFeatureUnlocked(shop)) {
+      const obligationsCompleted = await loadObligationsForUser(pool, identity.claims.sub);
+      if (!isTournamentFeatureUnlocked(obligationsCompleted)) {
         res.status(403).json({
-          error: "Purchase Weekly Tournament in the shop to enter.",
+          error: 'Complete "Wait it out" to enter tournaments.',
           code: "TOURNAMENT_FEATURE_LOCKED"
         });
         return;

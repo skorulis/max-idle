@@ -1,6 +1,6 @@
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { toast, toastCollectIdle } from "../gameToast";
-import { SHOP_UPGRADE_IDS, SHOP_UPGRADES_BY_ID, type ShopUpgradeId } from "../shopUpgrades";
+import { SHOP_UPGRADES_BY_ID, type ShopUpgradeId } from "../shopUpgrades";
 import { alignClientClock } from "./clientClock";
 import { toSyncedState, toSyncedTournamentState } from "./playerState";
 import {
@@ -134,11 +134,6 @@ export function useAppGameplayActions({
       const synced = toSyncedState(updatedPlayer);
       alignClientClock();
       setPlayerState(synced);
-      if (upgradeId === SHOP_UPGRADE_IDS.TOURNAMENT_FEATURE) {
-        void refreshTournament(token).catch(() => {
-          // Ignore; user can refresh from home or tournament page.
-        });
-      }
       const purchasedUpgrade = SHOP_UPGRADES_BY_ID[upgradeId];
       const purchasedLevel = purchasedUpgrade.currentLevel(synced.shop);
       const shopToastMessage =

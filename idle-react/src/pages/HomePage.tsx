@@ -18,8 +18,7 @@ import type { AvailableSurveySummary, SyncedOutstandingTournamentResult, SyncedP
 import { parseCompletedTutorialIds, TUTORIAL_STEPS } from "@maxidle/shared/tutorialSteps";
 import {
   getMaxIdleCollectionRealtimeSeconds,
-  getRestraintMinRealtimeSeconds,
-  isTournamentFeatureUnlocked
+  getRestraintMinRealtimeSeconds
 } from "../shop";
 import { FlipDurationDisplay } from "../components/FlipDurationDisplay";
 import { CurrentRateInfoOverlay } from "./CurrentRateInfoOverlay";
@@ -31,6 +30,7 @@ import {
   getCurrentObligationId,
   getObligationDefinition,
   isObligationConditionMet,
+  isTournamentFeatureUnlocked,
   OBLIGATION_IDS,
   type ObligationId
 } from "@maxidle/shared/obligations";
@@ -487,7 +487,7 @@ export function HomePage({
           ) : null}
         </section>
       ) : null}
-      {isTournamentFeatureUnlocked(playerState.shop) ? (
+      {isTournamentFeatureUnlocked(playerState.obligationsCompleted) ? (
         <section className="card">
           <TournamentPanel
             hasEntered={tournamentHasEntered}
