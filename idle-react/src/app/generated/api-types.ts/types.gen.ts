@@ -53,6 +53,9 @@ export type PlayerState = {
     } | null;
     serverTime: string;
     tutorialProgress: string;
+    obligationsCompleted: {
+        [key: string]: boolean;
+    };
 };
 
 export type TutorialCompleteRequest = {

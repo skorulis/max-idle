@@ -215,6 +215,12 @@
           },
           "tutorialProgress": {
             "type": "string"
+          },
+          "obligationsCompleted": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
           }
         },
         "required": [
@@ -234,7 +240,8 @@
           "lastDailyRewardCollectedAt",
           "dailyBonus",
           "serverTime",
-          "tutorialProgress"
+          "tutorialProgress",
+          "obligationsCompleted"
         ]
       },
       "TutorialCompleteRequest": {

@@ -38,6 +38,8 @@ import { getEffectiveIdleSecondsRate } from "./idleRate.js";
 import type { AuthClaims } from "./types.js";
 import type { AnalyticsService } from "./analytics.js";
 import { getOrCreateCurrentDailyBonus, toDailyBonusResponse } from "./routes/dailyBonus.js";
+import { parseObligationsCompleted } from "./obligationsState.js";
+import { getPlayerCollectionCount } from "./playerCollectionCount.js";
 
 export {
   getDefaultShopState,
@@ -283,6 +285,7 @@ export function registerShopRoutes({
         last_daily_reward_collected_at: Date | null;
         last_daily_bonus_claimed_at: Date | null;
         tutorial_progress: string;
+        obligations_completed: unknown;
       }>(
         `
         UPDATE player_states
@@ -314,7 +317,8 @@ export function registerShopRoutes({
           shop,
           last_daily_reward_collected_at,
           last_daily_bonus_claimed_at,
-          tutorial_progress
+          tutorial_progress,
+          obligations_completed
         `,
         [
           userId,
@@ -332,12 +336,15 @@ export function registerShopRoutes({
         ]
       );
       const updated = updateResult.rows[0];
-      await client.query("COMMIT");
 
       if (!updated) {
+        await client.query("ROLLBACK");
         res.status(404).json({ error: "Player state not found" });
         return;
       }
+
+      const shopCollectionCount = await getPlayerCollectionCount(client, userId);
+      await client.query("COMMIT");
 
       const elapsedSinceLastCollection = calculateElapsedSeconds(updated.last_collected_at, now);
       const idleSecondsRate = getEffectiveIdleSecondsRate({
@@ -383,6 +390,8 @@ export function registerShopRoutes({
         dailyBonus: toDailyBonusResponse(currentDailyBonusAfterPurchase, updated.last_daily_bonus_claimed_at),
         serverTime: now.toISOString(),
         tutorialProgress: updated.tutorial_progress ?? "",
+        obligationsCompleted: parseObligationsCompleted(updated.obligations_completed),
+        collectionCount: shopCollectionCount,
         purchase: {
           upgradeType,
           quantity,
@@ -421,6 +430,7 @@ export function registerShopRoutes({
         last_collected_at: Date;
         last_daily_reward_collected_at: Date | null;
         tutorial_progress: string;
+        obligations_completed: unknown;
       }>(
         `
         SELECT
@@ -436,7 +446,8 @@ export function registerShopRoutes({
           shop,
           last_collected_at,
           last_daily_reward_collected_at,
-          tutorial_progress
+          tutorial_progress,
+          obligations_completed
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -473,6 +484,7 @@ export function registerShopRoutes({
         shop: ShopState;
         last_daily_reward_collected_at: Date | null;
         tutorial_progress: string;
+        obligations_completed: unknown;
       }>(
         `
         UPDATE player_states
@@ -496,7 +508,8 @@ export function registerShopRoutes({
           last_collected_at,
           shop,
           last_daily_reward_collected_at,
-          tutorial_progress
+          tutorial_progress,
+          obligations_completed
         `,
         [userId, syncedCurrentSeconds, now]
       );
@@ -506,6 +519,8 @@ export function registerShopRoutes({
         res.status(404).json({ error: "Player state not found" });
         return;
       }
+
+      const debugShopCollectionCount = await getPlayerCollectionCount(client, userId);
 
       const achievementLevels = normalizeAchievementLevels(row.achievement_levels, now);
       const currentLevelById = new Map(achievementLevels.map((entry) => [entry.id, entry.level] as const));
@@ -566,7 +581,9 @@ export function registerShopRoutes({
         lastCollectedAt: updated.last_collected_at.toISOString(),
         lastDailyRewardCollectedAt: updated.last_daily_reward_collected_at?.toISOString() ?? null,
         serverTime: now.toISOString(),
-        tutorialProgress: updated.tutorial_progress ?? ""
+        tutorialProgress: updated.tutorial_progress ?? "",
+        obligationsCompleted: parseObligationsCompleted(updated.obligations_completed),
+        collectionCount: debugShopCollectionCount
       });
     } catch (error) {
       await client.query("ROLLBACK");

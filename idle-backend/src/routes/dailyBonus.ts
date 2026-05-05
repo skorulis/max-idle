@@ -18,6 +18,8 @@ import { getEffectiveIdleSecondsRate } from "../idleRate.js";
 import { calculateElapsedSeconds } from "../time.js";
 import type { AuthClaims } from "../types.js";
 import type { AnalyticsService } from "../analytics.js";
+import { parseObligationsCompleted } from "../obligationsState.js";
+import { getPlayerCollectionCount } from "../playerCollectionCount.js";
 
 /** Types that can be chosen by {@link rollDailyBonus} (excludes legacy types no longer rolled). */
 const DAILY_BONUS_ROLL_TYPES = [
@@ -252,6 +254,7 @@ export function registerDailyBonusRoutes({
         last_daily_bonus_claimed_at: Date | null;
         daily_bonuses_collected_count: number | string;
         tutorial_progress: string;
+        obligations_completed: unknown;
       }>(
         `
         SELECT
@@ -272,7 +275,8 @@ export function registerDailyBonusRoutes({
           last_daily_reward_collected_at,
           last_daily_bonus_claimed_at,
           daily_bonuses_collected_count,
-          tutorial_progress
+          tutorial_progress,
+          obligations_completed
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -350,6 +354,7 @@ export function registerDailyBonusRoutes({
         last_daily_reward_collected_at: Date | null;
         last_daily_bonus_claimed_at: Date | null;
         tutorial_progress: string;
+        obligations_completed: unknown;
       }>(
         `
         UPDATE player_states
@@ -386,7 +391,8 @@ export function registerDailyBonusRoutes({
           last_collected_at,
           last_daily_reward_collected_at,
           last_daily_bonus_claimed_at,
-          tutorial_progress
+          tutorial_progress,
+          obligations_completed
         `,
         [
           userId,
@@ -409,6 +415,8 @@ export function registerDailyBonusRoutes({
         });
         return;
       }
+
+      const dailyBonusCollectionCount = await getPlayerCollectionCount(client, userId);
 
       const elapsedSinceLastCollection = calculateElapsedSeconds(updatedPlayer.last_collected_at, now);
       const achievementCount = toNumber(updatedPlayer.achievement_count);
@@ -461,7 +469,9 @@ export function registerDailyBonusRoutes({
         lastDailyRewardCollectedAt: updatedPlayer.last_daily_reward_collected_at?.toISOString() ?? null,
         dailyBonus: toDailyBonusResponse(currentDailyBonus, updatedPlayer.last_daily_bonus_claimed_at),
         serverTime: now.toISOString(),
-        tutorialProgress: updatedPlayer.tutorial_progress ?? ""
+        tutorialProgress: updatedPlayer.tutorial_progress ?? "",
+        obligationsCompleted: parseObligationsCompleted(updatedPlayer.obligations_completed),
+        collectionCount: dailyBonusCollectionCount
       });
     } catch (error) {
       await client.query("ROLLBACK");

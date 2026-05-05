@@ -259,6 +259,30 @@ export async function collectDailyReward(token: string | null): Promise<PlayerRe
   return (await response.json()) as PlayerResponse;
 }
 
+export async function collectObligation(token: string | null, obligationId: string): Promise<PlayerResponse> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json"
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/player/obligations/collect`, {
+    method: "POST",
+    credentials: "include",
+    headers,
+    body: JSON.stringify({ obligationId })
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response));
+  }
+  return (await response.json()) as PlayerResponse;
+}
+
 export async function collectDailyBonus(token: string | null): Promise<PlayerResponse> {
   const headers: Record<string, string> = {};
   if (token) {

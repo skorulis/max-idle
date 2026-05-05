@@ -18,7 +18,9 @@ export function toSyncedState(data: PlayerResponse): SyncedPlayerState {
     dailyBonus: data.dailyBonus ?? null,
     serverTimeMs: Date.parse(data.serverTime),
     syncedAtClientMs: Date.now(),
-    tutorialProgress: data.tutorialProgress ?? ""
+    tutorialProgress: data.tutorialProgress ?? "",
+    obligationsCompleted: data.obligationsCompleted ?? {},
+    collectionCount: data.collectionCount ?? 0
   };
 }
 

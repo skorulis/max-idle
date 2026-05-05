@@ -55,6 +55,14 @@
     "./tutorialSteps": {
       "types": "./dist/tutorialSteps.d.ts",
       "default": "./dist/tutorialSteps.js"
+    },
+    "./obligationReward": {
+      "types": "./dist/obligationReward.d.ts",
+      "default": "./dist/obligationReward.js"
+    },
+    "./obligations": {
+      "types": "./dist/obligations.d.ts",
+      "default": "./dist/obligations.js"
     }
   }
 }

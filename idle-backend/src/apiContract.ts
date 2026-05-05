@@ -82,7 +82,9 @@ const playerStateSchema = registry.register(
       })
       .nullable(),
     serverTime: z.string().datetime(),
-    tutorialProgress: z.string()
+    tutorialProgress: z.string(),
+    obligationsCompleted: z.record(z.string(), z.boolean()),
+    collectionCount: z.number().int().nonnegative()
   })
 );
 

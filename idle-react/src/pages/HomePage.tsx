@@ -1,7 +1,17 @@
 import { useMemo, useState } from "react";
 import { formatSeconds } from "../formatSeconds";
 import { formatRewardAmount } from "../formatReward";
-import { Atom, ChevronRight, CircleHelp, ClipboardList, Clock3, Gem, Gift, PiggyBank } from "lucide-react";
+import {
+  Atom,
+  ChevronRight,
+  CircleHelp,
+  ClipboardList,
+  Clock3,
+  Gem,
+  Gift,
+  ListTodo,
+  PiggyBank
+} from "lucide-react";
 import GameIcon from "../GameIcon";
 import { getLucidIcon } from "../getLucidIcon";
 import type { AvailableSurveySummary, SyncedOutstandingTournamentResult, SyncedPlayerState } from "../app/types";
@@ -17,6 +27,13 @@ import { CurrentRateInfoOverlay } from "./CurrentRateInfoOverlay";
 import { TournamentPanel } from "./TournamentPanel";
 import { toast } from "../gameToast";
 import { getDailyBonusDescription, isDailyRewardDoubledToday } from "../app/dailyBonus";
+import type { SurveyCurrencyType } from "../app/types";
+import {
+  getCurrentObligationId,
+  getObligationDefinition,
+  isObligationConditionMet,
+  type ObligationId
+} from "@maxidle/shared/obligations";
 
 const EARLY_COLLECT_WARNING_MESSAGES = [
   "Don't you think you should wait?",
@@ -57,6 +74,8 @@ type HomePageProps = {
   availableSurvey: AvailableSurveySummary | null;
   onNavigateSurvey: () => void;
   onCompleteTutorialStep: (tutorialId: string) => Promise<void>;
+  collectingObligation: boolean;
+  onCollectObligation: (obligationId: ObligationId) => Promise<void>;
 };
 
 export function HomePage({
@@ -90,7 +109,9 @@ export function HomePage({
   onNavigateLogin,
   availableSurvey,
   onNavigateSurvey,
-  onCompleteTutorialStep
+  onCompleteTutorialStep,
+  collectingObligation,
+  onCollectObligation
 }: HomePageProps) {
   const [collectWarningIndex, setCollectWarningIndex] = useState(0);
   const [showRateInfo, setShowRateInfo] = useState(false);
@@ -101,6 +122,44 @@ export function HomePage({
     () => parseCompletedTutorialIds(playerState?.tutorialProgress ?? ""),
     [playerState?.tutorialProgress]
   );
+
+  const obligationSnapshot = useMemo(() => {
+    if (!playerState) {
+      return {
+        idleTimeTotal: 0,
+        realTimeTotal: 0,
+        timeGemsTotal: 0,
+        upgradesPurchased: 0,
+        collectionCount: 0
+      };
+    }
+    return {
+      idleTimeTotal: playerState.idleTime.total,
+      realTimeTotal: playerState.realTime.total,
+      timeGemsTotal: playerState.timeGems.total,
+      upgradesPurchased: playerState.upgradesPurchased,
+      collectionCount: playerState.collectionCount
+    };
+  }, [playerState]);
+
+  const currentObligationId = useMemo(
+    () => (playerState ? getCurrentObligationId(playerState.obligationsCompleted) : null),
+    [playerState]
+  );
+
+  const currentObligation = useMemo(() => {
+    if (!currentObligationId) {
+      return null;
+    }
+    return getObligationDefinition(currentObligationId) ?? null;
+  }, [currentObligationId]);
+
+  const obligationReady = useMemo(() => {
+    if (!playerState || !currentObligation) {
+      return false;
+    }
+    return isObligationConditionMet(currentObligation, obligationSnapshot);
+  }, [playerState, currentObligation, obligationSnapshot]);
 
   const handleCollect = async () => {
     if (realtimeElapsedSeconds < 15) {
@@ -250,6 +309,37 @@ export function HomePage({
           </button>
         </div>
       </section>
+
+      {currentObligation ? (
+        <section className="card">
+          <div className="card-section-header">
+            <h2 className="section-title-with-icon">
+              <ListTodo size={18} aria-hidden="true" />
+              Obligation
+            </h2>
+          </div>
+          <h3 style={{ marginTop: 0, marginBottom: "0.5rem" }}>{currentObligation.name}</h3>
+          <p style={{ marginTop: 0 }}>{currentObligation.description}</p>
+          <p className="subtle" style={{ marginTop: "1rem", marginBottom: "0.25rem" }}>
+            Reward{currentObligation.rewards.length === 1 ? "" : "s"}
+          </p>
+          <ul style={{ marginTop: 0, paddingLeft: "1.25rem" }}>
+            {currentObligation.rewards.map((reward, index) => (
+              <li key={index}>{formatRewardAmount(reward.type as SurveyCurrencyType, reward.value)}</li>
+            ))}
+          </ul>
+          <div className="collect-row" style={{ marginTop: "1rem" }}>
+            <button
+              type="button"
+              className="collect collect-primary"
+              disabled={!obligationReady || collectingObligation}
+              onClick={() => void onCollectObligation(currentObligation.id)}
+            >
+              {collectingObligation ? "Collecting..." : obligationReady ? "Collect reward" : "Requirements not met"}
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       {showSpendableTimeSection ? (
         <section className="card">

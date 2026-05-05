@@ -26,6 +26,7 @@ import {
   collectDailyBonus,
   collectDailyReward,
   collectIdleTime,
+  collectObligation,
   completeTutorialStep,
   resetTutorialProgress,
   collectTournamentReward,
@@ -87,6 +88,7 @@ import type {
   SyncedPlayerState,
   TournamentHistoryItem
 } from "./types";
+import type { ObligationId } from "@maxidle/shared/obligations";
 
 const TOKEN_KEY = "max-idle-token";
 const UPGRADE_SOCIAL_INTENT_KEY = "max-idle-upgrade-social-intent";
@@ -208,6 +210,7 @@ export function AppShell() {
   const [collecting, setCollecting] = useState(false);
   const [collectingDailyReward, setCollectingDailyReward] = useState(false);
   const [collectingDailyBonus, setCollectingDailyBonus] = useState(false);
+  const [collectingObligation, setCollectingObligation] = useState(false);
   const [enteringTournament, setEnteringTournament] = useState(false);
   const [collectingTournamentReward, setCollectingTournamentReward] = useState(false);
   const [authPending, setAuthPending] = useState(false);
@@ -1229,6 +1232,36 @@ export function AppShell() {
     }
   };
 
+  const onCollectObligation = async (obligationId: ObligationId) => {
+    if (!playerState) {
+      return;
+    }
+    setCollectingObligation(true);
+    setError(null);
+    try {
+      const nextPlayer = await collectObligation(token, obligationId);
+      const synced = toSyncedState(nextPlayer);
+      alignClientClock();
+      setPlayerState(synced);
+      toast.success("Obligation reward collected.");
+    } catch (obligationError) {
+      if (obligationError instanceof Error && obligationError.message === "UNAUTHORIZED") {
+        localStorage.removeItem(TOKEN_KEY);
+        setToken(null);
+        setPlayerState(null);
+        setAccount(null);
+        setStatus("Press start when you are ready to do nothing.");
+      } else {
+        const message =
+          obligationError instanceof Error ? obligationError.message : "Could not collect obligation reward";
+        setError(message);
+        toast.error(message);
+      }
+    } finally {
+      setCollectingObligation(false);
+    }
+  };
+
   const onCompleteTutorialStep = async (tutorialId: string) => {
     if (!playerState) {
       return;
@@ -1645,6 +1678,8 @@ export function AppShell() {
                 availableSurvey={availableSurveyForUi}
                 onNavigateSurvey={() => navigate("/survey")}
                 onCompleteTutorialStep={onCompleteTutorialStep}
+                collectingObligation={collectingObligation}
+                onCollectObligation={onCollectObligation}
               />
             }
           />

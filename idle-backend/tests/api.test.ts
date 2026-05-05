@@ -17,6 +17,7 @@ import {
   type ShopState
 } from "@maxidle/shared/shop";
 import { SHOP_CURRENCY_TYPES } from "@maxidle/shared/shopUpgrades";
+import { OBLIGATION_IDS } from "@maxidle/shared/obligations";
 import { TUTORIAL_STEPS } from "@maxidle/shared/tutorialSteps";
 
 describe("auth + player lifecycle", () => {
@@ -2609,5 +2610,85 @@ describe("auth + player lifecycle", () => {
     const homeAfterReset = await request(app).get("/home").set("Authorization", `Bearer ${token}`);
     expect(homeAfterReset.status).toBe(200);
     expect(homeAfterReset.body.player.tutorialProgress).toBe("");
+  });
+
+  it("obligations: GET /player includes obligationsCompleted; collect validates order and conditions", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    expect(authResponse.status).toBe(201);
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    const playerBefore = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
+    expect(playerBefore.status).toBe(200);
+    expect(playerBefore.body.obligationsCompleted).toEqual({});
+
+    const missingBody = await request(app).post("/player/obligations/collect").set("Authorization", `Bearer ${token}`).send({});
+    expect(missingBody.status).toBe(400);
+    expect(missingBody.body.code).toBe("OBLIGATION_ID_REQUIRED");
+
+    const unauth = await request(app)
+      .post("/player/obligations/collect")
+      .send({ obligationId: OBLIGATION_IDS.COLLECT_SOME_TIME });
+    expect(unauth.status).toBe(401);
+
+    const unknown = await request(app)
+      .post("/player/obligations/collect")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ obligationId: "not_real" });
+    expect(unknown.status).toBe(400);
+    expect(unknown.body.code).toBe("OBLIGATION_UNKNOWN_ID");
+
+    const notMet = await request(app)
+      .post("/player/obligations/collect")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ obligationId: OBLIGATION_IDS.COLLECT_SOME_TIME });
+    expect(notMet.status).toBe(400);
+    expect(notMet.body.code).toBe("OBLIGATION_CONDITIONS_NOT_MET");
+
+    await pool.query(
+      `INSERT INTO player_collection_history (user_id, collection_date, real_time, idle_time) VALUES ($1, NOW(), 1, 1)`,
+      [userId]
+    );
+
+    const firstOk = await request(app)
+      .post("/player/obligations/collect")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ obligationId: OBLIGATION_IDS.COLLECT_SOME_TIME });
+    expect(firstOk.status).toBe(200);
+    expect(firstOk.body.obligationsCompleted[OBLIGATION_IDS.COLLECT_SOME_TIME]).toBe(true);
+    expect(Number(firstOk.body.idleTime.total)).toBeGreaterThanOrEqual(
+      Number(playerBefore.body.idleTime.total) + 5 * 60
+    );
+
+    const skipSecond = await request(app)
+      .post("/player/obligations/collect")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ obligationId: OBLIGATION_IDS.COLLECT_SOME_TIME });
+    expect(skipSecond.status).toBe(400);
+    expect(skipSecond.body.code).toBe("OBLIGATION_NOT_CURRENT");
+
+    const secondNotReady = await request(app)
+      .post("/player/obligations/collect")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ obligationId: OBLIGATION_IDS.FIRST_PURCHASE });
+    expect(secondNotReady.status).toBe(400);
+    expect(secondNotReady.body.code).toBe("OBLIGATION_CONDITIONS_NOT_MET");
+
+    await pool.query(`UPDATE player_states SET upgrades_purchased = 1 WHERE user_id = $1`, [userId]);
+
+    const secondOk = await request(app)
+      .post("/player/obligations/collect")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ obligationId: OBLIGATION_IDS.FIRST_PURCHASE });
+    expect(secondOk.status).toBe(200);
+    expect(secondOk.body.obligationsCompleted[OBLIGATION_IDS.FIRST_PURCHASE]).toBe(true);
+
+    const noneLeft = await request(app)
+      .post("/player/obligations/collect")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ obligationId: OBLIGATION_IDS.FIRST_PURCHASE });
+    expect(noneLeft.status).toBe(400);
+    expect(noneLeft.body.code).toBe("OBLIGATION_NONE_LEFT");
   });
 });

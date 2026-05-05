@@ -30,6 +30,15 @@ import {
   getOrCreateCurrentDailyBonus,
   toDailyBonusResponse
 } from "./dailyBonus.js";
+import type { ObligationReward } from "@maxidle/shared/obligationReward";
+import {
+  getCurrentObligationId,
+  getObligationDefinition,
+  isObligationConditionMet,
+  type ObligationId
+} from "@maxidle/shared/obligations";
+import { parseObligationsCompleted } from "../obligationsState.js";
+import { getPlayerCollectionCount } from "../playerCollectionCount.js";
 
 const REWARD_SKIPPER_GAP_MS = 48 * 60 * 60 * 1000;
 
@@ -43,6 +52,23 @@ type RegisterPlayerRoutesOptions = {
 };
 
 const DEBUG_TIME_GRANT_SECONDS = 12 * 60 * 60;
+
+function sumObligationRewardDeltas(rewards: ObligationReward[]): { idle: number; real: number; gem: number } {
+  let idle = 0;
+  let real = 0;
+  let gem = 0;
+  for (const r of rewards) {
+    const v = Math.floor(Number(r.value));
+    if (r.type === "idle") {
+      idle += v;
+    } else if (r.type === "real") {
+      real += v;
+    } else {
+      gem += v;
+    }
+  }
+  return { idle, real, gem };
+}
 
 type PlayerStateRow = {
   idle_time_total: string;
@@ -61,6 +87,7 @@ type PlayerStateRow = {
   last_daily_reward_collected_at: Date | null;
   last_daily_bonus_claimed_at: Date | null;
   tutorial_progress: string;
+  obligations_completed: unknown;
   server_time: Date;
 };
 
@@ -88,6 +115,7 @@ export async function buildPlayerStatePayload(
       last_daily_reward_collected_at,
       last_daily_bonus_claimed_at,
       tutorial_progress,
+      obligations_completed,
       NOW() AS server_time
     FROM player_states
     WHERE user_id = $1
@@ -99,6 +127,8 @@ export async function buildPlayerStatePayload(
   if (!row) {
     return null;
   }
+
+  const collectionCount = await getPlayerCollectionCount(pool, userId);
 
   const achievementCount = toNumber(row.achievement_count);
   const achievementBonusMultiplier = getWorthwhileAchievementsMultiplier(row.shop, achievementCount);
@@ -139,7 +169,9 @@ export async function buildPlayerStatePayload(
     lastDailyRewardCollectedAt: row.last_daily_reward_collected_at?.toISOString() ?? null,
     dailyBonus: toDailyBonusResponse(dailyBonus, row.last_daily_bonus_claimed_at),
     serverTime: row.server_time.toISOString(),
-    tutorialProgress: row.tutorial_progress ?? ""
+    tutorialProgress: row.tutorial_progress ?? "",
+    obligationsCompleted: parseObligationsCompleted(row.obligations_completed),
+    collectionCount
   };
 }
 
@@ -299,6 +331,7 @@ export function registerPlayerRoutes({
         last_daily_reward_collected_at: Date | null;
         last_daily_bonus_claimed_at: Date | null;
         tutorial_progress: string;
+        obligations_completed: unknown;
       }>(
         `
         SELECT
@@ -314,7 +347,8 @@ export function registerPlayerRoutes({
           current_seconds_last_updated,
           last_daily_reward_collected_at,
           last_daily_bonus_claimed_at,
-          tutorial_progress
+          tutorial_progress,
+          obligations_completed
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -515,13 +549,145 @@ export function registerPlayerRoutes({
         lastDailyRewardCollectedAt: row.last_daily_reward_collected_at?.toISOString() ?? null,
         dailyBonus: toDailyBonusResponse(currentDailyBonus, lockedRow.last_daily_bonus_claimed_at),
         serverTime: row.last_collected_at.toISOString(),
-        tutorialProgress: lockedRow.tutorial_progress ?? ""
+        tutorialProgress: lockedRow.tutorial_progress ?? "",
+        obligationsCompleted: parseObligationsCompleted(lockedRow.obligations_completed),
+        collectionCount
       });
     } catch (error) {
       await client.query("ROLLBACK");
       next(error);
     } finally {
       client.release();
+    }
+  });
+
+  app.post("/player/obligations/collect", async (req, res, next) => {
+    let userId: string;
+    try {
+      const identity = await resolveIdentity(req);
+      req.auth = identity.claims;
+      userId = identity.claims.sub;
+    } catch (error) {
+      if (error instanceof Error && error.message === "MISSING_IDENTITY") {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+      next(error);
+      return;
+    }
+
+    const rawId = typeof req.body?.obligationId === "string" ? req.body.obligationId.trim() : "";
+    if (!rawId) {
+      res.status(400).json({ error: "obligationId is required", code: "OBLIGATION_ID_REQUIRED" });
+      return;
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      const lockResult = await client.query<{
+        idle_time_total: number | string;
+        real_time_total: number | string;
+        time_gems_total: number | string;
+        upgrades_purchased: number | string;
+        obligations_completed: unknown;
+      }>(
+        `
+        SELECT
+          idle_time_total,
+          real_time_total,
+          time_gems_total,
+          upgrades_purchased,
+          obligations_completed
+        FROM player_states
+        WHERE user_id = $1
+        FOR UPDATE
+        `,
+        [userId]
+      );
+      const locked = lockResult.rows[0];
+      if (!locked) {
+        await client.query("ROLLBACK");
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+
+      const obligationCollectionCount = await getPlayerCollectionCount(pool, userId);
+
+      const definition = getObligationDefinition(rawId as ObligationId);
+      if (!definition || definition.id !== rawId) {
+        await client.query("ROLLBACK");
+        res.status(400).json({ error: "Unknown obligation id", code: "OBLIGATION_UNKNOWN_ID" });
+        return;
+      }
+
+      const completedBefore = parseObligationsCompleted(locked.obligations_completed);
+      const currentId = getCurrentObligationId(completedBefore);
+      if (currentId === null) {
+        await client.query("ROLLBACK");
+        res.status(400).json({ error: "No obligations left to collect", code: "OBLIGATION_NONE_LEFT" });
+        return;
+      }
+      if (currentId !== definition.id) {
+        await client.query("ROLLBACK");
+        res.status(400).json({ error: "Collect obligations in order", code: "OBLIGATION_NOT_CURRENT" });
+        return;
+      }
+
+      const snapshot = {
+        idleTimeTotal: toNumber(locked.idle_time_total),
+        realTimeTotal: toNumber(locked.real_time_total),
+        timeGemsTotal: toNumber(locked.time_gems_total),
+        upgradesPurchased: toNumber(locked.upgrades_purchased),
+        collectionCount: obligationCollectionCount
+      };
+      if (!isObligationConditionMet(definition, snapshot)) {
+        await client.query("ROLLBACK");
+        res.status(400).json({
+          error: "Obligation requirements not met yet",
+          code: "OBLIGATION_CONDITIONS_NOT_MET"
+        });
+        return;
+      }
+
+      const { idle: idleDelta, real: realDelta, gem: gemDelta } = sumObligationRewardDeltas(definition.rewards);
+      const nextObligationsJson = JSON.stringify({ ...completedBefore, [definition.id]: true });
+
+      await client.query(
+        `
+        UPDATE player_states
+        SET
+          idle_time_total = idle_time_total + $2::BIGINT,
+          idle_time_available = idle_time_available + $2::BIGINT,
+          real_time_total = real_time_total + $3::BIGINT,
+          real_time_available = real_time_available + $3::BIGINT,
+          time_gems_total = time_gems_total + $4::BIGINT,
+          time_gems_available = time_gems_available + $4::BIGINT,
+          obligations_completed = $5::jsonb,
+          updated_at = NOW()
+        WHERE user_id = $1
+        `,
+        [userId, idleDelta, realDelta, gemDelta, nextObligationsJson]
+      );
+
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => {});
+      next(error);
+      return;
+    } finally {
+      client.release();
+    }
+
+    try {
+      const payload = await buildPlayerStatePayload(pool, userId, toNumber);
+      if (!payload) {
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+      res.json(payload);
+    } catch (error) {
+      next(error);
     }
   });
 
@@ -550,6 +716,7 @@ export function registerPlayerRoutes({
         last_daily_reward_collected_at: Date | null;
         last_daily_bonus_claimed_at: Date | null;
         tutorial_progress: string;
+        obligations_completed: unknown;
       }>(
         `
         SELECT
@@ -569,7 +736,8 @@ export function registerPlayerRoutes({
           last_collected_at,
           last_daily_reward_collected_at,
           last_daily_bonus_claimed_at,
-          tutorial_progress
+          tutorial_progress,
+          obligations_completed
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -615,6 +783,7 @@ export function registerPlayerRoutes({
         last_daily_reward_collected_at: Date | null;
         last_daily_bonus_claimed_at: Date | null;
         tutorial_progress: string;
+        obligations_completed: unknown;
       }>(
         `
         UPDATE player_states
@@ -640,7 +809,8 @@ export function registerPlayerRoutes({
           last_collected_at,
           last_daily_reward_collected_at,
           last_daily_bonus_claimed_at,
-          tutorial_progress
+          tutorial_progress,
+          obligations_completed
         `,
         [
           userId,
@@ -700,6 +870,7 @@ export function registerPlayerRoutes({
         wallClockMs: now.getTime()
       });
       await client.query("COMMIT");
+      const collectionCountAfterReward = await getPlayerCollectionCount(pool, userId);
       const rewardMultiplier =
         dailyBonusEffectActive && currentDailyBonus.bonus_type === "double_gems_daily_reward" ? 2 : 1;
       analytics.trackDailyRewardCollect(
@@ -736,7 +907,9 @@ export function registerPlayerRoutes({
         lastDailyRewardCollectedAt: updatedPlayer.last_daily_reward_collected_at?.toISOString() ?? null,
         dailyBonus: toDailyBonusResponse(currentDailyBonus, updatedPlayer.last_daily_bonus_claimed_at),
         serverTime: now.toISOString(),
-        tutorialProgress: updatedPlayer.tutorial_progress ?? ""
+        tutorialProgress: updatedPlayer.tutorial_progress ?? "",
+        obligationsCompleted: parseObligationsCompleted(updatedPlayer.obligations_completed),
+        collectionCount: collectionCountAfterReward
       });
     } catch (error) {
       await client.query("ROLLBACK");

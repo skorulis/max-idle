@@ -60,6 +60,10 @@ export type PlayerResponse = {
   dailyBonus?: DailyBonus | null;
   serverTime: string;
   tutorialProgress: string;
+  /** Completed obligation ids mapped to `true`. */
+  obligationsCompleted: Record<string, boolean>;
+  /** Count of rows in `player_collection_history` (idle collects). */
+  collectionCount: number;
 };
 
 export type LeaderboardEntry = {
@@ -217,6 +221,8 @@ export type SyncedPlayerState = {
   serverTimeMs: number;
   syncedAtClientMs: number;
   tutorialProgress: string;
+  obligationsCompleted: Record<string, boolean>;
+  collectionCount: number;
 };
 
 export type SyncedTournamentEntry = {

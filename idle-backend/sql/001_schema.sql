@@ -42,7 +42,14 @@ CREATE TABLE IF NOT EXISTS player_states (
   daily_bonuses_collected_count BIGINT NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  tutorial_progress TEXT NOT NULL DEFAULT ''
+  tutorial_progress TEXT NOT NULL DEFAULT '',
+  obligations_completed JSONB NOT NULL DEFAULT '{}'::jsonb CHECK (
+    jsonb_typeof(obligations_completed) = 'object'
+    AND NOT jsonb_path_exists(
+      obligations_completed,
+      '$.* ? (@.type() != "boolean")'
+    )
+  )
 );
 
 CREATE TABLE IF NOT EXISTS daily_bonuses (
