@@ -134,6 +134,7 @@ export const SECONDS_MULTIPLIER_SHOP_UPGRADE: ShopUpgradeDefinition = defineShop
   id: SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER,
   name: "Base Collection Rate",
   icon: "gauge",
+  category: "general",
   description: "Your base collection rate",
   longDescription:
     "Increases your idle production at all times. Each level raises your always-on multiplier. There are no downsides to this.",
@@ -201,6 +202,7 @@ export const PATIENCE_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.PATIENCE,
   name: "Patience",
   icon: "hourglass",
+  category: "relaxed",
   description: "Bonus that increases for longer collections",
   longDescription:
     "This idle multiplier increases over time up to a certain limit. The longer you wait before collecting the higher the bonus will be up to a maximum. The earlier bonuses always apply, so more patience is always better.",
@@ -223,6 +225,7 @@ export const RESTRAINT_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.RESTRAINT,
   name: "Restraint",
   icon: "shield-alert",
+  category: "relaxed",
   description: "Idle time bonus that blocks quick collections.",
   longDescription:
     "Adds a constant idle multiplier, but enforces a minimum real-time wait before collecting. Collecting too early is blocked, trading flexibility for a higher payout.",
@@ -366,6 +369,7 @@ export const WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE: ShopUpgradeDefinition = defin
   id: SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS,
   name: "Worthwhile Achievements",
   icon: "trophy",
+  category: "general",
   description: "Idle time bonus that increases with each achievement unlocked",
   longDescription:
     "Adds an idle multiplier that scales with your unlocked achievements. Each level increases the per-achievement bonus, making achievement progress directly improve income.",
@@ -391,6 +395,7 @@ export const ANTI_CONSUMERIST_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUp
   id: SHOP_UPGRADE_IDS.ANTI_CONSUMERIST,
   name: "Anti-consumerist",
   icon: "leaf",
+  category: "utility",
   description: "Bonus for not making recent shop purchases.",
   longDescription:
     "Raises your idle multiplier the longer you go without buying any shop upgrade priced in idle time or real time. Gem-priced purchases do not reset this streak. Each tier sets the maximum multiplier and how long it takes to reach it; progress scales linearly from ×1.",
@@ -418,6 +423,7 @@ export const CONSOLIDATION_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgra
   id: SHOP_UPGRADE_IDS.CONSOLIDATION,
   name: "Consolidation",
   icon: "layers",
+  category: "utility",
   description: "Bonus when focusing idle shop purchases",
   longDescription:
     "Rewards specializing in a small set of idle-priced shop upgrades. The Consolidation upgrade itself does not count toward that limit.",
@@ -440,6 +446,7 @@ export const QUICK_COLLECTOR_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpg
   id: SHOP_UPGRADE_IDS.QUICK_COLLECTOR,
   name: "Constant clicker",
   icon: "zap",
+  category: "frantic",
   description: "Gain a bonus when being impatient",
   longDescription:
     "Adds an idle multiplier bonus only while your current run has accrued less than a set amount of real time since your last collect. After that cutoff, this bonus does nothing until you collect again. Suited to frequent short sessions.",
@@ -466,9 +473,9 @@ export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   STORAGE_EXTENSION_SHOP_UPGRADE,
   LUCK_SHOP_UPGRADE,
   WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
+  QUICK_COLLECTOR_SHOP_UPGRADE,
   ANTI_CONSUMERIST_SHOP_UPGRADE,
   CONSOLIDATION_SHOP_UPGRADE,
-  QUICK_COLLECTOR_SHOP_UPGRADE,
   EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
   IDLE_REFUND_SHOP_UPGRADE,
