@@ -65,7 +65,8 @@ describe("getCurrentObligationId", () => {
       OBLIGATION_IDS.FIRST_PURCHASE,
       OBLIGATION_IDS.ACHIEVE_SOMETHING,
       OBLIGATION_IDS.TIME_GEMS,
-      OBLIGATION_IDS.RAMP_UP
+      OBLIGATION_IDS.RAMP_UP,
+      OBLIGATION_IDS.WAIT_IT_OUT
     ]);
     expect(getCurrentObligationId(done)).toBeNull();
     expect(
@@ -74,7 +75,8 @@ describe("getCurrentObligationId", () => {
         [OBLIGATION_IDS.FIRST_PURCHASE]: true,
         [OBLIGATION_IDS.ACHIEVE_SOMETHING]: true,
         [OBLIGATION_IDS.TIME_GEMS]: true,
-        [OBLIGATION_IDS.RAMP_UP]: true
+        [OBLIGATION_IDS.RAMP_UP]: true,
+        [OBLIGATION_IDS.WAIT_IT_OUT]: true
       })
     ).toBeNull();
   });
@@ -160,6 +162,18 @@ describe("isObligationConditionMet", () => {
     expect(isObligationConditionMet(ramp, { ...minimalSnapshot, idleTimeTotal: 3600 })).toBe(true);
     expect(isObligationConditionMet(ramp, { ...minimalSnapshot, idleTimeTotal: 3599 })).toBe(false);
   });
+
+  it("supports real_time_total_gte for six hours", () => {
+    const waitItOut: ObligationDefinition = {
+      id: OBLIGATION_IDS.WAIT_IT_OUT,
+      name: "Test",
+      description: "Test",
+      rewards: [],
+      condition: { allOf: [{ kind: "real_time_total_gte", seconds: 6 * 3600 }] }
+    };
+    expect(isObligationConditionMet(waitItOut, { ...minimalSnapshot, realTimeTotal: 6 * 3600 })).toBe(true);
+    expect(isObligationConditionMet(waitItOut, { ...minimalSnapshot, realTimeTotal: 6 * 3600 - 1 })).toBe(false);
+  });
 });
 
 describe("OBLIGATIONS order", () => {
@@ -169,7 +183,8 @@ describe("OBLIGATIONS order", () => {
       OBLIGATION_IDS.FIRST_PURCHASE,
       OBLIGATION_IDS.ACHIEVE_SOMETHING,
       OBLIGATION_IDS.TIME_GEMS,
-      OBLIGATION_IDS.RAMP_UP
+      OBLIGATION_IDS.RAMP_UP,
+      OBLIGATION_IDS.WAIT_IT_OUT
     ]);
   });
 });

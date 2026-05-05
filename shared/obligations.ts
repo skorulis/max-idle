@@ -5,7 +5,8 @@ export const OBLIGATION_IDS = {
   FIRST_PURCHASE: "obl_first_purchase",
   ACHIEVE_SOMETHING: "obl_achieve_something",
   TIME_GEMS: "obl_time_gems",
-  RAMP_UP: "obl_ramp_up"
+  RAMP_UP: "obl_ramp_up",
+  WAIT_IT_OUT: "obl_wait_it_out"
 } as const;
 
 export type ObligationId = (typeof OBLIGATION_IDS)[keyof typeof OBLIGATION_IDS];
@@ -153,6 +154,16 @@ export const OBLIGATIONS: ObligationDefinition[] = [
     ],
     condition: {
       allOf: [{ kind: "idle_time_total_gte", seconds: SECONDS_PER_HOUR }]
+    }
+  },
+  {
+    id: OBLIGATION_IDS.WAIT_IT_OUT,
+    name: "Wait it out",
+    description:
+      "The great thing about idle time is you can get all sorts of bonuses. But real time is a bit harder, that's very much tied into the wall clock. So go take a break and come back when the clock has moved forwards.",
+    rewards: [{ type: "text", label: "Unlock tournaments" }, { type: "gem", value: 1 }],
+    condition: {
+      allOf: [{ kind: "real_time_total_gte", seconds: 6 * SECONDS_PER_HOUR }]
     }
   }
 ];
