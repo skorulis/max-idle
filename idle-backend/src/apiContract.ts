@@ -251,6 +251,19 @@ const shopPurchaseResponseSchema = registry.register(
   })
 );
 
+const shopUpgradeLevelResponseSchema = registry.register(
+  "ShopUpgradeLevelResponse",
+  playerStateSchema.extend({
+    level: z.number().int().positive(),
+    levelUpgrade: z.object({
+      previousLevel: z.number().int().positive(),
+      newLevel: z.number().int().positive(),
+      idleSecondsCost: z.number().int().nonnegative(),
+      realSecondsCost: z.number().int().nonnegative()
+    })
+  })
+);
+
 const playerCollectResponseSchema = registry.register(
   "PlayerCollectResponse",
   playerStateSchema.extend({
@@ -1296,6 +1309,34 @@ registry.registerPath({
     },
     400: {
       description: "Invalid request or insufficient funds",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    }
+  }
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/shop/upgradeLevel",
+  tags: ["Shop"],
+  summary: "Spend idle and real time to increase player level by one",
+  security: authViaCookieOrBearer,
+  responses: {
+    200: {
+      description: "Updated player state after level upgrade",
+      content: {
+        "application/json": { schema: shopUpgradeLevelResponseSchema }
+      }
+    },
+    400: {
+      description: "Insufficient funds or player already at max level",
       content: {
         "application/json": { schema: errorResponseSchema }
       }

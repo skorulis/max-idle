@@ -14,6 +14,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_unique_idx ON users (LOWER(e
 
 CREATE TABLE IF NOT EXISTS player_states (
   user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  level INTEGER NOT NULL DEFAULT 1,
   last_collected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   last_active TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   idle_time_total BIGINT NOT NULL DEFAULT 0,

@@ -13,6 +13,7 @@ import {
   getShopPurchaseRefundTotals,
   type ShopState
 } from "@maxidle/shared/shop";
+import { getMaxPlayerLevel, getPlayerLevelUpgradeCostFromLevel } from "@maxidle/shared/playerLevelCosts";
 import { SHOP_CURRENCY_TYPES } from "@maxidle/shared/shopUpgrades";
 
 describe("auth + player lifecycle", () => {
@@ -789,6 +790,45 @@ describe("auth + player lifecycle", () => {
 
     expect(purchaseResponse.status).toBe(400);
     expect(purchaseResponse.body.code).toBe("INSUFFICIENT_FUNDS");
+  });
+
+  it("increments player level and deducts idle and real costs", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    const cost = getPlayerLevelUpgradeCostFromLevel(1);
+    expect(cost).toBeDefined();
+
+    await pool.query(
+      `UPDATE player_states SET idle_time_available = $2, real_time_available = $3 WHERE user_id = $1`,
+      [userId, cost!.idleSeconds, cost!.realSeconds]
+    );
+
+    const upgradeResponse = await request(app)
+      .post("/shop/upgradeLevel")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(upgradeResponse.status).toBe(200);
+    expect(upgradeResponse.body.level).toBe(2);
+    expect(upgradeResponse.body.levelUpgrade.previousLevel).toBe(1);
+    expect(upgradeResponse.body.levelUpgrade.newLevel).toBe(2);
+    expect(upgradeResponse.body.levelUpgrade.idleSecondsCost).toBe(cost!.idleSeconds);
+    expect(upgradeResponse.body.levelUpgrade.realSecondsCost).toBe(cost!.realSeconds);
+    expect(upgradeResponse.body.idleTime.available).toBe(0);
+    expect(upgradeResponse.body.realTime.available).toBe(0);
+
+    const brokeResponse = await request(app)
+      .post("/shop/upgradeLevel")
+      .set("Authorization", `Bearer ${token}`);
+    expect(brokeResponse.status).toBe(400);
+    expect(brokeResponse.body.code).toBe("INSUFFICIENT_FUNDS");
+
+    await pool.query(`UPDATE player_states SET level = $2 WHERE user_id = $1`, [userId, getMaxPlayerLevel()]);
+    const maxResponse = await request(app).post("/shop/upgradeLevel").set("Authorization", `Bearer ${token}`);
+    expect(maxResponse.status).toBe(400);
+    expect(maxResponse.body.code).toBe("MAX_LEVEL");
   });
 
   it("syncs only the stalest players up to the batch size", async () => {

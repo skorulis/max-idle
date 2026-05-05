@@ -23,6 +23,7 @@ import {
   ShopUpgradeDefinition,
   getShopUpgradeDefinition,
 } from "@maxidle/shared/shopUpgrades";
+import { getPlayerLevelUpgradeCostFromLevel } from "@maxidle/shared/playerLevelCosts";
 import { safeNaturalNumber } from "@maxidle/shared/safeNumber";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 import {
@@ -396,6 +397,213 @@ export function registerShopRoutes({
           upgradeType,
           quantity,
           totalCost
+        }
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      next(error);
+    } finally {
+      client.release();
+    }
+  });
+
+  app.post("/shop/upgradeLevel", async (req, res, next) => {
+    const client = await pool.connect();
+    try {
+      const identity = await resolveIdentity(req);
+      const userId = identity.claims.sub;
+
+      await client.query("BEGIN");
+      const rowResult = await client.query<{
+        level: string;
+        idle_time_total: string;
+        idle_time_available: string;
+        real_time_total: string;
+        real_time_available: string;
+        time_gems_total: string;
+        time_gems_available: string;
+        achievement_count: string;
+        has_unseen_achievements: boolean;
+        achievement_levels: unknown;
+        upgrades_purchased: number;
+        shop: ShopState;
+        current_seconds: string;
+        current_seconds_last_updated: Date;
+        last_collected_at: Date;
+        last_daily_reward_collected_at: Date | null;
+        tutorial_progress: string;
+      }>(
+        `
+        SELECT
+          level,
+          idle_time_total,
+          idle_time_available,
+          real_time_total,
+          real_time_available,
+          time_gems_total,
+          time_gems_available,
+          upgrades_purchased,
+          achievement_count,
+          has_unseen_achievements,
+          achievement_levels,
+          shop,
+          current_seconds,
+          current_seconds_last_updated,
+          last_collected_at,
+          last_daily_reward_collected_at,
+          tutorial_progress
+        FROM player_states
+        WHERE user_id = $1
+        FOR UPDATE
+        `,
+        [userId]
+      );
+
+      const row = rowResult.rows[0];
+      if (!row) {
+        await client.query("ROLLBACK");
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+
+      const currentLevel = Math.floor(toNumber(row.level));
+      const cost = getPlayerLevelUpgradeCostFromLevel(currentLevel);
+      if (!cost) {
+        await client.query("ROLLBACK");
+        res.status(400).json({ error: "Player level is already maxed", code: "MAX_LEVEL" });
+        return;
+      }
+
+      const idleTimeAvailable = toNumber(row.idle_time_available);
+      const realTimeAvailable = toNumber(row.real_time_available);
+      if (idleTimeAvailable < cost.idleSeconds || realTimeAvailable < cost.realSeconds) {
+        await client.query("ROLLBACK");
+        res.status(400).json({
+          error: "Not enough funds",
+          code: "INSUFFICIENT_FUNDS"
+        });
+        return;
+      }
+
+      const now = new Date();
+      const achievementCount = toNumber(row.achievement_count);
+      const nextIdleTimeAvailable = idleTimeAvailable - cost.idleSeconds;
+      const nextRealTimeAvailable = realTimeAvailable - cost.realSeconds;
+      const syncedCurrentSeconds = boostedUncollectedIdleSeconds(
+        row.last_collected_at,
+        now,
+        row.shop,
+        achievementCount,
+        nextRealTimeAvailable
+      );
+
+      const updateResult = await client.query<{
+        idle_time_total: string;
+        idle_time_available: string;
+        time_gems_total: string;
+        time_gems_available: string;
+        upgrades_purchased: string;
+        real_time_total: string;
+        real_time_available: string;
+        has_unseen_achievements: boolean;
+        current_seconds: string;
+        current_seconds_last_updated: Date;
+        last_collected_at: Date;
+        shop: ShopState;
+        last_daily_reward_collected_at: Date | null;
+        last_daily_bonus_claimed_at: Date | null;
+        tutorial_progress: string;
+        obligations_completed: unknown;
+        level: string;
+      }>(
+        `
+        UPDATE player_states
+        SET
+          level = $2,
+          idle_time_available = $3,
+          real_time_available = $4,
+          current_seconds = $5,
+          current_seconds_last_updated = $6
+        WHERE user_id = $1
+        RETURNING
+          level,
+          idle_time_total,
+          idle_time_available,
+          time_gems_total,
+          time_gems_available,
+          upgrades_purchased,
+          real_time_total,
+          real_time_available,
+          has_unseen_achievements,
+          current_seconds,
+          current_seconds_last_updated,
+          last_collected_at,
+          shop,
+          last_daily_reward_collected_at,
+          last_daily_bonus_claimed_at,
+          tutorial_progress,
+          obligations_completed
+        `,
+        [userId, currentLevel + 1, nextIdleTimeAvailable, nextRealTimeAvailable, syncedCurrentSeconds, now]
+      );
+
+      const updated = updateResult.rows[0];
+      if (!updated) {
+        await client.query("ROLLBACK");
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+
+      const shopCollectionCount = await getPlayerCollectionCount(client, userId);
+      await client.query("COMMIT");
+
+      const nextAchievementCount = achievementCount;
+      const elapsedSinceLastCollection = calculateElapsedSeconds(updated.last_collected_at, now);
+      const idleSecondsRate = getEffectiveIdleSecondsRate({
+        secondsSinceLastCollection: elapsedSinceLastCollection,
+        shop: updated.shop,
+        achievementCount: nextAchievementCount,
+        realTimeAvailable: toNumber(updated.real_time_available),
+        wallClockMs: now.getTime()
+      });
+      const achievementBonusMultiplier = getWorthwhileAchievementsMultiplier(updated.shop, nextAchievementCount);
+      const currentDailyBonusAfter = await getOrCreateCurrentDailyBonus(client, now);
+
+      res.json({
+        idleTime: {
+          total: toNumber(updated.idle_time_total),
+          available: toNumber(updated.idle_time_available)
+        },
+        realTime: {
+          total: toNumber(updated.real_time_total),
+          available: toNumber(updated.real_time_available)
+        },
+        timeGems: {
+          total: toNumber(updated.time_gems_total),
+          available: toNumber(updated.time_gems_available)
+        },
+        upgradesPurchased: toNumber(updated.upgrades_purchased),
+        level: toNumber(updated.level),
+        currentSeconds: toNumber(updated.current_seconds),
+        secondsMultiplier: getSecondsMultiplier(updated.shop),
+        shop: updated.shop,
+        achievementCount: nextAchievementCount,
+        achievementBonusMultiplier,
+        hasUnseenAchievements: updated.has_unseen_achievements,
+        idleSecondsRate,
+        currentSecondsLastUpdated: updated.current_seconds_last_updated.toISOString(),
+        lastCollectedAt: updated.last_collected_at.toISOString(),
+        lastDailyRewardCollectedAt: updated.last_daily_reward_collected_at?.toISOString() ?? null,
+        dailyBonus: toDailyBonusResponse(currentDailyBonusAfter, updated.last_daily_bonus_claimed_at),
+        serverTime: now.toISOString(),
+        tutorialProgress: updated.tutorial_progress ?? "",
+        obligationsCompleted: parseObligationsCompleted(updated.obligations_completed),
+        collectionCount: shopCollectionCount,
+        levelUpgrade: {
+          previousLevel: currentLevel,
+          newLevel: toNumber(updated.level),
+          idleSecondsCost: cost.idleSeconds,
+          realSecondsCost: cost.realSeconds
         }
       });
     } catch (error) {

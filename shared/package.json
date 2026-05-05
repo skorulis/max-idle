@@ -63,6 +63,10 @@
     "./obligations": {
       "types": "./dist/obligations.d.ts",
       "default": "./dist/obligations.js"
+    },
+    "./playerLevelCosts": {
+      "types": "./dist/playerLevelCosts.d.ts",
+      "default": "./dist/playerLevelCosts.js"
     }
   }
 }

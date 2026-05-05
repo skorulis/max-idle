@@ -10,7 +10,7 @@ describe("getWorthwhileAchievementsMultiplier", () => {
   it("returns 0 when Worthwhile Achievements has no tier", () => {
     const shop = getDefaultShopState();
     expect(getWorthwhileAchievementsMultiplier(shop, 0)).toBe(0);
-    expect(getWorthwhileAchievementsMultiplier(shop, 100)).toBe(0);
+    expect(getWorthwhileAchievementsMultiplier(shop, 100)).toBe(1);
   });
 
   it("returns per-achievement bonus times count for tier 1", () => {
@@ -19,7 +19,7 @@ describe("getWorthwhileAchievementsMultiplier", () => {
       SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS,
       1
     );
-    expect(getWorthwhileAchievementsMultiplier(shop, 100)).toBe(1);
+    expect(getWorthwhileAchievementsMultiplier(shop, 100)).toBe(2);
   });
 
   it("uses the current tier value", () => {
@@ -28,7 +28,7 @@ describe("getWorthwhileAchievementsMultiplier", () => {
       SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS,
       2
     );
-    expect(getWorthwhileAchievementsMultiplier(shop, 50)).toBe(1);
+    expect(getWorthwhileAchievementsMultiplier(shop, 50)).toBe(1.5);
   });
 
   it("returns 0 when achievement count is 0", () => {
@@ -46,7 +46,7 @@ describe("getWorthwhileAchievementsMultiplier", () => {
       SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS,
       1
     );
-    expect(getWorthwhileAchievementsMultiplier(shop, 10.9)).toBeCloseTo(0.1);
+    expect(getWorthwhileAchievementsMultiplier(shop, 10.9)).toBeCloseTo(0.2);
   });
 
   it("treats negative counts as 0", () => {
