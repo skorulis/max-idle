@@ -13,10 +13,9 @@ describe("Consolidation", () => {
       ...DEFAULT_SHOP_STATE,
       consolidation: 1,
       seconds_multiplier: 1,
-      patience: 1
     };
-    expect(countIdleShopUpgradeTypesForConsolidation(shop)).toBe(2);
-    expect(getConsolidationBonus(shop)).toBe(0.5);
+    expect(countIdleShopUpgradeTypesForConsolidation(shop)).toBe(1);
+    expect(getConsolidationBonus(shop)).toBe(0.25);
   });
 
   it("does not count Consolidation toward the type limit", () => {
