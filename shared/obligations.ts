@@ -2,7 +2,8 @@ import type { ObligationReward } from "./obligationReward.js";
 import { SECONDS_PER_MINUTE } from "./timeConstants.js";
 export const OBLIGATION_IDS = {
   COLLECT_SOME_TIME: "obl_collect_some_time",
-  FIRST_PURCHASE: "obl_first_purchase"
+  FIRST_PURCHASE: "obl_first_purchase",
+  ACHIEVE_SOMETHING: "obl_achieve_something"
 } as const;
 
 export type ObligationId = (typeof OBLIGATION_IDS)[keyof typeof OBLIGATION_IDS];
@@ -13,7 +14,9 @@ export type ObligationStatPredicate =
   | { kind: "time_gems_total_gte"; gems: number }
   | { kind: "upgrades_purchased_gte"; count: number }
   /** Number of rows in `player_collection_history` (idle collects). */
-  | { kind: "collection_count_gte"; count: number };
+  | { kind: "collection_count_gte"; count: number }
+  /** Matches `player_states.achievement_count` (tiers / levels earned). */
+  | { kind: "achievement_count_gte"; count: number };
 
 export type ObligationCondition = {
   allOf: ObligationStatPredicate[];
@@ -34,6 +37,7 @@ export type ObligationPlayerSnapshot = {
   timeGemsTotal: number;
   upgradesPurchased: number;
   collectionCount: number;
+  achievementCount: number;
 };
 
 function isPredicateMet(predicate: ObligationStatPredicate, s: ObligationPlayerSnapshot): boolean {
@@ -48,6 +52,8 @@ function isPredicateMet(predicate: ObligationStatPredicate, s: ObligationPlayerS
       return s.upgradesPurchased >= predicate.count;
     case "collection_count_gte":
       return s.collectionCount >= predicate.count;
+    case "achievement_count_gte":
+      return s.achievementCount >= predicate.count;
     default: {
       const _exhaustive: never = predicate;
       return _exhaustive;
@@ -93,7 +99,6 @@ export const OBLIGATIONS: ObligationDefinition[] = [
     description: "Let’s make sure the idle time generator is working correctly. It was built by a crackpot after all. Make sure you give it a little time to warm up.",
     rewards: [
       { type: "idle", value: 5 * SECONDS_PER_MINUTE },
-      // TODO: Unlock shop
     ],
     condition: {
       allOf: [{ kind: "collection_count_gte", count: 1 }]
@@ -101,11 +106,21 @@ export const OBLIGATIONS: ObligationDefinition[] = [
   },
   {
     id: OBLIGATION_IDS.FIRST_PURCHASE,
-    name: "First investment",
-    description: "Purchase any upgrade from the shop.",
-    rewards: [{ type: "gem", value: 2 }],
+    name: "Buy something nice",
+    description: "Go to the shop and get yourself an upgrade, I don’t care what it is, you can regret your choices later on.",
+    rewards: [{ type: "idle", value: 10 * SECONDS_PER_MINUTE }],
     condition: {
       allOf: [{ kind: "upgrades_purchased_gte", count: 1 }]
+    }
+  },
+  {
+    id: OBLIGATION_IDS.ACHIEVE_SOMETHING,
+    name: "Achieve something",
+    description:
+      "You don't seem like a high achiever to me but I'm sure you can manage to do something worthwhile. There's lots of options in the achievement section, find something that you're capable of.",
+    rewards: [{ type: "idle", value: 15 * SECONDS_PER_MINUTE }],
+    condition: {
+      allOf: [{ kind: "achievement_count_gte", count: 1 }]
     }
   }
 ];

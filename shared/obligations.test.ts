@@ -13,7 +13,8 @@ const minimalSnapshot: ObligationPlayerSnapshot = {
   realTimeTotal: 0,
   timeGemsTotal: 0,
   upgradesPurchased: 0,
-  collectionCount: 0
+  collectionCount: 0,
+  achievementCount: 0
 };
 
 describe("getCurrentObligationId", () => {
@@ -27,13 +28,24 @@ describe("getCurrentObligationId", () => {
     expect(getCurrentObligationId({ [OBLIGATION_IDS.COLLECT_SOME_TIME]: true })).toBe(OBLIGATION_IDS.FIRST_PURCHASE);
   });
 
+  it("advances after second is completed", () => {
+    expect(
+      getCurrentObligationId(new Set([OBLIGATION_IDS.COLLECT_SOME_TIME, OBLIGATION_IDS.FIRST_PURCHASE]))
+    ).toBe(OBLIGATION_IDS.ACHIEVE_SOMETHING);
+  });
+
   it("returns null when all complete", () => {
-    const done = new Set([OBLIGATION_IDS.COLLECT_SOME_TIME, OBLIGATION_IDS.FIRST_PURCHASE]);
+    const done = new Set([
+      OBLIGATION_IDS.COLLECT_SOME_TIME,
+      OBLIGATION_IDS.FIRST_PURCHASE,
+      OBLIGATION_IDS.ACHIEVE_SOMETHING
+    ]);
     expect(getCurrentObligationId(done)).toBeNull();
     expect(
       getCurrentObligationId({
         [OBLIGATION_IDS.COLLECT_SOME_TIME]: true,
-        [OBLIGATION_IDS.FIRST_PURCHASE]: true
+        [OBLIGATION_IDS.FIRST_PURCHASE]: true,
+        [OBLIGATION_IDS.ACHIEVE_SOMETHING]: true
       })
     ).toBeNull();
   });
@@ -83,10 +95,26 @@ describe("isObligationConditionMet", () => {
     expect(isObligationConditionMet(coll, { ...minimalSnapshot, collectionCount: 3 })).toBe(true);
     expect(isObligationConditionMet(coll, { ...minimalSnapshot, collectionCount: 2 })).toBe(false);
   });
+
+  it("supports achievement_count_gte", () => {
+    const ach: ObligationDefinition = {
+      id: OBLIGATION_IDS.ACHIEVE_SOMETHING,
+      name: "Test",
+      description: "Test",
+      rewards: [],
+      condition: { allOf: [{ kind: "achievement_count_gte", count: 1 }] }
+    };
+    expect(isObligationConditionMet(ach, { ...minimalSnapshot, achievementCount: 1 })).toBe(true);
+    expect(isObligationConditionMet(ach, { ...minimalSnapshot, achievementCount: 0 })).toBe(false);
+  });
 });
 
 describe("OBLIGATIONS order", () => {
   it("matches design queue order", () => {
-    expect(OBLIGATIONS.map((d) => d.id)).toEqual([OBLIGATION_IDS.COLLECT_SOME_TIME, OBLIGATION_IDS.FIRST_PURCHASE]);
+    expect(OBLIGATIONS.map((d) => d.id)).toEqual([
+      OBLIGATION_IDS.COLLECT_SOME_TIME,
+      OBLIGATION_IDS.FIRST_PURCHASE,
+      OBLIGATION_IDS.ACHIEVE_SOMETHING
+    ]);
   });
 });

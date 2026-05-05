@@ -918,10 +918,35 @@ describe("player routes", () => {
     expect(secondOk.status).toBe(200);
     expect(secondOk.body.obligationsCompleted[OBLIGATION_IDS.FIRST_PURCHASE]).toBe(true);
 
-    const noneLeft = await request(app)
+    const staleSecond = await request(app)
       .post("/player/obligations/collect")
       .set("Authorization", `Bearer ${token}`)
       .send({ obligationId: OBLIGATION_IDS.FIRST_PURCHASE });
+    expect(staleSecond.status).toBe(400);
+    expect(staleSecond.body.code).toBe("OBLIGATION_NOT_CURRENT");
+
+    const thirdNotReady = await request(app)
+      .post("/player/obligations/collect")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ obligationId: OBLIGATION_IDS.ACHIEVE_SOMETHING });
+    expect(thirdNotReady.status).toBe(400);
+    expect(thirdNotReady.body.code).toBe("OBLIGATION_CONDITIONS_NOT_MET");
+
+    await pool.query(`UPDATE player_states SET achievement_count = 1 WHERE user_id = $1`, [userId]);
+
+    const idleBeforeThird = Number(secondOk.body.idleTime.total);
+    const thirdOk = await request(app)
+      .post("/player/obligations/collect")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ obligationId: OBLIGATION_IDS.ACHIEVE_SOMETHING });
+    expect(thirdOk.status).toBe(200);
+    expect(thirdOk.body.obligationsCompleted[OBLIGATION_IDS.ACHIEVE_SOMETHING]).toBe(true);
+    expect(Number(thirdOk.body.idleTime.total)).toBeGreaterThanOrEqual(idleBeforeThird + 15 * 60);
+
+    const noneLeft = await request(app)
+      .post("/player/obligations/collect")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ obligationId: OBLIGATION_IDS.ACHIEVE_SOMETHING });
     expect(noneLeft.status).toBe(400);
     expect(noneLeft.body.code).toBe("OBLIGATION_NONE_LEFT");
   });
