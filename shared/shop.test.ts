@@ -1,0 +1,70 @@
+import { describe, expect, it } from "vitest";
+import {
+  getDefaultShopState,
+  getWorthwhileAchievementsMultiplier,
+  withShopUpgradeLevel
+} from "./shop.js";
+import { SHOP_UPGRADE_IDS } from "./shopUpgrades.js";
+
+describe("getWorthwhileAchievementsMultiplier", () => {
+  it("returns 0 when Worthwhile Achievements has no tier", () => {
+    const shop = getDefaultShopState();
+    expect(getWorthwhileAchievementsMultiplier(shop, 0)).toBe(0);
+    expect(getWorthwhileAchievementsMultiplier(shop, 100)).toBe(0);
+  });
+
+  it("returns per-achievement bonus times count for tier 1", () => {
+    const shop = withShopUpgradeLevel(
+      getDefaultShopState(),
+      SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS,
+      1
+    );
+    expect(getWorthwhileAchievementsMultiplier(shop, 100)).toBe(1);
+  });
+
+  it("uses the current tier value", () => {
+    const shop = withShopUpgradeLevel(
+      getDefaultShopState(),
+      SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS,
+      2
+    );
+    expect(getWorthwhileAchievementsMultiplier(shop, 50)).toBe(1);
+  });
+
+  it("returns 0 when achievement count is 0", () => {
+    const shop = withShopUpgradeLevel(
+      getDefaultShopState(),
+      SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS,
+      1
+    );
+    expect(getWorthwhileAchievementsMultiplier(shop, 0)).toBe(0);
+  });
+
+  it("floors fractional achievement counts", () => {
+    const shop = withShopUpgradeLevel(
+      getDefaultShopState(),
+      SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS,
+      1
+    );
+    expect(getWorthwhileAchievementsMultiplier(shop, 10.9)).toBeCloseTo(0.1);
+  });
+
+  it("treats negative counts as 0", () => {
+    const shop = withShopUpgradeLevel(
+      getDefaultShopState(),
+      SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS,
+      1
+    );
+    expect(getWorthwhileAchievementsMultiplier(shop, -3)).toBe(0);
+  });
+
+  it("treats non-finite achievement counts as 0", () => {
+    const shop = withShopUpgradeLevel(
+      getDefaultShopState(),
+      SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS,
+      1
+    );
+    expect(getWorthwhileAchievementsMultiplier(shop, Number.NaN)).toBe(0);
+    expect(getWorthwhileAchievementsMultiplier(shop, Number.POSITIVE_INFINITY)).toBe(0);
+  });
+});

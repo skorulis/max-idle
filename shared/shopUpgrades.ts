@@ -397,16 +397,16 @@ export const WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE: ShopUpgradeDefinition = defin
     "Adds an idle multiplier that scales with your unlocked achievements. Each level increases the per-achievement bonus, making achievement progress directly improve income.",
   valueDescription: "%s",
   levels: [
-    { cost: 2 * SECONDS_PER_HOUR, value: 0.02 },
-    { cost: 5 * SECONDS_PER_HOUR, value: 0.04 },
-    { cost: 16 * SECONDS_PER_HOUR, value: 0.06 },
-    { cost: SECONDS_PER_DAY, value: 0.08 },
-    { cost: 2 * SECONDS_PER_DAY, value: 0.1 },
-    { cost: SECONDS_PER_WEEK, value: 0.12 },
-    { cost: 2 * SECONDS_PER_WEEK, value: 0.14 },
-    { cost: 4 * SECONDS_PER_WEEK, value: 0.16 },
-    { cost: 10 * SECONDS_PER_WEEK, value: 0.18 },
-    { cost: 26 * SECONDS_PER_WEEK, value: 0.2 }
+    { cost: 2 * SECONDS_PER_HOUR, value: 0.01 },
+    { cost: 5 * SECONDS_PER_HOUR, value: 0.02 },
+    { cost: 16 * SECONDS_PER_HOUR, value: 0.03 },
+    { cost: SECONDS_PER_DAY, value: 0.04 },
+    { cost: 2 * SECONDS_PER_DAY, value: 0.05 },
+    { cost: SECONDS_PER_WEEK, value: 0.06 },
+    { cost: 2 * SECONDS_PER_WEEK, value: 0.07 },
+    { cost: 4 * SECONDS_PER_WEEK, value: 0.08 },
+    { cost: 10 * SECONDS_PER_WEEK, value: 0.09 },
+    { cost: 26 * SECONDS_PER_WEEK, value: 0.1 }
   ],
   currencyType: SHOP_CURRENCY_TYPES.IDLE
 });

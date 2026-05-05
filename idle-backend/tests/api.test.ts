@@ -1876,9 +1876,9 @@ describe("auth + player lifecycle", () => {
 
     const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
     expect(playerResponse.status).toBe(200);
-    const expectedCurrent = Math.floor(120 * (1 + 0.02 * 2));
+    const expectedCurrent = Math.floor(120 * (1 + 0.01 * 2));
     expect(playerResponse.body.currentSeconds).toBe(expectedCurrent);
-    expect(playerResponse.body.achievementBonusMultiplier).toBeCloseTo(0.04, 5);
+    expect(playerResponse.body.achievementBonusMultiplier).toBeCloseTo(0.02, 5);
   });
 
   it("continues idle generation under 1 hour when restraint is enabled", async () => {
