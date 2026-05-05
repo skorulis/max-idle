@@ -11,6 +11,8 @@ type IncrementRule = {
  * Between rules, the first tier of the next segment costs `lastTier + nextRule.incrementSeconds`.
  */
 const SHOP_COST_TABLE_INCREMENT_RULES: readonly IncrementRule[] = [
+  { tierCount: 1, incrementSeconds: 15 },
+  { tierCount: 1, incrementSeconds: 30 },
   { tierCount: 1, incrementSeconds: 4 * SECONDS_PER_MINUTE },
   { tierCount: 1, incrementSeconds: 5 * SECONDS_PER_MINUTE },
   { tierCount: 1, incrementSeconds: 20 * SECONDS_PER_MINUTE },
@@ -29,12 +31,11 @@ const SHOP_COST_TABLE_INCREMENT_RULES: readonly IncrementRule[] = [
 ];
 
 function buildCostTableFromIncrementRules(
-  seedSeconds: number,
   rules: readonly IncrementRule[],
   length: number
 ): { table: number[]; tailIncrementSeconds: number } {
   const out: number[] = [];
-  let price = seedSeconds;
+  let price = 15 // Start at 15 seconds
   const cap = Math.max(0, Math.floor(length));
 
   out.push(price);
@@ -71,7 +72,7 @@ const SHOP_COST_TABLE_LENGTH = Math.max(
 );
 
 const { table: SHOP_COST_TABLE_BUILT, tailIncrementSeconds: SHOP_COST_TABLE_TAIL_INCREMENT } =
-  buildCostTableFromIncrementRules(SECONDS_PER_MINUTE, SHOP_COST_TABLE_INCREMENT_RULES, SHOP_COST_TABLE_LENGTH);
+  buildCostTableFromIncrementRules(SHOP_COST_TABLE_INCREMENT_RULES, SHOP_COST_TABLE_LENGTH);
 
 const SHOP_COST_TABLE = Object.freeze(SHOP_COST_TABLE_BUILT);
 

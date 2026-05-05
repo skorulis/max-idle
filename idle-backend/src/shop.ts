@@ -21,6 +21,7 @@ import {
   SHOP_CURRENCY_TYPES,
   SHOP_UPGRADE_IDS,
   ShopUpgradeDefinition,
+  getShopUpgradeDefinition,
 } from "@maxidle/shared/shopUpgrades";
 import { safeNaturalNumber } from "@maxidle/shared/safeNumber";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
