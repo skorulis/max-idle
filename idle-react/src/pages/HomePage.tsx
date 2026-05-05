@@ -41,6 +41,7 @@ const EARLY_COLLECT_WARNING_MESSAGES = [
   "Stop being impatient",
   "Just relax a little"
 ];
+const SURVEY_IDLE_TIME_REQUIRED_SECONDS = 6 * 60 * 60;
 
 type HomePageProps = {
   playerState: SyncedPlayerState | null;
@@ -214,6 +215,7 @@ export function HomePage({
     playerState.idleTime.total > 0 ||
     playerState.realTime.total > 0 ||
     playerState.timeGems.total > 0;
+  const showSurveyCard = availableSurvey && playerState.idleTime.total >= SURVEY_IDLE_TIME_REQUIRED_SECONDS;
 
   const remainingTutorials = TUTORIAL_STEPS.filter((s) => !completedTutorialIds.has(s.id));
   const currentTutorial = remainingTutorials[0];
@@ -405,7 +407,7 @@ export function HomePage({
         </section>
       ) : null}
 
-      {availableSurvey ? (
+      {showSurveyCard ? (
         <section className="card">
           <h2 className="section-title-with-icon">
             <ClipboardList size={18} aria-hidden="true" />

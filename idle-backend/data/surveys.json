@@ -4,7 +4,7 @@
             "id": "1",
             "isActive": true,
             "currencyType": "idle",
-            "reward": 21600,
+            "reward": 43200,
             "title": "What improvements would you like to see in the next version of Max Idle?",
             "options": [
                 {
