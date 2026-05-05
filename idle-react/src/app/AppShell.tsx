@@ -1020,7 +1020,6 @@ export function AppShell() {
         setStatus("Press start when you are ready to do nothing.");
       } else if (collectError instanceof Error && collectError.message === "RESTRAINT_BLOCKED") {
         setError(restraintCollectBlockedMessage);
-        setStatus("Keep idling to satisfy Restraint.");
         return;
       }
       setError(collectError instanceof Error ? collectError.message : "Collect failed");
