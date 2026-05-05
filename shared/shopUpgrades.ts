@@ -3,6 +3,7 @@ import { safeNumber, safeNaturalNumber } from "./safeNumber.js";
 import {
   SECONDS_PER_DAY,
   SECONDS_PER_HOUR,
+  SECONDS_PER_MINUTE,
   SECONDS_PER_WEEK,
   SECONDS_PER_YEAR
 } from "./timeConstants.js";
@@ -53,7 +54,11 @@ export const SHOP_UPGRADE_IDS = {
    * Idle additive bonus when few distinct other idle-priced shop lines have tiers ({@link getConsolidationBonus}).
    * This upgrade is excluded from that count.
    */
-  CONSOLIDATION: "consolidation"
+  CONSOLIDATION: "consolidation",
+  /**
+   * Idle additive bonus only while real-time elapsed since last collect is below the tier's `value2` ({@link getQuickCollectorBonus}).
+   */
+  QUICK_COLLECTOR: "quick_collector"
 } as const;
 
 export type ShopUpgradeId = (typeof SHOP_UPGRADE_IDS)[keyof typeof SHOP_UPGRADE_IDS];
@@ -203,7 +208,7 @@ export const PATIENCE_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   icon: "hourglass",
   description: "Bonus that increases for longer collections",
   longDescription:
-    "This idle multiplier increases over time up to a certain limit. The longer you wait before collecting the higher the bonus will be up to a maximum.",
+    "This idle multiplier increases over time up to a certain limit. The longer you wait before collecting the higher the bonus will be up to a maximum. The earlier bonuses always apply, so more patience is always better.",
   valueDescription: "%sx at %s",
   levels: [
     { cost: 60, value: 0.25, value2: 60 },
@@ -461,6 +466,27 @@ export const CONSOLIDATION_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgra
   currencyType: SHOP_CURRENCY_TYPES.IDLE
 });
 
+export const QUICK_COLLECTOR_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
+  id: SHOP_UPGRADE_IDS.QUICK_COLLECTOR,
+  name: "Constant clicker",
+  icon: "zap",
+  description: "Gain a bonus when being impatient",
+  longDescription:
+    "Adds an idle multiplier bonus only while your current run has accrued less than a set amount of real time since your last collect. After that cutoff, this bonus does nothing until you collect again. Suited to frequent short sessions.",
+  valueDescription: "%s when less than %s real time",
+  levels: [
+    { cost: 1, value: 0.5, value2: 2 * SECONDS_PER_HOUR },
+    { cost: 1, value: 1.0, value2: 2 * SECONDS_PER_HOUR },
+    { cost: 1, value: 1.5, value2: 2 * SECONDS_PER_HOUR },
+    { cost: 1, value: 2.0, value2: SECONDS_PER_HOUR },
+    { cost: 1, value: 2.5, value2: SECONDS_PER_HOUR },
+    { cost: 1, value: 3.0, value2: SECONDS_PER_HOUR },
+    { cost: 1, value: 3.5, value2: 30 * SECONDS_PER_MINUTE },
+    { cost: 1, value: 4.0, value2: 30 * SECONDS_PER_MINUTE }
+  ],
+  currencyType: SHOP_CURRENCY_TYPES.IDLE
+});
+
 export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   SECONDS_MULTIPLIER_SHOP_UPGRADE,
   ANOTHER_SECONDS_MULTIPLIER_SHOP_UPGRADE,
@@ -472,6 +498,7 @@ export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
   ANTI_CONSUMERIST_SHOP_UPGRADE,
   CONSOLIDATION_SHOP_UPGRADE,
+  QUICK_COLLECTOR_SHOP_UPGRADE,
   EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
   IDLE_REFUND_SHOP_UPGRADE,
@@ -496,7 +523,8 @@ export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> =
   [SHOP_UPGRADE_IDS.TOURNAMENT_FEATURE]: TOURNAMENT_FEATURE_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.STORAGE_EXTENSION]: STORAGE_EXTENSION_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.ANTI_CONSUMERIST]: ANTI_CONSUMERIST_SHOP_UPGRADE,
-  [SHOP_UPGRADE_IDS.CONSOLIDATION]: CONSOLIDATION_SHOP_UPGRADE
+  [SHOP_UPGRADE_IDS.CONSOLIDATION]: CONSOLIDATION_SHOP_UPGRADE,
+  [SHOP_UPGRADE_IDS.QUICK_COLLECTOR]: QUICK_COLLECTOR_SHOP_UPGRADE
 };
 
 export function getShopUpgradeDefinition(upgradeType: string): ShopUpgradeDefinition | null {
@@ -621,4 +649,23 @@ export function getConsolidationBonus(shop: ShopState): number {
   }
   const count = countIdleShopUpgradeTypesForConsolidation(shop);
   return count <= maxOtherTypes ? bonus : 0;
+}
+
+/**
+ * Additive idle rate bonus from Quick Collector while real-time elapsed since last collect is strictly below the tier's `value2` (seconds).
+ * No bonus once elapsed ≥ `value2`.
+ */
+export function getQuickCollectorBonus(shop: ShopState, secondsSinceLastCollection: number): number {
+  const level = QUICK_COLLECTOR_SHOP_UPGRADE.currentLevel(shop);
+  if (level <= 0) {
+    return 0;
+  }
+  const tier = QUICK_COLLECTOR_SHOP_UPGRADE.levels[level - 1];
+  const bonus = safeNumber(tier?.value, 0);
+  const thresholdSec = safeNaturalNumber(tier?.value2, 1);
+  if (!(bonus > 0) || thresholdSec <= 0) {
+    return 0;
+  }
+  const elapsed = safeNaturalNumber(secondsSinceLastCollection);
+  return elapsed < thresholdSec ? bonus : 0;
 }

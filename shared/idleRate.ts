@@ -13,6 +13,7 @@ import {
   getCollectGemIdleSecondsMultiplier,
   getConsolidationBonus,
   getIdleHoarderMultiplier,
+  getQuickCollectorBonus,
   IDLE_HOARDER_SHOP_UPGRADE,
   PATIENCE_SHOP_UPGRADE
 } from "./shopUpgrades.js";
@@ -118,7 +119,8 @@ export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): numbe
     getConsolidationBonus(player.shop),
     worthwhileAchievementsMultiplier,
     idleHoarderMultiplier - 1,
-    getPatienceRate(player)
+    getPatienceRate(player),
+    getQuickCollectorBonus(player.shop, safeNaturalNumber(player.secondsSinceLastCollection))
   );
 
   return secondaryMultiplier;

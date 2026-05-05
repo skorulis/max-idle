@@ -44,6 +44,7 @@ type ShopPageProps = {
     | "worthwhile_achievements"
     | "anti_consumerist"
     | "consolidation"
+    | "quick_collector"
     | "luck"
     | "extra_realtime_wait"
     | "collect_gem_time_boost"
@@ -100,7 +101,8 @@ function formatUpgradeValue(upgrade: ShopUpgradeDefinition, value: number): stri
     (upgrade.id as string) === "another_seconds_multiplier" ||
     upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT ||
     upgrade.id === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST ||
-    upgrade.id === SHOP_UPGRADE_IDS.CONSOLIDATION
+    upgrade.id === SHOP_UPGRADE_IDS.CONSOLIDATION ||
+    upgrade.id === SHOP_UPGRADE_IDS.QUICK_COLLECTOR
   ) {
     return formatMultiplier(value);
   }
@@ -119,7 +121,11 @@ function formatUpgradeValue(upgrade: ShopUpgradeDefinition, value: number): stri
 
 /** Second `%s` in `valueDescription` (e.g. restraint wait hours). */
 function formatUpgradeSecondaryValue(upgrade: ShopUpgradeDefinition, value2: number): string {
-  if (upgrade.id === SHOP_UPGRADE_IDS.PATIENCE || upgrade.id === SHOP_UPGRADE_IDS.ANTI_CONSUMERIST) {
+  if (
+    upgrade.id === SHOP_UPGRADE_IDS.PATIENCE ||
+    upgrade.id === SHOP_UPGRADE_IDS.ANTI_CONSUMERIST ||
+    upgrade.id === SHOP_UPGRADE_IDS.QUICK_COLLECTOR
+  ) {
     return formatSeconds(value2, 2, "floor");
   }
   if (upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT) {

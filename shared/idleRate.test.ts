@@ -8,6 +8,8 @@ import {
 } from "./idleRate.js";
 import { DEFAULT_SHOP_STATE, getMaxIdleCollectionRealtimeSeconds } from "./shop.js";
 import type { ShopState } from "./shop.js";
+import { getQuickCollectorBonus, SHOP_UPGRADE_IDS } from "./shopUpgrades.js";
+import { SECONDS_PER_HOUR } from "./timeConstants.js";
 
 function shopWithPatience(patience: number): ShopState {
   return {
@@ -177,7 +179,46 @@ describe("luck + boosted gain", () => {
   });
 });
 
+describe("getQuickCollectorBonus", () => {
+  it("applies only while elapsed real time is below the tier value2 window", () => {
+    const shop: ShopState = { ...DEFAULT_SHOP_STATE, [SHOP_UPGRADE_IDS.QUICK_COLLECTOR]: 1 };
+    expect(getQuickCollectorBonus(shop, 0)).toBe(0.5);
+    expect(getQuickCollectorBonus(shop, 59)).toBe(0.5);
+    expect(getQuickCollectorBonus(shop, 3 * SECONDS_PER_HOUR)).toBe(0);
+  });
+});
+
 describe("getEffectiveIdleSecondsRate", () => {
+  it("adds quick collector only during the early run window", () => {
+    const withQuick: ShopState = { ...DEFAULT_SHOP_STATE, [SHOP_UPGRADE_IDS.QUICK_COLLECTOR]: 1 };
+    const baseEarly = getEffectiveIdleSecondsRate({
+      secondsSinceLastCollection: 30,
+      shop: { ...DEFAULT_SHOP_STATE },
+      achievementCount: 0,
+      realTimeAvailable: 0
+    });
+    const withQuickEarly = getEffectiveIdleSecondsRate({
+      secondsSinceLastCollection: 30,
+      shop: withQuick,
+      achievementCount: 0,
+      realTimeAvailable: 0
+    });
+    const baseLate = getEffectiveIdleSecondsRate({
+      secondsSinceLastCollection: 3 * SECONDS_PER_HOUR,
+      shop: { ...DEFAULT_SHOP_STATE },
+      achievementCount: 0,
+      realTimeAvailable: 0
+    });
+    const withQuickLate = getEffectiveIdleSecondsRate({
+      secondsSinceLastCollection: 3 * SECONDS_PER_HOUR,
+      shop: withQuick,
+      achievementCount: 0,
+      realTimeAvailable: 0
+    });
+    expect(withQuickEarly - baseEarly).toBeCloseTo(0.5, 10);
+    expect(withQuickLate).toBeCloseTo(baseLate, 10);
+  });
+
   it("tracks patience and multipliers from full elapsed time (not storage-capped like boosted gain)", () => {
     const shop: ShopState = { ...DEFAULT_SHOP_STATE, patience: 8 };
     const cap = getMaxIdleCollectionRealtimeSeconds(shop);

@@ -21,6 +21,7 @@ import {
   Trophy,
   Undo2,
   UserPlus,
+  Zap,
   type LucideIcon
 } from "lucide-react";
 
@@ -68,6 +69,8 @@ export function getLucidIcon(iconName: string): LucideIcon {
       return Undo2;
     case "trophy":
       return Trophy;
+    case "zap":
+      return Zap;
     default:
       return CircleHelp;
   }

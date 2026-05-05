@@ -11,9 +11,11 @@ import { getPatienceRate } from "../idleRate";
 import {
   ANTI_CONSUMERIST_SHOP_UPGRADE,
   CONSOLIDATION_SHOP_UPGRADE,
+  QUICK_COLLECTOR_SHOP_UPGRADE,
   getCollectGemIdleSecondsMultiplier,
   getConsolidationBonus,
   getIdleHoarderMultiplier,
+  getQuickCollectorBonus,
   IDLE_HOARDER_SHOP_UPGRADE
 } from "../shopUpgrades";
 import { safeNumber } from "@maxidle/shared/safeNumber";
@@ -82,6 +84,8 @@ export function CurrentRateInfoOverlay({
     );
     const consolidationLevel = CONSOLIDATION_SHOP_UPGRADE.currentLevel(shop);
     const consolidationBonus = getConsolidationBonus(shop);
+    const quickCollectorLevel = QUICK_COLLECTOR_SHOP_UPGRADE.currentLevel(shop);
+    const quickCollectorBonus = getQuickCollectorBonus(shop, Math.max(0, secondsSinceLastCollection));
 
     return {
       patienceRate,
@@ -95,6 +99,8 @@ export function CurrentRateInfoOverlay({
       gemBonus,
       consolidationLevel,
       consolidationBonus,
+      quickCollectorLevel,
+      quickCollectorBonus,
     };
   }, [achievementCount, estimatedServerNowMs, realTimeAvailable, secondsSinceLastCollection, shop]);
 
@@ -144,6 +150,12 @@ export function CurrentRateInfoOverlay({
           <p className="rate-factor-row">
             <span>Consolidation bonus</span>
             <span>{factors.consolidationBonus.toFixed(2)}x</span>
+          </p>
+        ) : null}
+        {factors.quickCollectorLevel > 0 ? (
+          <p className="rate-factor-row">
+            <span>Quick Collector bonus</span>
+            <span>{factors.quickCollectorBonus.toFixed(2)}x</span>
           </p>
         ) : null}
         {shouldShowFactor(factors.worthwhileAchievementsMultiplier) ? (

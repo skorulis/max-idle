@@ -126,6 +126,7 @@ const SHOP_ALREADY_OWNED_MESSAGE: Partial<Record<ShopUpgradeId, string>> = {
   worthwhile_achievements: "Worthwhile Achievements is already maxed.",
   anti_consumerist: "Anti-consumerist is already maxed.",
   consolidation: "Consolidation is already maxed.",
+  quick_collector: "Quick Collector is already maxed.",
   collect_gem_time_boost: "Hasty collection is already maxed.",
   daily_bonus_feature: "Daily Bonus is already unlocked.",
   tournament_feature: "Weekly Tournament is already unlocked."
@@ -222,6 +223,7 @@ export function AppShell() {
     | "worthwhile_achievements"
     | "anti_consumerist"
     | "consolidation"
+    | "quick_collector"
     | "extra_realtime_wait"
     | "collect_gem_time_boost"
     | "idle_refund"

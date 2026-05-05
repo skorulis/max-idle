@@ -36,6 +36,8 @@ export type ShopState = {
   anti_consumerist?: number;
   /** {@link SHOP_UPGRADE_IDS.CONSOLIDATION} — bonus when few other idle shop lines are used (see {@link getConsolidationBonus}). */
   consolidation?: number;
+  /** {@link SHOP_UPGRADE_IDS.QUICK_COLLECTOR} — early-run idle bonus (see {@link getQuickCollectorBonus}). */
+  quick_collector?: number;
   /**
    * UTC Unix timestamp in seconds for the last shop purchase paid with idle or real time.
    * Set by the server on those purchases only; gem-priced buys do not update this field.
@@ -55,7 +57,8 @@ export const DEFAULT_SHOP_STATE: ShopState = {
   [SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST]: 0,
   [SHOP_UPGRADE_IDS.STORAGE_EXTENSION]: 0,
   [SHOP_UPGRADE_IDS.ANTI_CONSUMERIST]: 0,
-  [SHOP_UPGRADE_IDS.CONSOLIDATION]: 0
+  [SHOP_UPGRADE_IDS.CONSOLIDATION]: 0,
+  [SHOP_UPGRADE_IDS.QUICK_COLLECTOR]: 0
 };
 
 export function getDefaultShopState(): ShopState {
@@ -253,7 +256,11 @@ export function hasAffordableIdleOrRealTimeShopPurchase(
   return false;
 }
 
-export { getAntiConsumeristMultiplier, getConsolidationBonus } from "./shopUpgrades.js";
+export {
+  getAntiConsumeristMultiplier,
+  getConsolidationBonus,
+  getQuickCollectorBonus
+} from "./shopUpgrades.js";
 export {
   getIdleShopCostTable,
   getRealShopCostTable,
