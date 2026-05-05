@@ -23,17 +23,12 @@ import { SurveyPage } from "../pages/SurveyPage";
 import {
   completeSocialUpgrade,
   getPlayer,
-  grantClientDrivenAchievement,
-  loginWithEmail,
-  logoutSession,
-  registerWithEmail,
-  updateUsername,
-  upgradeAnonymous
+  grantClientDrivenAchievement
 } from "./api";
 import { formatRestraintBlockedCollectMessage, hasAffordableIdleOrRealTimeShopPurchase } from "../shop";
 import { ACHIEVEMENT_IDS } from "../achievements";
-import { authClient } from "./authClient.ts";
 import { alignClientClock, useClientNowMs } from "./clientClock";
+import { useAppAuthActions } from "./useAppAuthActions";
 import { useAppGameplayActions } from "./useAppGameplayActions";
 import { useDailyRewardNotifications } from "./useDailyRewardNotifications";
 import { useAppRouteDataLoaders } from "./useAppRouteDataLoaders";
@@ -117,11 +112,10 @@ export function AppShell() {
     refreshTournament,
     refreshHome
   } = useAppSession({ tokenStorageKey: TOKEN_KEY });
-  const [authPending, setAuthPending] = useState(false);
-  const [usernamePending, setUsernamePending] = useState(false);
   const [loginForm, setLoginForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const [signupForm, setSignupForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const [upgradeForm, setUpgradeForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
+  const [socialUpgradePending, setSocialUpgradePending] = useState(false);
   const isAuthenticated = Boolean(playerState);
   const availableSurveyForUi = playerState ? availableSurvey : null;
 
@@ -145,11 +139,12 @@ export function AppShell() {
     collectionHistory,
     collectionHistoryLoading,
     tournamentHistory,
-    tournamentHistoryLoading
+    tournamentHistoryLoading,
+    clearRouteDataOnLogout
   } = useAppRouteDataLoaders({
     locationPathname: location.pathname,
     token,
-    accountGameUserId: account?.gameUserId,
+    accountGameUserId: account?.gameUserId ?? undefined,
     playerState,
     setPlayerState,
     routePlayerIdParam: playerRouteMatch?.params.playerId,
@@ -249,7 +244,7 @@ export function AppShell() {
 
     let cancelled = false;
     const finalizeSocialUpgrade = async () => {
-      setAuthPending(true);
+      setSocialUpgradePending(true);
       setError(null);
       setStatus("Finalizing Google account upgrade...");
       try {
@@ -277,7 +272,7 @@ export function AppShell() {
         }
       } finally {
         if (!cancelled) {
-          setAuthPending(false);
+          setSocialUpgradePending(false);
           clearUpgradeQuery();
         }
       }
@@ -471,171 +466,40 @@ export function AppShell() {
     tokenStorageKey: TOKEN_KEY,
     shopAlreadyOwnedMessage: SHOP_ALREADY_OWNED_MESSAGE
   });
-
-  const onStartJourneyFromLeaderboard = async () => {
-    await onStartIdling();
-    if (localStorage.getItem(TOKEN_KEY)) {
-      navigate("/");
-    }
-  };
-
-  const onLogin = async () => {
-    setAuthPending(true);
-    setError(null);
-    setStatus("Logging in...");
-    try {
-      await loginWithEmail(loginForm.email, loginForm.password);
-      localStorage.removeItem(TOKEN_KEY);
-      setToken(null);
-      await refreshHome(null);
-      setStatus("Welcome back. Nothing waits for you.");
-      navigate("/");
-    } catch (loginError) {
-      setError(loginError instanceof Error ? loginError.message : "Login failed");
-      setStatus("Could not log in.");
-    } finally {
-      setAuthPending(false);
-    }
-  };
-
-  const onRegister = async () => {
-    setAuthPending(true);
-    setError(null);
-    setStatus("Creating account...");
-    try {
-      await registerWithEmail(signupForm.email, signupForm.password);
-      localStorage.removeItem(TOKEN_KEY);
-      setToken(null);
-      await refreshHome(null);
-      setStatus("Account created. Continue doing nothing.");
-      navigate("/");
-    } catch (registerError) {
-      setError(registerError instanceof Error ? registerError.message : "Registration failed");
-      setStatus("Could not create account.");
-    } finally {
-      setAuthPending(false);
-    }
-  };
-
-  const onGoogleLogin = async () => {
-    setAuthPending(true);
-    setError(null);
-    setStatus("Redirecting to Google...");
-    try {
-      const frontendOrigin = window.location.origin;
-      await authClient.signIn.social({
-        provider: "google",
-        callbackURL: `${frontendOrigin}/`,
-        errorCallbackURL: `${frontendOrigin}/login`
-      });
-    } catch (socialLoginError) {
-      setError(socialLoginError instanceof Error ? socialLoginError.message : "Google sign-in failed");
-      setStatus("Could not start Google sign-in.");
-      setAuthPending(false);
-    }
-  };
-
-  const onGoogleUpgrade = async () => {
-    if (!token) {
-      return;
-    }
-
-    setAuthPending(true);
-    setError(null);
-    setStatus("Redirecting to Google...");
-    try {
-      const frontendOrigin = window.location.origin;
-      sessionStorage.setItem(UPGRADE_SOCIAL_INTENT_KEY, "google");
-      await authClient.signIn.social({
-        provider: "google",
-        callbackURL: `${frontendOrigin}/account?upgradeSocial=google`,
-        errorCallbackURL: `${frontendOrigin}/account?upgradeSocial=error`
-      });
-    } catch (socialLoginError) {
-      sessionStorage.removeItem(UPGRADE_SOCIAL_INTENT_KEY);
-      setError(socialLoginError instanceof Error ? socialLoginError.message : "Google sign-in failed");
-      setStatus("Could not start Google sign-in.");
-      setAuthPending(false);
-    }
-  };
-
-  const onUpgrade = async () => {
-    if (!token) {
-      return;
-    }
-
-    setAuthPending(true);
-    setError(null);
-    setStatus("Upgrading anonymous account...");
-    try {
-      await upgradeAnonymous(token, upgradeForm.name, upgradeForm.email, upgradeForm.password);
-      localStorage.removeItem(TOKEN_KEY);
-      setToken(null);
-      await refreshHome(null);
-      setStatus("Anonymous account upgraded.");
-    } catch (upgradeError) {
-      setError(upgradeError instanceof Error ? upgradeError.message : "Upgrade failed");
-      setStatus("Could not upgrade account.");
-    } finally {
-      setAuthPending(false);
-    }
-  };
-
-  const onLogout = async () => {
-    setAuthPending(true);
-    setError(null);
-    try {
-      await logoutSession();
-    } catch {
-      // Ignore logout failures; local state reset still proceeds.
-    } finally {
-      localStorage.removeItem(TOKEN_KEY);
-      setToken(null);
-      setPlayerState(null);
-      setTournamentState(null);
-      setAccount(null);
-      setLeaderboard(null);
-      setAchievements(null);
-      setStatus("Press start when you are ready to do nothing.");
-      setAuthPending(false);
-      navigate("/");
-    }
-  };
-
-  const onUsernameChange = (value: string) => {
-    setUsernameDraft(value);
-  };
-
-  const onSaveUsername = async () => {
-    if (!account) {
-      return;
-    }
-
-    const nextUsername = usernameDraft.trim();
-    if (!nextUsername || nextUsername === account.username) {
-      return;
-    }
-
-    setUsernamePending(true);
-
-    try {
-      await updateUsername(token, nextUsername);
-      await refreshAccount(token);
-      toast.success("Username updated successfully.");
-    } catch (usernameUpdateError) {
-      if (usernameUpdateError instanceof Error && usernameUpdateError.message === "USERNAME_TAKEN") {
-        toast.error("That username is already taken.");
-      } else {
-        toast.error(usernameUpdateError instanceof Error ? usernameUpdateError.message : "Could not update username.");
-      }
-    } finally {
-      setUsernamePending(false);
-    }
-  };
+  const {
+    authPending,
+    usernamePending,
+    onStartJourneyFromLeaderboard,
+    onLogin,
+    onRegister,
+    onGoogleLogin,
+    onGoogleUpgrade,
+    onUpgrade,
+    onLogout,
+    onUsernameChange,
+    onSaveUsername
+  } = useAppAuthActions({
+    token,
+    setToken,
+    setPlayerState: (value) => setPlayerState(value),
+    setTournamentState: (value) => setTournamentState(value),
+    setAccount,
+    setStatus,
+    setError,
+    refreshHome,
+    refreshAccount,
+    account,
+    usernameDraft,
+    setUsernameDraft,
+    clearRouteDataOnLogout,
+    onStartIdling,
+    tokenStorageKey: TOKEN_KEY,
+    upgradeSocialIntentKey: UPGRADE_SOCIAL_INTENT_KEY
+  });
 
   const renderAuthButtons = () => (
     <div className="social">
-      <button type="button" className="secondary" onClick={() => void onGoogleLogin()} disabled={authPending}>
+      <button type="button" className="secondary" onClick={() => void onGoogleLogin()} disabled={authPending || socialUpgradePending}>
         <img src="/google-logo.svg" alt="" width={20} height={20} className="social-button-icon" />
         Continue with Google
       </button>
@@ -644,7 +508,7 @@ export function AppShell() {
 
   const renderUpgradeAuthButtons = () => (
     <div className="social">
-      <button type="button" className="secondary" onClick={() => void onGoogleUpgrade()} disabled={authPending}>
+      <button type="button" className="secondary" onClick={() => void onGoogleUpgrade()} disabled={authPending || socialUpgradePending}>
         <img src="/google-logo.svg" alt="" width={20} height={20} className="social-button-icon" />
         Continue with Google
       </button>
@@ -820,10 +684,10 @@ export function AppShell() {
             path="/login"
             element={
               <LoginPage
-                authPending={authPending}
+                authPending={authPending || socialUpgradePending}
                 loginForm={loginForm}
                 onLoginFormChange={(field, value) => setLoginForm((prev) => ({ ...prev, [field]: value }))}
-                onLogin={onLogin}
+                onLogin={() => onLogin(loginForm)}
                 onNavigateRegister={() => navigate("/register")}
                 renderAuthButtons={renderAuthButtons}
               />
@@ -833,10 +697,10 @@ export function AppShell() {
             path="/register"
             element={
               <RegisterPage
-                authPending={authPending}
+                authPending={authPending || socialUpgradePending}
                 registerForm={signupForm}
                 onRegisterFormChange={(field, value) => setSignupForm((prev) => ({ ...prev, [field]: value }))}
-                onRegister={onRegister}
+                onRegister={() => onRegister(signupForm)}
                 onNavigateLogin={() => navigate("/login")}
                 renderAuthButtons={renderAuthButtons}
               />
@@ -848,7 +712,7 @@ export function AppShell() {
               <AccountPage
                 account={account}
                 token={token}
-                authPending={authPending}
+                authPending={authPending || socialUpgradePending}
                 usernamePending={usernamePending}
                 dailyRewardNotificationsSupported={dailyRewardNotificationsSupported}
                 dailyRewardNotificationsEnabled={dailyRewardNotificationsEnabled}
@@ -859,7 +723,7 @@ export function AppShell() {
                 onUsernameChange={onUsernameChange}
                 onSaveUsername={onSaveUsername}
                 onUpgradeFormChange={(field, value) => setUpgradeForm((prev) => ({ ...prev, [field]: value }))}
-                onUpgrade={onUpgrade}
+                onUpgrade={() => onUpgrade(upgradeForm)}
                 onLogout={onLogout}
                 onToggleDailyRewardNotifications={onToggleDailyRewardNotifications}
                 onNavigateLogin={() => navigate("/login")}

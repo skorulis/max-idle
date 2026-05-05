@@ -339,6 +339,10 @@ export function useAppRouteDataLoaders({
     collectionHistory,
     collectionHistoryLoading,
     tournamentHistory,
-    tournamentHistoryLoading
+    tournamentHistoryLoading,
+    clearRouteDataOnLogout: () => {
+      setLeaderboard(null);
+      setAchievements(null);
+    }
   };
 }
