@@ -32,6 +32,7 @@ import {
   getCurrentObligationId,
   getObligationDefinition,
   isObligationConditionMet,
+  OBLIGATION_IDS,
   type ObligationId
 } from "@maxidle/shared/obligations";
 
@@ -420,27 +421,29 @@ export function HomePage({
         </section>
       ) : null}
 
-      <section className="card">
-        <h2 className="section-title-with-icon">
-          <Gem size={18} aria-hidden="true" />
-          Daily Gem Reward
-        </h2>
-        {dailyRewardAvailable ? (
-          <>
-            <p>
-              Ready to collect ({isDailyRewardDoubledToday(dailyBonus) ? "+2 Time Gems" : "+1 Time Gem"})
-            </p>
-            <button className="collect" onClick={() => void onCollectDailyReward()} disabled={collectingDailyReward}>
-              {collectingDailyReward ? "Collecting daily reward..." : "Collect daily reward"}
-            </button>
-          </>
-        ) : (
-          <>
-            <p>+1 Time Gem</p>
-            <p className="subtle">Resets in {formatSeconds(dailyRewardSecondsUntilAvailable)}</p>
-          </>
-        )}
-      </section>
+      {playerState.obligationsCompleted[OBLIGATION_IDS.ACHIEVE_SOMETHING] === true ? (
+        <section className="card">
+          <h2 className="section-title-with-icon">
+            <Gem size={18} aria-hidden="true" />
+            Daily Gem Reward
+          </h2>
+          {dailyRewardAvailable ? (
+            <>
+              <p>
+                Ready to collect ({isDailyRewardDoubledToday(dailyBonus) ? "+2 Time Gems" : "+1 Time Gem"})
+              </p>
+              <button className="collect" onClick={() => void onCollectDailyReward()} disabled={collectingDailyReward}>
+                {collectingDailyReward ? "Collecting daily reward..." : "Collect daily reward"}
+              </button>
+            </>
+          ) : (
+            <>
+              <p>+1 Time Gem</p>
+              <p className="subtle">Resets in {formatSeconds(dailyRewardSecondsUntilAvailable)}</p>
+            </>
+          )}
+        </section>
+      ) : null}
       {isDailyBonusFeatureUnlocked(playerState.shop) ? (
         <section className="card">
           <div className="card-section-header">
