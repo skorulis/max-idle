@@ -320,7 +320,7 @@ export function useAppGameplayActions({
       const synced = toSyncedState(nextPlayer);
       alignClientClock();
       setPlayerState(synced);
-      toast.success("Obligation reward collected.");
+      toast.success("Obligation completed.");
     } catch (obligationError) {
       if (obligationError instanceof Error && obligationError.message === "UNAUTHORIZED") {
         clearUnauthorizedSession();

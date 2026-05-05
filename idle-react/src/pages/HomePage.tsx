@@ -323,7 +323,7 @@ export function HomePage({
           <h3 style={{ marginTop: 0, marginBottom: "0.5rem" }}>{currentObligation.name}</h3>
           <p style={{ marginTop: 0 }}>{currentObligation.description}</p>
           <p className="subtle" style={{ marginTop: "1rem", marginBottom: "0.25rem" }}>
-            Reward{currentObligation.rewards.length === 1 ? "" : "s"}
+            Compensation
           </p>
           <ul style={{ marginTop: 0, paddingLeft: "1.25rem" }}>
             {currentObligation.rewards.map((reward, index) => (
@@ -341,7 +341,7 @@ export function HomePage({
               disabled={!obligationReady || collectingObligation}
               onClick={() => void onCollectObligation(currentObligation.id)}
             >
-              {collectingObligation ? "Collecting..." : obligationReady ? "Collect reward" : "Requirements not met"}
+              {collectingObligation ? "Collecting..." : "Collect compensation"}
             </button>
           </div>
         </section>
