@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
+import { useEffect, useMemo, useState, type ReactElement } from "react";
 import { Link, Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "react-router-dom";
 import { AppNav } from "./AppNav";
 import { toast, toastCollectIdle } from "../gameToast";
@@ -32,7 +32,6 @@ import {
   resetTutorialProgress,
   collectTournamentReward,
   createAnonymousSession,
-  deletePushSubscription,
   debugAddGems,
   debugAddIdleTime,
   debugAddRealTime,
@@ -41,16 +40,12 @@ import {
   debugResetCurrentDailyBonus,
   completeSocialUpgrade,
   enterTournament,
-  getAccount,
   getAchievements,
   getCollectionHistory,
   getDailyBonusHistory,
-  getHome,
   getLeaderboard,
   getPlayer,
   grantClientDrivenAchievement,
-  getPushConfig,
-  getCurrentTournament,
   getTournamentHistory,
   getPublicPlayerProfile,
   loginWithEmail,
@@ -58,7 +53,6 @@ import {
   logoutSession,
   purchaseUpgrade,
   registerWithEmail,
-  upsertPushSubscription,
   updateUsername,
   upgradeAnonymous
 } from "./api";
@@ -66,6 +60,8 @@ import { formatRestraintBlockedCollectMessage, hasAffordableIdleOrRealTimeShopPu
 import { ACHIEVEMENT_IDS } from "../achievements";
 import { authClient } from "./authClient.ts";
 import { alignClientClock, useClientNowMs } from "./clientClock";
+import { useDailyRewardNotifications } from "./useDailyRewardNotifications";
+import { useAppSession } from "./useAppSession";
 import {
   getSecondsUntilNextUtcDayBoundary,
   getTournamentSecondsUntilDraw,
@@ -76,24 +72,19 @@ import { useBottomBulletinMessage, type BulletinContent } from "./useBottomBulle
 import { useReturnAfterAwayMessage } from "./useReturnAfterAwayMessage";
 import { formatRewardAmount } from "../formatReward";
 import type {
-  AccountResponse,
   AchievementsResponse,
   AuthFormState,
-  AvailableSurveySummary,
   CollectionHistoryItem,
   LeaderboardResponse,
   LeaderboardType,
   PlayerProfileResponse,
   DailyBonusHistoryItem,
-  SyncedTournamentState,
-  SyncedPlayerState,
   TournamentHistoryItem
 } from "./types";
 import type { ObligationId } from "@maxidle/shared/obligations";
 
 const TOKEN_KEY = "max-idle-token";
 const UPGRADE_SOCIAL_INTENT_KEY = "max-idle-upgrade-social-intent";
-const DAILY_REWARD_NOTIFICATIONS_ENABLED_KEY = "max-idle-daily-reward-notifications-enabled";
 const CONTEMPLATION_ACHIEVEMENT_HOME_TIME_MS = 10 * 60 * 1000;
 
 function IdleBulletinBody({ content }: { content: BulletinContent }) {
@@ -134,64 +125,33 @@ const SHOP_ALREADY_OWNED_MESSAGE: Partial<Record<ShopUpgradeId, string>> = {
   tournament_feature: "Weekly Tournament is already unlocked."
 };
 
-function isDailyRewardNotificationsEnabledStored(): boolean {
-  if (typeof window === "undefined") {
-    return false;
-  }
-  return localStorage.getItem(DAILY_REWARD_NOTIFICATIONS_ENABLED_KEY) === "true";
-}
-
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; i += 1) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
-
-function isValidPushSubscription(
-  subscriptionJson: PushSubscriptionJSON
-): subscriptionJson is { endpoint: string; keys: { p256dh: string; auth: string } } {
-  return Boolean(subscriptionJson.endpoint && subscriptionJson.keys?.p256dh && subscriptionJson.keys?.auth);
-}
-
-function isLikelyValidVapidPublicKey(value: string): boolean {
-  if (!/^[A-Za-z0-9_-]+$/.test(value)) {
-    return false;
-  }
-  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
-  try {
-    const decoded = window.atob(padded);
-    return decoded.length === 65 && decoded.charCodeAt(0) === 4;
-  } catch {
-    return false;
-  }
-}
-
-async function getActivePushServiceWorkerRegistration(): Promise<ServiceWorkerRegistration> {
-  const existingRegistration = await navigator.serviceWorker.getRegistration("/push-sw.js");
-  if (existingRegistration?.active) {
-    return existingRegistration;
-  }
-  await navigator.serviceWorker.register("/push-sw.js");
-  return navigator.serviceWorker.ready;
-}
-
 export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const playerRouteMatch = useMatch("/player/:playerId");
-  const [token, setToken] = useState<string | null>(null);
-  const [playerState, setPlayerState] = useState<SyncedPlayerState | null>(null);
-  const [tournamentState, setTournamentState] = useState<SyncedTournamentState | null>(null);
-  const [availableSurvey, setAvailableSurvey] = useState<AvailableSurveySummary | null>(null);
+  const {
+    token,
+    setToken,
+    playerState,
+    setPlayerState,
+    tournamentState,
+    setTournamentState,
+    availableSurvey,
+    account,
+    setAccount,
+    usernameDraft,
+    setUsernameDraft,
+    error,
+    setError,
+    loading,
+    setStatus,
+    refreshAccount,
+    refreshPlayer,
+    refreshTournament,
+    refreshHome
+  } = useAppSession({ tokenStorageKey: TOKEN_KEY });
   const [publicPlayerProfile, setPublicPlayerProfile] = useState<PlayerProfileResponse["player"] | null>(null);
   const [publicPlayerLoading, setPublicPlayerLoading] = useState(false);
-  const [account, setAccount] = useState<AccountResponse | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardResponse | null>(null);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardType, setLeaderboardType] = useState<LeaderboardType>("current");
@@ -203,9 +163,6 @@ export function AppShell() {
   const [collectionHistoryLoading, setCollectionHistoryLoading] = useState(false);
   const [tournamentHistory, setTournamentHistory] = useState<TournamentHistoryItem[]>([]);
   const [tournamentHistoryLoading, setTournamentHistoryLoading] = useState(false);
-  const [, setStatus] = useState("Press start when you are ready to do nothing.");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [collecting, setCollecting] = useState(false);
   const [collectingDailyReward, setCollectingDailyReward] = useState(false);
@@ -215,7 +172,6 @@ export function AppShell() {
   const [collectingTournamentReward, setCollectingTournamentReward] = useState(false);
   const [authPending, setAuthPending] = useState(false);
   const [usernamePending, setUsernamePending] = useState(false);
-  const [usernameDraft, setUsernameDraft] = useState("");
   const [shopPendingQuantity, setShopPendingQuantity] = useState<
     | "seconds_multiplier"
     | "another_seconds_multiplier"
@@ -239,10 +195,6 @@ export function AppShell() {
   const [debugPendingAction, setDebugPendingAction] = useState<"real" | "idle" | "gems" | "balances" | "tournament" | null>(
     null
   );
-  const [dailyRewardNotificationsEnabled, setDailyRewardNotificationsEnabled] = useState(() =>
-    isDailyRewardNotificationsEnabledStored()
-  );
-  const [dailyRewardNotificationPermissionPending, setDailyRewardNotificationPermissionPending] = useState(false);
   const [loginForm, setLoginForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const [signupForm, setSignupForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
   const [upgradeForm, setUpgradeForm] = useState<AuthFormState>({ email: "", password: "", name: "" });
@@ -314,7 +266,7 @@ export function AppShell() {
     return () => {
       cancelled = true;
     };
-  }, [location.pathname, token, account?.gameUserId, playerState]);
+  }, [location.pathname, token, account?.gameUserId, playerState, setError]);
 
   useEffect(() => {
     if (location.pathname !== "/collection") {
@@ -351,7 +303,7 @@ export function AppShell() {
     return () => {
       cancelled = true;
     };
-  }, [location.pathname, token, account?.gameUserId]);
+  }, [location.pathname, token, account?.gameUserId, setError]);
 
   useEffect(() => {
     if (location.pathname !== "/tournament") {
@@ -398,7 +350,7 @@ export function AppShell() {
     return () => {
       cancelled = true;
     };
-  }, [location.pathname, token, account?.gameUserId, playerState]);
+  }, [location.pathname, token, account?.gameUserId, playerState, setError]);
 
   useEffect(() => {
     if (location.pathname !== "/leaderboard") {
@@ -435,7 +387,7 @@ export function AppShell() {
     return () => {
       cancelled = true;
     };
-  }, [location.pathname, token, account?.gameUserId, leaderboardType]);
+  }, [location.pathname, token, account?.gameUserId, leaderboardType, setError]);
 
   useEffect(() => {
     if (location.pathname !== "/achievements") {
@@ -472,7 +424,7 @@ export function AppShell() {
     return () => {
       cancelled = true;
     };
-  }, [location.pathname, token, account?.gameUserId]);
+  }, [location.pathname, token, account?.gameUserId, setError]);
 
   useEffect(() => {
     if (location.pathname !== "/achievements" || !playerState?.hasUnseenAchievements) {
@@ -509,7 +461,7 @@ export function AppShell() {
     return () => {
       cancelled = true;
     };
-  }, [location.pathname, token, playerState?.hasUnseenAchievements]);
+  }, [location.pathname, token, playerState?.hasUnseenAchievements, setError, setPlayerState]);
 
   useEffect(() => {
     if (!isAuthenticated || location.pathname !== "/") {
@@ -543,7 +495,7 @@ export function AppShell() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [isAuthenticated, location.pathname, token]);
+  }, [isAuthenticated, location.pathname, token, setPlayerState]);
 
   useEffect(() => {
     if (!routePlayerId) {
@@ -579,47 +531,7 @@ export function AppShell() {
     return () => {
       cancelled = true;
     };
-  }, [location.pathname, routePlayerId]);
-
-  const refreshAccount = async (currentToken: string | null) => {
-    try {
-      const accountResponse = await getAccount(currentToken);
-      setAccount(accountResponse);
-      setUsernameDraft(accountResponse.username ?? "");
-    } catch (accountError) {
-      if (accountError instanceof Error && accountError.message === "UNAUTHORIZED") {
-        setAccount(null);
-        setUsernameDraft("");
-        return;
-      }
-      throw accountError;
-    }
-  };
-
-  const refreshPlayer = async (currentToken: string | null) => {
-    const player = await getPlayer(currentToken);
-    const synced = toSyncedState(player);
-    alignClientClock();
-    setPlayerState(synced);
-  };
-
-  const refreshTournament = useCallback(async (currentToken: string | null) => {
-    try {
-      const tournament = await getCurrentTournament(currentToken);
-      const synced = toSyncedTournamentState(tournament);
-      setTournamentState(synced);
-    } catch (tournamentError) {
-      if (tournamentError instanceof Error && tournamentError.message === "UNAUTHORIZED") {
-        setTournamentState(null);
-        return;
-      }
-      if (tournamentError instanceof Error && tournamentError.message === "TOURNAMENT_FEATURE_LOCKED") {
-        setTournamentState(null);
-        return;
-      }
-      throw tournamentError;
-    }
-  }, []);
+  }, [location.pathname, routePlayerId, setError]);
 
   const tournamentFeatureUnlocked = Boolean(playerState && isTournamentFeatureUnlocked(playerState.shop));
 
@@ -636,64 +548,6 @@ export function AppShell() {
       window.clearTimeout(refreshTimer);
     };
   }, [location.pathname, token, refreshTournament, tournamentFeatureUnlocked]);
-
-  const refreshHome = useCallback(async (currentToken: string | null) => {
-    const home = await getHome(currentToken);
-    const synced = toSyncedState(home.player);
-    alignClientClock();
-    setPlayerState(synced);
-    setAccount(home.account);
-    setUsernameDraft(home.account.username ?? "");
-    if (home.tournament) {
-      setTournamentState(toSyncedTournamentState(home.tournament));
-    } else {
-      setTournamentState(null);
-    }
-    setAvailableSurvey(home.availableSurvey ?? null);
-  }, []);
-
-  useEffect(() => {
-    const bootstrap = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        let currentToken = localStorage.getItem(TOKEN_KEY);
-
-        try {
-          await refreshHome(currentToken);
-          setToken(currentToken);
-          setStatus("You are doing nothing. Excellent.");
-          return;
-        } catch (bootstrapError) {
-          if (bootstrapError instanceof Error && bootstrapError.message === "UNAUTHORIZED" && currentToken) {
-            localStorage.removeItem(TOKEN_KEY);
-            currentToken = null;
-            setToken(null);
-            try {
-              await refreshHome(null);
-              setStatus("You are doing nothing. Excellent.");
-              return;
-            } catch {
-              // Fall through to empty state.
-            }
-          }
-        }
-
-        setPlayerState(null);
-        setTournamentState(null);
-        setAccount(null);
-        setUsernameDraft("");
-        setStatus("Press start when you are ready to do nothing.");
-      } catch (bootstrapError) {
-        setError(bootstrapError instanceof Error ? bootstrapError.message : "Failed to load game");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void bootstrap();
-  }, [refreshHome]);
 
   useEffect(() => {
     if (location.pathname !== "/account") {
@@ -772,7 +626,7 @@ export function AppShell() {
     return () => {
       cancelled = true;
     };
-  }, [location.pathname, location.search, navigate, refreshHome]);
+  }, [location.pathname, location.search, navigate, refreshHome, setError, setStatus, setToken]);
 
   const estimatedServerNowMs = useMemo(() => {
     if (!playerState) {
@@ -874,14 +728,17 @@ export function AppShell() {
     }
     return getSecondsUntilNextUtcDayBoundary(estimatedServerNowMs);
   }, [estimatedServerNowMs, playerState]);
-
-  const dailyRewardNotificationsSupported = typeof window !== "undefined" &&
-    "Notification" in window &&
-    "serviceWorker" in navigator &&
-    "PushManager" in window;
-  const dailyRewardNotificationPermission: NotificationPermission | "unsupported" = dailyRewardNotificationsSupported
-    ? Notification.permission
-    : "unsupported";
+  const {
+    dailyRewardNotificationsSupported,
+    dailyRewardNotificationPermission,
+    dailyRewardNotificationsEnabled,
+    dailyRewardNotificationPermissionPending,
+    onToggleDailyRewardNotifications
+  } = useDailyRewardNotifications({
+    token,
+    setError,
+    setStatus
+  });
 
   const tournamentHasEntered = useMemo(() => {
     return Boolean(tournamentState?.hasEntered);
@@ -907,82 +764,6 @@ export function AppShell() {
       window.clearTimeout(refreshTimer);
     };
   }, [playerState, refreshTournament, token, tournamentSecondsUntilDraw, tournamentState]);
-
-  const onToggleDailyRewardNotifications = async (enabled: boolean) => {
-    if (!dailyRewardNotificationsSupported) {
-      setError("Push notifications are not supported on this device.");
-      return;
-    }
-    if (!enabled) {
-      try {
-        setDailyRewardNotificationPermissionPending(true);
-        const serviceWorkerRegistration = await navigator.serviceWorker.getRegistration("/push-sw.js");
-        const existingSubscription = await serviceWorkerRegistration?.pushManager.getSubscription();
-        if (existingSubscription?.endpoint) {
-          await deletePushSubscription(token, existingSubscription.endpoint).catch(() => {
-            // Keep UX responsive if backend cleanup fails.
-          });
-        }
-        await existingSubscription?.unsubscribe();
-        setDailyRewardNotificationsEnabled(false);
-        localStorage.setItem(DAILY_REWARD_NOTIFICATIONS_ENABLED_KEY, "false");
-        setStatus("Daily reward notifications disabled.");
-        setError(null);
-      } finally {
-        setDailyRewardNotificationPermissionPending(false);
-      }
-      return;
-    }
-
-    try {
-      setDailyRewardNotificationPermissionPending(true);
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
-        setDailyRewardNotificationsEnabled(false);
-        localStorage.setItem(DAILY_REWARD_NOTIFICATIONS_ENABLED_KEY, "false");
-        setError("Enable browser notifications to receive daily reward alerts.");
-        return;
-      }
-      const config = await getPushConfig();
-      if (!isLikelyValidVapidPublicKey(config.vapidPublicKey)) {
-        throw new Error("INVALID_VAPID_PUBLIC_KEY");
-      }
-      const serviceWorkerRegistration = await getActivePushServiceWorkerRegistration();
-      const existingSubscription = await serviceWorkerRegistration.pushManager.getSubscription();
-      const pushSubscription = existingSubscription ?? (await serviceWorkerRegistration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(config.vapidPublicKey) as BufferSource
-      }));
-      const subscriptionJson = pushSubscription.toJSON();
-      if (!isValidPushSubscription(subscriptionJson)) {
-        throw new Error("Failed to create push subscription");
-      }
-      await upsertPushSubscription(token, {
-        endpoint: subscriptionJson.endpoint,
-        keys: {
-          p256dh: subscriptionJson.keys.p256dh,
-          auth: subscriptionJson.keys.auth
-        }
-      });
-      setDailyRewardNotificationsEnabled(true);
-      localStorage.setItem(DAILY_REWARD_NOTIFICATIONS_ENABLED_KEY, "true");
-      setStatus("Daily reward notifications enabled.");
-      setError(null);
-    } catch (notificationError) {
-      setDailyRewardNotificationsEnabled(false);
-      localStorage.setItem(DAILY_REWARD_NOTIFICATIONS_ENABLED_KEY, "false");
-      const message = notificationError instanceof Error ? notificationError.message : "Could not enable daily reward notifications.";
-      if (message === "INVALID_VAPID_PUBLIC_KEY") {
-        setError("Push registration failed. Check backend VAPID keys and regenerate them as a matching pair.");
-      } else if (message.toLowerCase().includes("push service error")) {
-        setError("Push service is unavailable in this browser profile right now. Localhost is supported; try reloading, re-enabling notifications, and checking browser push/privacy settings.");
-      } else {
-        setError(message);
-      }
-    } finally {
-      setDailyRewardNotificationPermissionPending(false);
-    }
-  };
 
   const onCollect = async (): Promise<
     { collectedSeconds: number; realSecondsCollected: number } | undefined
