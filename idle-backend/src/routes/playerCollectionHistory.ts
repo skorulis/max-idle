@@ -5,10 +5,10 @@ import type { AuthClaims } from "../types.js";
 const COLLECTION_HISTORY_LIMIT = 100;
 
 type CollectionHistoryRow = {
-  id: number | string;
+  id: number;
   collection_date: Date;
-  real_time: number | string;
-  idle_time: number | string;
+  real_time: number;
+  idle_time: number;
 };
 
 export type CollectionHistoryItemResponse = {

@@ -6,8 +6,8 @@ import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 export type PlayerCurrentSecondsSourceRow = {
   last_collected_at: Date;
   shop: ShopState;
-  achievement_count: string | number;
-  real_time_available: string | number;
+  achievement_count: number;
+  real_time_available: number;
   server_time: Date;
 };
 

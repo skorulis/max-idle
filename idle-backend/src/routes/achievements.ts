@@ -35,7 +35,7 @@ export function registerAchievementsRoutes({
       }
 
       const playerStateResult = await pool.query<{
-        achievement_count: number | string;
+        achievement_count: number;
         achievement_levels: unknown;
         shop: ShopState;
       }>(

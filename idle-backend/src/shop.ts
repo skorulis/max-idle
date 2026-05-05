@@ -125,7 +125,7 @@ export function registerShopRoutes({
         achievement_count: string;
         has_unseen_achievements: boolean;
         achievement_levels: unknown;
-        upgrades_purchased: number | string;
+        upgrades_purchased: number;
         shop: ShopState;
         current_seconds: string;
         current_seconds_last_updated: Date;

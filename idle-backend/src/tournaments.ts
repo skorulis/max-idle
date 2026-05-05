@@ -23,8 +23,8 @@ type TournamentEntryRow = {
   entered_at: Date;
   shop: ShopState;
   last_collected_at: Date;
-  real_time_available: string | number;
-  achievement_count: string | number;
+  real_time_available: number;
+  achievement_count: number;
 };
 
 export type TournamentEntrySummary = {
@@ -73,8 +73,8 @@ export type TournamentEnterResult = {
   enteredNow: boolean;
 };
 
-function toNumber(value: string | number): number {
-  return typeof value === "number" ? value : Number(value);
+function toNumber(value: number): number {
+  return value;
 }
 
 async function creditTimeGemsForTournamentReward(
@@ -84,9 +84,9 @@ async function creditTimeGemsForTournamentReward(
   now: Date
 ): Promise<void> {
   const gemUpdate = await client.query<{
-    time_gems_available: string | number;
+    time_gems_available: number;
     achievement_levels: unknown;
-    achievement_count: string | number;
+    achievement_count: number;
     has_unseen_achievements: boolean;
   }>(
     `
@@ -131,9 +131,9 @@ export type TournamentHistoryItem = {
 export async function getTournamentHistoryForUser(pool: Pool, userId: string): Promise<TournamentHistoryItem[]> {
   const result = await pool.query<{
     draw_at_utc: Date;
-    final_rank: string | number;
-    player_count: string | number;
-    gems_awarded: string | number | null;
+    final_rank: number;
+    player_count: number;
+    gems_awarded: number | null;
   }>(
     `
     SELECT
@@ -166,12 +166,12 @@ export async function getTournamentHistoryForUser(pool: Pool, userId: string): P
 
 export async function getOutstandingTournamentResult(pool: Pool, userId: string): Promise<TournamentOutstandingResult | null> {
   const result = await pool.query<{
-    tournament_id: string | number;
+    tournament_id: number;
     draw_at_utc: Date;
     finalized_at: Date;
-    final_rank: string | number;
-    gems_awarded: string | number;
-    player_count: string | number;
+    final_rank: number;
+    gems_awarded: number;
+    player_count: number;
   }>(
     `
     SELECT
@@ -221,7 +221,7 @@ export async function collectTournamentReward(pool: Pool, userId: string, now = 
     await client.query("BEGIN");
     const lockResult = await client.query<{
       id: number;
-      gems_awarded: string | number;
+      gems_awarded: number;
     }>(
       `
       SELECT te.id, te.gems_awarded
@@ -360,9 +360,9 @@ async function ensureActiveTournament(client: PoolClient, now: Date): Promise<To
 async function getTournamentEntry(client: PoolClient, tournamentId: number, userId: string): Promise<TournamentEntrySummary | null> {
   const entryResult = await client.query<{
     entered_at: Date;
-    final_rank: string | number | null;
-    time_score_seconds: string | number | null;
-    gems_awarded: string | number | null;
+    final_rank: number | null;
+    time_score_seconds: number | null;
+    gems_awarded: number | null;
     finalized_at: Date | null;
   }>(
     `
@@ -396,8 +396,8 @@ async function getTournamentEntriesForScoring(
     entered_at: Date;
     shop: ShopState;
     last_collected_at: Date;
-    real_time_available: string | number;
-    achievement_count: string | number;
+    real_time_available: number;
+    achievement_count: number;
   }>
 > {
   const result = await client.query<{
@@ -406,8 +406,8 @@ async function getTournamentEntriesForScoring(
     entered_at: Date;
     shop: ShopState;
     last_collected_at: Date;
-    real_time_available: string | number;
-    achievement_count: string | number;
+    real_time_available: number;
+    achievement_count: number;
   }>(
     `
     SELECT
@@ -486,7 +486,7 @@ async function buildTournamentSummary(
 ): Promise<TournamentCurrentSummary> {
   const includeNearbyEntries = options?.includeNearbyEntries !== false;
   const entry = await getTournamentEntry(client, tournament.id, userId);
-  const playerCountResult = await client.query<{ player_count: string | number }>(
+  const playerCountResult = await client.query<{ player_count: number }>(
     `
     SELECT COUNT(*) AS player_count
     FROM tournament_entries
@@ -703,7 +703,7 @@ async function finalizeTournamentCore(client: PoolClient, tournament: Tournament
     id: number;
     user_id: string;
     entered_at: Date;
-    time_score_seconds: string | number | null;
+    time_score_seconds: number | null;
   }>(
     `
     SELECT id, user_id, entered_at, time_score_seconds
@@ -810,8 +810,8 @@ export async function debugFinalizeCurrentTournament(pool: Pool, now = new Date(
       return { ok: false, reason: "NO_ACTIVE_TOURNAMENT" };
     }
 
-    const countResult = await client.query<{ n: string }>(
-      `SELECT COUNT(*)::text AS n FROM tournament_entries WHERE tournament_id = $1`,
+    const countResult = await client.query<{ n: number }>(
+      `SELECT COUNT(*) AS n FROM tournament_entries WHERE tournament_id = $1`,
       [active.id]
     );
     const entryCount = toNumber(countResult.rows[0]?.n ?? 0);

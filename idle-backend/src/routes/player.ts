@@ -77,11 +77,11 @@ type PlayerStateRow = {
   idle_time_total: string;
   idle_time_available: string;
   real_time_total: string;
-  real_time_available: string;
+  real_time_available: number;
   time_gems_total: string;
   time_gems_available: string;
   upgrades_purchased: string;
-  achievement_count: string;
+  achievement_count: number;
   has_unseen_achievements: boolean;
   shop: ShopState;
   last_collected_at: Date;
@@ -321,15 +321,15 @@ export function registerPlayerRoutes({
       const userId = identity.claims.sub;
       await client.query("BEGIN");
       const result = await client.query<{
-        idle_time_available: number | string;
-        real_time_available: number | string;
-        upgrades_purchased: number | string;
-        achievement_count: number | string;
+        idle_time_available: number;
+        real_time_available: number;
+        upgrades_purchased: number;
+        achievement_count: number;
         achievement_levels: unknown;
         has_unseen_achievements: boolean;
         shop: ShopState;
         last_collected_at: Date;
-        current_seconds: number | string;
+        current_seconds: number;
         current_seconds_last_updated: Date;
         last_daily_reward_collected_at: Date | null;
         last_daily_bonus_claimed_at: Date | null;
@@ -402,15 +402,15 @@ export function registerPlayerRoutes({
       const nextLastCollectedAt = preserveTimer ? lockedRow.last_collected_at : collectedAt;
       const nextShop = withShopUpgradeLevel(lockedRow.shop, SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST, 0);
       const updateResult = await client.query<{
-        idle_time_total: number | string;
-        idle_time_available: number | string;
-        real_time_total: number | string;
-        real_time_available: number | string;
-        time_gems_total: number | string;
-        time_gems_available: number | string;
-        upgrades_purchased: number | string;
+        idle_time_total: number;
+        idle_time_available: number;
+        real_time_total: number;
+        real_time_available: number;
+        time_gems_total: number;
+        time_gems_available: number;
+        upgrades_purchased: number;
         last_collected_at: Date;
-        current_seconds: number | string;
+        current_seconds: number;
         current_seconds_last_updated: Date;
         shop: ShopState;
         last_daily_reward_collected_at: Date | null;
@@ -465,7 +465,7 @@ export function registerPlayerRoutes({
         `,
         [userId, collectedAt, realSecondsCollected, collectedSeconds]
       );
-      const collectionCountResult = await client.query<{ collection_count: string | number }>(
+      const collectionCountResult = await client.query<{ collection_count: number }>(
         `
         SELECT COUNT(*) AS collection_count
         FROM player_collection_history
@@ -589,11 +589,11 @@ export function registerPlayerRoutes({
     try {
       await client.query("BEGIN");
       const lockResult = await client.query<{
-        idle_time_total: number | string;
-        real_time_total: number | string;
-        time_gems_total: number | string;
-        upgrades_purchased: number | string;
-        achievement_count: number | string;
+        idle_time_total: number;
+        real_time_total: number;
+        time_gems_total: number;
+        upgrades_purchased: number;
+        achievement_count: number;
         obligations_completed: unknown;
       }>(
         `
@@ -705,17 +705,17 @@ export function registerPlayerRoutes({
       const userId = identity.claims.sub;
       await client.query("BEGIN");
       const playerResult = await client.query<{
-        idle_time_total: number | string;
-        idle_time_available: number | string;
-        real_time_total: number | string;
-        real_time_available: number | string;
-        time_gems_total: number | string;
-        time_gems_available: number | string;
-        upgrades_purchased: number | string;
-        current_seconds: number | string;
+        idle_time_total: number;
+        idle_time_available: number;
+        real_time_total: number;
+        real_time_available: number;
+        time_gems_total: number;
+        time_gems_available: number;
+        upgrades_purchased: number;
+        current_seconds: number;
         current_seconds_last_updated: Date;
         shop: ShopState;
-        achievement_count: number | string;
+        achievement_count: number;
         achievement_levels: unknown;
         has_unseen_achievements: boolean;
         last_collected_at: Date;
@@ -773,17 +773,17 @@ export function registerPlayerRoutes({
       }
 
       const updateResult = await client.query<{
-        idle_time_total: number | string;
-        idle_time_available: number | string;
-        real_time_total: number | string;
-        real_time_available: number | string;
-        time_gems_total: number | string;
-        time_gems_available: number | string;
-        upgrades_purchased: number | string;
-        current_seconds: number | string;
+        idle_time_total: number;
+        idle_time_available: number;
+        real_time_total: number;
+        real_time_available: number;
+        time_gems_total: number;
+        time_gems_available: number;
+        upgrades_purchased: number;
+        current_seconds: number;
         current_seconds_last_updated: Date;
         shop: ShopState;
-        achievement_count: number | string;
+        achievement_count: number;
         has_unseen_achievements: boolean;
         last_collected_at: Date;
         last_daily_reward_collected_at: Date | null;

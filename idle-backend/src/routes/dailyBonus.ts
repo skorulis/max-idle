@@ -237,23 +237,23 @@ export function registerDailyBonusRoutes({
       const userId = identity.claims.sub;
       await client.query("BEGIN");
       const playerResult = await client.query<{
-        idle_time_total: number | string;
-        idle_time_available: number | string;
-        real_time_total: number | string;
-        real_time_available: number | string;
-        time_gems_total: number | string;
-        time_gems_available: number | string;
-        upgrades_purchased: number | string;
-        current_seconds: number | string;
+        idle_time_total: number;
+        idle_time_available: number;
+        real_time_total: number;
+        real_time_available: number;
+        time_gems_total: number;
+        time_gems_available: number;
+        upgrades_purchased: number;
+        current_seconds: number;
         current_seconds_last_updated: Date;
         shop: ShopState;
-        achievement_count: number | string;
+        achievement_count: number;
         achievement_levels: unknown;
         has_unseen_achievements: boolean;
         last_collected_at: Date;
         last_daily_reward_collected_at: Date | null;
         last_daily_bonus_claimed_at: Date | null;
-        daily_bonuses_collected_count: number | string;
+        daily_bonuses_collected_count: number;
         tutorial_progress: string;
         obligations_completed: unknown;
       }>(
@@ -340,17 +340,17 @@ export function registerDailyBonusRoutes({
       const hasNewAchievement = nextAchievementCount > toNumber(player.achievement_count);
 
       const updateResult = await client.query<{
-        idle_time_total: number | string;
-        idle_time_available: number | string;
-        real_time_total: number | string;
-        real_time_available: number | string;
-        time_gems_total: number | string;
-        time_gems_available: number | string;
-        upgrades_purchased: number | string;
-        current_seconds: number | string;
+        idle_time_total: number;
+        idle_time_available: number;
+        real_time_total: number;
+        real_time_available: number;
+        time_gems_total: number;
+        time_gems_available: number;
+        upgrades_purchased: number;
+        current_seconds: number;
         current_seconds_last_updated: Date;
         shop: ShopState;
-        achievement_count: number | string;
+        achievement_count: number;
         has_unseen_achievements: boolean;
         last_collected_at: Date;
         last_daily_reward_collected_at: Date | null;

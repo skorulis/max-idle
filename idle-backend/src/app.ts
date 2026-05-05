@@ -48,11 +48,11 @@ function isValidUuid(value: string): boolean {
 
 type PlayerCurrentSecondsSyncRow = {
   user_id: string;
-  current_seconds: number | string;
-  real_time_available: number | string;
+  current_seconds: number;
+  real_time_available: number;
   current_seconds_last_updated: Date;
   last_collected_at: Date;
-  achievement_count: number | string;
+  achievement_count: number;
   shop: ShopState;
   server_time: Date;
 };
