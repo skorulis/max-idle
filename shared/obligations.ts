@@ -1,9 +1,11 @@
 import type { ObligationReward } from "./obligationReward.js";
-import { SECONDS_PER_MINUTE } from "./timeConstants.js";
+import { SECONDS_PER_HOUR, SECONDS_PER_MINUTE } from "./timeConstants.js";
 export const OBLIGATION_IDS = {
   COLLECT_SOME_TIME: "obl_collect_some_time",
   FIRST_PURCHASE: "obl_first_purchase",
-  ACHIEVE_SOMETHING: "obl_achieve_something"
+  ACHIEVE_SOMETHING: "obl_achieve_something",
+  TIME_GEMS: "obl_time_gems",
+  RAMP_UP: "obl_ramp_up"
 } as const;
 
 export type ObligationId = (typeof OBLIGATION_IDS)[keyof typeof OBLIGATION_IDS];
@@ -124,6 +126,33 @@ export const OBLIGATIONS: ObligationDefinition[] = [
     ],
     condition: {
       allOf: [{ kind: "achievement_count_gte", count: 1 }]
+    }
+  },
+  {
+    id: OBLIGATION_IDS.TIME_GEMS,
+    name: "Time gems",
+    description:
+      "Time is a great thing to have, but what's even better are time gems. They're like little packets of time that you can carry around with you. Collect the daily gem reward to get your first one.",
+    rewards: [
+      { type: "idle", value: 15 * SECONDS_PER_MINUTE },
+      { type: "real", value: 10 * SECONDS_PER_MINUTE }
+    ],
+    condition: {
+      allOf: [{ kind: "time_gems_total_gte", gems: 1 }]
+    }
+  },
+  {
+    id: OBLIGATION_IDS.RAMP_UP,
+    name: "Ramp up",
+    description:
+      "If you want to make it anywhere you're going to have to start getting a decent amount of time. Get your total idle time over 1 hour. How you get there is up to you, buy some upgrades, stare at the screen, go for a walk, find a way to cheat, as long as you get it done.",
+    rewards: [
+      { type: "idle", value: 20 * SECONDS_PER_MINUTE },
+      { type: "real", value: 20 * SECONDS_PER_MINUTE },
+      { type: "text", label: "Unlock daily bonuses" }
+    ],
+    condition: {
+      allOf: [{ kind: "idle_time_total_gte", seconds: SECONDS_PER_HOUR }]
     }
   }
 ];

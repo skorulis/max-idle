@@ -948,6 +948,6 @@ describe("player routes", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({ obligationId: OBLIGATION_IDS.ACHIEVE_SOMETHING });
     expect(noneLeft.status).toBe(400);
-    expect(noneLeft.body.code).toBe("OBLIGATION_NONE_LEFT");
+    expect(noneLeft.body.code).toBe("OBLIGATION_NOT_CURRENT");
   });
 });

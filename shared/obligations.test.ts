@@ -34,18 +34,47 @@ describe("getCurrentObligationId", () => {
     ).toBe(OBLIGATION_IDS.ACHIEVE_SOMETHING);
   });
 
+  it("advances after third is completed", () => {
+    expect(
+      getCurrentObligationId(
+        new Set([
+          OBLIGATION_IDS.COLLECT_SOME_TIME,
+          OBLIGATION_IDS.FIRST_PURCHASE,
+          OBLIGATION_IDS.ACHIEVE_SOMETHING
+        ])
+      )
+    ).toBe(OBLIGATION_IDS.TIME_GEMS);
+  });
+
+  it("advances after fourth is completed", () => {
+    expect(
+      getCurrentObligationId(
+        new Set([
+          OBLIGATION_IDS.COLLECT_SOME_TIME,
+          OBLIGATION_IDS.FIRST_PURCHASE,
+          OBLIGATION_IDS.ACHIEVE_SOMETHING,
+          OBLIGATION_IDS.TIME_GEMS
+        ])
+      )
+    ).toBe(OBLIGATION_IDS.RAMP_UP);
+  });
+
   it("returns null when all complete", () => {
     const done = new Set([
       OBLIGATION_IDS.COLLECT_SOME_TIME,
       OBLIGATION_IDS.FIRST_PURCHASE,
-      OBLIGATION_IDS.ACHIEVE_SOMETHING
+      OBLIGATION_IDS.ACHIEVE_SOMETHING,
+      OBLIGATION_IDS.TIME_GEMS,
+      OBLIGATION_IDS.RAMP_UP
     ]);
     expect(getCurrentObligationId(done)).toBeNull();
     expect(
       getCurrentObligationId({
         [OBLIGATION_IDS.COLLECT_SOME_TIME]: true,
         [OBLIGATION_IDS.FIRST_PURCHASE]: true,
-        [OBLIGATION_IDS.ACHIEVE_SOMETHING]: true
+        [OBLIGATION_IDS.ACHIEVE_SOMETHING]: true,
+        [OBLIGATION_IDS.TIME_GEMS]: true,
+        [OBLIGATION_IDS.RAMP_UP]: true
       })
     ).toBeNull();
   });
@@ -107,6 +136,30 @@ describe("isObligationConditionMet", () => {
     expect(isObligationConditionMet(ach, { ...minimalSnapshot, achievementCount: 1 })).toBe(true);
     expect(isObligationConditionMet(ach, { ...minimalSnapshot, achievementCount: 0 })).toBe(false);
   });
+
+  it("supports time_gems_total_gte", () => {
+    const gems: ObligationDefinition = {
+      id: OBLIGATION_IDS.TIME_GEMS,
+      name: "Test",
+      description: "Test",
+      rewards: [],
+      condition: { allOf: [{ kind: "time_gems_total_gte", gems: 1 }] }
+    };
+    expect(isObligationConditionMet(gems, { ...minimalSnapshot, timeGemsTotal: 1 })).toBe(true);
+    expect(isObligationConditionMet(gems, { ...minimalSnapshot, timeGemsTotal: 0 })).toBe(false);
+  });
+
+  it("supports idle_time_total_gte for one hour", () => {
+    const ramp: ObligationDefinition = {
+      id: OBLIGATION_IDS.RAMP_UP,
+      name: "Test",
+      description: "Test",
+      rewards: [],
+      condition: { allOf: [{ kind: "idle_time_total_gte", seconds: 3600 }] }
+    };
+    expect(isObligationConditionMet(ramp, { ...minimalSnapshot, idleTimeTotal: 3600 })).toBe(true);
+    expect(isObligationConditionMet(ramp, { ...minimalSnapshot, idleTimeTotal: 3599 })).toBe(false);
+  });
 });
 
 describe("OBLIGATIONS order", () => {
@@ -114,7 +167,9 @@ describe("OBLIGATIONS order", () => {
     expect(OBLIGATIONS.map((d) => d.id)).toEqual([
       OBLIGATION_IDS.COLLECT_SOME_TIME,
       OBLIGATION_IDS.FIRST_PURCHASE,
-      OBLIGATION_IDS.ACHIEVE_SOMETHING
+      OBLIGATION_IDS.ACHIEVE_SOMETHING,
+      OBLIGATION_IDS.TIME_GEMS,
+      OBLIGATION_IDS.RAMP_UP
     ]);
   });
 });
