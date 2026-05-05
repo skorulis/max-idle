@@ -58,6 +58,9 @@ function sumObligationRewardDeltas(rewards: ObligationReward[]): { idle: number;
   let real = 0;
   let gem = 0;
   for (const r of rewards) {
+    if (r.type === "text") {
+      continue;
+    }
     const v = Math.floor(Number(r.value));
     if (r.type === "idle") {
       idle += v;

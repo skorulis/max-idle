@@ -118,7 +118,10 @@ export const OBLIGATIONS: ObligationDefinition[] = [
     name: "Achieve something",
     description:
       "You don't seem like a high achiever to me but I'm sure you can manage to do something worthwhile. There's lots of options in the achievement section, find something that you're capable of.",
-    rewards: [{ type: "idle", value: 15 * SECONDS_PER_MINUTE }],
+    rewards: [
+      { type: "idle", value: 15 * SECONDS_PER_MINUTE },
+      { type: "text", label: "Unlock daily gem reward" }
+    ],
     condition: {
       allOf: [{ kind: "achievement_count_gte", count: 1 }]
     }

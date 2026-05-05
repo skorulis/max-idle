@@ -327,7 +327,11 @@ export function HomePage({
           </p>
           <ul style={{ marginTop: 0, paddingLeft: "1.25rem" }}>
             {currentObligation.rewards.map((reward, index) => (
-              <li key={index}>{formatRewardAmount(reward.type as SurveyCurrencyType, reward.value)}</li>
+              <li key={index}>
+                {reward.type === "text"
+                  ? reward.label
+                  : formatRewardAmount(reward.type as SurveyCurrencyType, reward.value)}
+              </li>
             ))}
           </ul>
           <div className="collect-row" style={{ marginTop: "1rem" }}>
