@@ -113,3 +113,15 @@ export async function createTestPool(): Promise<Pool> {
   await pool.query(betterAuthSql);
   return pool;
 }
+
+/** Clears all app + Better Auth rows so tests stay isolated regardless of execution order. */
+export async function resetTestDatabase(pool: Pool): Promise<void> {
+  // pg-mem does not support multi-table TRUNCATE; use DELETE + FK cascade order.
+  await pool.query(`DELETE FROM daily_bonuses`);
+  await pool.query(`DELETE FROM users`);
+  await pool.query(`DELETE FROM tournaments`);
+  await pool.query(`DELETE FROM session`);
+  await pool.query(`DELETE FROM account`);
+  await pool.query(`DELETE FROM verification`);
+  await pool.query(`DELETE FROM "user"`);
+}

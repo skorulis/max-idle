@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
 import type { Pool } from "pg";
 import request from "supertest";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp, syncStalePlayerCurrentSeconds } from "../src/app.js";
 import { ensureGameIdentityForAuthUser } from "../src/betterAuth.js";
 import { calculateBoostedIdleSecondsGain} from "../src/idleRate.js";
 import { finalizeDueTournaments, getNextTournamentDrawAt } from "../src/tournaments.js";
 import type { AppConfig } from "../src/types.js";
-import { createTestPool } from "./testDb.js";
+import { createTestPool, resetTestDatabase } from "./testDb.js";
 import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import {
   DEFAULT_SHOP_STATE,
@@ -153,6 +153,10 @@ describe("auth + player lifecycle", () => {
 
   beforeAll(async () => {
     pool = await createTestPool();
+  });
+
+  beforeEach(async () => {
+    await resetTestDatabase(pool);
   });
 
   afterAll(async () => {
