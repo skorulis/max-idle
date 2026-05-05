@@ -11,6 +11,7 @@ import type { ShopState } from "./shop.js";
 import {
   getAntiConsumeristMultiplier,
   getCollectGemIdleSecondsMultiplier,
+  getConsolidationBonus,
   getIdleHoarderMultiplier,
   IDLE_HOARDER_SHOP_UPGRADE,
   PATIENCE_SHOP_UPGRADE
@@ -114,6 +115,7 @@ export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): numbe
     getRestraintBonusMultiplier(player.shop),
     getCollectGemIdleSecondsMultiplier(player.shop),
     getAntiConsumeristMultiplier(player.shop, player.wallClockMs ?? 0),
+    getConsolidationBonus(player.shop),
     worthwhileAchievementsMultiplier,
     idleHoarderMultiplier - 1,
     getPatienceRate(player)

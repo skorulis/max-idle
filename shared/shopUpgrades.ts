@@ -48,7 +48,12 @@ export const SHOP_UPGRADE_IDS = {
    */
   STORAGE_EXTENSION: "storage_extension",
   /** Idle multiplier that ramps linearly from ×1 up after periods without idle- or real-priced shop buys ({@link getAntiConsumeristMultiplier}). */
-  ANTI_CONSUMERIST: "anti_consumerist"
+  ANTI_CONSUMERIST: "anti_consumerist",
+  /**
+   * Idle additive bonus when few distinct other idle-priced shop lines have tiers ({@link getConsolidationBonus}).
+   * This upgrade is excluded from that count.
+   */
+  CONSOLIDATION: "consolidation"
 } as const;
 
 export type ShopUpgradeId = (typeof SHOP_UPGRADE_IDS)[keyof typeof SHOP_UPGRADE_IDS];
@@ -430,6 +435,32 @@ export const ANTI_CONSUMERIST_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUp
   currencyType: SHOP_CURRENCY_TYPES.IDLE
 });
 
+/**
+ * `value` = additive rate bonus when {@link countIdleShopUpgradeTypesForConsolidation} is at most `value2`.
+ * Other idle-priced upgrades with at least one tier purchased count; Consolidation itself does not.
+ */
+export const CONSOLIDATION_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
+  id: SHOP_UPGRADE_IDS.CONSOLIDATION,
+  name: "Consolidation",
+  icon: "layers",
+  description: "Bonus when focusing idle shop purchases",
+  longDescription:
+    "Rewards specializing in a small set of idle-priced shop upgrades. The Consolidation upgrade itself does not count toward that limit.",
+  valueDescription: "+%s, max %s other idle shop upgrade types",
+  levels: [
+    { cost: 2 * SECONDS_PER_HOUR, value: 0.25, value2: 1 },
+    { cost: 2 * SECONDS_PER_HOUR, value: 0.5, value2: 1 },
+    { cost: 2 * SECONDS_PER_HOUR, value: 0.75, value2: 1 },
+    { cost: 2 * SECONDS_PER_HOUR, value: 1.0, value2: 1 },
+    { cost: 2 * SECONDS_PER_HOUR, value: 1.0, value2: 2 },
+    { cost: 2 * SECONDS_PER_HOUR, value: 1.25, value2: 2 },
+    { cost: 2 * SECONDS_PER_HOUR, value: 1.5, value2: 2 },
+    { cost: 2 * SECONDS_PER_HOUR, value: 1.75, value2: 2 },
+    { cost: 2 * SECONDS_PER_HOUR, value: 2.0, value2: 2 },
+  ],
+  currencyType: SHOP_CURRENCY_TYPES.IDLE
+});
+
 export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   SECONDS_MULTIPLIER_SHOP_UPGRADE,
   ANOTHER_SECONDS_MULTIPLIER_SHOP_UPGRADE,
@@ -440,6 +471,7 @@ export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   LUCK_SHOP_UPGRADE,
   WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
   ANTI_CONSUMERIST_SHOP_UPGRADE,
+  CONSOLIDATION_SHOP_UPGRADE,
   EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
   IDLE_REFUND_SHOP_UPGRADE,
@@ -463,7 +495,8 @@ export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> =
   [SHOP_UPGRADE_IDS.DAILY_BONUS_FEATURE]: DAILY_BONUS_FEATURE_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.TOURNAMENT_FEATURE]: TOURNAMENT_FEATURE_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.STORAGE_EXTENSION]: STORAGE_EXTENSION_SHOP_UPGRADE,
-  [SHOP_UPGRADE_IDS.ANTI_CONSUMERIST]: ANTI_CONSUMERIST_SHOP_UPGRADE
+  [SHOP_UPGRADE_IDS.ANTI_CONSUMERIST]: ANTI_CONSUMERIST_SHOP_UPGRADE,
+  [SHOP_UPGRADE_IDS.CONSOLIDATION]: CONSOLIDATION_SHOP_UPGRADE
 };
 
 export function getShopUpgradeDefinition(upgradeType: string): ShopUpgradeDefinition | null {
@@ -552,4 +585,40 @@ export function getAntiConsumeristMultiplier(shop: ShopState, wallClockMs: numbe
   const elapsedSec = Math.max(0, (wallClockMs - lastMs) / 1000);
   const progress = durationSec <= 0 ? 1 : Math.min(1, elapsedSec / durationSec);
   return Math.max(0, maxBonus) * progress;
+}
+
+/**
+ * How many distinct idle-priced shop lines (other than Consolidation) have at least one tier purchased.
+ * Used for {@link getConsolidationBonus}.
+ */
+export function countIdleShopUpgradeTypesForConsolidation(shop: ShopState): number {
+  let n = 0;
+  for (const upgrade of SHOP_UPGRADES) {
+    if (upgrade.currencyType !== SHOP_CURRENCY_TYPES.IDLE) {
+      continue;
+    }
+    if (upgrade.id === SHOP_UPGRADE_IDS.CONSOLIDATION) {
+      continue;
+    }
+    if (upgrade.currentLevel(shop) > 0) {
+      n += 1;
+    }
+  }
+  return n;
+}
+
+/** Additive collection-rate bonus from Consolidation when {@link countIdleShopUpgradeTypesForConsolidation} is at most the current tier's `value2`. */
+export function getConsolidationBonus(shop: ShopState): number {
+  const level = CONSOLIDATION_SHOP_UPGRADE.currentLevel(shop);
+  if (level <= 0) {
+    return 0;
+  }
+  const tier = CONSOLIDATION_SHOP_UPGRADE.levels[level - 1];
+  const maxOtherTypes = safeNaturalNumber(tier?.value2, 0);
+  const bonus = safeNumber(tier?.value, 0);
+  if (maxOtherTypes <= 0 || !(bonus > 0)) {
+    return 0;
+  }
+  const count = countIdleShopUpgradeTypesForConsolidation(shop);
+  return count <= maxOtherTypes ? bonus : 0;
 }

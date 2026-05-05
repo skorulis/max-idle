@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { CircleX } from "lucide-react";
 import { formatSeconds } from "../formatSeconds";
 import type { ShopState } from "../shop";
-import { SHOP_UPGRADE_IDS } from "../shopUpgrades";
+import { countIdleShopUpgradeTypesForConsolidation, SHOP_UPGRADE_IDS } from "../shopUpgrades";
 import type { ShopUpgradeDefinition } from "../shopUpgrades";
 
 type ShopUpgradeInfoOverlayProps = {
@@ -43,6 +43,18 @@ function UpgradeExtraInfo({
     return (
       <p className="shop-upgrade-info-extra subtle">
         Time since last shop purchase: {formatSeconds(elapsedSeconds, 2, "floor")}
+      </p>
+    );
+  }
+
+  if (upgrade.id === SHOP_UPGRADE_IDS.CONSOLIDATION) {
+    if (!shop) {
+      return null;
+    }
+    const count = countIdleShopUpgradeTypesForConsolidation(shop);
+    return (
+      <p className="shop-upgrade-info-extra subtle">
+        Idle shop upgrade types (excluding Consolidation): {count}
       </p>
     );
   }

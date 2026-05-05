@@ -43,6 +43,7 @@ type ShopPageProps = {
     | "idle_hoarder"
     | "worthwhile_achievements"
     | "anti_consumerist"
+    | "consolidation"
     | "luck"
     | "extra_realtime_wait"
     | "collect_gem_time_boost"
@@ -98,7 +99,8 @@ function formatUpgradeValue(upgrade: ShopUpgradeDefinition, value: number): stri
     upgrade.id === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER ||
     (upgrade.id as string) === "another_seconds_multiplier" ||
     upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT ||
-    upgrade.id === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST
+    upgrade.id === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST ||
+    upgrade.id === SHOP_UPGRADE_IDS.CONSOLIDATION
   ) {
     return formatMultiplier(value);
   }
@@ -125,6 +127,9 @@ function formatUpgradeSecondaryValue(upgrade: ShopUpgradeDefinition, value2: num
   }
   if (upgrade.id === SHOP_UPGRADE_IDS.IDLE_HOARDER) {
     return formatDecimalUpTo2(value2);
+  }
+  if (upgrade.id === SHOP_UPGRADE_IDS.CONSOLIDATION) {
+    return String(Math.round(value2));
   }
   return formatUpgradeValue(upgrade, value2);
 }

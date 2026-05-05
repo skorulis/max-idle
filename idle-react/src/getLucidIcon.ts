@@ -10,6 +10,7 @@ import {
   Gem,
   Gift,
   Gauge,
+  Layers,
   Hourglass,
   Leaf,
   Medal,
@@ -51,6 +52,8 @@ export function getLucidIcon(iconName: string): LucideIcon {
       return Gift;
     case "hourglass":
       return Hourglass;
+    case "layers":
+      return Layers;
     case "leaf":
       return Leaf;
     case "medal":
