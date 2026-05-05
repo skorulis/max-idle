@@ -3,7 +3,6 @@ import {
   ANTI_CONSUMERIST_SHOP_UPGRADE,
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
   CONSOLIDATION_SHOP_UPGRADE,
-  DAILY_BONUS_FEATURE_SHOP_UPGRADE,
   IDLE_HOARDER_SHOP_UPGRADE,
   TOURNAMENT_FEATURE_SHOP_UPGRADE,
   LUCK_SHOP_UPGRADE,
@@ -127,10 +126,6 @@ export function getWorthwhileAchievementsMultiplier(shop: ShopState, achievement
 
 export function getLuckEnabled(shop: ShopState): boolean {
   return LUCK_SHOP_UPGRADE.currentLevel(shop) > 0;
-}
-
-export function isDailyBonusFeatureUnlocked(shop: ShopState): boolean {
-  return DAILY_BONUS_FEATURE_SHOP_UPGRADE.currentLevel(shop) > 0;
 }
 
 export function isTournamentFeatureUnlocked(shop: ShopState): boolean {

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { formatSeconds } from "../formatSeconds";
 import type { DailyBonusHistoryItem, SyncedPlayerState } from "../app/types";
 import { formatDailyBonusDate, getDailyBonusDescription, isDailyRewardDoubledToday } from "../app/dailyBonus";
-import { isDailyBonusFeatureUnlocked } from "../shop";
+import { OBLIGATION_IDS } from "@maxidle/shared/obligations";
 
 type DailyBonusPageProps = {
   playerState: SyncedPlayerState | null;
@@ -32,7 +32,7 @@ export function DailyBonusPage({
 }: DailyBonusPageProps) {
   const navigate = useNavigate();
   const dailyBonus = playerState?.dailyBonus ?? null;
-  const dailyBonusUnlocked = playerState ? isDailyBonusFeatureUnlocked(playerState.shop) : false;
+  const dailyBonusUnlocked = playerState ? playerState.obligationsCompleted[OBLIGATION_IDS.RAMP_UP] === true : false;
 
   return (
     <section className="card">
@@ -70,9 +70,7 @@ export function DailyBonusPage({
               When unlocked, activation costs {formatSeconds(dailyBonus.activationCostIdleSeconds)} idle time.
             </p>
           ) : null}
-          <p className="subtle">
-            Purchase Daily Bonus for 1 Time Gem in the shop (Time Gems tab) to unlock activation and history.
-          </p>
+          <p className="subtle">Complete the "Ramp up" obligation to unlock daily bonuses.</p>
           <button type="button" className="secondary" onClick={() => navigate("/shop")}>
             Open shop
           </button>

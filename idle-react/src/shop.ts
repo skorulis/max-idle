@@ -29,6 +29,5 @@ export {
   getIdleHoarderMultiplier,
   getQuickCollectorBonus,
   multiplierToLevel,
-  isDailyBonusFeatureUnlocked,
   isTournamentFeatureUnlocked
 } from "@maxidle/shared/shop";

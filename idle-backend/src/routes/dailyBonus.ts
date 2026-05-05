@@ -4,10 +4,10 @@ import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import { DAILY_BONUS_ACTIVATION_IDLE_SECONDS } from "@maxidle/shared/dailyBonus";
 import {
   getSecondsMultiplier,
-  getWorthwhileAchievementsMultiplier,
-  isDailyBonusFeatureUnlocked
+  getWorthwhileAchievementsMultiplier
 } from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
+import { OBLIGATION_IDS } from "@maxidle/shared/obligations";
 import {
   getAchievementLevelForValue,
   mergeAchievementLevels,
@@ -203,16 +203,17 @@ export function registerDailyBonusRoutes({
       const identity = await resolveIdentity(req);
       req.auth = identity.claims;
       const userId = identity.claims.sub;
-      const shopResult = await pool.query<{ shop: ShopState }>(
+      const shopResult = await pool.query<{ obligations_completed: unknown }>(
         `
-        SELECT shop
+        SELECT obligations_completed
         FROM player_states
         WHERE user_id = $1
         `,
         [userId]
       );
       const shopRow = shopResult.rows[0];
-      if (!shopRow || !isDailyBonusFeatureUnlocked(shopRow.shop)) {
+      const obligationsCompleted = shopRow ? parseObligationsCompleted(shopRow.obligations_completed) : null;
+      if (!obligationsCompleted || obligationsCompleted[OBLIGATION_IDS.RAMP_UP] !== true) {
         res.status(403).json({
           error: "Daily bonus feature is not unlocked",
           code: "DAILY_BONUS_FEATURE_LOCKED"
@@ -290,7 +291,8 @@ export function registerDailyBonusRoutes({
         return;
       }
 
-      if (!isDailyBonusFeatureUnlocked(player.shop)) {
+      const obligationsCompleted = parseObligationsCompleted(player.obligations_completed);
+      if (obligationsCompleted[OBLIGATION_IDS.RAMP_UP] !== true) {
         await client.query("ROLLBACK");
         res.status(403).json({
           error: "Daily bonus feature is not unlocked",

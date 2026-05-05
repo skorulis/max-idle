@@ -19,7 +19,6 @@ import { parseCompletedTutorialIds, TUTORIAL_STEPS } from "@maxidle/shared/tutor
 import {
   getMaxIdleCollectionRealtimeSeconds,
   getRestraintMinRealtimeSeconds,
-  isDailyBonusFeatureUnlocked,
   isTournamentFeatureUnlocked
 } from "../shop";
 import { FlipDurationDisplay } from "../components/FlipDurationDisplay";
@@ -444,7 +443,7 @@ export function HomePage({
           )}
         </section>
       ) : null}
-      {isDailyBonusFeatureUnlocked(playerState.shop) ? (
+      {playerState.obligationsCompleted[OBLIGATION_IDS.RAMP_UP] === true ? (
         <section className="card">
           <div className="card-section-header">
             <h2 className="section-title-with-icon">

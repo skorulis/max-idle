@@ -3,7 +3,8 @@ import { Link, Navigate, Route, Routes, useLocation, useMatch, useNavigate } fro
 import { AppNav } from "./AppNav";
 import { toast, toastCollectIdle } from "../gameToast";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
-import { isDailyBonusFeatureUnlocked, isTournamentFeatureUnlocked } from "../shop";
+import { isTournamentFeatureUnlocked } from "../shop";
+import { OBLIGATION_IDS } from "@maxidle/shared/obligations";
 import { SHOP_UPGRADE_IDS, SHOP_UPGRADES_BY_ID } from "../shopUpgrades";
 import {
   type ShopUpgradeId
@@ -130,7 +131,6 @@ const SHOP_ALREADY_OWNED_MESSAGE: Partial<Record<ShopUpgradeId, string>> = {
   consolidation: "Consolidation is already maxed.",
   quick_collector: "Quick Collector is already maxed.",
   collect_gem_time_boost: "Hasty collection is already maxed.",
-  daily_bonus_feature: "Daily Bonus is already unlocked.",
   tournament_feature: "Weekly Tournament is already unlocked."
 };
 
@@ -231,7 +231,6 @@ export function AppShell() {
     | "collect_gem_time_boost"
     | "idle_refund"
     | "real_refund"
-    | "daily_bonus_feature"
     | "tournament_feature"
     | "storage_extension"
     | null
@@ -254,7 +253,7 @@ export function AppShell() {
   const showDebugFeatures = !import.meta.env.PROD;
   const clientNowMs = useClientNowMs();
   const dailyBonusHistoryUnlocked =
-    playerState != null && isDailyBonusFeatureUnlocked(playerState.shop);
+    playerState != null && playerState.obligationsCompleted[OBLIGATION_IDS.RAMP_UP] === true;
   const dailyBonusHistoryForPage = dailyBonusHistoryUnlocked ? dailyBonusHistory : [];
   const dailyBonusHistoryLoadingForPage = dailyBonusHistoryUnlocked ? dailyBonusHistoryLoading : false;
 
@@ -277,7 +276,7 @@ export function AppShell() {
       return;
     }
 
-    if (!playerState || !isDailyBonusFeatureUnlocked(playerState.shop)) {
+    if (!playerState || playerState.obligationsCompleted[OBLIGATION_IDS.RAMP_UP] !== true) {
       return;
     }
 
@@ -300,7 +299,7 @@ export function AppShell() {
           return;
         }
         if (dailyBonusHistoryError instanceof Error && dailyBonusHistoryError.message === "DAILY_BONUS_FEATURE_LOCKED") {
-          setError("Purchase Daily Bonus in the shop to view history.");
+          setError("Complete the Ramp up obligation to view history.");
           return;
         }
         setError(dailyBonusHistoryError instanceof Error ? dailyBonusHistoryError.message : "Failed to load daily bonus history.");

@@ -62,16 +62,12 @@ describe("player routes", () => {
   }
 
   async function unlockDailyBonusFeature(
-    app: ReturnType<typeof createApp>,
-    token: string,
     userId: string
   ): Promise<void> {
-    await pool.query(`UPDATE player_states SET time_gems_available = time_gems_available + 1 WHERE user_id = $1`, [userId]);
-    const purchase = await request(app)
-      .post("/shop/purchase")
-      .set("Authorization", `Bearer ${token}`)
-      .send({ upgradeType: "daily_bonus_feature" });
-    expect(purchase.status).toBe(200);
+    await pool.query(`UPDATE player_states SET obligations_completed = $2::jsonb WHERE user_id = $1`, [
+      userId,
+      JSON.stringify({ [OBLIGATION_IDS.RAMP_UP]: true })
+    ]);
   }
 
   beforeAll(async () => {
@@ -268,7 +264,7 @@ describe("player routes", () => {
     expect(typeof playerResponse.body.dailyBonus.value).toBe("number");
     expect(playerResponse.body.dailyBonus.activationCostIdleSeconds).toBe(24 * 60 * 60);
 
-    await unlockDailyBonusFeature(app, token, userId);
+    await unlockDailyBonusFeature(userId);
 
     const afterUnlock = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
     expect(afterUnlock.status).toBe(200);
@@ -306,7 +302,7 @@ describe("player routes", () => {
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
-    await unlockDailyBonusFeature(app, token, userId);
+    await unlockDailyBonusFeature(userId);
     await upsertTodayBonus("double_gems_daily_reward", 2);
     await pool.query(`UPDATE player_states SET idle_time_available = $2 WHERE user_id = $1`, [userId, 24 * 60 * 60]);
 

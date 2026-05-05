@@ -50,7 +50,6 @@ type ShopPageProps = {
     | "collect_gem_time_boost"
     | "idle_refund"
     | "real_refund"
-    | "daily_bonus_feature"
     | "tournament_feature"
     | "storage_extension"
     | null;

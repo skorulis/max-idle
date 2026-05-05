@@ -38,8 +38,6 @@ export const SHOP_UPGRADE_IDS = {
   REAL_REFUND: "real_refund",
   /** Idle multiplier bonus per unlocked achievement: ×(1 + value × achievementCount). */
   WORTHWHILE_ACHIEVEMENTS: "worthwhile_achievements",
-  /** Spend 1 gem to unlock the daily bonus feature (activation still costs idle time). */
-  DAILY_BONUS_FEATURE: "daily_bonus_feature",
   /** Spend 1 gem to unlock weekly tournaments (entering competes for Time Gems). */
   TOURNAMENT_FEATURE: "tournament_feature",
   /**
@@ -337,19 +335,6 @@ export const REAL_REFUND_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade
   currencyType: SHOP_CURRENCY_TYPES.GEM
 });
 
-export const DAILY_BONUS_FEATURE_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
-  id: SHOP_UPGRADE_IDS.DAILY_BONUS_FEATURE,
-  name: "Daily Bonus",
-  icon: "gift",
-  category: "features",
-  description: "Unlock the daily bonus feature",
-  longDescription:
-    "Each day there will be a random bonus that can be purchased for 24h of idle time. The bonus will be available for collection from the home page",
-  valueDescription: null,
-  levels: [{ cost: 1, value: 1 }],
-  currencyType: SHOP_CURRENCY_TYPES.GEM
-});
-
 export const TOURNAMENT_FEATURE_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.TOURNAMENT_FEATURE,
   name: "Weekly Tournament",
@@ -502,7 +487,6 @@ export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
   IDLE_REFUND_SHOP_UPGRADE,
   REAL_REFUND_SHOP_UPGRADE,
-  DAILY_BONUS_FEATURE_SHOP_UPGRADE,
   TOURNAMENT_FEATURE_SHOP_UPGRADE
 ];
 
@@ -518,7 +502,6 @@ export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> =
   [SHOP_UPGRADE_IDS.IDLE_REFUND]: IDLE_REFUND_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.REAL_REFUND]: REAL_REFUND_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS]: WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
-  [SHOP_UPGRADE_IDS.DAILY_BONUS_FEATURE]: DAILY_BONUS_FEATURE_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.TOURNAMENT_FEATURE]: TOURNAMENT_FEATURE_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.STORAGE_EXTENSION]: STORAGE_EXTENSION_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.ANTI_CONSUMERIST]: ANTI_CONSUMERIST_SHOP_UPGRADE,
