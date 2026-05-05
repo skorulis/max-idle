@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { ShopState } from "./shop.js";
-import { DEFAULT_SHOP_STATE } from "./shop.js";
 import {
   countIdleShopUpgradeTypesForConsolidation,
-  getConsolidationBonus,
-  SHOP_UPGRADE_IDS
-} from "./shopUpgrades.js";
+  DEFAULT_SHOP_STATE,
+  getConsolidationBonus
+} from "./shop.js";
+import { SHOP_UPGRADE_IDS } from "./shopUpgrades.js";
 
 describe("Consolidation", () => {
   it("grants tier bonus when at most value2 other idle shop types are active", () => {

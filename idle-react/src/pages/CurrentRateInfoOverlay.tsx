@@ -3,6 +3,10 @@ import { CircleX } from "lucide-react";
 import type { ShopState } from "../shop";
 import {
   getAntiConsumeristMultiplier,
+  getCollectGemIdleSecondsMultiplier,
+  getConsolidationBonus,
+  getIdleHoarderMultiplier,
+  getQuickCollectorBonus,
   getRestraintBonusMultiplier,
   getSecondsMultiplier,
   getWorthwhileAchievementsMultiplier
@@ -12,10 +16,6 @@ import {
   ANTI_CONSUMERIST_SHOP_UPGRADE,
   CONSOLIDATION_SHOP_UPGRADE,
   QUICK_COLLECTOR_SHOP_UPGRADE,
-  getCollectGemIdleSecondsMultiplier,
-  getConsolidationBonus,
-  getIdleHoarderMultiplier,
-  getQuickCollectorBonus,
   IDLE_HOARDER_SHOP_UPGRADE
 } from "../shopUpgrades";
 import { safeNumber } from "@maxidle/shared/safeNumber";

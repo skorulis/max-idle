@@ -1,22 +1,19 @@
 import {
+  getAntiConsumeristMultiplier,
+  getCollectGemIdleSecondsMultiplier,
+  getConsolidationBonus,
+  getIdleHoarderMultiplier,
   getLuckEnabled,
   getLuckPreserveChance,
   getMaxIdleCollectionRealtimeSeconds,
+  getQuickCollectorBonus,
   getRestraintBonusMultiplier,
   getRestraintMinRealtimeSeconds,
   getSecondsMultiplier,
   getWorthwhileAchievementsMultiplier
 } from "./shop.js";
 import type { ShopState } from "./shop.js";
-import {
-  getAntiConsumeristMultiplier,
-  getCollectGemIdleSecondsMultiplier,
-  getConsolidationBonus,
-  getIdleHoarderMultiplier,
-  getQuickCollectorBonus,
-  IDLE_HOARDER_SHOP_UPGRADE,
-  PATIENCE_SHOP_UPGRADE
-} from "./shopUpgrades.js";
+import { IDLE_HOARDER_SHOP_UPGRADE, PATIENCE_SHOP_UPGRADE } from "./shopUpgrades.js";
 import { safeNaturalNumber, safeNumber } from "./safeNumber.js";
 
 type IdleRateStep = {

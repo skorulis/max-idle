@@ -8,7 +8,8 @@ import {
 } from "./idleRate.js";
 import { DEFAULT_SHOP_STATE, getMaxIdleCollectionRealtimeSeconds } from "./shop.js";
 import type { ShopState } from "./shop.js";
-import { getQuickCollectorBonus, SHOP_UPGRADE_IDS } from "./shopUpgrades.js";
+import { SHOP_UPGRADE_IDS } from "./shopUpgrades.js";
+import { getQuickCollectorBonus } from "./shop.js";
 import { SECONDS_PER_HOUR } from "./timeConstants.js";
 
 function shopWithPatience(patience: number): ShopState {

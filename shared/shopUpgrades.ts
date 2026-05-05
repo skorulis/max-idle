@@ -1,5 +1,4 @@
 import type { ShopState } from "./shop.js";
-import { safeNumber, safeNaturalNumber } from "./safeNumber.js";
 import {
   SECONDS_PER_DAY,
   SECONDS_PER_HOUR,
@@ -30,7 +29,7 @@ export const SHOP_UPGRADE_IDS = {
   EXTRA_REALTIME_WAIT: "extra_realtime_wait",
   /**
    * Gem upgrade: idle multiplier on current collection per tier (see {@link COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE}; resets to level 0 on collect).
-   * See {@link getCollectGemIdleSecondsMultiplier}.
+   * Implemented by `getCollectGemIdleSecondsMultiplier` in `shop.ts`.
    */
   COLLECT_GEM_TIME_BOOST: "collect_gem_time_boost",
   /** Spend 1 gem to reset idle-priced shop tiers and refund spent idle time. */
@@ -48,15 +47,15 @@ export const SHOP_UPGRADE_IDS = {
    * See {@link getMaxIdleCollectionRealtimeSeconds}.
    */
   STORAGE_EXTENSION: "storage_extension",
-  /** Idle multiplier that ramps linearly from ×1 up after periods without idle- or real-priced shop buys ({@link getAntiConsumeristMultiplier}). */
+  /** Idle multiplier that ramps linearly from ×1 up after periods without idle- or real-priced shop buys (see `getAntiConsumeristMultiplier` in `shop.ts`). */
   ANTI_CONSUMERIST: "anti_consumerist",
   /**
-   * Idle additive bonus when few distinct other idle-priced shop lines have tiers ({@link getConsolidationBonus}).
+   * Idle additive bonus when few distinct other idle-priced shop lines have tiers (see `getConsolidationBonus` in `shop.ts`).
    * This upgrade is excluded from that count.
    */
   CONSOLIDATION: "consolidation",
   /**
-   * Idle additive bonus only while real-time elapsed since last collect is below the tier's `value2` ({@link getQuickCollectorBonus}).
+   * Idle additive bonus only while real-time elapsed since last collect is below the tier's `value2` (see `getQuickCollectorBonus` in `shop.ts`).
    */
   QUICK_COLLECTOR: "quick_collector"
 } as const;
@@ -291,7 +290,7 @@ export const EXTRA_REALTIME_WAIT_SHOP_UPGRADE: ShopUpgradeDefinition = defineSho
   currencyType: SHOP_CURRENCY_TYPES.GEM
 });
 
-/** Five levels: gem costs 1, 2, 4, 8, 16. `value` = bonus over ×1 (effective multiplier is 1 + value; see {@link getCollectGemIdleSecondsMultiplier}). */
+/** Five levels: gem costs 1, 2, 4, 8, 16. `value` = bonus over ×1 (effective multiplier is 1 + value; see `getCollectGemIdleSecondsMultiplier` in `shop.ts`). */
 export const COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST,
   name: "Idle boost",
@@ -441,7 +440,7 @@ export const ANTI_CONSUMERIST_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUp
 });
 
 /**
- * `value` = additive rate bonus when {@link countIdleShopUpgradeTypesForConsolidation} is at most `value2`.
+ * `value` = additive rate bonus when the count from `countIdleShopUpgradeTypesForConsolidation` (in `shop.ts`) is at most `value2`.
  * Other idle-priced upgrades with at least one tier purchased count; Consolidation itself does not.
  */
 export const CONSOLIDATION_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
@@ -529,143 +528,4 @@ export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> =
 
 export function getShopUpgradeDefinition(upgradeType: string): ShopUpgradeDefinition | null {
   return SHOP_UPGRADES_BY_ID[upgradeType as ShopUpgradeId] ?? null;
-}
-
-export function getIdleHoarderMaxLevel(): number {
-  return IDLE_HOARDER_SHOP_UPGRADE.maxLevel();
-}
-
-export function getIdleHoarderMaxMultiplierForLevel(level: number): number {
-  const maxLevel = getIdleHoarderMaxLevel();
-  const L = Math.max(0, Math.min(maxLevel, level));
-  if (L <= 0) {
-    return 1;
-  }
-  const bonus = IDLE_HOARDER_SHOP_UPGRADE.levels[L - 1]?.value ?? 0;
-  return 1 + safeNumber(bonus, 0);
-}
-
-function getIdleHoarderRatioThresholdForLevel(level: number): number {
-  const maxLevel = getIdleHoarderMaxLevel();
-  const L = Math.max(0, Math.min(maxLevel, Math.floor(Number(level) || 0)));
-  if (L <= 0) {
-    return Infinity;
-  }
-  const raw = IDLE_HOARDER_SHOP_UPGRADE.levels[L - 1]?.value2;
-  return safeNaturalNumber(raw, 1);
-}
-
-/**
- * Stored-real-time bonus from idle hoarder:
- * - Below tier threshold: {@link IDLE_HOARDER_MIN_MULTIPLIER}
- * - When `realTimeAvailable / secondsSinceLastCollection >=` that level's `value2`: full tier `value` multiplier
- */
-export function getIdleHoarderMultiplier(level: number, realTimeAvailable: number, secondsSinceLastCollection: number): number {
-  const maxMultiplier = getIdleHoarderMaxMultiplierForLevel(level);
-  if (maxMultiplier <= 1) {
-    return 1;
-  }
-  const safeAvailable = safeNaturalNumber(realTimeAvailable, 0);
-  const safeRealtime = safeNaturalNumber(secondsSinceLastCollection, 0);
-  if (safeRealtime <= 0) {
-    return safeAvailable > 0 ? maxMultiplier : 1;
-  }
-  const ratio = safeAvailable / safeRealtime;
-  const threshold = getIdleHoarderRatioThresholdForLevel(level);
-  if (ratio >= threshold) {
-    return maxMultiplier;
-  }
-  return 1;
-}
-
-/**
- * Multiplier on uncollected idle (and on collect) for `collectGemBoostLevel` purchased tiers.
- * Uses {@link COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE} tier `value` for that level count.
- */
-export function getCollectGemIdleSecondsMultiplier(shop: ShopState): number {
-  return COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.currentValue(shop);
-}
-
-export function formatShopUpgradeDescription(upgrade: ShopUpgradeDefinition, value: string): string {
-  return upgrade.description.replace(SHOP_UPGRADE_DESCRIPTION_VALUE_PLACEHOLDER, value);
-}
-
-/**
- * Idle multiplier from Anti-consumerist: ramps linearly from ×1 at last idle/real shop purchase to tier `value` after `value2` seconds (wall clock).
- * Gem-priced shop purchases do not update {@link ShopState.last_purchase}. Requires finite `wallClockMs`; otherwise returns 1.
- */
-export function getAntiConsumeristMultiplier(shop: ShopState, wallClockMs: number): number {
-  if (!Number.isFinite(wallClockMs)) {
-    return 0;
-  }
-  const level = ANTI_CONSUMERIST_SHOP_UPGRADE.currentLevel(shop);
-  if (level <= 0) {
-    return 0;
-  }
-  const tier = ANTI_CONSUMERIST_SHOP_UPGRADE.levels[level - 1];
-  const maxBonus = safeNumber(tier?.value, 0);
-  const durationSec = safeNaturalNumber(tier?.value2, 1);
-  const lastPurchaseUtcSeconds = shop.last_purchase;
-  if (!Number.isFinite(lastPurchaseUtcSeconds)) {
-    return 0;
-  }
-  const lastMs = Math.floor(lastPurchaseUtcSeconds as number) * 1000;
-  const elapsedSec = Math.max(0, (wallClockMs - lastMs) / 1000);
-  const progress = durationSec <= 0 ? 1 : Math.min(1, elapsedSec / durationSec);
-  return Math.max(0, maxBonus) * progress;
-}
-
-/**
- * How many distinct idle-priced shop lines (other than Consolidation) have at least one tier purchased.
- * Used for {@link getConsolidationBonus}.
- */
-export function countIdleShopUpgradeTypesForConsolidation(shop: ShopState): number {
-  let n = 0;
-  for (const upgrade of SHOP_UPGRADES) {
-    if (upgrade.currencyType !== SHOP_CURRENCY_TYPES.IDLE) {
-      continue;
-    }
-    if (upgrade.id === SHOP_UPGRADE_IDS.CONSOLIDATION) {
-      continue;
-    }
-    if (upgrade.currentLevel(shop) > 0) {
-      n += 1;
-    }
-  }
-  return n;
-}
-
-/** Additive collection-rate bonus from Consolidation when {@link countIdleShopUpgradeTypesForConsolidation} is at most the current tier's `value2`. */
-export function getConsolidationBonus(shop: ShopState): number {
-  const level = CONSOLIDATION_SHOP_UPGRADE.currentLevel(shop);
-  if (level <= 0) {
-    return 0;
-  }
-  const tier = CONSOLIDATION_SHOP_UPGRADE.levels[level - 1];
-  const maxOtherTypes = safeNaturalNumber(tier?.value2, 0);
-  const bonus = safeNumber(tier?.value, 0);
-  if (maxOtherTypes <= 0 || !(bonus > 0)) {
-    return 0;
-  }
-  const count = countIdleShopUpgradeTypesForConsolidation(shop);
-  return count <= maxOtherTypes ? bonus : 0;
-}
-
-/**
- * Additive idle rate bonus from Quick Collector while real-time elapsed since last collect is strictly below the tier's `value2` (seconds).
- * No bonus once elapsed ≥ `value2`.
- */
-export function getQuickCollectorBonus(shop: ShopState, secondsSinceLastCollection: number): number {
-  const level = QUICK_COLLECTOR_SHOP_UPGRADE.currentLevel(shop);
-  if (level <= 0) {
-    return 0;
-  }
-  const tier = QUICK_COLLECTOR_SHOP_UPGRADE.levels[level - 1];
-  const bonus = safeNumber(tier?.value, 0);
-  const thresholdSec = safeNaturalNumber(tier?.value2, 1);
-  if (!(bonus > 0) || thresholdSec <= 0) {
-    return 0;
-  }
-  const elapsed = safeNaturalNumber(secondsSinceLastCollection);
-  return elapsed < thresholdSec ? bonus : 0;
 }

@@ -2,7 +2,8 @@ import { useEffect } from "react";
 import { CircleX } from "lucide-react";
 import { formatSeconds } from "../formatSeconds";
 import type { ShopState } from "../shop";
-import { countIdleShopUpgradeTypesForConsolidation, SHOP_UPGRADE_IDS } from "../shopUpgrades";
+import { countIdleShopUpgradeTypesForConsolidation } from "../shop";
+import { SHOP_UPGRADE_IDS } from "../shopUpgrades";
 import type { ShopUpgradeDefinition } from "../shopUpgrades";
 
 type ShopUpgradeInfoOverlayProps = {

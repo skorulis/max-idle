@@ -22,6 +22,12 @@ export {
   getPurchasedShopUpgradeLevelCount,
   getWorthwhileAchievementsMultiplier,
   getAntiConsumeristMultiplier,
+  countIdleShopUpgradeTypesForConsolidation,
+  formatShopUpgradeDescription,
+  getCollectGemIdleSecondsMultiplier,
+  getConsolidationBonus,
+  getIdleHoarderMultiplier,
+  getQuickCollectorBonus,
   multiplierToLevel,
   isDailyBonusFeatureUnlocked,
   isTournamentFeatureUnlocked

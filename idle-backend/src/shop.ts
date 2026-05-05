@@ -17,12 +17,11 @@ import {
 import type { ShopState } from "@maxidle/shared/shop";
 import {
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
-  getShopUpgradeDefinition,
   REALTIME_WAIT_EXTENSION_SECONDS,
   SHOP_CURRENCY_TYPES,
-  SHOP_UPGRADE_IDS
+  SHOP_UPGRADE_IDS,
+  ShopUpgradeDefinition,
 } from "@maxidle/shared/shopUpgrades";
-import type { ShopUpgradeDefinition } from "@maxidle/shared/shopUpgrades";
 import { safeNaturalNumber } from "@maxidle/shared/safeNumber";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 import {

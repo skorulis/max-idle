@@ -11,7 +11,6 @@ import { Fragment, useState } from "react";
 import type { SyncedPlayerState } from "../app/types";
 import { safeNaturalNumber } from "@maxidle/shared/safeNumber";
 import {
-  formatShopUpgradeDescription,
   SHOP_CURRENCY_TYPES,
   SHOP_UPGRADE_IDS,
   SHOP_UPGRADES,
@@ -20,6 +19,7 @@ import {
 } from "../shopUpgrades";
 import type { ShopCurrencyType } from "../shopUpgrades";
 import {
+  formatShopUpgradeDescription,
   getPurchasedShopUpgradeLevelCount,
   getShopCurrencyTierPurchaseCostSum,
   getWorthwhileAchievementsMultiplier,
