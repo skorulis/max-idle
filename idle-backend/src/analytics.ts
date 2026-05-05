@@ -15,7 +15,8 @@ type AnalyticsEventName =
   | "player_collect"
   | "shop_purchase"
   | "daily_reward_collect"
-  | "daily_bonus_collect";
+  | "daily_bonus_collect"
+  | "obligation_reward_collect";
 
 type PlayerCollectProperties = {
   collected_seconds: number;
@@ -40,11 +41,19 @@ type DailyBonusCollectProperties = {
   activation_idle_seconds: number;
 };
 
+type ObligationRewardCollectProperties = {
+  obligation_id: string;
+};
+
 export type AnalyticsService = {
   trackPlayerCollect(identity: AnalyticsIdentityContext, properties: PlayerCollectProperties): void;
   trackShopPurchase(identity: AnalyticsIdentityContext, properties: ShopPurchaseProperties): void;
   trackDailyRewardCollect(identity: AnalyticsIdentityContext, properties: DailyRewardCollectProperties): void;
   trackDailyBonusCollect(identity: AnalyticsIdentityContext, properties: DailyBonusCollectProperties): void;
+  trackObligationRewardCollect(
+    identity: AnalyticsIdentityContext,
+    properties: ObligationRewardCollectProperties
+  ): void;
   shutdown(): Promise<void>;
 };
 
@@ -53,6 +62,7 @@ export const noopAnalyticsService: AnalyticsService = {
   trackShopPurchase(): void {},
   trackDailyRewardCollect(): void {},
   trackDailyBonusCollect(): void {},
+  trackObligationRewardCollect(): void {},
   async shutdown(): Promise<void> {}
 };
 
@@ -103,6 +113,9 @@ export function createAnalyticsService(apiKey: string): AnalyticsService {
     },
     trackDailyBonusCollect(identity, properties): void {
       trackEvent("daily_bonus_collect", identity, properties);
+    },
+    trackObligationRewardCollect(identity, properties): void {
+      trackEvent("obligation_reward_collect", identity, properties);
     },
     async shutdown(): Promise<void> {
       try {

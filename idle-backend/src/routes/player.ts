@@ -566,10 +566,12 @@ export function registerPlayerRoutes({
 
   app.post("/player/obligations/collect", async (req, res, next) => {
     let userId: string;
+    let userIsAnonymous = false;
     try {
       const identity = await resolveIdentity(req);
       req.auth = identity.claims;
       userId = identity.claims.sub;
+      userIsAnonymous = identity.claims.isAnonymous;
     } catch (error) {
       if (error instanceof Error && error.message === "MISSING_IDENTITY") {
         res.status(401).json({ error: "Authentication required" });
@@ -677,6 +679,10 @@ export function registerPlayerRoutes({
       );
 
       await client.query("COMMIT");
+      analytics.trackObligationRewardCollect(
+        { userId, isAnonymous: userIsAnonymous },
+        { obligation_id: definition.id }
+      );
     } catch (error) {
       await client.query("ROLLBACK").catch(() => {});
       next(error);
