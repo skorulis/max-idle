@@ -206,10 +206,13 @@ export function registerPlayerRoutes({
 
   app.post("/player/tutorial/complete", async (req, res, next) => {
     let userId: string;
+    let userIsAnonymous = false;
+    let didCompleteTutorialStep = false;
     try {
       const identity = await resolveIdentity(req);
       req.auth = identity.claims;
       userId = identity.claims.sub;
+      userIsAnonymous = identity.claims.isAnonymous;
     } catch (error) {
       if (error instanceof Error && error.message === "MISSING_IDENTITY") {
         res.status(401).json({ error: "Authentication required" });
@@ -250,6 +253,7 @@ export function registerPlayerRoutes({
       const raw = locked.tutorial_progress ?? "";
       const merged = mergedTutorialProgressString(raw, tutorialId);
       if (merged !== raw) {
+        didCompleteTutorialStep = true;
         await client.query(
           `
           UPDATE player_states
@@ -260,6 +264,12 @@ export function registerPlayerRoutes({
         );
       }
       await client.query("COMMIT");
+      if (didCompleteTutorialStep) {
+        analytics.trackTutorialStepComplete(
+          { userId, isAnonymous: userIsAnonymous },
+          { tutorial_id: tutorialId }
+        );
+      }
     } catch (error) {
       await client.query("ROLLBACK").catch(() => {});
       next(error);
