@@ -76,11 +76,6 @@ export function AccountPage({
 
   return (
     <section className="card">
-      {account.email ? (
-        <p>
-          <span>Email:</span> {account.email}
-        </p>
-      ) : null}
       <div className="player-page-heading">
         <PlayerLevelBadge level={playerLevel} size={36} />
         {editingUsername ? (
@@ -140,6 +135,11 @@ export function AccountPage({
           </button>
         )}
       </div>
+      {account.email ? (
+        <p>
+          <span>Email:</span> {account.email}
+        </p>
+      ) : null}
       <div className="panel" style={{ marginTop: "0.75rem" }}>
         <h3>Notifications</h3>
         {dailyRewardNotificationsSupported ? (
