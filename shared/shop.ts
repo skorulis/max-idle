@@ -4,6 +4,7 @@ import {
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
   CONSOLIDATION_SHOP_UPGRADE,
   IDLE_HOARDER_SHOP_UPGRADE,
+  INTEREST_SHOP_UPGRADE,
   LUCK_SHOP_UPGRADE,
   QUICK_COLLECTOR_SHOP_UPGRADE,
   RESTRAINT_SHOP_UPGRADE,
@@ -23,7 +24,7 @@ import {
 } from "./shopCurrencyCostTable.js";
 import type { ShopCurrencyType, ShopUpgradeDefinition, ShopUpgradeId } from "./shopUpgrades.js";
 import { safeNaturalNumber, safeNumber } from "./safeNumber.js";
-import { SECONDS_PER_WEEK } from "./timeConstants.js";
+import { SECONDS_PER_WEEK, SECONDS_PER_YEAR } from "./timeConstants.js";
 
 export type ShopState = {
   seconds_multiplier: number;
@@ -45,6 +46,8 @@ export type ShopState = {
   consolidation?: number;
   /** {@link SHOP_UPGRADE_IDS.QUICK_COLLECTOR} — early-run idle bonus (see {@link getQuickCollectorBonus}). */
   quick_collector?: number;
+  /** {@link SHOP_UPGRADE_IDS.INTEREST} — APR% for converting available real time into idle-time interest. */
+  interest?: number;
   /**
    * UTC Unix timestamp in seconds for the last shop purchase paid with idle or real time.
    * Set by the server on those purchases only; gem-priced buys do not update this field.
@@ -66,7 +69,8 @@ export const DEFAULT_SHOP_STATE: ShopState = {
   [SHOP_UPGRADE_IDS.STORAGE_EXTENSION]: 0,
   [SHOP_UPGRADE_IDS.ANTI_CONSUMERIST]: 0,
   [SHOP_UPGRADE_IDS.CONSOLIDATION]: 0,
-  [SHOP_UPGRADE_IDS.QUICK_COLLECTOR]: 0
+  [SHOP_UPGRADE_IDS.QUICK_COLLECTOR]: 0,
+  [SHOP_UPGRADE_IDS.INTEREST]: 0
 };
 
 export function getDefaultShopState(): ShopState {
@@ -399,6 +403,28 @@ export function getQuickCollectorBonus(shop: ShopState, secondsSinceLastCollecti
   }
   const elapsed = safeNaturalNumber(secondsSinceLastCollection);
   return elapsed < thresholdSec ? bonus : 0;
+}
+
+/** APR value (percent per year) from Interest tiers. */
+export function getInterestAprPercent(shop: ShopState): number {
+  return Math.max(0, safeNumber(INTEREST_SHOP_UPGRADE.currentValue(shop), 0));
+}
+
+/**
+ * Simple interest bonus in idle seconds:
+ * `realTimeAvailable * (aprPercent / 100) * (elapsedSeconds / SECONDS_PER_YEAR)`.
+ */
+export function getIdleInterestSeconds(shop: ShopState, realTimeAvailable: number, elapsedSeconds: number): number {
+  const aprPercent = getInterestAprPercent(shop);
+  if (!(aprPercent > 0)) {
+    return 0;
+  }
+  const principalSeconds = safeNumber(realTimeAvailable, 0);
+  const elapsed = safeNaturalNumber(elapsedSeconds);
+  if (!(principalSeconds > 0) || elapsed <= 0) {
+    return 0;
+  }
+  return principalSeconds * (aprPercent / 100) * (elapsed / SECONDS_PER_YEAR);
 }
 
 export {

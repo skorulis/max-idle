@@ -168,6 +168,32 @@ describe("player routes", () => {
     expect(Number(historyCountResult.rows[0]?.count ?? 0)).toBe(2);
   });
 
+  it("adds interest bonus to collected real time", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const { token, userId } = authResponse.body as { token: string; userId: string };
+    const oneYearSeconds = 365 * 24 * 60 * 60;
+    const oneDaySeconds = 24 * 60 * 60;
+
+    await pool.query(
+      `
+      UPDATE player_states
+      SET
+        real_time_available = $2,
+        shop = $3::jsonb,
+        last_collected_at = NOW() - INTERVAL '1 day',
+        current_seconds_last_updated = NOW() - INTERVAL '1 day'
+      WHERE user_id = $1
+      `,
+      [userId, oneYearSeconds, JSON.stringify({ ...DEFAULT_SHOP_STATE, interest: 1 })]
+    );
+
+    const collectResponse = await request(app).post("/player/collect").set("Authorization", `Bearer ${token}`);
+    expect(collectResponse.status).toBe(200);
+    expect(collectResponse.body.realSecondsCollected).toBeGreaterThanOrEqual(2 * oneDaySeconds);
+    expect(collectResponse.body.realTime.available).toBeGreaterThanOrEqual(oneYearSeconds + 2 * oneDaySeconds);
+  });
+
   it("collects a daily reward once per UTC day", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");

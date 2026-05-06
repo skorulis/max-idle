@@ -55,7 +55,9 @@ export const SHOP_UPGRADE_IDS = {
   /**
    * Idle additive bonus only while real-time elapsed since last collect is below the tier's `value2` (see `getQuickCollectorBonus` in `shop.ts`).
    */
-  QUICK_COLLECTOR: "quick_collector"
+  QUICK_COLLECTOR: "quick_collector",
+  /** APR% used to convert available real time into idle-time interest during idle accumulation. */
+  INTEREST: "interest"
 } as const;
 
 export type ShopUpgradeId = (typeof SHOP_UPGRADE_IDS)[keyof typeof SHOP_UPGRADE_IDS];
@@ -491,6 +493,31 @@ export const QUICK_COLLECTOR_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpg
   currencyType: SHOP_CURRENCY_TYPES.IDLE
 });
 
+/** APR percent used for realtime-balance idle interest: simple interest = `realTimeAvailable * (apr / 100) * (elapsed / year)` */
+export const INTEREST_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
+  id: SHOP_UPGRADE_IDS.INTEREST,
+  name: "Interest",
+  icon: "banknote-arrow-up",
+  description: "Earn idle time interest from your stored real time",
+  longDescription:
+    "Converts your available real-time balance into extra idle time using an APR. Interest is simple (non-compounding) and scales linearly with elapsed real time since your last collection.",
+  valueDescription: "%s% APR",
+  zeroLevel: { cost: 0, value: 0 },
+  levels: [
+    { cost: 1, value: 100 },
+    { cost: 1, value: 200 },
+    { cost: 1, value: 300 },
+    { cost: 1, value: 400 },
+    { cost: 1, value: 500 },
+    { cost: 1, value: 600 },
+    { cost: 1, value: 700 },
+    { cost: 1, value: 800 },
+    { cost: 1, value: 900 },
+    { cost: 1, value: 1000 }
+  ],
+  currencyType: SHOP_CURRENCY_TYPES.REAL
+});
+
 export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   SECONDS_MULTIPLIER_SHOP_UPGRADE,
   ANOTHER_SECONDS_MULTIPLIER_SHOP_UPGRADE,
@@ -502,6 +529,7 @@ export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
   LEVEL_BONUS_SHOP_UPGRADE,
   QUICK_COLLECTOR_SHOP_UPGRADE,
+  INTEREST_SHOP_UPGRADE,
   ANTI_CONSUMERIST_SHOP_UPGRADE,
   CONSOLIDATION_SHOP_UPGRADE,
   EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
@@ -526,7 +554,8 @@ export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> =
   [SHOP_UPGRADE_IDS.STORAGE_EXTENSION]: STORAGE_EXTENSION_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.ANTI_CONSUMERIST]: ANTI_CONSUMERIST_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.CONSOLIDATION]: CONSOLIDATION_SHOP_UPGRADE,
-  [SHOP_UPGRADE_IDS.QUICK_COLLECTOR]: QUICK_COLLECTOR_SHOP_UPGRADE
+  [SHOP_UPGRADE_IDS.QUICK_COLLECTOR]: QUICK_COLLECTOR_SHOP_UPGRADE,
+  [SHOP_UPGRADE_IDS.INTEREST]: INTEREST_SHOP_UPGRADE
 };
 
 export function getShopUpgradeDefinition(upgradeType: string): ShopUpgradeDefinition | null {

@@ -3,6 +3,7 @@ import {
   getCollectGemIdleSecondsMultiplier,
   getConsolidationBonus,
   getIdleHoarderMultiplier,
+  getIdleInterestSeconds,
   getLuckEnabled,
   getLuckPreserveChance,
   getMaxIdleCollectionRealtimeSeconds,
@@ -86,7 +87,13 @@ export function isIdleCollectionBlockedByRestraint(player: {
 export function calculateBoostedIdleSecondsGain(player: IdleCollectionPlayer): number {
   const elapsedSeconds = safeNaturalNumber(player.secondsSinceLastCollection);
   const multiplier = getEffectiveIdleSecondsRate(player)
-  const total = Math.floor(elapsedSeconds * multiplier);
+  const baseTotal = elapsedSeconds * multiplier;
+  const interestSeconds = getIdleInterestSeconds(
+    player.shop,
+    safeNumber(player.realTimeAvailable, 0),
+    elapsedSeconds
+  );
+  const total = Math.floor(baseTotal + interestSeconds);
   return Math.min(total, getMaxIdleCollectionRealtimeSeconds(player.shop));
 }
 

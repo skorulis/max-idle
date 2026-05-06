@@ -3,6 +3,7 @@ import type { Pool } from "pg";
 import { ACHIEVEMENT_IDS, GEM_HOARDER_MIN_AVAILABLE_GEMS, type AchievementId } from "@maxidle/shared/achievements";
 import {
   formatRestraintBlockedCollectMessage,
+  getIdleInterestSeconds,
   getSecondsMultiplier,
   getWorthwhileAchievementsMultiplier,
   withShopUpgradeLevel
@@ -398,14 +399,17 @@ export function registerPlayerRoutes({
         toNumber(lockedRow.level)
       );
       const baseRealSecondsCollected = calculateElapsedSeconds(lockedRow.last_collected_at, collectedAt);
+      const interestRealSecondsBonus = Math.floor(
+        getIdleInterestSeconds(lockedRow.shop, toNumber(lockedRow.real_time_available), baseRealSecondsCollected)
+      );
       const collectedSeconds =
         dailyBonusEffectActive && currentDailyBonus.bonus_type === "collect_idle_percent"
           ? Math.floor(baseCollectedSeconds * (1 + currentDailyBonus.bonus_value / 100))
           : baseCollectedSeconds;
       const realSecondsCollected =
         dailyBonusEffectActive && currentDailyBonus.bonus_type === "collect_real_percent"
-          ? Math.floor(baseRealSecondsCollected * (1 + currentDailyBonus.bonus_value / 100))
-          : baseRealSecondsCollected;
+          ? Math.floor((baseRealSecondsCollected + interestRealSecondsBonus) * (1 + currentDailyBonus.bonus_value / 100))
+          : baseRealSecondsCollected + interestRealSecondsBonus;
       if (isIdleCollectionBlockedByRestraint({ secondsSinceLastCollection: realSecondsCollected, shop: lockedRow.shop })) {
         await client.query("ROLLBACK");
         res.status(400).json({

@@ -28,6 +28,8 @@ export {
   getCollectGemIdleSecondsMultiplier,
   getConsolidationBonus,
   getIdleHoarderMultiplier,
+  getIdleInterestSeconds,
+  getInterestAprPercent,
   getQuickCollectorBonus,
   multiplierToLevel
 } from "@maxidle/shared/shop";

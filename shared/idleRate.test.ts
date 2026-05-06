@@ -6,11 +6,11 @@ import {
   isIdleCollectionBlockedByRestraint,
   shouldPreserveIdleTimerOnCollect
 } from "./idleRate.js";
-import { DEFAULT_SHOP_STATE, getMaxIdleCollectionRealtimeSeconds } from "./shop.js";
+import { DEFAULT_SHOP_STATE, getIdleInterestSeconds, getMaxIdleCollectionRealtimeSeconds } from "./shop.js";
 import type { ShopState } from "./shop.js";
 import { SHOP_UPGRADE_IDS } from "./shopUpgrades.js";
 import { getQuickCollectorBonus } from "./shop.js";
-import { SECONDS_PER_HOUR } from "./timeConstants.js";
+import { SECONDS_PER_DAY, SECONDS_PER_HOUR } from "./timeConstants.js";
 
 function shopWithPatience(patience: number): ShopState {
   return {
@@ -250,5 +250,34 @@ describe("getEffectiveIdleSecondsRate", () => {
       realTimeAvailable: 0
     });
     expect(withBonus - base).toBeCloseTo(1, 10);
+  });
+});
+
+describe("interest upgrade", () => {
+  it("converts available real time into simple-interest idle seconds", () => {
+    const elapsed = 24 * SECONDS_PER_HOUR;
+    const interest = getIdleInterestSeconds(
+      { ...DEFAULT_SHOP_STATE, [SHOP_UPGRADE_IDS.INTEREST]: 1 },
+      365 * 24 * SECONDS_PER_HOUR,
+      elapsed
+    );
+    expect(interest).toBeCloseTo(SECONDS_PER_DAY, 6);
+  });
+
+  it("adds interest bonus during boosted idle gain", () => {
+    const elapsed = 24 * SECONDS_PER_HOUR;
+    const noInterest = calculateBoostedIdleSecondsGain({
+      secondsSinceLastCollection: elapsed,
+      shop: { ...DEFAULT_SHOP_STATE },
+      achievementCount: 0,
+      realTimeAvailable: 365 * 24 * SECONDS_PER_HOUR
+    });
+    const withInterest = calculateBoostedIdleSecondsGain({
+      secondsSinceLastCollection: elapsed,
+      shop: { ...DEFAULT_SHOP_STATE, [SHOP_UPGRADE_IDS.INTEREST]: 1 },
+      achievementCount: 0,
+      realTimeAvailable: 365 * 24 * SECONDS_PER_HOUR
+    });
+    expect(withInterest - noInterest).toBe(SECONDS_PER_DAY);
   });
 });

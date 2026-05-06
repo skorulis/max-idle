@@ -17,6 +17,7 @@ import { getLucidIcon } from "../getLucidIcon";
 import type { AvailableSurveySummary, SyncedOutstandingTournamentResult, SyncedPlayerState } from "../app/types";
 import { parseCompletedTutorialIds, TUTORIAL_STEPS } from "@maxidle/shared/tutorialSteps";
 import {
+  getIdleInterestSeconds,
   getMaxIdleCollectionRealtimeSeconds,
   getRestraintMinRealtimeSeconds
 } from "../shop";
@@ -211,6 +212,11 @@ export function HomePage({
 
   const maxUncollectedIdleSeconds = getMaxIdleCollectionRealtimeSeconds(playerState.shop);
   const maxIdleCollectionReached = uncollectedIdleSeconds >= maxUncollectedIdleSeconds;
+  const currentInterestSeconds = getIdleInterestSeconds(
+    playerState.shop,
+    playerState.realTime.available,
+    realtimeElapsedSeconds
+  );
 
   const collectReady = !collecting && !collectBlockedByRestraint;
 
@@ -281,6 +287,9 @@ export function HomePage({
         <div className="idle-rate-meta">
           <div className="idle-rate-lines">
             <p className="subtle">Realtime: {formatSeconds(realtimeElapsedSeconds)}</p>
+            {currentInterestSeconds > 0 ? (
+              <p className="subtle">Interest: +{formatSeconds(currentInterestSeconds)}</p>
+            ) : null}
             <p className="subtle">Multiplier: {effectiveIdleSecondsRate.toFixed(2)}x</p>
           </div>
           <button
