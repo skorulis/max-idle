@@ -84,8 +84,7 @@
           },
           "level": {
             "type": "integer",
-            "minimum": 0,
-            "exclusiveMinimum": true
+            "minimum": 0
           },
           "currentSeconds": {
             "type": "integer",
@@ -470,8 +469,7 @@
               },
               "level": {
                 "type": "integer",
-                "minimum": 0,
-                "exclusiveMinimum": true
+                "minimum": 0
               }
             },
             "required": [
@@ -867,13 +865,11 @@
                 "properties": {
                   "previousLevel": {
                     "type": "integer",
-                    "minimum": 0,
-                    "exclusiveMinimum": true
+                    "minimum": 0
                   },
                   "newLevel": {
                     "type": "integer",
-                    "minimum": 0,
-                    "exclusiveMinimum": true
+                    "minimum": 0
                   },
                   "idleSecondsCost": {
                     "type": "integer",

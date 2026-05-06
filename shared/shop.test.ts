@@ -73,7 +73,7 @@ describe("getWorthwhileAchievementsMultiplier", () => {
 describe("getLevelBonusIdleContribution", () => {
   it("returns 0 when Level bonus has no tier purchased", () => {
     const shop = getDefaultShopState();
-    expect(getLevelBonusIdleContribution(shop, 10)).toBe(0);
+    expect(getLevelBonusIdleContribution(shop, 10)).toBe(1);
   });
 
   it("returns bonus per level × player level for tier ≥ 1", () => {

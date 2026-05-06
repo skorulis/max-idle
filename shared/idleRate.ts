@@ -27,7 +27,7 @@ export type IdleCollectionPlayer = {
   secondsSinceLastCollection: number;
   shop: ShopState;
   achievementCount: number;
-  /** Player level (`player_states.level`); defaults to 1 when omitted. */
+  /** Player level (`player_states.level`); defaults to 0 when omitted. */
   playerLevel?: number;
   realTimeAvailable?: number;
   /** Milliseconds since Unix epoch; required for Anti-consumerist (otherwise that multiplier is treated as ×1). */
@@ -105,7 +105,7 @@ export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): numbe
     safeNumber(player.achievementCount, 0)
   );
 
-  const playerLevelForBonus = Math.max(1, Math.floor(safeNumber(player.playerLevel, 1)));
+  const playerLevelForBonus = Math.max(0, Math.floor(safeNumber(player.playerLevel, 0)));
   const levelBonusContribution = getLevelBonusIdleContribution(player.shop, playerLevelForBonus);
 
   const idleHoarderMultiplier = getIdleHoarderMultiplier(

@@ -1,5 +1,5 @@
 export type PlayerLevelBadgeProps = {
-  /** Whole-number player level from the server (minimum 1). */
+  /** Whole-number player level from the server (minimum 0). */
   level: number;
   /**
    * Outer diameter of the badge in CSS pixels.
@@ -13,7 +13,7 @@ export type PlayerLevelBadgeProps = {
  * Circular badge showing the player level number.
  */
 export function PlayerLevelBadge({ level, size, className }: PlayerLevelBadgeProps) {
-  const safeLevel = Number.isFinite(level) ? Math.max(1, Math.floor(level)) : 1;
+  const safeLevel = Number.isFinite(level) ? Math.max(0, Math.floor(level)) : 0;
   const fontSize = Math.max(10, Math.round(size * (safeLevel >= 100 ? 0.28 : 0.42)));
 
   return (

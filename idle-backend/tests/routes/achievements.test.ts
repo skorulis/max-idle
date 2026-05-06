@@ -173,7 +173,7 @@ describe("achievement routes", () => {
     const response = await request(app).get("/achievements").set("Authorization", `Bearer ${token}`);
     expect(response.status).toBe(200);
     expect(response.body.completedCount).toBe(1);
-    expect(response.body.earningsBonusMultiplier).toBe(0);
+    expect(response.body.earningsBonusMultiplier).toBe(0.01);
     const accountCreation = response.body.achievements.find((achievement: { id: string }) => achievement.id === "account_creation");
     const usernameSelected = response.body.achievements.find((achievement: { id: string }) => achievement.id === "username_selected");
     expect(accountCreation?.completed).toBe(true);

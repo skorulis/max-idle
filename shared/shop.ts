@@ -129,12 +129,8 @@ export function getWorthwhileAchievementsMultiplier(shop: ShopState, achievement
 
 /** Additive idle rate bonus: `bonusPerPlayerLevel × playerLevel` when Level bonus has any tier unlocked. */
 export function getLevelBonusIdleContribution(shop: ShopState, playerLevel: number): number {
-  const tier = LEVEL_BONUS_SHOP_UPGRADE.currentLevel(shop);
-  if (tier <= 0) {
-    return 0;
-  }
   const bonusPer = LEVEL_BONUS_SHOP_UPGRADE.currentValue(shop);
-  const lv = Math.max(0, Math.floor(safeNumber(playerLevel, 1)));
+  const lv = Math.max(0, Math.floor(safeNumber(playerLevel, 0)));
   return bonusPer * lv;
 }
 

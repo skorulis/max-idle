@@ -3,10 +3,10 @@ import type { PlayerResponse, SyncedPlayerState, SyncedTournamentState, Tourname
 export function toSyncedState(data: PlayerResponse, previous?: SyncedPlayerState | null): SyncedPlayerState {
   const level =
     typeof data.level === "number" && Number.isFinite(data.level)
-      ? Math.max(1, Math.floor(data.level))
+      ? Math.max(0, Math.floor(data.level))
       : previous !== undefined && previous !== null
         ? previous.level
-        : 1;
+        : 0;
 
   return {
     idleTime: data.idleTime,

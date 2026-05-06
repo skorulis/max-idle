@@ -1,4 +1,4 @@
-import { SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE, SECONDS_PER_WEEK } from "./timeConstants.js";
+import { SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE, SECONDS_PER_WEEK, SECONDS_PER_YEAR } from "./timeConstants.js";
 
 /**
  * Cost to increase player level by one. Amounts are in the same units as
@@ -10,8 +10,8 @@ export type PlayerLevelUpgradeCost = {
 };
 
 /**
- * `costs[i]` is the price to advance from level `i + 1` to level `i + 2`.
- * Level starts at 1 in the DB; there is no cost row for “being” level 1.
+ * `costs[i]` is the price to advance from level `i` to level `i + 1`.
+ * Player level starts at 0 in the DB; there is no cost for “being” level 0.
  */
 export const PLAYER_LEVEL_UPGRADE_COSTS: readonly PlayerLevelUpgradeCost[] = Object.freeze([
   { idleSeconds: 5 * SECONDS_PER_MINUTE, realSeconds: 1 * SECONDS_PER_MINUTE },
@@ -22,17 +22,18 @@ export const PLAYER_LEVEL_UPGRADE_COSTS: readonly PlayerLevelUpgradeCost[] = Obj
   { idleSeconds: SECONDS_PER_DAY, realSeconds: 4 * SECONDS_PER_HOUR },
   { idleSeconds: 2 * SECONDS_PER_DAY, realSeconds: 8 * SECONDS_PER_HOUR },
   { idleSeconds: 4 * SECONDS_PER_DAY, realSeconds: 12 * SECONDS_PER_HOUR },
-  { idleSeconds: SECONDS_PER_WEEK, realSeconds: SECONDS_PER_DAY }, // Level 10
-  { idleSeconds: 2 * SECONDS_PER_WEEK, realSeconds: 2 * SECONDS_PER_DAY },
+  { idleSeconds: SECONDS_PER_WEEK, realSeconds: SECONDS_PER_DAY },
+  { idleSeconds: 2 * SECONDS_PER_WEEK, realSeconds: 2 * SECONDS_PER_DAY }, // Level 10
   { idleSeconds: 4 * SECONDS_PER_WEEK, realSeconds: 4 * SECONDS_PER_DAY },
   { idleSeconds: 8 * SECONDS_PER_WEEK, realSeconds: SECONDS_PER_WEEK },
   { idleSeconds: 12 * SECONDS_PER_WEEK, realSeconds: SECONDS_PER_WEEK },
-  { idleSeconds: 26 * SECONDS_PER_WEEK, realSeconds: SECONDS_PER_WEEK }, // Level 15
+  { idleSeconds: 26 * SECONDS_PER_WEEK, realSeconds: SECONDS_PER_WEEK },
+  { idleSeconds: SECONDS_PER_YEAR, realSeconds: SECONDS_PER_WEEK }, // Level 15
 ]);
 
 /** Highest player level supported by {@link PLAYER_LEVEL_UPGRADE_COSTS} (inclusive). */
 export function getMaxPlayerLevel(): number {
-  return 1 + PLAYER_LEVEL_UPGRADE_COSTS.length;
+  return PLAYER_LEVEL_UPGRADE_COSTS.length;
 }
 
 /**
@@ -42,8 +43,7 @@ export function getPlayerLevelUpgradeCostFromLevel(fromLevel: number): PlayerLev
   if (typeof fromLevel !== "number" || !Number.isFinite(fromLevel)) {
     return undefined;
   }
-  const level = Math.floor(fromLevel);
-  const idx = level - 1;
+  const idx = Math.floor(fromLevel);
   if (idx < 0 || idx >= PLAYER_LEVEL_UPGRADE_COSTS.length) {
     return undefined;
   }

@@ -31,7 +31,7 @@ describe("survey routes", () => {
     expect(home.status).toBe(200);
     expect(home.body.availableSurvey).not.toBeNull();
     expect(home.body.availableSurvey.id).toBe("1");
-    expect(home.body.availableSurvey.reward).toBe(21600);
+    expect(home.body.availableSurvey.reward).toBe(43200);
     expect(home.body.availableSurvey.currencyType).toBe("idle");
 
     const active = await request(app).get("/surveys/active").set("Authorization", `Bearer ${token}`);
@@ -46,7 +46,7 @@ describe("survey routes", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({ surveyId: "1", optionId: "UI" });
     expect(answer.status).toBe(200);
-    expect(answer.body.idleTime.available).toBe(idleBefore + 21600);
+    expect(answer.body.idleTime.available).toBe(idleBefore + 43200);
 
     const dup = await request(app)
       .post("/surveys/answer")

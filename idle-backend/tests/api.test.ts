@@ -410,7 +410,7 @@ describe("auth + player lifecycle", () => {
     expect(profileResponse.body.player.idleTime.total).toBe(1234);
     expect(profileResponse.body.player.upgradesPurchased).toBe(7);
     expect(profileResponse.body.player.achievementCount).toBe(0);
-    expect(profileResponse.body.player.level).toBe(1);
+    expect(profileResponse.body.player.level).toBe(0);
     expect(profileResponse.body.player.timeAwaySeconds).toBeGreaterThanOrEqual(85);
     expect(profileResponse.body.player.timeAwaySeconds).toBeLessThanOrEqual(120);
     expect(profileResponse.body.meta.serverTime).toBeTypeOf("string");
@@ -449,7 +449,7 @@ describe("auth + player lifecycle", () => {
     expect(purchaseResponse.body.idleTime.available).toBe(100000 - fiveLevelCost);
     expect(purchaseResponse.body.upgradesPurchased).toBe(5);
     expect(purchaseResponse.body.secondsMultiplier).toBe(1.25);
-    expect(purchaseResponse.body.achievementBonusMultiplier).toBe(0);
+    expect(purchaseResponse.body.achievementBonusMultiplier).toBe(0.01);
 
     const achievementState = await pool.query<{
       upgrades_purchased: string;
@@ -799,7 +799,7 @@ describe("auth + player lifecycle", () => {
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
 
-    const cost = getPlayerLevelUpgradeCostFromLevel(1);
+    const cost = getPlayerLevelUpgradeCostFromLevel(0);
     expect(cost).toBeDefined();
 
     await pool.query(
@@ -812,9 +812,9 @@ describe("auth + player lifecycle", () => {
       .set("Authorization", `Bearer ${token}`);
 
     expect(upgradeResponse.status).toBe(200);
-    expect(upgradeResponse.body.level).toBe(2);
-    expect(upgradeResponse.body.levelUpgrade.previousLevel).toBe(1);
-    expect(upgradeResponse.body.levelUpgrade.newLevel).toBe(2);
+    expect(upgradeResponse.body.level).toBe(1);
+    expect(upgradeResponse.body.levelUpgrade.previousLevel).toBe(0);
+    expect(upgradeResponse.body.levelUpgrade.newLevel).toBe(1);
     expect(upgradeResponse.body.levelUpgrade.idleSecondsCost).toBe(cost!.idleSeconds);
     expect(upgradeResponse.body.levelUpgrade.realSecondsCost).toBe(cost!.realSeconds);
     expect(upgradeResponse.body.idleTime.available).toBe(0);
