@@ -3,6 +3,7 @@ import {
   Archive, 
   BadgeCheck,
   BadgePlus,
+  BanknoteArrowUp,
   CalendarX,
   CircleHelp,
   Clock3,
@@ -30,6 +31,8 @@ export function getLucidIcon(iconName: string): LucideIcon {
   switch (iconName) {
     case "atom":
       return Atom;
+    case "banknote-arrow-up":
+      return BanknoteArrowUp;
     case "construction":
       return Construction;
     case "user-plus":
