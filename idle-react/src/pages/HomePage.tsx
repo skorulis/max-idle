@@ -258,7 +258,7 @@ export function HomePage({
         </section>
       ) : null}
       
-      <section className="card idle-collect-card">
+      <section className="card idle-collect-card surface-tint-purple">
         <div className="card-section-header">
           <h2 className="section-title-with-icon">
             <Atom size={18} aria-hidden="true" />
@@ -434,7 +434,7 @@ export function HomePage({
       ) : null}
 
       {playerState.obligationsCompleted[OBLIGATION_IDS.ACHIEVE_SOMETHING] === true ? (
-        <section className="card">
+        <section className="card surface-tint-emerald">
           <h2 className="section-title-with-icon">
             <Gem size={18} aria-hidden="true" />
             Daily Gem Reward

@@ -37,7 +37,7 @@ export function DailyBonusPage({
   return (
     <section className="card">
       <h2>Daily Bonus</h2>
-      <div className="panel">
+      <div className="panel surface-tint-emerald">
         <p className="shop-currency-title">
           <Gift size={16} aria-hidden="true" />
           Daily Gem Reward

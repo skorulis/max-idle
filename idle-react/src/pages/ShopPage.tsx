@@ -395,7 +395,7 @@ export function ShopPage({
   return (
     <>
       {showPlayerLevelPanel ? (
-        <section className="card shop-player-level-section">
+        <section className="card">
           <h2>Player level</h2>
           <div className="shop-player-level-body">
             <div className="shop-player-level-hero">

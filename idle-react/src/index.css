@@ -1,4 +1,17 @@
 :root {
+  /** Default inset panel / card surface (matches shop player level section). */
+  --surface-panel-gradient: linear-gradient(165deg, #fafafa 0%, #ffffff 55%);
+  /** Semi-transparent wash layered above `--surface-panel-gradient` on `.card`/`.panel` tint modifiers. */
+  --surface-tint-emerald-overlay: linear-gradient(
+    165deg,
+    rgba(16, 185, 129, 0.1) 0%,
+    rgba(255, 255, 255, 0) 52%
+  );
+  --surface-tint-purple-overlay: linear-gradient(
+    165deg,
+    rgba(139, 92, 246, 0.11) 0%,
+    rgba(255, 255, 255, 0) 52%
+  );
   font-family: "Space Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
     sans-serif;
   color: #1f2937;
@@ -33,11 +46,21 @@ body {
 
 .card {
   width: min(560px, 100%);
-  background: #ffffff;
+  background: var(--surface-panel-gradient);
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+}
+
+.card.surface-tint-emerald,
+.panel.surface-tint-emerald {
+  background: var(--surface-tint-emerald-overlay), var(--surface-panel-gradient);
+}
+
+.card.surface-tint-purple,
+.panel.surface-tint-purple {
+  background: var(--surface-tint-purple-overlay), var(--surface-panel-gradient);
 }
 
 .player-page-heading {
@@ -78,10 +101,6 @@ body {
   background: linear-gradient(160deg, #ffffff 0%, #f3f4f6 100%);
   border: 2px solid #d1d5db;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
-.card.shop-player-level-section {
-  background: linear-gradient(165deg, #fafafa 0%, #ffffff 55%);
 }
 
 .shop-player-level-body {
@@ -589,7 +608,7 @@ h3 {
   border: 1px solid #e5e7eb;
   border-radius: 10px;
   padding: 12px;
-  background: #fafafa;
+  background: var(--surface-panel-gradient);
 }
 
 .panel + .panel {
