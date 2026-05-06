@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatObligationRequirementLabel,
   getCurrentObligationId,
   isLevelUpgradesUnlocked,
   isObligationConditionMet,
@@ -211,6 +212,33 @@ describe("isLevelUpgradesUnlocked", () => {
     expect(isLevelUpgradesUnlocked({})).toBe(false);
     expect(isLevelUpgradesUnlocked({ [OBLIGATION_IDS.TIME_GEMS]: false })).toBe(false);
     expect(isLevelUpgradesUnlocked({ [OBLIGATION_IDS.TIME_GEMS]: true })).toBe(true);
+  });
+});
+
+describe("formatObligationRequirementLabel", () => {
+  it("formats each predicate kind", () => {
+    expect(formatObligationRequirementLabel({ kind: "idle_time_total_gte", seconds: 3600 })).toBe(
+      "Reach 1 hour total idle time"
+    );
+    expect(formatObligationRequirementLabel({ kind: "real_time_total_gte", seconds: 6 * 3600 })).toBe(
+      "Reach 6 hours total real time"
+    );
+    expect(formatObligationRequirementLabel({ kind: "time_gems_total_gte", gems: 1 })).toBe(
+      "Have at least 1 time gem earned in total"
+    );
+    expect(formatObligationRequirementLabel({ kind: "time_gems_total_gte", gems: 3 })).toBe(
+      "Have at least 3 time gems earned in total"
+    );
+    expect(formatObligationRequirementLabel({ kind: "upgrades_purchased_gte", count: 1 })).toBe(
+      "Purchase at least 1 shop upgrade"
+    );
+    expect(formatObligationRequirementLabel({ kind: "collection_count_gte", count: 1 })).toBe(
+      "Collect idle time at least once"
+    );
+    expect(formatObligationRequirementLabel({ kind: "achievement_count_gte", count: 2 })).toBe(
+      "Earn at least 2 achievement tiers"
+    );
+    expect(formatObligationRequirementLabel({ kind: "player_level_gte", level: 1 })).toBe("Reach shop player level 1");
   });
 });
 

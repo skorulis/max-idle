@@ -28,6 +28,52 @@ export type ObligationCondition = {
   allOf: ObligationStatPredicate[];
 };
 
+function formatDurationRequirement(seconds: number): string {
+  if (seconds >= SECONDS_PER_HOUR && seconds % SECONDS_PER_HOUR === 0) {
+    const hours = seconds / SECONDS_PER_HOUR;
+    return hours === 1 ? "1 hour" : `${hours} hours`;
+  }
+  if (seconds >= SECONDS_PER_MINUTE && seconds % SECONDS_PER_MINUTE === 0) {
+    const minutes = seconds / SECONDS_PER_MINUTE;
+    return minutes === 1 ? "1 minute" : `${minutes} minutes`;
+  }
+  return seconds === 1 ? "1 second" : `${seconds} seconds`;
+}
+
+/** Human-readable checklist line for the obligation card UI. */
+export function formatObligationRequirementLabel(predicate: ObligationStatPredicate): string {
+  switch (predicate.kind) {
+    case "idle_time_total_gte":
+      return `Reach ${formatDurationRequirement(predicate.seconds)} total idle time`;
+    case "real_time_total_gte":
+      return `Reach ${formatDurationRequirement(predicate.seconds)} total real time`;
+    case "time_gems_total_gte":
+      return predicate.gems === 1
+        ? "Have at least 1 time gem earned in total"
+        : `Have at least ${predicate.gems} time gems earned in total`;
+    case "upgrades_purchased_gte":
+      return predicate.count === 1
+        ? "Purchase at least 1 shop upgrade"
+        : `Purchase at least ${predicate.count} shop upgrades`;
+    case "collection_count_gte":
+      return predicate.count === 1
+        ? "Collect idle time at least once"
+        : `Collect idle time at least ${predicate.count} times`;
+    case "achievement_count_gte":
+      return predicate.count === 1
+        ? "Earn at least 1 achievement tier"
+        : `Earn at least ${predicate.count} achievement tiers`;
+    case "player_level_gte":
+      return predicate.level === 1
+        ? "Reach shop player level 1"
+        : `Reach shop player level ${predicate.level}`;
+    default: {
+      const _exhaustive: never = predicate;
+      return _exhaustive;
+    }
+  }
+}
+
 export type ObligationDefinition = {
   id: ObligationId;
   name: string;

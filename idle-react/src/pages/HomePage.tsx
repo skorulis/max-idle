@@ -27,6 +27,7 @@ import { toast } from "../gameToast";
 import { getDailyBonusDescription, isDailyRewardDoubledToday } from "../app/dailyBonus";
 import type { SurveyCurrencyType } from "../app/types";
 import {
+  formatObligationRequirementLabel,
   getCurrentObligationId,
   getObligationDefinition,
   isObligationConditionMet,
@@ -326,6 +327,14 @@ export function HomePage({
           </div>
           <h3 style={{ marginTop: 0, marginBottom: "0.5rem" }}>{currentObligation.name}</h3>
           <p style={{ marginTop: 0 }}>{currentObligation.description}</p>
+          <p className="subtle" style={{ marginTop: "1rem", marginBottom: "0.25rem" }}>
+            Requirements
+          </p>
+          <ul style={{ marginTop: 0, paddingLeft: "1.25rem" }}>
+            {currentObligation.condition.allOf.map((predicate, index) => (
+              <li key={index}>{formatObligationRequirementLabel(predicate)}</li>
+            ))}
+          </ul>
           <p className="subtle" style={{ marginTop: "1rem", marginBottom: "0.25rem" }}>
             Compensation
           </p>
