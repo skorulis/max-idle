@@ -287,6 +287,7 @@ export function registerShopRoutes({
         last_daily_bonus_claimed_at: Date | null;
         tutorial_progress: string;
         obligations_completed: unknown;
+        level: string;
       }>(
         `
         UPDATE player_states
@@ -319,7 +320,8 @@ export function registerShopRoutes({
           last_daily_reward_collected_at,
           last_daily_bonus_claimed_at,
           tutorial_progress,
-          obligations_completed
+          obligations_completed,
+          level
         `,
         [
           userId,
@@ -378,6 +380,7 @@ export function registerShopRoutes({
           available: toNumber(updated.time_gems_available)
         },
         upgradesPurchased: nextUpgradesPurchased,
+        level: toNumber(updated.level),
         currentSeconds: toNumber(updated.current_seconds),
         secondsMultiplier: getSecondsMultiplier(updated.shop),
         shop: updated.shop,

@@ -47,6 +47,8 @@ export type PlayerResponse = {
   collectedSeconds?: number;
   realSecondsCollected?: number;
   upgradesPurchased: number;
+  /** Omitted on some older endpoints; preserve prior synced state when missing. */
+  level?: number;
   currentSeconds: number;
   idleSecondsRate: number;
   secondsMultiplier: number;
@@ -208,6 +210,7 @@ export type SyncedPlayerState = {
   realTime: TimeCurrencyBalances;
   timeGems: TimeCurrencyBalances;
   upgradesPurchased: number;
+  level: number;
   currentSeconds: number;
   currentSecondsLastUpdatedMs: number;
   secondsMultiplier: number;
@@ -267,6 +270,7 @@ export type PlayerProfileResponse = {
     timeGems: TimeCurrencyBalances;
     upgradesPurchased: number;
     achievementCount: number;
+    level: number;
   };
   meta: {
     serverTime: string;

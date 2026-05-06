@@ -82,6 +82,11 @@
             "type": "integer",
             "minimum": 0
           },
+          "level": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
           "currentSeconds": {
             "type": "integer",
             "minimum": 0
@@ -232,6 +237,7 @@
           "realTime",
           "timeGems",
           "upgradesPurchased",
+          "level",
           "currentSeconds",
           "idleSecondsRate",
           "secondsMultiplier",
@@ -456,6 +462,11 @@
               "achievementCount": {
                 "type": "integer",
                 "minimum": 0
+              },
+              "level": {
+                "type": "integer",
+                "minimum": 0,
+                "exclusiveMinimum": true
               }
             },
             "required": [
@@ -468,7 +479,8 @@
               "realTime",
               "timeGems",
               "upgradesPurchased",
-              "achievementCount"
+              "achievementCount",
+              "level"
             ]
           },
           "meta": {
@@ -825,11 +837,6 @@
           {
             "type": "object",
             "properties": {
-              "level": {
-                "type": "integer",
-                "minimum": 0,
-                "exclusiveMinimum": true
-              },
               "levelUpgrade": {
                 "type": "object",
                 "properties": {
@@ -861,7 +868,6 @@
               }
             },
             "required": [
-              "level",
               "levelUpgrade"
             ]
           }

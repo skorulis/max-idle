@@ -40,6 +40,76 @@ body {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
 }
 
+.player-page-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+}
+
+.player-page-heading__title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.player-level-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  flex-shrink: 0;
+  font-weight: 700;
+  line-height: 1;
+  color: #111827;
+  background: linear-gradient(160deg, #ffffff 0%, #f3f4f6 100%);
+  border: 2px solid #d1d5db;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.shop-player-level-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+  padding: 18px;
+  margin-bottom: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: linear-gradient(165deg, #fafafa 0%, #ffffff 55%);
+}
+
+.shop-player-level-hero {
+  flex-shrink: 0;
+}
+
+.shop-player-level-details {
+  flex: 1;
+  min-width: 220px;
+}
+
+.shop-player-level-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.shop-player-level-costs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0 14px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.shop-player-level-cost-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .message-card {
   padding-top: 18px;
   padding-bottom: 18px;

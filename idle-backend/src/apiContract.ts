@@ -39,6 +39,7 @@ const playerStateSchema = registry.register(
     realTime: timeCurrencyBalancesSchema,
     timeGems: timeCurrencyBalancesSchema,
     upgradesPurchased: z.number().int().nonnegative(),
+    level: z.number().int().positive(),
     currentSeconds: z.number().int().nonnegative(),
     idleSecondsRate: z.number().nonnegative(),
     secondsMultiplier: z.number().positive(),
@@ -161,7 +162,8 @@ const playerProfileResponseSchema = registry.register(
       realTime: timeCurrencyBalancesSchema,
       timeGems: timeCurrencyBalancesSchema,
       upgradesPurchased: z.number().int().nonnegative(),
-      achievementCount: z.number().int().nonnegative()
+      achievementCount: z.number().int().nonnegative(),
+      level: z.number().int().positive()
     }),
     meta: z.object({
       serverTime: z.string().datetime()
@@ -254,7 +256,6 @@ const shopPurchaseResponseSchema = registry.register(
 const shopUpgradeLevelResponseSchema = registry.register(
   "ShopUpgradeLevelResponse",
   playerStateSchema.extend({
-    level: z.number().int().positive(),
     levelUpgrade: z.object({
       previousLevel: z.number().int().positive(),
       newLevel: z.number().int().positive(),

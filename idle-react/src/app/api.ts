@@ -711,6 +711,35 @@ export async function purchaseUpgrade(token: string | null, upgradeId: ShopUpgra
   return payload as PlayerResponse;
 }
 
+export async function upgradePlayerLevel(token: string | null): Promise<PlayerResponse> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/shop/upgradeLevel`, {
+    method: "POST",
+    credentials: "include",
+    headers
+  });
+
+  const payload = (await response.json().catch(() => null)) as { error?: string; code?: string } | null;
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error("UNAUTHORIZED");
+    }
+    if (response.status === 400 && payload?.code === "INSUFFICIENT_FUNDS") {
+      throw new Error("INSUFFICIENT_FUNDS");
+    }
+    if (response.status === 400 && payload?.code === "MAX_LEVEL") {
+      throw new Error("MAX_LEVEL");
+    }
+    throw new Error(payload?.error ?? "Failed to upgrade player level");
+  }
+
+  return payload as PlayerResponse;
+}
+
 export async function debugAddGems(token: string | null): Promise<PlayerResponse> {
   const headers: Record<string, string> = {};
   if (token) {

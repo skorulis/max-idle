@@ -19,7 +19,8 @@ import {
   debugResetCurrentDailyBonus,
   enterTournament,
   purchaseUpgrade,
-  resetTutorialProgress
+  resetTutorialProgress,
+  upgradePlayerLevel
 } from "./api";
 import type { ObligationId } from "@maxidle/shared/obligations";
 import type { SyncedPlayerState, SyncedTournamentState } from "./types";
@@ -68,7 +69,7 @@ export function useAppGameplayActions({
   const [collectingObligation, setCollectingObligation] = useState(false);
   const [enteringTournament, setEnteringTournament] = useState(false);
   const [collectingTournamentReward, setCollectingTournamentReward] = useState(false);
-  const [shopPendingQuantity, setShopPendingQuantity] = useState<ShopUpgradeId | null>(null);
+  const [shopPendingQuantity, setShopPendingQuantity] = useState<ShopUpgradeId | "player_level" | null>(null);
   const [resettingDailyBonus, setResettingDailyBonus] = useState(false);
   const [debugPendingAction, setDebugPendingAction] = useState<"real" | "idle" | "gems" | "balances" | "tournament" | null>(
     null
@@ -102,7 +103,7 @@ export function useAppGameplayActions({
       const collectedSeconds = nextPlayer.collectedSeconds ?? 0;
       const realSecondsCollected = nextPlayer.realSecondsCollected ?? 0;
       toastCollectIdle(collectedSeconds, realSecondsCollected);
-      const synced = toSyncedState(nextPlayer);
+      const synced = toSyncedState(nextPlayer, playerState);
       alignClientClock();
       setPlayerState(synced);
       await refreshAccount(token);
@@ -123,6 +124,34 @@ export function useAppGameplayActions({
     }
   };
 
+  const onUpgradePlayerLevel = async () => {
+    if (!playerState) {
+      return;
+    }
+    setShopPendingQuantity("player_level");
+    setError(null);
+    try {
+      const updatedPlayer = await upgradePlayerLevel(token);
+      const synced = toSyncedState(updatedPlayer, playerState);
+      alignClientClock();
+      setPlayerState(synced);
+      toast.success(`Reached player level ${synced.level}.`);
+    } catch (upgradeError) {
+      if (upgradeError instanceof Error && upgradeError.message === "UNAUTHORIZED") {
+        clearUnauthorizedSession();
+      } else if (upgradeError instanceof Error && upgradeError.message === "INSUFFICIENT_FUNDS") {
+        setError("Not enough idle and real time for that upgrade.");
+      } else if (upgradeError instanceof Error && upgradeError.message === "MAX_LEVEL") {
+        setError("Player level is already maxed.");
+      } else {
+        setError(upgradeError instanceof Error ? upgradeError.message : "Level upgrade failed");
+      }
+      setStatus("Could not upgrade player level.");
+    } finally {
+      setShopPendingQuantity(null);
+    }
+  };
+
   const onPurchaseUpgrade = async (upgradeId: ShopUpgradeId) => {
     if (!playerState) {
       return;
@@ -131,7 +160,7 @@ export function useAppGameplayActions({
     setError(null);
     try {
       const updatedPlayer = await purchaseUpgrade(token, upgradeId);
-      const synced = toSyncedState(updatedPlayer);
+      const synced = toSyncedState(updatedPlayer, playerState);
       alignClientClock();
       setPlayerState(synced);
       const purchasedUpgrade = SHOP_UPGRADES_BY_ID[upgradeId];
@@ -162,7 +191,7 @@ export function useAppGameplayActions({
     setStatus("Adding debug gems...");
     try {
       const updatedPlayer = await debugAddGems(token);
-      const synced = toSyncedState(updatedPlayer);
+      const synced = toSyncedState(updatedPlayer, playerState);
       alignClientClock();
       setPlayerState(synced);
       toast.success("Added 5 debug gems.");
@@ -200,7 +229,7 @@ export function useAppGameplayActions({
     setStatus("Adding debug real time...");
     try {
       const updatedPlayer = await debugAddRealTime(token);
-      const synced = toSyncedState(updatedPlayer);
+      const synced = toSyncedState(updatedPlayer, playerState);
       alignClientClock();
       setPlayerState(synced);
       toast.success("Added 12 hours of real time.");
@@ -221,7 +250,7 @@ export function useAppGameplayActions({
     setStatus("Adding debug idle time...");
     try {
       const updatedPlayer = await debugAddIdleTime(token);
-      const synced = toSyncedState(updatedPlayer);
+      const synced = toSyncedState(updatedPlayer, playerState);
       alignClientClock();
       setPlayerState(synced);
       toast.success("Added 12 hours of idle time.");
@@ -242,7 +271,7 @@ export function useAppGameplayActions({
     setStatus("Resetting balances...");
     try {
       const updatedPlayer = await debugResetBalances(token);
-      const synced = toSyncedState(updatedPlayer);
+      const synced = toSyncedState(updatedPlayer, playerState);
       alignClientClock();
       setPlayerState(synced);
       toast.success("Reset all balances to zero.");
@@ -287,7 +316,7 @@ export function useAppGameplayActions({
     setError(null);
     try {
       const nextPlayer = await collectDailyReward(token);
-      const synced = toSyncedState(nextPlayer);
+      const synced = toSyncedState(nextPlayer, playerState);
       alignClientClock();
       setPlayerState(synced);
       setStatus("Daily reward collected.");
@@ -312,7 +341,7 @@ export function useAppGameplayActions({
     setError(null);
     try {
       const nextPlayer = await collectObligation(token, obligationId);
-      const synced = toSyncedState(nextPlayer);
+      const synced = toSyncedState(nextPlayer, playerState);
       alignClientClock();
       setPlayerState(synced);
       toast.success("Obligation completed.");
@@ -336,7 +365,7 @@ export function useAppGameplayActions({
     setError(null);
     try {
       const nextPlayer = await completeTutorialStep(token, tutorialId);
-      const synced = toSyncedState(nextPlayer);
+      const synced = toSyncedState(nextPlayer, playerState);
       alignClientClock();
       setPlayerState(synced);
     } catch (tutorialError) {
@@ -356,7 +385,7 @@ export function useAppGameplayActions({
     setError(null);
     try {
       const nextPlayer = await resetTutorialProgress(token);
-      const synced = toSyncedState(nextPlayer);
+      const synced = toSyncedState(nextPlayer, playerState);
       alignClientClock();
       setPlayerState(synced);
       toast.success("Tutorial reset. You will see the intro again on the home page.");
@@ -378,7 +407,7 @@ export function useAppGameplayActions({
     setError(null);
     try {
       const nextPlayer = await collectDailyBonus(token);
-      const synced = toSyncedState(nextPlayer);
+      const synced = toSyncedState(nextPlayer, playerState);
       alignClientClock();
       setPlayerState(synced);
       setStatus("Daily bonus activated.");
@@ -489,6 +518,7 @@ export function useAppGameplayActions({
     debugPendingAction,
     onCollect,
     onPurchaseUpgrade,
+    onUpgradePlayerLevel,
     onDebugAddGems,
     onDebugResetDailyBonus,
     onDebugAddRealTime,

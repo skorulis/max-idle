@@ -314,6 +314,7 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
         last_collected_at: Date;
         last_active: Date;
         achievement_count: string;
+        level: string;
         shop: ShopState;
         server_time: Date;
       }>(
@@ -334,6 +335,7 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
           ps.last_collected_at,
           ps.last_active,
           ps.achievement_count,
+          ps.level,
           ps.shop,
         NOW() AS server_time
         FROM users u
@@ -380,7 +382,8 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
             available: toNumber(row.time_gems_available)
           },
           upgradesPurchased: toNumber(row.upgrades_purchased),
-          achievementCount: toNumber(row.achievement_count)
+          achievementCount: toNumber(row.achievement_count),
+          level: toNumber(row.level)
         },
         meta: {
           serverTime: row.server_time.toISOString()

@@ -83,6 +83,7 @@ type PlayerStateRow = {
   upgrades_purchased: string;
   achievement_count: number;
   has_unseen_achievements: boolean;
+  level: string;
   shop: ShopState;
   last_collected_at: Date;
   current_seconds: string;
@@ -111,6 +112,7 @@ export async function buildPlayerStatePayload(
       upgrades_purchased,
       achievement_count,
       has_unseen_achievements,
+      level,
       shop,
       last_collected_at,
       current_seconds,
@@ -160,6 +162,7 @@ export async function buildPlayerStatePayload(
       available: toNumber(row.time_gems_available)
     },
     upgradesPurchased: toNumber(row.upgrades_purchased),
+    level: toNumber(row.level),
     currentSeconds: currentIdleSeconds,
     idleSecondsRate,
     secondsMultiplier: getSecondsMultiplier(row.shop),
@@ -424,6 +427,7 @@ export function registerPlayerRoutes({
         current_seconds_last_updated: Date;
         shop: ShopState;
         last_daily_reward_collected_at: Date | null;
+        level: number;
       }>(
         `
         UPDATE player_states
@@ -451,7 +455,8 @@ export function registerPlayerRoutes({
           current_seconds,
           current_seconds_last_updated,
           shop,
-          last_daily_reward_collected_at
+          last_daily_reward_collected_at,
+          level
         `,
         [userId, collectedSeconds, realSecondsCollected, nextCurrentSeconds, collectedAt, nextLastCollectedAt, JSON.stringify(nextShop)]
       );
@@ -550,6 +555,7 @@ export function registerPlayerRoutes({
           available: toNumber(row.time_gems_available)
         },
         upgradesPurchased: toNumber(row.upgrades_purchased),
+        level: toNumber(row.level),
         currentSeconds: toNumber(row.current_seconds),
         secondsMultiplier: getSecondsMultiplier(row.shop),
         shop: row.shop,
@@ -806,6 +812,7 @@ export function registerPlayerRoutes({
         last_daily_bonus_claimed_at: Date | null;
         tutorial_progress: string;
         obligations_completed: unknown;
+        level: number;
       }>(
         `
         UPDATE player_states
@@ -832,7 +839,8 @@ export function registerPlayerRoutes({
           last_daily_reward_collected_at,
           last_daily_bonus_claimed_at,
           tutorial_progress,
-          obligations_completed
+          obligations_completed,
+          level
         `,
         [
           userId,
@@ -917,6 +925,7 @@ export function registerPlayerRoutes({
           available: toNumber(updatedPlayer.time_gems_available)
         },
         upgradesPurchased: toNumber(updatedPlayer.upgrades_purchased),
+        level: toNumber(updatedPlayer.level),
         currentSeconds: toNumber(updatedPlayer.current_seconds),
         secondsMultiplier: getSecondsMultiplier(updatedPlayer.shop),
         shop: updatedPlayer.shop,

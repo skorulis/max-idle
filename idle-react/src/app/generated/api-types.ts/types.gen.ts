@@ -24,6 +24,7 @@ export type PlayerState = {
     realTime: TimeCurrencyBalances;
     timeGems: TimeCurrencyBalances;
     upgradesPurchased: number;
+    level: number;
     currentSeconds: number;
     idleSecondsRate: number;
     secondsMultiplier: number;
@@ -56,6 +57,7 @@ export type PlayerState = {
     obligationsCompleted: {
         [key: string]: boolean;
     };
+    collectionCount: number;
 };
 
 export type TutorialCompleteRequest = {
@@ -113,6 +115,7 @@ export type PlayerProfileResponse = {
         timeGems: TimeCurrencyBalances;
         upgradesPurchased: number;
         achievementCount: number;
+        level: number;
     };
     meta: {
         serverTime: string;
@@ -164,6 +167,15 @@ export type ShopPurchaseResponse = PlayerState & {
         upgradeType: 'seconds_multiplier' | 'another_seconds_multiplier' | 'restraint' | 'idle_hoarder' | 'luck' | 'extra_realtime_wait' | 'collect_gem_time_boost' | 'idle_refund' | 'real_refund';
         quantity: number;
         totalCost: number;
+    };
+};
+
+export type ShopUpgradeLevelResponse = PlayerState & {
+    levelUpgrade: {
+        previousLevel: number;
+        newLevel: number;
+        idleSecondsCost: number;
+        realSecondsCost: number;
     };
 };
 
@@ -1112,3 +1124,32 @@ export type PostShopPurchaseResponses = {
 };
 
 export type PostShopPurchaseResponse = PostShopPurchaseResponses[keyof PostShopPurchaseResponses];
+
+export type PostShopUpgradeLevelData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/shop/upgradeLevel';
+};
+
+export type PostShopUpgradeLevelErrors = {
+    /**
+     * Insufficient funds or player already at max level
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+};
+
+export type PostShopUpgradeLevelError = PostShopUpgradeLevelErrors[keyof PostShopUpgradeLevelErrors];
+
+export type PostShopUpgradeLevelResponses = {
+    /**
+     * Updated player state after level upgrade
+     */
+    200: ShopUpgradeLevelResponse;
+};
+
+export type PostShopUpgradeLevelResponse = PostShopUpgradeLevelResponses[keyof PostShopUpgradeLevelResponses];

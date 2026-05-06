@@ -8,7 +8,9 @@ import {
   Plus,
 } from "lucide-react";
 import { Fragment, useState } from "react";
+import { getMaxPlayerLevel, getPlayerLevelUpgradeCostFromLevel } from "@maxidle/shared/playerLevelCosts";
 import type { SyncedPlayerState } from "../app/types";
+import { PlayerLevelBadge } from "../components/PlayerLevelBadge";
 import { safeNaturalNumber } from "@maxidle/shared/safeNumber";
 import {
   SHOP_CURRENCY_TYPES,
@@ -51,9 +53,11 @@ type ShopPageProps = {
     | "idle_refund"
     | "real_refund"
     | "storage_extension"
+    | "player_level"
     | null;
   /** Purchase flow for any shop upgrade row; `upgradeId` matches {@link SHOP_UPGRADE_IDS}. */
   onPurchase: (upgradeId: ShopUpgradeId) => Promise<void>;
+  onUpgradePlayerLevel: () => Promise<void>;
   onNavigateHome: () => void;
 };
 
@@ -213,6 +217,7 @@ export function ShopPage({
   estimatedServerNowMs,
   shopPendingQuantity,
   onPurchase,
+  onUpgradePlayerLevel,
   onNavigateHome
 }: ShopPageProps) {
   const [selectedCurrencyType, setSelectedCurrencyType] = useState<ShopCurrencyType>(SHOP_CURRENCY_TYPES.IDLE);
@@ -230,6 +235,17 @@ export function ShopPage({
   }
 
   const syncedPlayer = playerState;
+
+  const nextLevelCost = getPlayerLevelUpgradeCostFromLevel(syncedPlayer.level);
+  const maxPlayerLevel = getMaxPlayerLevel();
+  const atMaxPlayerLevel = syncedPlayer.level >= maxPlayerLevel;
+  const levelUpgradePending = shopPendingQuantity === "player_level";
+  const canAffordPlayerLevel =
+    nextLevelCost !== undefined &&
+    syncedPlayer.idleTime.available >= nextLevelCost.idleSeconds &&
+    syncedPlayer.realTime.available >= nextLevelCost.realSeconds;
+  const playerLevelUpgradeDisabled =
+    shopPendingQuantity !== null || atMaxPlayerLevel || nextLevelCost === undefined || !canAffordPlayerLevel;
 
   const idlePurchasedLevels = getPurchasedShopUpgradeLevelCount(syncedPlayer.shop, SHOP_CURRENCY_TYPES.IDLE);
   const realPurchasedLevels = getPurchasedShopUpgradeLevelCount(syncedPlayer.shop, SHOP_CURRENCY_TYPES.REAL);
@@ -374,6 +390,57 @@ export function ShopPage({
     <>
       <section className="card">
         <h2>Shop</h2>
+        <div className="shop-player-level-card">
+          <div className="shop-player-level-hero">
+            <PlayerLevelBadge level={syncedPlayer.level} size={112} />
+          </div>
+          <div className="shop-player-level-details">
+            <p className="shop-player-level-title">Player level</p>
+            {atMaxPlayerLevel ? (
+              <p className="subtle">You have reached the maximum player level.</p>
+            ) : nextLevelCost ? (
+              <>
+                <p className="subtle">
+                  Upgrade to level {syncedPlayer.level + 1}
+                </p>
+                <div className="shop-player-level-costs" aria-label="Level upgrade costs">
+                  <div className="shop-player-level-cost-row">
+                    <Atom size={16} aria-hidden="true" />
+                    <span>Idle time: {formatSeconds(nextLevelCost.idleSeconds, 2, "floor")}</span>
+                  </div>
+                  <div className="shop-player-level-cost-row">
+                    <Clock3 size={16} aria-hidden="true" />
+                    <span>Real time: {formatSeconds(nextLevelCost.realSeconds, 2, "floor")}</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="subtle">Level upgrade is not available.</p>
+            )}
+            <button
+              type="button"
+              className={`secondary shop-upgrade-buy-button${
+                !playerLevelUpgradeDisabled && !atMaxPlayerLevel ? " shop-upgrade-buy-button-purchasable" : ""
+              }`}
+              disabled={playerLevelUpgradeDisabled}
+              onClick={() => void onUpgradePlayerLevel()}
+              aria-label={atMaxPlayerLevel ? "Maximum player level reached" : "Upgrade player level"}
+            >
+              {levelUpgradePending ? (
+                <Hourglass size={16} aria-hidden="true" className="shop-upgrade-buy-hourglass-spin" />
+              ) : atMaxPlayerLevel ? (
+                "Maximum level"
+              ) : (
+                <>
+                  <Plus size={18} aria-hidden="true" className="shop-upgrade-buy-plus" />
+                  <span className="shop-upgrade-buy-cost">
+                    Level {syncedPlayer.level + 1}
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
         <div className="shop-currencies">
           <button
             type="button"

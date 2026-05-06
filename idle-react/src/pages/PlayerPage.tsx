@@ -1,6 +1,7 @@
 import { formatSeconds } from "../formatSeconds";
 import { Atom, Clock3, Gem } from "lucide-react";
 import type { PlayerProfileResponse } from "../app/types";
+import { PlayerLevelBadge } from "../components/PlayerLevelBadge";
 
 type PlayerPageProps = {
   publicPlayerLoading: boolean;
@@ -11,7 +12,12 @@ type PlayerPageProps = {
 export function PlayerPage({ publicPlayerLoading, publicPlayerProfile, hasError }: PlayerPageProps) {
   return (
     <section className="card">
-      <h2>{publicPlayerProfile?.username ?? "Player"}</h2>
+      <div className="player-page-heading">
+        {!publicPlayerLoading && publicPlayerProfile ? (
+          <PlayerLevelBadge level={publicPlayerProfile.level} size={36} />
+        ) : null}
+        <h2 className="player-page-heading__title">{publicPlayerProfile?.username ?? "Player"}</h2>
+      </div>
       {publicPlayerLoading ? <p>Loading player profile...</p> : null}
       {!publicPlayerLoading && publicPlayerProfile ? (
         <>

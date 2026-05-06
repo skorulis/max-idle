@@ -1,11 +1,19 @@
 import type { PlayerResponse, SyncedPlayerState, SyncedTournamentState, TournamentCurrentResponse } from "./types";
 
-export function toSyncedState(data: PlayerResponse): SyncedPlayerState {
+export function toSyncedState(data: PlayerResponse, previous?: SyncedPlayerState | null): SyncedPlayerState {
+  const level =
+    typeof data.level === "number" && Number.isFinite(data.level)
+      ? Math.max(1, Math.floor(data.level))
+      : previous !== undefined && previous !== null
+        ? previous.level
+        : 1;
+
   return {
     idleTime: data.idleTime,
     realTime: data.realTime,
     timeGems: data.timeGems,
     upgradesPurchased: data.upgradesPurchased,
+    level,
     currentSeconds: data.currentSeconds,
     currentSecondsLastUpdatedMs: Date.parse(data.currentSecondsLastUpdated),
     secondsMultiplier: data.secondsMultiplier,

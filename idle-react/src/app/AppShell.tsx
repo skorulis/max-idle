@@ -172,9 +172,8 @@ export function AppShell() {
           if (cancelled) {
             return;
           }
-          const synced = toSyncedState(nextPlayer);
           alignClientClock();
-          setPlayerState(synced);
+          setPlayerState((prev) => toSyncedState(nextPlayer, prev));
         })
         .catch(() => {
           // Ignore errors here to avoid interrupting normal home-page flow.
@@ -432,6 +431,7 @@ export function AppShell() {
     debugPendingAction,
     onCollect,
     onPurchaseUpgrade,
+    onUpgradePlayerLevel,
     onDebugAddGems,
     onDebugResetDailyBonus,
     onDebugAddRealTime,
@@ -657,6 +657,7 @@ export function AppShell() {
                 estimatedServerNowMs={estimatedServerNowMs}
                 shopPendingQuantity={shopPendingQuantity}
                 onPurchase={onPurchaseUpgrade}
+                onUpgradePlayerLevel={onUpgradePlayerLevel}
                 onNavigateHome={() => navigate("/")}
               />
             )}
