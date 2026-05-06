@@ -486,7 +486,7 @@ export const INTEREST_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   icon: "banknote-arrow-up",
   description: "Earn idle time interest from your stored real time",
   longDescription:
-    "Converts your available real-time balance into extra idle time using an APR. Interest is simple (non-compounding) and scales linearly with elapsed real time since your last collection.",
+    "Converts your available real-time balance into extra collectable real time. Interest rates are listed as per annum so to get the full value you would need to wait 1 year before collecting.",
   valueDescription: "%s% APR",
   zeroLevel: { cost: 0, value: 0 },
   levels: [
