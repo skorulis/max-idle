@@ -38,6 +38,8 @@ export const SHOP_UPGRADE_IDS = {
   REAL_REFUND: "real_refund",
   /** Idle multiplier bonus per unlocked achievement: ×(1 + value × achievementCount). */
   WORTHWHILE_ACHIEVEMENTS: "worthwhile_achievements",
+  /** Idle-priced tiers; bonus adds `value × playerLevel` to the effective collection rate (see {@link getLevelBonusIdleContribution}). */
+  LEVEL_BONUS: "level_bonus",
   /**
    * Real-time purchase: each tier adds one more week of wall-clock time that can accrue toward uncollected idle before the bar stops.
    * See {@link getMaxIdleCollectionRealtimeSeconds}.
@@ -390,6 +392,31 @@ export const WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE: ShopUpgradeDefinition = defin
   currencyType: SHOP_CURRENCY_TYPES.IDLE
 });
 
+/** Bonus per player level (additive to effective rate, same stacking as worthwhile achievements). */
+export const LEVEL_BONUS_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
+  id: SHOP_UPGRADE_IDS.LEVEL_BONUS,
+  name: "Level bonus",
+  icon: "badge-plus",
+  category: "general",
+  description: "Idle multiplier that scales with your player level",
+  longDescription:
+    "Each tier increases how much idle bonus you earn per player level. Raise your player level and purchase tiers here to compound idle income.",
+  valueDescription: "%s per player level",
+  zeroLevel: { cost: 0, value: 0.1 },
+  levels: [
+    { cost: 1, value: 0.2 },
+    { cost: 1, value: 0.3 },
+    { cost: 1, value: 0.4 },
+    { cost: 1, value: 0.5 },
+    { cost: 1, value: 0.6 },
+    { cost: 1, value: 0.7 },
+    { cost: 1, value: 0.8 },
+    { cost: 1, value: 0.9 },
+    { cost: 1, value: 0.1 },
+  ],
+  currencyType: SHOP_CURRENCY_TYPES.IDLE
+});
+
 /** `value` = multiplier at full streak; `value2` = wall-clock seconds without idle/real shop purchases to reach it (linear from ×1). */
 export const ANTI_CONSUMERIST_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.ANTI_CONSUMERIST,
@@ -473,6 +500,7 @@ export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   STORAGE_EXTENSION_SHOP_UPGRADE,
   LUCK_SHOP_UPGRADE,
   WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
+  LEVEL_BONUS_SHOP_UPGRADE,
   QUICK_COLLECTOR_SHOP_UPGRADE,
   ANTI_CONSUMERIST_SHOP_UPGRADE,
   CONSOLIDATION_SHOP_UPGRADE,
@@ -494,6 +522,7 @@ export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> =
   [SHOP_UPGRADE_IDS.IDLE_REFUND]: IDLE_REFUND_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.REAL_REFUND]: REAL_REFUND_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS]: WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
+  [SHOP_UPGRADE_IDS.LEVEL_BONUS]: LEVEL_BONUS_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.STORAGE_EXTENSION]: STORAGE_EXTENSION_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.ANTI_CONSUMERIST]: ANTI_CONSUMERIST_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.CONSOLIDATION]: CONSOLIDATION_SHOP_UPGRADE,

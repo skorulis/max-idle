@@ -1,7 +1,10 @@
 import express from "express";
 import swaggerUi from "swagger-ui-express";
 import { OpenAPIRegistry, OpenApiGeneratorV3, extendZodWithOpenApi } from "@asteasolutions/zod-to-openapi";
-import { WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE } from "@maxidle/shared/shopUpgrades";
+import {
+  LEVEL_BONUS_SHOP_UPGRADE,
+  WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE
+} from "@maxidle/shared/shopUpgrades";
 import { z } from "zod";
 
 extendZodWithOpenApi(z);
@@ -56,6 +59,12 @@ const playerStateSchema = registry.register(
           .int()
           .min(0)
           .max(WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.maxLevel())
+          .optional(),
+        level_bonus: z
+          .number()
+          .int()
+          .min(0)
+          .max(LEVEL_BONUS_SHOP_UPGRADE.maxLevel())
           .optional()
       })
       .catchall(z.unknown()),
@@ -228,6 +237,9 @@ const shopPurchaseRequestSchema = registry.register(
     }),
     z.object({
       upgradeType: z.literal("real_refund")
+    }),
+    z.object({
+      upgradeType: z.literal("level_bonus")
     })
   ])
 );
@@ -245,7 +257,8 @@ const shopPurchaseResponseSchema = registry.register(
         z.literal("extra_realtime_wait"),
         z.literal("collect_gem_time_boost"),
         z.literal("idle_refund"),
-        z.literal("real_refund")
+        z.literal("real_refund"),
+        z.literal("level_bonus")
       ]),
       quantity: z.number().int().positive(),
       totalCost: z.number().int().nonnegative()

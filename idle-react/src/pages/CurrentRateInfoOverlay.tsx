@@ -9,7 +9,8 @@ import {
   getQuickCollectorBonus,
   getRestraintBonusMultiplier,
   getSecondsMultiplier,
-  getWorthwhileAchievementsMultiplier
+  getWorthwhileAchievementsMultiplier,
+  getLevelBonusIdleContribution
 } from "../shop";
 import { getPatienceRate } from "../idleRate";
 import {
@@ -27,6 +28,8 @@ type CurrentRateInfoOverlayProps = {
   effectiveIdleSecondsRate: number;
   shop: ShopState;
   achievementCount: number;
+  /** Player level from synced state; scales Level bonus contribution. */
+  playerLevel: number;
   realTimeAvailable: number;
   estimatedServerNowMs: number;
 };
@@ -38,6 +41,7 @@ export function CurrentRateInfoOverlay({
   effectiveIdleSecondsRate,
   shop,
   achievementCount,
+  playerLevel,
   realTimeAvailable,
   estimatedServerNowMs
 }: CurrentRateInfoOverlayProps) {
@@ -76,6 +80,7 @@ export function CurrentRateInfoOverlay({
       shop,
       safeNumber(achievementCount, 0)
     );
+    const levelBonusContribution = getLevelBonusIdleContribution(shop, playerLevel);
     const idleHoarderLevel = IDLE_HOARDER_SHOP_UPGRADE.currentLevel(shop);
     const idleHoarderMultiplier = getIdleHoarderMultiplier(
       idleHoarderLevel,
@@ -94,6 +99,7 @@ export function CurrentRateInfoOverlay({
       antiConsumeristLevel,
       antiConsumeristMultiplier,
       worthwhileAchievementsMultiplier,
+      levelBonusContribution,
       idleHoarderLevel,
       idleHoarderMultiplier,
       gemBonus,
@@ -102,7 +108,7 @@ export function CurrentRateInfoOverlay({
       quickCollectorLevel,
       quickCollectorBonus,
     };
-  }, [achievementCount, estimatedServerNowMs, realTimeAvailable, secondsSinceLastCollection, shop]);
+  }, [achievementCount, estimatedServerNowMs, playerLevel, realTimeAvailable, secondsSinceLastCollection, shop]);
 
   if (!open) {
     return null;
@@ -162,6 +168,12 @@ export function CurrentRateInfoOverlay({
           <p className="rate-factor-row">
             <span>Achivement multiplier</span>
             <span>{factors.worthwhileAchievementsMultiplier.toFixed(2)}x</span>
+          </p>
+        ) : null}
+        {shouldShowFactor(factors.levelBonusContribution) ? (
+          <p className="rate-factor-row">
+            <span>Level bonus</span>
+            <span>{factors.levelBonusContribution.toFixed(2)}x</span>
           </p>
         ) : null}
         {shouldShowFactor(factors.gemBonus) ? (

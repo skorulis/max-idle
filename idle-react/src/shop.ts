@@ -21,6 +21,7 @@ export {
   getDefaultShopState,
   getPurchasedShopUpgradeLevelCount,
   getWorthwhileAchievementsMultiplier,
+  getLevelBonusIdleContribution,
   getAntiConsumeristMultiplier,
   countIdleShopUpgradeTypesForConsolidation,
   formatShopUpgradeDescription,

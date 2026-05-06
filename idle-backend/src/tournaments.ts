@@ -25,6 +25,7 @@ type TournamentEntryRow = {
   last_collected_at: Date;
   real_time_available: number;
   achievement_count: number;
+  level: string;
 };
 
 export type TournamentEntrySummary = {
@@ -73,8 +74,17 @@ export type TournamentEnterResult = {
   enteredNow: boolean;
 };
 
-function toNumber(value: number): number {
-  return value;
+function toNumber(value: unknown): number {
+  if (typeof value === "number") {
+    return value;
+  }
+  if (typeof value === "bigint") {
+    return Number(value);
+  }
+  if (typeof value === "string") {
+    return Number(value);
+  }
+  throw new Error("Unexpected numeric value");
 }
 
 async function creditTimeGemsForTournamentReward(
@@ -398,6 +408,7 @@ async function getTournamentEntriesForScoring(
     last_collected_at: Date;
     real_time_available: number;
     achievement_count: number;
+    level: string;
   }>
 > {
   const result = await client.query<{
@@ -408,6 +419,7 @@ async function getTournamentEntriesForScoring(
     last_collected_at: Date;
     real_time_available: number;
     achievement_count: number;
+    level: string;
   }>(
     `
     SELECT
@@ -417,7 +429,8 @@ async function getTournamentEntriesForScoring(
       ps.shop,
       ps.last_collected_at,
       ps.real_time_available,
-      ps.achievement_count
+      ps.achievement_count,
+      ps.level
     FROM tournament_entries te
     INNER JOIN player_states ps ON ps.user_id = te.user_id
     INNER JOIN users u ON u.id = te.user_id
@@ -457,7 +470,8 @@ function scoreAndSortTournamentEntries(
         now,
         row.shop,
         achievementCount,
-        toNumber(row.real_time_available)
+        toNumber(row.real_time_available),
+        toNumber(row.level)
       );
       return {
         userId: row.user_id,
@@ -659,7 +673,8 @@ async function finalizeTournamentCore(client: PoolClient, tournament: Tournament
       ps.shop,
       ps.last_collected_at,
       ps.real_time_available,
-      ps.achievement_count
+      ps.achievement_count,
+      ps.level
     FROM tournament_entries te
     INNER JOIN player_states ps ON ps.user_id = te.user_id
     WHERE te.tournament_id = $1
@@ -676,7 +691,8 @@ async function finalizeTournamentCore(client: PoolClient, tournament: Tournament
       now,
       row.shop,
       achievementCount,
-      toNumber(row.real_time_available)
+      toNumber(row.real_time_available),
+      toNumber(row.level)
     );
     await client.query(
       `

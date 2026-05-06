@@ -9,6 +9,7 @@ import {
   getQuickCollectorBonus,
   getRestraintBonusMultiplier,
   getRestraintMinRealtimeSeconds,
+  getLevelBonusIdleContribution,
   getSecondsMultiplier,
   getWorthwhileAchievementsMultiplier
 } from "./shop.js";
@@ -26,6 +27,8 @@ export type IdleCollectionPlayer = {
   secondsSinceLastCollection: number;
   shop: ShopState;
   achievementCount: number;
+  /** Player level (`player_states.level`); defaults to 1 when omitted. */
+  playerLevel?: number;
   realTimeAvailable?: number;
   /** Milliseconds since Unix epoch; required for Anti-consumerist (otherwise that multiplier is treated as ×1). */
   wallClockMs?: number;
@@ -102,6 +105,9 @@ export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): numbe
     safeNumber(player.achievementCount, 0)
   );
 
+  const playerLevelForBonus = Math.max(1, Math.floor(safeNumber(player.playerLevel, 1)));
+  const levelBonusContribution = getLevelBonusIdleContribution(player.shop, playerLevelForBonus);
+
   const idleHoarderMultiplier = getIdleHoarderMultiplier(
     IDLE_HOARDER_SHOP_UPGRADE.currentLevel(player.shop),
     safeNumber(player.realTimeAvailable, 0),
@@ -115,6 +121,7 @@ export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): numbe
     getAntiConsumeristMultiplier(player.shop, player.wallClockMs ?? 0),
     getConsolidationBonus(player.shop),
     worthwhileAchievementsMultiplier,
+    levelBonusContribution,
     idleHoarderMultiplier - 1,
     getPatienceRate(player),
     getQuickCollectorBonus(player.shop, safeNaturalNumber(player.secondsSinceLastCollection))

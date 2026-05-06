@@ -133,6 +133,7 @@ export function registerShopRoutes({
         last_collected_at: Date;
         last_daily_reward_collected_at: Date | null;
         tutorial_progress: string;
+        level: string;
       }>(
         `
         SELECT
@@ -151,7 +152,8 @@ export function registerShopRoutes({
           current_seconds_last_updated,
           last_collected_at,
           last_daily_reward_collected_at,
-          tutorial_progress
+          tutorial_progress,
+          level
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -268,7 +270,8 @@ export function registerShopRoutes({
         now,
         nextShopState,
         nextAchievementCount,
-        nextRealTimeAvailable
+        nextRealTimeAvailable,
+        toNumber(row.level)
       );
       const updateResult = await client.query<{
         idle_time_total: string;
@@ -354,6 +357,7 @@ export function registerShopRoutes({
         secondsSinceLastCollection: elapsedSinceLastCollection,
         shop: updated.shop,
         achievementCount: nextAchievementCount,
+        playerLevel: toNumber(updated.level),
         realTimeAvailable: toNumber(updated.real_time_available),
         wallClockMs: now.getTime()
       });
@@ -497,7 +501,8 @@ export function registerShopRoutes({
         now,
         row.shop,
         achievementCount,
-        nextRealTimeAvailable
+        nextRealTimeAvailable,
+        currentLevel + 1
       );
 
       const updateResult = await client.query<{
@@ -566,6 +571,7 @@ export function registerShopRoutes({
         secondsSinceLastCollection: elapsedSinceLastCollection,
         shop: updated.shop,
         achievementCount: nextAchievementCount,
+        playerLevel: toNumber(updated.level),
         realTimeAvailable: toNumber(updated.real_time_available),
         wallClockMs: now.getTime()
       });
@@ -642,6 +648,7 @@ export function registerShopRoutes({
         last_daily_reward_collected_at: Date | null;
         tutorial_progress: string;
         obligations_completed: unknown;
+        level: string;
       }>(
         `
         SELECT
@@ -658,7 +665,8 @@ export function registerShopRoutes({
           last_collected_at,
           last_daily_reward_collected_at,
           tutorial_progress,
-          obligations_completed
+          obligations_completed,
+          level
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -678,7 +686,8 @@ export function registerShopRoutes({
         now,
         row.shop,
         toNumber(row.achievement_count),
-        toNumber(row.real_time_available)
+        toNumber(row.real_time_available),
+        toNumber(row.level)
       );
       const updateResult = await client.query<{
         idle_time_total: string;
@@ -764,6 +773,7 @@ export function registerShopRoutes({
         secondsSinceLastCollection: elapsedSinceLastCollection,
         shop: updated.shop,
         achievementCount: achievementCountAfter,
+        playerLevel: toNumber(row.level),
         realTimeAvailable: toNumber(updated.real_time_available),
         wallClockMs: now.getTime()
       });

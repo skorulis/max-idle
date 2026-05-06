@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   getDefaultShopState,
+  getLevelBonusIdleContribution,
   getWorthwhileAchievementsMultiplier,
   withShopUpgradeLevel
 } from "./shop.js";
@@ -66,5 +67,22 @@ describe("getWorthwhileAchievementsMultiplier", () => {
     );
     expect(getWorthwhileAchievementsMultiplier(shop, Number.NaN)).toBe(0);
     expect(getWorthwhileAchievementsMultiplier(shop, Number.POSITIVE_INFINITY)).toBe(0);
+  });
+});
+
+describe("getLevelBonusIdleContribution", () => {
+  it("returns 0 when Level bonus has no tier purchased", () => {
+    const shop = getDefaultShopState();
+    expect(getLevelBonusIdleContribution(shop, 10)).toBe(0);
+  });
+
+  it("returns bonus per level × player level for tier ≥ 1", () => {
+    const shop = withShopUpgradeLevel(getDefaultShopState(), SHOP_UPGRADE_IDS.LEVEL_BONUS, 1);
+    expect(getLevelBonusIdleContribution(shop, 5)).toBeCloseTo(1.0, 10);
+  });
+
+  it("floors fractional player levels", () => {
+    const shop = withShopUpgradeLevel(getDefaultShopState(), SHOP_UPGRADE_IDS.LEVEL_BONUS, 1);
+    expect(getLevelBonusIdleContribution(shop, 5.9)).toBeCloseTo(1.0, 10);
   });
 });

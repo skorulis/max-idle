@@ -510,6 +510,7 @@ export function HomePage({
         effectiveIdleSecondsRate={effectiveIdleSecondsRate}
         shop={playerState.shop}
         achievementCount={playerState.achievementCount}
+        playerLevel={playerState.level}
         realTimeAvailable={playerState.realTime.available}
         estimatedServerNowMs={estimatedServerNowMs}
       />

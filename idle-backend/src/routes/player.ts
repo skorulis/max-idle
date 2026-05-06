@@ -143,6 +143,7 @@ export async function buildPlayerStatePayload(
     secondsSinceLastCollection: elapsedSinceLastCollection,
     shop: row.shop,
     achievementCount,
+    playerLevel: toNumber(row.level),
     realTimeAvailable: toNumber(row.real_time_available),
     wallClockMs: row.server_time.getTime()
   });
@@ -348,6 +349,7 @@ export function registerPlayerRoutes({
         last_daily_bonus_claimed_at: Date | null;
         tutorial_progress: string;
         obligations_completed: unknown;
+        level: number;
       }>(
         `
         SELECT
@@ -364,7 +366,8 @@ export function registerPlayerRoutes({
           last_daily_reward_collected_at,
           last_daily_bonus_claimed_at,
           tutorial_progress,
-          obligations_completed
+          obligations_completed,
+          level
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -391,7 +394,8 @@ export function registerPlayerRoutes({
         collectedAt,
         lockedRow.shop,
         collectionAchievementCount,
-        toNumber(lockedRow.real_time_available)
+        toNumber(lockedRow.real_time_available),
+        toNumber(lockedRow.level)
       );
       const baseRealSecondsCollected = calculateElapsedSeconds(lockedRow.last_collected_at, collectedAt);
       const collectedSeconds =
@@ -528,6 +532,7 @@ export function registerPlayerRoutes({
         secondsSinceLastCollection: elapsedSinceLastCollectionAfterCollect,
         shop: row.shop,
         achievementCount: achievementCountAfter,
+        playerLevel: toNumber(row.level),
         realTimeAvailable: toNumber(row.real_time_available),
         wallClockMs: collectedAt.getTime()
       });
@@ -896,6 +901,7 @@ export function registerPlayerRoutes({
         secondsSinceLastCollection: elapsedSinceLastCollection,
         shop: updatedPlayer.shop,
         achievementCount: achievementCountAfter,
+        playerLevel: toNumber(updatedPlayer.level),
         realTimeAvailable: toNumber(updatedPlayer.real_time_available),
         wallClockMs: now.getTime()
       });

@@ -133,6 +133,11 @@
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 10
+              },
+              "level_bonus": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9
               }
             },
             "required": [
@@ -734,6 +739,20 @@
             "required": [
               "upgradeType"
             ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "upgradeType": {
+                "type": "string",
+                "enum": [
+                  "level_bonus"
+                ]
+              }
+            },
+            "required": [
+              "upgradeType"
+            ]
           }
         ]
       },
@@ -802,6 +821,12 @@
                         "type": "string",
                         "enum": [
                           "real_refund"
+                        ]
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          "level_bonus"
                         ]
                       }
                     ]

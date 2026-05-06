@@ -53,6 +53,7 @@ type PlayerCurrentSecondsSyncRow = {
   current_seconds_last_updated: Date;
   last_collected_at: Date;
   achievement_count: number;
+  level: string;
   shop: ShopState;
   server_time: Date;
 };
@@ -70,6 +71,7 @@ export async function syncStalePlayerCurrentSeconds(pool: Pool, limit = 100): Pr
         current_seconds_last_updated,
         last_collected_at,
         achievement_count,
+        level,
         shop,
         NOW() AS server_time
       FROM player_states
@@ -87,7 +89,8 @@ export async function syncStalePlayerCurrentSeconds(pool: Pool, limit = 100): Pr
         row.server_time,
         row.shop,
         achievementCount,
-        toNumber(row.real_time_available)
+        toNumber(row.real_time_available),
+        toNumber(row.level)
       );
 
       await client.query(
@@ -358,7 +361,8 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
         row.server_time,
         row.shop,
         achievementCount,
-        toNumber(row.real_time_available)
+        toNumber(row.real_time_available),
+        toNumber(row.level)
       );
       const timeAwaySeconds = calculateElapsedSeconds(row.last_active, row.server_time);
 

@@ -44,6 +44,7 @@ type ShopPageProps = {
     | "restraint"
     | "idle_hoarder"
     | "worthwhile_achievements"
+    | "level_bonus"
     | "anti_consumerist"
     | "consolidation"
     | "quick_collector"
@@ -109,6 +110,9 @@ function formatUpgradeValue(upgrade: ShopUpgradeDefinition, value: number): stri
     return formatMultiplier(value);
   }
   if (upgrade.id === SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS) {
+    return `${value.toFixed(2)}×`;
+  }
+  if (upgrade.id === SHOP_UPGRADE_IDS.LEVEL_BONUS) {
     return `${value.toFixed(2)}×`;
   }
   /** Template includes literal `x` after placeholder (`%sx`). */

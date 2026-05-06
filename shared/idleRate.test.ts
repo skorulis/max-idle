@@ -233,4 +233,22 @@ describe("getEffectiveIdleSecondsRate", () => {
     expect(getEffectiveIdleSecondsRate(player)).toBeCloseTo(1 + getPatienceRate(player), 10);
     expect(getEffectiveIdleSecondsRate(player)).toBeGreaterThan(0);
   });
+
+  it("adds level bonus scaled by player level", () => {
+    const base = getEffectiveIdleSecondsRate({
+      secondsSinceLastCollection: 0,
+      shop: { ...DEFAULT_SHOP_STATE },
+      achievementCount: 0,
+      playerLevel: 10,
+      realTimeAvailable: 0
+    });
+    const withBonus = getEffectiveIdleSecondsRate({
+      secondsSinceLastCollection: 0,
+      shop: { ...DEFAULT_SHOP_STATE, [SHOP_UPGRADE_IDS.LEVEL_BONUS]: 1 },
+      achievementCount: 0,
+      playerLevel: 10,
+      realTimeAvailable: 0
+    });
+    expect(withBonus - base).toBeCloseTo(2, 10);
+  });
 });

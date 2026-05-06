@@ -2,6 +2,7 @@ import {
   Atom,
   Archive, 
   BadgeCheck,
+  BadgePlus,
   CalendarX,
   CircleHelp,
   Clock3,
@@ -35,6 +36,8 @@ export function getLucidIcon(iconName: string): LucideIcon {
       return UserPlus;
     case "badge-check":
       return BadgeCheck;
+    case "badge-plus":
+      return BadgePlus;
     case "clock":
       return Clock3;
     case "repeat":

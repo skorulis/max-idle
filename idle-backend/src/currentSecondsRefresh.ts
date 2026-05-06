@@ -8,6 +8,7 @@ export type PlayerCurrentSecondsSourceRow = {
   shop: ShopState;
   achievement_count: number;
   real_time_available: number;
+  level: string | number;
   server_time: Date;
 };
 
@@ -23,7 +24,8 @@ export async function persistCurrentSecondsFromPlayerRow(
     row.server_time,
     row.shop,
     achievementCount,
-    toNumber(row.real_time_available)
+    toNumber(row.real_time_available),
+    toNumber(row.level)
   );
   await pool.query(
     `
@@ -51,6 +53,7 @@ export async function refreshStoredCurrentIdleSeconds(
       shop,
       achievement_count,
       real_time_available,
+      level,
       NOW() AS server_time
     FROM player_states
     WHERE user_id = $1

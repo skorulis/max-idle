@@ -11,6 +11,7 @@ import {
   SECONDS_MULTIPLIER_SHOP_UPGRADE,
   STORAGE_EXTENSION_SHOP_UPGRADE,
   WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
+  LEVEL_BONUS_SHOP_UPGRADE,
   SHOP_UPGRADES,
   SHOP_CURRENCY_TYPES,
   SHOP_UPGRADE_DESCRIPTION_VALUE_PLACEHOLDER,
@@ -34,6 +35,8 @@ export type ShopState = {
   /** Resets to 0 on collect. Same key as {@link SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST}. */
   collect_gem_time_boost?: number;
   worthwhile_achievements?: number;
+  /** {@link SHOP_UPGRADE_IDS.LEVEL_BONUS} — bonus per player level (see {@link getLevelBonusIdleContribution}). */
+  level_bonus?: number;
   /** {@link SHOP_UPGRADE_IDS.STORAGE_EXTENSION} — raises boosted-idle storage ceiling (see {@link getMaxIdleCollectionRealtimeSeconds}). */
   storage_extension?: number;
   /** {@link SHOP_UPGRADE_IDS.ANTI_CONSUMERIST} — streak multiplier tiers (see {@link getAntiConsumeristMultiplier}). */
@@ -58,6 +61,7 @@ export const DEFAULT_SHOP_STATE: ShopState = {
   [SHOP_UPGRADE_IDS.IDLE_HOARDER]: 0,
   [SHOP_UPGRADE_IDS.LUCK]: 0,
   [SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS]: 0,
+  [SHOP_UPGRADE_IDS.LEVEL_BONUS]: 0,
   [SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST]: 0,
   [SHOP_UPGRADE_IDS.STORAGE_EXTENSION]: 0,
   [SHOP_UPGRADE_IDS.ANTI_CONSUMERIST]: 0,
@@ -121,6 +125,17 @@ export function getWorthwhileAchievementsMultiplier(shop: ShopState, achievement
   const bonusPer = WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE.currentValue(shop);
   const count = Math.max(0, Math.floor(safeNumber(achievementCount, 0)));
   return bonusPer * count;
+}
+
+/** Additive idle rate bonus: `bonusPerPlayerLevel × playerLevel` when Level bonus has any tier unlocked. */
+export function getLevelBonusIdleContribution(shop: ShopState, playerLevel: number): number {
+  const tier = LEVEL_BONUS_SHOP_UPGRADE.currentLevel(shop);
+  if (tier <= 0) {
+    return 0;
+  }
+  const bonusPer = LEVEL_BONUS_SHOP_UPGRADE.currentValue(shop);
+  const lv = Math.max(0, Math.floor(safeNumber(playerLevel, 1)));
+  return bonusPer * lv;
 }
 
 export function getLuckEnabled(shop: ShopState): boolean {

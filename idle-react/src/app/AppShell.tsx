@@ -298,6 +298,7 @@ export function AppShell() {
       secondsSinceLastCollection: Math.max(0, elapsedSinceLastCollection),
       shop: playerState.shop,
       achievementCount: playerState.achievementCount,
+      playerLevel: playerState.level,
       realTimeAvailable: playerState.realTime.available,
       wallClockMs: estimatedServerNowMs
     });
@@ -321,6 +322,7 @@ export function AppShell() {
       secondsSinceLastCollection: Math.max(0, elapsed),
       shop: playerState.shop,
       achievementCount: playerState.achievementCount,
+      playerLevel: playerState.level,
       realTimeAvailable: playerState.realTime.available,
       wallClockMs: estimatedServerNowMs
     });

@@ -429,6 +429,7 @@ export function registerDailyBonusRoutes({
         secondsSinceLastCollection: elapsedSinceLastCollection,
         shop: updatedPlayer.shop,
         achievementCount,
+        playerLevel: toNumber(updatedPlayer.level),
         realTimeAvailable: toNumber(updatedPlayer.real_time_available),
         wallClockMs: now.getTime()
       });
