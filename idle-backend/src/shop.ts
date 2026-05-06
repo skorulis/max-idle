@@ -3,6 +3,7 @@ import type { Pool } from "pg";
 import { ACHIEVEMENT_IDS, GEM_HOARDER_MIN_AVAILABLE_GEMS } from "@maxidle/shared/achievements";
 import type { AchievementId } from "@maxidle/shared/achievements";
 import {
+  applyLegacyShopUpgradeRefunds,
   getPurchasedShopUpgradeLevelCount,
   getShopCurrencyTierPurchaseCostSum,
   getShopPurchaseRefundTotals,
@@ -22,6 +23,7 @@ import {
   SHOP_UPGRADE_IDS,
   ShopUpgradeDefinition,
   getShopUpgradeDefinition,
+  isLegacyShopUpgradeId,
 } from "@maxidle/shared/shopUpgrades";
 import { getPlayerLevelUpgradeCostFromLevel } from "@maxidle/shared/playerLevelCosts";
 import { safeNaturalNumber } from "@maxidle/shared/safeNumber";
@@ -109,6 +111,10 @@ export function registerShopRoutes({
         res.status(400).json({ error: "Unsupported upgrade type" });
         return;
       }
+      if (isLegacyShopUpgradeId(upgradeType)) {
+        res.status(400).json({ error: "Upgrade is no longer available", code: "LEGACY_UPGRADE_UNAVAILABLE" });
+        return;
+      }
       if (upgradeType === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER && ![1, 5, 10].includes(requestedQuantity)) {
         res.status(400).json({ error: "Invalid purchase quantity" });
         return;
@@ -168,6 +174,10 @@ export function registerShopRoutes({
         return;
       }
 
+      const legacyRefund = applyLegacyShopUpgradeRefunds(row.shop);
+      const shopState = legacyRefund.shop;
+      const idleTimeAvailable = toNumber(row.idle_time_available) + legacyRefund.idleRefund;
+      const realTimeAvailable = toNumber(row.real_time_available) + legacyRefund.realRefund;
       const now = new Date();
       const isExtraRealtimeWait = upgradeType === SHOP_UPGRADE_IDS.EXTRA_REALTIME_WAIT;
       const isCollectGemTimeBoost = upgradeType === SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST;
@@ -176,33 +186,31 @@ export function registerShopRoutes({
       const isPurchaseRefund = isIdleRefund || isRealRefund;
       const isGemPurchase = boundedUpgrade.currencyType === SHOP_CURRENCY_TYPES.GEM;
       const isMaxLevelBoundedUpgrade = !isExtraRealtimeWait && !isPurchaseRefund;
-      const collectGemLevel = COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.currentLevel(row.shop);
+      const collectGemLevel = COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE.currentLevel(shopState);
       const quantity = isGemPurchase
         ? 1
         : upgradeType === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER
           ? requestedQuantity
           : 1;
 
-      const currentLevel = boundedUpgrade.currentLevel(row.shop);
-      if (isIdleRefund && !hasRefundableIdleShopPurchases(row.shop)) {
+      const currentLevel = boundedUpgrade.currentLevel(shopState);
+      if (isIdleRefund && !hasRefundableIdleShopPurchases(shopState)) {
         await client.query("ROLLBACK");
         res.status(400).json({ error: "No idle time purchases to refund", code: "NO_REFUNDABLE_PURCHASES" });
         return;
       }
-      if (isRealRefund && !hasRefundableRealShopPurchases(row.shop)) {
+      if (isRealRefund && !hasRefundableRealShopPurchases(shopState)) {
         await client.query("ROLLBACK");
         res.status(400).json({ error: "No real time purchases to refund", code: "NO_REFUNDABLE_PURCHASES" });
         return;
       }
       
-      if (isMaxLevelBoundedUpgrade && wouldExceedUpgradeMaxLevel(boundedUpgrade, row.shop, quantity)) {
+      if (isMaxLevelBoundedUpgrade && wouldExceedUpgradeMaxLevel(boundedUpgrade, shopState, quantity)) {
         await client.query("ROLLBACK");
         res.status(400).json({ error: "Upgrade already maxed", code: "ALREADY_OWNED" });
         return;
       }
-      const totalCost = getUpgradePurchaseCost(boundedUpgrade, row.shop, currentLevel, quantity);
-      const idleTimeAvailable = toNumber(row.idle_time_available);
-      const realTimeAvailable = toNumber(row.real_time_available);
+      const totalCost = getUpgradePurchaseCost(boundedUpgrade, shopState, currentLevel, quantity);
       const timeGemsAvailable = toNumber(row.time_gems_available);
       const availableForUpgrade =
         boundedUpgrade.currencyType === "gem"
@@ -219,7 +227,7 @@ export function registerShopRoutes({
         return;
       }
 
-      const refundTotalsFull = getShopPurchaseRefundTotals(row.shop);
+      const refundTotalsFull = getShopPurchaseRefundTotals(shopState);
       const refundTotals = isIdleRefund
         ? { idle: refundTotalsFull.idle, real: 0 }
         : isRealRefund
@@ -227,14 +235,14 @@ export function registerShopRoutes({
           : { idle: 0, real: 0 };
       const shouldRecordLastPurchase = boundedUpgrade.currencyType !== SHOP_CURRENCY_TYPES.GEM;
       const nextShopStateBase = isExtraRealtimeWait
-        ? row.shop
+        ? shopState
         : isCollectGemTimeBoost
-          ? withShopUpgradeLevel(row.shop, SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST, collectGemLevel + quantity)
+          ? withShopUpgradeLevel(shopState, SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST, collectGemLevel + quantity)
           : isIdleRefund
-            ? withIdleCurrencyShopUpgradesReset(row.shop)
+            ? withIdleCurrencyShopUpgradesReset(shopState)
             : isRealRefund
-              ? withRealCurrencyShopUpgradesReset(row.shop)
-              : withShopUpgradeLevel(row.shop, boundedUpgrade.id, currentLevel + quantity);
+              ? withRealCurrencyShopUpgradesReset(shopState)
+              : withShopUpgradeLevel(shopState, boundedUpgrade.id, currentLevel + quantity);
       const nextShopState = shouldRecordLastPurchase
         ? { ...nextShopStateBase, last_purchase: Math.floor(now.getTime() / 1000) }
         : nextShopStateBase;
@@ -257,10 +265,10 @@ export function registerShopRoutes({
       const nextAchievementCount = sumAchievementLevels(nextAchievementLevels);
       const hasNewAchievement = nextAchievementCount > toNumber(row.achievement_count);
       const nextAchievementBonusMultiplier = getWorthwhileAchievementsMultiplier(nextShopState, nextAchievementCount);
-      const nextIdleTimeAvailable =
+      const nextIdleTimeAvailableAfterPurchase =
         boundedUpgrade.currencyType === SHOP_CURRENCY_TYPES.IDLE ? idleTimeAvailable - totalCost : idleTimeAvailable;
-      const nextIdleTimeAvailableWithRefund = nextIdleTimeAvailable + refundTotals.idle;
-      const nextRealTimeAvailable = boundedUpgrade.currencyType === SHOP_CURRENCY_TYPES.REAL
+      const nextIdleTimeAvailableWithRefund = nextIdleTimeAvailableAfterPurchase + refundTotals.idle;
+      const nextRealTimeAvailableAfterPurchase = boundedUpgrade.currencyType === SHOP_CURRENCY_TYPES.REAL
         ? realTimeAvailable - totalCost + refundTotals.real
         : realTimeAvailable + refundTotals.real;
       const nextTimeGemsAvailable =
@@ -270,7 +278,7 @@ export function registerShopRoutes({
         now,
         nextShopState,
         nextAchievementCount,
-        nextRealTimeAvailable,
+        nextRealTimeAvailableAfterPurchase,
         toNumber(row.level)
       );
       const updateResult = await client.query<{
@@ -305,7 +313,9 @@ export function registerShopRoutes({
           achievement_levels = $9::jsonb,
           achievement_count = $10,
           has_unseen_achievements = has_unseen_achievements OR $11::boolean,
-          real_time_available = $12
+          real_time_available = $12,
+          idle_time_total = idle_time_total + $13::BIGINT,
+          real_time_total = real_time_total + $14::BIGINT
         WHERE user_id = $1
         RETURNING
           idle_time_total,
@@ -338,7 +348,9 @@ export function registerShopRoutes({
           JSON.stringify(nextAchievementLevels),
           nextAchievementCount,
           hasNewAchievement,
-          nextRealTimeAvailable
+          nextRealTimeAvailableAfterPurchase,
+          legacyRefund.idleRefund,
+          legacyRefund.realRefund
         ]
       );
       const updated = updateResult.rows[0];

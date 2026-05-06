@@ -488,31 +488,16 @@ describe("auth + player lifecycle", () => {
     expect(maxedPurchaseResponse.body.code).toBe("ALREADY_OWNED");
   });
 
-  it("allows purchasing idle hoarder upgrade up to max level using real time", async () => {
+  it("blocks purchasing legacy idle hoarder upgrade", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
-    const userId = authResponse.body.userId as string;
-
-    await pool.query(`UPDATE player_states SET real_time_available = 200000 WHERE user_id = $1`, [userId]);
-
-    for (let level = 1; level <= 5; level += 1) {
-      const purchaseResponse = await request(app)
-        .post("/shop/purchase")
-        .set("Authorization", `Bearer ${token}`)
-        .send({ upgradeType: "idle_hoarder" });
-      expect(purchaseResponse.status).toBe(200);
-      expect(purchaseResponse.body.purchase.upgradeType).toBe("idle_hoarder");
-      expect(purchaseResponse.body.purchase.quantity).toBe(1);
-      expect(purchaseResponse.body.shop.idle_hoarder).toBe(level);
-    }
-
-    const maxedPurchaseResponse = await request(app)
+    const purchaseResponse = await request(app)
       .post("/shop/purchase")
       .set("Authorization", `Bearer ${token}`)
       .send({ upgradeType: "idle_hoarder" });
-    expect(maxedPurchaseResponse.status).toBe(400);
-    expect(maxedPurchaseResponse.body.code).toBe("ALREADY_OWNED");
+    expect(purchaseResponse.status).toBe(400);
+    expect(purchaseResponse.body.code).toBe("LEGACY_UPGRADE_UNAVAILABLE");
   });
 
   it("purchases extra_realtime_wait for 1 gem and shifts last_collected_at back 6h", async () => {
@@ -693,7 +678,7 @@ describe("auth + player lifecycle", () => {
         luck: 0,
         collect_gem_time_boost: 3,
         storage_extension: 0,
-        idle_hoarder: 0,
+        interest: 0,
         another_seconds_multiplier: 0
       })
     );

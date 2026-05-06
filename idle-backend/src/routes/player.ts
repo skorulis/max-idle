@@ -2,6 +2,7 @@ import express from "express";
 import type { Pool } from "pg";
 import { ACHIEVEMENT_IDS, GEM_HOARDER_MIN_AVAILABLE_GEMS, type AchievementId } from "@maxidle/shared/achievements";
 import {
+  applyLegacyShopUpgradeRefunds,
   formatRestraintBlockedCollectMessage,
   getIdleInterestSeconds,
   getSecondsMultiplier,
@@ -132,6 +133,49 @@ export async function buildPlayerStatePayload(
   const row = result.rows[0];
   if (!row) {
     return null;
+  }
+
+  const legacyRefund = applyLegacyShopUpgradeRefunds(row.shop);
+  if (legacyRefund.refundedUpgradeIds.length > 0) {
+    const refundedRealAvailable = toNumber(row.real_time_available) + legacyRefund.realRefund;
+    const syncedCurrentSeconds = boostedUncollectedIdleSeconds(
+      row.last_collected_at,
+      row.server_time,
+      legacyRefund.shop,
+      toNumber(row.achievement_count),
+      refundedRealAvailable,
+      toNumber(row.level)
+    );
+    await pool.query(
+      `
+      UPDATE player_states
+      SET
+        shop = $2::jsonb,
+        idle_time_available = idle_time_available + $3::BIGINT,
+        idle_time_total = idle_time_total + $3::BIGINT,
+        real_time_available = real_time_available + $4::BIGINT,
+        real_time_total = real_time_total + $4::BIGINT,
+        current_seconds = $5,
+        current_seconds_last_updated = $6,
+        updated_at = $6
+      WHERE user_id = $1
+      `,
+      [
+        userId,
+        JSON.stringify(legacyRefund.shop),
+        legacyRefund.idleRefund,
+        legacyRefund.realRefund,
+        syncedCurrentSeconds,
+        row.server_time
+      ]
+    );
+    row.shop = legacyRefund.shop;
+    row.idle_time_available = String(toNumber(row.idle_time_available) + legacyRefund.idleRefund);
+    row.idle_time_total = String(toNumber(row.idle_time_total) + legacyRefund.idleRefund);
+    row.real_time_available = toNumber(row.real_time_available) + legacyRefund.realRefund;
+    row.real_time_total = String(toNumber(row.real_time_total) + legacyRefund.realRefund);
+    row.current_seconds = String(syncedCurrentSeconds);
+    row.current_seconds_last_updated = row.server_time;
   }
 
   const collectionCount = await getPlayerCollectionCount(pool, userId);

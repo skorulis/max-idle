@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyLegacyShopUpgradeRefunds,
+  getShopCurrencyTierPurchaseCostSum,
   getDefaultShopState,
   getLevelBonusIdleContribution,
   getWorthwhileAchievementsMultiplier,
   withShopUpgradeLevel
 } from "./shop.js";
+import { SHOP_CURRENCY_TYPES } from "./shopUpgrades.js";
 import { SHOP_UPGRADE_IDS } from "./shopUpgrades.js";
 
 describe("getWorthwhileAchievementsMultiplier", () => {
@@ -84,5 +87,33 @@ describe("getLevelBonusIdleContribution", () => {
   it("floors fractional player levels", () => {
     const shop = withShopUpgradeLevel(getDefaultShopState(), SHOP_UPGRADE_IDS.LEVEL_BONUS, 1);
     expect(getLevelBonusIdleContribution(shop, 5.9)).toBeCloseTo(1.0, 10);
+  });
+});
+
+describe("applyLegacyShopUpgradeRefunds", () => {
+  it("refunds legacy upgrades using the shared currency table", () => {
+    const shop = withShopUpgradeLevel(getDefaultShopState(), SHOP_UPGRADE_IDS.IDLE_HOARDER, 2);
+    const result = applyLegacyShopUpgradeRefunds(shop);
+    expect(result.realRefund).toBe(getShopCurrencyTierPurchaseCostSum(SHOP_CURRENCY_TYPES.REAL, 0, 2));
+    expect(result.idleRefund).toBe(0);
+    expect(result.shop.idle_hoarder).toBe(0);
+    expect(result.refundedUpgradeIds).toEqual([SHOP_UPGRADE_IDS.IDLE_HOARDER]);
+  });
+
+  it("refunds as if legacy levels were the most recent purchases", () => {
+    const withLuck = withShopUpgradeLevel(getDefaultShopState(), SHOP_UPGRADE_IDS.LUCK, 3);
+    const shop = withShopUpgradeLevel(withLuck, SHOP_UPGRADE_IDS.IDLE_HOARDER, 2);
+    const result = applyLegacyShopUpgradeRefunds(shop);
+    expect(result.realRefund).toBe(getShopCurrencyTierPurchaseCostSum(SHOP_CURRENCY_TYPES.REAL, 3, 2));
+    expect(result.shop.luck).toBe(3);
+    expect(result.shop.idle_hoarder).toBe(0);
+  });
+
+  it("does nothing when no legacy upgrade tiers are owned", () => {
+    const shop = getDefaultShopState();
+    const result = applyLegacyShopUpgradeRefunds(shop);
+    expect(result.realRefund).toBe(0);
+    expect(result.idleRefund).toBe(0);
+    expect(result.refundedUpgradeIds).toEqual([]);
   });
 });

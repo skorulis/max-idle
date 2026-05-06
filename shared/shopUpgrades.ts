@@ -88,6 +88,11 @@ export type ShopUpgradeDefinition = {
   currentValue(shop: ShopState): number;
 };
 
+export type LegacyShopUpgradeDefinition = {
+  id: ShopUpgradeId;
+  currencyType: Exclude<ShopCurrencyType, "gem">;
+};
+
 type ShopUpgradeDefinitionConfig = Omit<
   ShopUpgradeDefinition,
   "maxLevel" | "costAtLevel" | "currentLevel" | "currentValue"
@@ -523,7 +528,6 @@ export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   ANOTHER_SECONDS_MULTIPLIER_SHOP_UPGRADE,
   PATIENCE_SHOP_UPGRADE,
   RESTRAINT_SHOP_UPGRADE,
-  IDLE_HOARDER_SHOP_UPGRADE,
   STORAGE_EXTENSION_SHOP_UPGRADE,
   LUCK_SHOP_UPGRADE,
   WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
@@ -537,6 +541,17 @@ export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   IDLE_REFUND_SHOP_UPGRADE,
   REAL_REFUND_SHOP_UPGRADE
 ];
+
+export const LEGACY_SHOP_UPGRADES: LegacyShopUpgradeDefinition[] = [
+  {
+    id: SHOP_UPGRADE_IDS.IDLE_HOARDER,
+    currencyType: SHOP_CURRENCY_TYPES.REAL
+  }
+];
+
+export const LEGACY_SHOP_UPGRADES_BY_ID: Partial<Record<ShopUpgradeId, LegacyShopUpgradeDefinition>> = {
+  [SHOP_UPGRADE_IDS.IDLE_HOARDER]: LEGACY_SHOP_UPGRADES[0]
+};
 
 export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> = {
   [SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER]: SECONDS_MULTIPLIER_SHOP_UPGRADE,
@@ -560,4 +575,8 @@ export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> =
 
 export function getShopUpgradeDefinition(upgradeType: string): ShopUpgradeDefinition | null {
   return SHOP_UPGRADES_BY_ID[upgradeType as ShopUpgradeId] ?? null;
+}
+
+export function isLegacyShopUpgradeId(upgradeType: string): boolean {
+  return Boolean(LEGACY_SHOP_UPGRADES_BY_ID[upgradeType as ShopUpgradeId]);
 }

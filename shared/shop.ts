@@ -17,6 +17,7 @@ import {
   SHOP_CURRENCY_TYPES,
   SHOP_UPGRADE_DESCRIPTION_VALUE_PLACEHOLDER,
   SHOP_UPGRADE_IDS,
+  LEGACY_SHOP_UPGRADES,
 } from "./shopUpgrades.js";
 import {
   getShopCurrencyTierPurchaseCostSum,
@@ -180,6 +181,64 @@ export function getShopPurchaseRefundTotals(shop: ShopState): { idle: number; re
   return {
     idle: getTotalShopCurrencySpentForPurchaseCount(SHOP_CURRENCY_TYPES.IDLE, idleCount),
     real: getTotalShopCurrencySpentForPurchaseCount(SHOP_CURRENCY_TYPES.REAL, realCount)
+  };
+}
+
+export type LegacyShopUpgradeRefundResult = {
+  shop: ShopState;
+  idleRefund: number;
+  realRefund: number;
+  refundedUpgradeIds: ShopUpgradeId[];
+};
+
+export function applyLegacyShopUpgradeRefunds(shop: ShopState): LegacyShopUpgradeRefundResult {
+  let nextShop = { ...shop };
+  let idleRefund = 0;
+  let realRefund = 0;
+  const refundedUpgradeIds: ShopUpgradeId[] = [];
+  const purchasedByCurrency: Record<Exclude<ShopCurrencyType, "gem">, number> = {
+    [SHOP_CURRENCY_TYPES.IDLE]: getPurchasedShopUpgradeLevelCount(shop, SHOP_CURRENCY_TYPES.IDLE),
+    [SHOP_CURRENCY_TYPES.REAL]: getPurchasedShopUpgradeLevelCount(shop, SHOP_CURRENCY_TYPES.REAL)
+  };
+
+  for (const legacyUpgrade of LEGACY_SHOP_UPGRADES) {
+    const rawLevel = Number(shop[legacyUpgrade.id]);
+    const level = Number.isFinite(rawLevel) ? Math.max(0, Math.floor(rawLevel)) : 0;
+    if (level <= 0) {
+      continue;
+    }
+    purchasedByCurrency[legacyUpgrade.currencyType] += level;
+  }
+
+  for (const legacyUpgrade of LEGACY_SHOP_UPGRADES) {
+    const rawLevel = Number(nextShop[legacyUpgrade.id]);
+    const level = Number.isFinite(rawLevel) ? Math.max(0, Math.floor(rawLevel)) : 0;
+    if (level <= 0) {
+      continue;
+    }
+    const currency = legacyUpgrade.currencyType;
+    const purchaseCount = purchasedByCurrency[currency];
+    const refundableLevelCount = Math.min(level, purchaseCount);
+    const startIndex = Math.max(0, purchaseCount - refundableLevelCount);
+    const refund = getShopCurrencyTierPurchaseCostSum(currency, startIndex, refundableLevelCount);
+    if (legacyUpgrade.currencyType === SHOP_CURRENCY_TYPES.IDLE) {
+      idleRefund += refund;
+    } else {
+      realRefund += refund;
+    }
+    purchasedByCurrency[currency] = Math.max(0, purchaseCount - refundableLevelCount);
+    nextShop = {
+      ...nextShop,
+      [legacyUpgrade.id]: 0
+    };
+    refundedUpgradeIds.push(legacyUpgrade.id);
+  }
+
+  return {
+    shop: nextShop,
+    idleRefund,
+    realRefund,
+    refundedUpgradeIds
   };
 }
 
