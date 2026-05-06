@@ -99,6 +99,10 @@ export function isTournamentFeatureUnlocked(completed: Readonly<Record<string, b
   return completed[OBLIGATION_IDS.WAIT_IT_OUT] === true;
 }
 
+export function isLevelUpgradesUnlocked(completed: Readonly<Record<string, boolean | undefined>>): boolean {
+  return completed[OBLIGATION_IDS.TIME_GEMS] === true;
+}
+
 export const OBLIGATIONS: ObligationDefinition[] = [
   {
     id: OBLIGATION_IDS.COLLECT_SOME_TIME,
@@ -140,7 +144,8 @@ export const OBLIGATIONS: ObligationDefinition[] = [
       "Time is a great thing to have, but what's even better are time gems. They're like little packets of time that you can carry around with you. Collect the daily gem reward to get your first one.",
     rewards: [
       { type: "idle", value: 15 * SECONDS_PER_MINUTE },
-      { type: "real", value: 10 * SECONDS_PER_MINUTE }
+      { type: "real", value: 10 * SECONDS_PER_MINUTE },
+      { type: "text", label: "Unlock level upgrades" }
     ],
     condition: {
       allOf: [{ kind: "time_gems_total_gte", gems: 1 }]

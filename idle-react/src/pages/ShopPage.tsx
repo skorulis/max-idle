@@ -8,6 +8,7 @@ import {
   Plus,
 } from "lucide-react";
 import { Fragment, useState } from "react";
+import { isLevelUpgradesUnlocked } from "@maxidle/shared/obligations";
 import { getMaxPlayerLevel, getPlayerLevelUpgradeCostFromLevel } from "@maxidle/shared/playerLevelCosts";
 import type { SyncedPlayerState } from "../app/types";
 import { PlayerLevelBadge } from "../components/PlayerLevelBadge";
@@ -239,6 +240,7 @@ export function ShopPage({
   }
 
   const syncedPlayer = playerState;
+  const showPlayerLevelPanel = isLevelUpgradesUnlocked(syncedPlayer.obligationsCompleted);
 
   const nextLevelCost = getPlayerLevelUpgradeCostFromLevel(syncedPlayer.level);
   const maxPlayerLevel = getMaxPlayerLevel();
@@ -392,59 +394,61 @@ export function ShopPage({
 
   return (
     <>
-      <section className="card shop-player-level-section">
-        <h2>Player level</h2>
-        <div className="shop-player-level-body">
-          <div className="shop-player-level-hero">
-            <PlayerLevelBadge level={syncedPlayer.level} size={112} />
-          </div>
-          <div className="shop-player-level-details">
-            {atMaxPlayerLevel ? (
-              <p className="subtle">You have reached the maximum player level.</p>
-            ) : nextLevelCost ? (
-              <>
-                <p className="subtle">
-                  Upgrade to level {syncedPlayer.level + 1}
-                </p>
-                <div className="shop-player-level-costs" aria-label="Level upgrade costs">
-                  <div className="shop-player-level-cost-row">
-                    <Atom size={16} aria-hidden="true" />
-                    <span>Idle time: {formatSeconds(nextLevelCost.idleSeconds, 2, "floor")}</span>
-                  </div>
-                  <div className="shop-player-level-cost-row">
-                    <Clock3 size={16} aria-hidden="true" />
-                    <span>Real time: {formatSeconds(nextLevelCost.realSeconds, 2, "floor")}</span>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <p className="subtle">Level upgrade is not available.</p>
-            )}
-            <button
-              type="button"
-              className={`secondary shop-upgrade-buy-button${
-                !playerLevelUpgradeDisabled && !atMaxPlayerLevel ? " shop-upgrade-buy-button-purchasable" : ""
-              }`}
-              disabled={playerLevelUpgradeDisabled}
-              onClick={() => void onUpgradePlayerLevel()}
-              aria-label={atMaxPlayerLevel ? "Maximum player level reached" : "Upgrade player level"}
-            >
-              {levelUpgradePending ? (
-                <Hourglass size={16} aria-hidden="true" className="shop-upgrade-buy-hourglass-spin" />
-              ) : atMaxPlayerLevel ? (
-                "Maximum level"
-              ) : (
+      {showPlayerLevelPanel ? (
+        <section className="card shop-player-level-section">
+          <h2>Player level</h2>
+          <div className="shop-player-level-body">
+            <div className="shop-player-level-hero">
+              <PlayerLevelBadge level={syncedPlayer.level} size={112} />
+            </div>
+            <div className="shop-player-level-details">
+              {atMaxPlayerLevel ? (
+                <p className="subtle">You have reached the maximum player level.</p>
+              ) : nextLevelCost ? (
                 <>
-                  <Plus size={18} aria-hidden="true" className="shop-upgrade-buy-plus" />
-                  <span className="shop-upgrade-buy-cost">
-                    Level {syncedPlayer.level + 1}
-                  </span>
+                  <p className="subtle">
+                    Upgrade to level {syncedPlayer.level + 1}
+                  </p>
+                  <div className="shop-player-level-costs" aria-label="Level upgrade costs">
+                    <div className="shop-player-level-cost-row">
+                      <Atom size={16} aria-hidden="true" />
+                      <span>Idle time: {formatSeconds(nextLevelCost.idleSeconds, 2, "floor")}</span>
+                    </div>
+                    <div className="shop-player-level-cost-row">
+                      <Clock3 size={16} aria-hidden="true" />
+                      <span>Real time: {formatSeconds(nextLevelCost.realSeconds, 2, "floor")}</span>
+                    </div>
+                  </div>
                 </>
+              ) : (
+                <p className="subtle">Level upgrade is not available.</p>
               )}
-            </button>
+              <button
+                type="button"
+                className={`secondary shop-upgrade-buy-button${
+                  !playerLevelUpgradeDisabled && !atMaxPlayerLevel ? " shop-upgrade-buy-button-purchasable" : ""
+                }`}
+                disabled={playerLevelUpgradeDisabled}
+                onClick={() => void onUpgradePlayerLevel()}
+                aria-label={atMaxPlayerLevel ? "Maximum player level reached" : "Upgrade player level"}
+              >
+                {levelUpgradePending ? (
+                  <Hourglass size={16} aria-hidden="true" className="shop-upgrade-buy-hourglass-spin" />
+                ) : atMaxPlayerLevel ? (
+                  "Maximum level"
+                ) : (
+                  <>
+                    <Plus size={18} aria-hidden="true" className="shop-upgrade-buy-plus" />
+                    <span className="shop-upgrade-buy-cost">
+                      Level {syncedPlayer.level + 1}
+                    </span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
       <section className="card">
         <h2>Shop</h2>
         <div className="shop-currencies">

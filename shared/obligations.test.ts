@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   getCurrentObligationId,
+  isLevelUpgradesUnlocked,
   isObligationConditionMet,
   OBLIGATION_IDS,
   OBLIGATIONS,
@@ -173,6 +174,14 @@ describe("isObligationConditionMet", () => {
     };
     expect(isObligationConditionMet(waitItOut, { ...minimalSnapshot, realTimeTotal: 6 * 3600 })).toBe(true);
     expect(isObligationConditionMet(waitItOut, { ...minimalSnapshot, realTimeTotal: 6 * 3600 - 1 })).toBe(false);
+  });
+});
+
+describe("isLevelUpgradesUnlocked", () => {
+  it("is false until TIME_GEMS obligation is completed", () => {
+    expect(isLevelUpgradesUnlocked({})).toBe(false);
+    expect(isLevelUpgradesUnlocked({ [OBLIGATION_IDS.TIME_GEMS]: false })).toBe(false);
+    expect(isLevelUpgradesUnlocked({ [OBLIGATION_IDS.TIME_GEMS]: true })).toBe(true);
   });
 });
 
