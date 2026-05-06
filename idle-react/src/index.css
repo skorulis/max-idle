@@ -106,7 +106,7 @@ body {
 .shop-player-level-body {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: 20px;
 }
 
@@ -114,9 +114,25 @@ body {
   flex-shrink: 0;
 }
 
-.shop-player-level-details {
+.shop-player-level-main {
   flex: 1;
-  min-width: 220px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.shop-player-level-main > p {
+  margin: 0;
+}
+
+.shop-player-level-main .shop-player-level-costs {
+  margin: 0;
+}
+
+.shop-player-level-body > .shop-upgrade-buy-button {
+  flex-shrink: 0;
+  margin-top: 0;
 }
 
 .shop-player-level-costs {

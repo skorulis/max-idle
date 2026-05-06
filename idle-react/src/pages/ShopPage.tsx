@@ -392,6 +392,31 @@ export function ShopPage({
     return upgrade.currentLevel(syncedPlayer.shop);
   }
 
+  const playerLevelBuyButton = (
+    <button
+      type="button"
+      className={`secondary shop-upgrade-buy-button${
+        !playerLevelUpgradeDisabled && !atMaxPlayerLevel ? " shop-upgrade-buy-button-purchasable" : ""
+      }`}
+      disabled={playerLevelUpgradeDisabled}
+      onClick={() => void onUpgradePlayerLevel()}
+      aria-label={atMaxPlayerLevel ? "Maximum player level reached" : "Upgrade player level"}
+    >
+      {levelUpgradePending ? (
+        <Hourglass size={16} aria-hidden="true" className="shop-upgrade-buy-hourglass-spin" />
+      ) : atMaxPlayerLevel ? (
+        "Maximum level"
+      ) : (
+        <>
+          <Plus size={18} aria-hidden="true" className="shop-upgrade-buy-plus" />
+          <span className="shop-upgrade-buy-cost">
+            Level {syncedPlayer.level + 1}
+          </span>
+        </>
+      )}
+    </button>
+  );
+
   return (
     <>
       {showPlayerLevelPanel ? (
@@ -401,7 +426,7 @@ export function ShopPage({
             <div className="shop-player-level-hero">
               <PlayerLevelBadge level={syncedPlayer.level} size={112} />
             </div>
-            <div className="shop-player-level-details">
+            <div className="shop-player-level-main">
               {atMaxPlayerLevel ? (
                 <p className="subtle">You have reached the maximum player level.</p>
               ) : nextLevelCost ? (
@@ -423,29 +448,8 @@ export function ShopPage({
               ) : (
                 <p className="subtle">Level upgrade is not available.</p>
               )}
-              <button
-                type="button"
-                className={`secondary shop-upgrade-buy-button${
-                  !playerLevelUpgradeDisabled && !atMaxPlayerLevel ? " shop-upgrade-buy-button-purchasable" : ""
-                }`}
-                disabled={playerLevelUpgradeDisabled}
-                onClick={() => void onUpgradePlayerLevel()}
-                aria-label={atMaxPlayerLevel ? "Maximum player level reached" : "Upgrade player level"}
-              >
-                {levelUpgradePending ? (
-                  <Hourglass size={16} aria-hidden="true" className="shop-upgrade-buy-hourglass-spin" />
-                ) : atMaxPlayerLevel ? (
-                  "Maximum level"
-                ) : (
-                  <>
-                    <Plus size={18} aria-hidden="true" className="shop-upgrade-buy-plus" />
-                    <span className="shop-upgrade-buy-cost">
-                      Level {syncedPlayer.level + 1}
-                    </span>
-                  </>
-                )}
-              </button>
             </div>
+            {playerLevelBuyButton}
           </div>
         </section>
       ) : null}
