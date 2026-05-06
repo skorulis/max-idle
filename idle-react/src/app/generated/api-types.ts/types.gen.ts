@@ -32,7 +32,6 @@ export type PlayerState = {
         seconds_multiplier: number;
         another_seconds_multiplier?: number;
         restraint: number;
-        idle_hoarder?: number;
         luck: number;
         collect_gem_time_boost?: number;
         worthwhile_achievements?: number;
@@ -150,8 +149,6 @@ export type ShopPurchaseRequest = {
 } | {
     upgradeType: 'restraint';
 } | {
-    upgradeType: 'idle_hoarder';
-} | {
     upgradeType: 'luck';
 } | {
     upgradeType: 'extra_realtime_wait';
@@ -167,7 +164,7 @@ export type ShopPurchaseRequest = {
 
 export type ShopPurchaseResponse = PlayerState & {
     purchase: {
-        upgradeType: 'seconds_multiplier' | 'another_seconds_multiplier' | 'restraint' | 'idle_hoarder' | 'luck' | 'extra_realtime_wait' | 'collect_gem_time_boost' | 'idle_refund' | 'real_refund' | 'level_bonus';
+        upgradeType: 'seconds_multiplier' | 'another_seconds_multiplier' | 'restraint' | 'luck' | 'extra_realtime_wait' | 'collect_gem_time_boost' | 'idle_refund' | 'real_refund' | 'level_bonus';
         quantity: number;
         totalCost: number;
     };

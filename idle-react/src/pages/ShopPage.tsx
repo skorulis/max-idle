@@ -38,25 +38,7 @@ type ShopPageProps = {
   playerState: SyncedPlayerState | null;
   /** Estimated server clock for live streak labels (e.g. Anti-consumerist overlay) */
   estimatedServerNowMs: number;
-  shopPendingQuantity:
-    | "seconds_multiplier"
-    | "another_seconds_multiplier"
-    | "patience"
-    | "restraint"
-    | "idle_hoarder"
-    | "worthwhile_achievements"
-    | "level_bonus"
-    | "anti_consumerist"
-    | "consolidation"
-    | "quick_collector"
-    | "luck"
-    | "extra_realtime_wait"
-    | "collect_gem_time_boost"
-    | "idle_refund"
-    | "real_refund"
-    | "storage_extension"
-    | "player_level"
-    | null;
+  shopPendingQuantity: ShopUpgradeId | "player_level" | null;
   /** Purchase flow for any shop upgrade row; `upgradeId` matches {@link SHOP_UPGRADE_IDS}. */
   onPurchase: (upgradeId: ShopUpgradeId) => Promise<void>;
   onUpgradePlayerLevel: () => Promise<void>;
@@ -96,10 +78,6 @@ function formatUpgradeValue(upgrade: ShopUpgradeDefinition, value: number): stri
   if (upgrade.id === SHOP_UPGRADE_IDS.LUCK) {
     return formatChance(value);
   }
-  /** Template includes literal `x` after placeholder (`%sx`). */
-  if (upgrade.id === SHOP_UPGRADE_IDS.IDLE_HOARDER) {
-    return formatDecimalUpTo2(value);
-  }
   if (
     upgrade.id === SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER ||
     (upgrade.id as string) === "another_seconds_multiplier" ||
@@ -137,9 +115,6 @@ function formatUpgradeSecondaryValue(upgrade: ShopUpgradeDefinition, value2: num
   }
   if (upgrade.id === SHOP_UPGRADE_IDS.RESTRAINT) {
     return String(Math.round(value2));
-  }
-  if (upgrade.id === SHOP_UPGRADE_IDS.IDLE_HOARDER) {
-    return formatDecimalUpTo2(value2);
   }
   if (upgrade.id === SHOP_UPGRADE_IDS.CONSOLIDATION) {
     return String(Math.round(value2));

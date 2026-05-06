@@ -2,7 +2,6 @@ import {
   getAntiConsumeristMultiplier,
   getCollectGemIdleSecondsMultiplier,
   getConsolidationBonus,
-  getIdleHoarderMultiplier,
   getIdleInterestSeconds,
   getLuckEnabled,
   getLuckPreserveChance,
@@ -15,7 +14,7 @@ import {
   getWorthwhileAchievementsMultiplier
 } from "./shop.js";
 import type { ShopState } from "./shop.js";
-import { IDLE_HOARDER_SHOP_UPGRADE, PATIENCE_SHOP_UPGRADE } from "./shopUpgrades.js";
+import { PATIENCE_SHOP_UPGRADE } from "./shopUpgrades.js";
 import { safeNaturalNumber, safeNumber } from "./safeNumber.js";
 
 type IdleRateStep = {
@@ -115,12 +114,6 @@ export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): numbe
   const playerLevelForBonus = Math.max(0, Math.floor(safeNumber(player.playerLevel, 0)));
   const levelBonusContribution = getLevelBonusIdleContribution(player.shop, playerLevelForBonus);
 
-  const idleHoarderMultiplier = getIdleHoarderMultiplier(
-    IDLE_HOARDER_SHOP_UPGRADE.currentLevel(player.shop),
-    safeNumber(player.realTimeAvailable, 0),
-    safeNaturalNumber(player.secondsSinceLastCollection)
-  );
-
   const secondaryMultiplier = combineIdleSecondaryMultipliers(
     getSecondsMultiplier(player.shop),
     getRestraintBonusMultiplier(player.shop),
@@ -129,7 +122,6 @@ export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): numbe
     getConsolidationBonus(player.shop),
     worthwhileAchievementsMultiplier,
     levelBonusContribution,
-    idleHoarderMultiplier - 1,
     getPatienceRate(player),
     getQuickCollectorBonus(player.shop, safeNaturalNumber(player.secondsSinceLastCollection))
   );

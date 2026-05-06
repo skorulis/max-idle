@@ -102,23 +102,6 @@ describe("luck + boosted gain", () => {
     expect(gainWithRestraint).toBe(Math.floor(66));
   });
 
-  it("applies full idle hoarder tier multiplier when stored-realtime ratio meets the tier threshold", () => {
-    const baseline = calculateBoostedIdleSecondsGain({
-      secondsSinceLastCollection: 60,
-      shop: DEFAULT_SHOP_STATE,
-      achievementCount: 0,
-      realTimeAvailable: 0
-    });
-    const withIdleHoarderAtCap = calculateBoostedIdleSecondsGain({
-      secondsSinceLastCollection: 60,
-      shop: { ...DEFAULT_SHOP_STATE, idle_hoarder: 5 },
-      achievementCount: 0,
-      /** Level 5 needs stored/realtime ratio ≥ 3 (value2); 180/60 = 3 */
-      realTimeAvailable: 180
-    });
-    expect(withIdleHoarderAtCap).toBe(Math.floor(baseline * 2.5));
-  });
-
   it("stacks secondary multipliers additively (bonuses sum, not multiply)", () => {
     const elapsed = 60;
     const baseline = calculateBoostedIdleSecondsGain({
@@ -135,13 +118,13 @@ describe("luck + boosted gain", () => {
     });
     const withBoth = calculateBoostedIdleSecondsGain({
       secondsSinceLastCollection: elapsed,
-      shop: { ...DEFAULT_SHOP_STATE, restraint: 1, idle_hoarder: 5 },
+      shop: { ...DEFAULT_SHOP_STATE, restraint: 1, patience: 1 },
       achievementCount: 0,
-      realTimeAvailable: 180
+      realTimeAvailable: 0
     });
     const restraintBonus = withRestraintOnly - baseline;
-    const hoarderBonusAtCap = Math.floor(baseline * (1 + (2.5 - 1))) - baseline;
-    expect(withBoth).toBe(baseline + restraintBonus + hoarderBonusAtCap);
+    const patienceBonus = Math.floor(baseline * (1 + 0.25)) - baseline;
+    expect(withBoth).toBe(baseline + restraintBonus + patienceBonus);
   });
 
   it("does not increase boosted gain past the max wall-clock storage window", () => {

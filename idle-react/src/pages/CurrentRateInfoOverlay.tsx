@@ -5,7 +5,6 @@ import {
   getAntiConsumeristMultiplier,
   getCollectGemIdleSecondsMultiplier,
   getConsolidationBonus,
-  getIdleHoarderMultiplier,
   getQuickCollectorBonus,
   getRestraintBonusMultiplier,
   getSecondsMultiplier,
@@ -16,8 +15,7 @@ import { getPatienceRate } from "../idleRate";
 import {
   ANTI_CONSUMERIST_SHOP_UPGRADE,
   CONSOLIDATION_SHOP_UPGRADE,
-  QUICK_COLLECTOR_SHOP_UPGRADE,
-  IDLE_HOARDER_SHOP_UPGRADE
+  QUICK_COLLECTOR_SHOP_UPGRADE
 } from "../shopUpgrades";
 import { safeNumber } from "@maxidle/shared/safeNumber";
 
@@ -81,12 +79,6 @@ export function CurrentRateInfoOverlay({
       safeNumber(achievementCount, 0)
     );
     const levelBonusContribution = getLevelBonusIdleContribution(shop, playerLevel);
-    const idleHoarderLevel = IDLE_HOARDER_SHOP_UPGRADE.currentLevel(shop);
-    const idleHoarderMultiplier = getIdleHoarderMultiplier(
-      idleHoarderLevel,
-      realTimeAvailable,
-      Math.max(0, secondsSinceLastCollection)
-    );
     const consolidationLevel = CONSOLIDATION_SHOP_UPGRADE.currentLevel(shop);
     const consolidationBonus = getConsolidationBonus(shop);
     const quickCollectorLevel = QUICK_COLLECTOR_SHOP_UPGRADE.currentLevel(shop);
@@ -100,8 +92,6 @@ export function CurrentRateInfoOverlay({
       antiConsumeristMultiplier,
       worthwhileAchievementsMultiplier,
       levelBonusContribution,
-      idleHoarderLevel,
-      idleHoarderMultiplier,
       gemBonus,
       consolidationLevel,
       consolidationBonus,
@@ -180,12 +170,6 @@ export function CurrentRateInfoOverlay({
           <p className="rate-factor-row">
             <span>Time Gem Bonus</span>
             <span>{factors.gemBonus.toFixed(2)}x</span>
-          </p>
-        ) : null}
-        {factors.idleHoarderLevel > 0 ? (
-          <p className="rate-factor-row">
-            <span>Real hoarder multiplier</span>
-            <span>{factors.idleHoarderMultiplier.toFixed(2)}x</span>
           </p>
         ) : null}
         <p className="rate-factor-total">

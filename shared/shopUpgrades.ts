@@ -23,7 +23,6 @@ export const SHOP_UPGRADE_IDS = {
   ANOTHER_SECONDS_MULTIPLIER: "another_seconds_multiplier",
   PATIENCE: "patience",
   RESTRAINT: "restraint",
-  IDLE_HOARDER: "idle_hoarder",
   LUCK: "luck",
   /** Spend 1 gem to move last_collected_at back by {@link REALTIME_WAIT_EXTENSION_SECONDS} real seconds (recalculates uncollected idle). */
   EXTRA_REALTIME_WAIT: "extra_realtime_wait",
@@ -89,7 +88,7 @@ export type ShopUpgradeDefinition = {
 };
 
 export type LegacyShopUpgradeDefinition = {
-  id: ShopUpgradeId;
+  id: string;
   currencyType: Exclude<ShopCurrencyType, "gem">;
 };
 
@@ -247,24 +246,6 @@ export const RESTRAINT_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
     { cost: 7 * SECONDS_PER_DAY, value: 0.5, value2: 24 },
   ],
   currencyType: SHOP_CURRENCY_TYPES.IDLE
-});
-
-export const IDLE_HOARDER_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
-  id: SHOP_UPGRADE_IDS.IDLE_HOARDER,
-  name: "Real hoarder",
-  icon: "archive",
-  description: "Idle time bonus that only applies when you have more stored realtime than realtime to collect",
-  longDescription:
-    "Grants an extra multiplier only when your stored real-time pool is at least a set ratio of your current real-time wait. If you wait too long to collect this bonus will not apply.",
-  valueDescription: "%sx when stored time is >= %s x current real time",
-  levels: [
-    { cost: 1 * SECONDS_PER_HOUR, value: 0.5, value2: 1},
-    { cost: 2 * SECONDS_PER_HOUR, value: 0.75, value2: 1.5},
-    { cost: 4 * SECONDS_PER_HOUR, value: 1.0, value2: 2},
-    { cost: 8 * SECONDS_PER_HOUR, value: 1.25, value2: 2.5},
-    { cost: 16 * SECONDS_PER_HOUR, value: 1.5, value2: 3},
-  ],
-  currencyType: SHOP_CURRENCY_TYPES.REAL
 });
 
 export const LUCK_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
@@ -542,23 +523,15 @@ export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   REAL_REFUND_SHOP_UPGRADE
 ];
 
-export const LEGACY_SHOP_UPGRADES: LegacyShopUpgradeDefinition[] = [
-  {
-    id: SHOP_UPGRADE_IDS.IDLE_HOARDER,
-    currencyType: SHOP_CURRENCY_TYPES.REAL
-  }
-];
+export const LEGACY_SHOP_UPGRADES: LegacyShopUpgradeDefinition[] = [];
 
-export const LEGACY_SHOP_UPGRADES_BY_ID: Partial<Record<ShopUpgradeId, LegacyShopUpgradeDefinition>> = {
-  [SHOP_UPGRADE_IDS.IDLE_HOARDER]: LEGACY_SHOP_UPGRADES[0]
-};
+export const LEGACY_SHOP_UPGRADES_BY_ID: Record<string, LegacyShopUpgradeDefinition> = {};
 
 export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> = {
   [SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER]: SECONDS_MULTIPLIER_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.ANOTHER_SECONDS_MULTIPLIER]: ANOTHER_SECONDS_MULTIPLIER_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.PATIENCE]: PATIENCE_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.RESTRAINT]: RESTRAINT_SHOP_UPGRADE,
-  [SHOP_UPGRADE_IDS.IDLE_HOARDER]: IDLE_HOARDER_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.LUCK]: LUCK_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.EXTRA_REALTIME_WAIT]: EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST]: COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
@@ -578,5 +551,5 @@ export function getShopUpgradeDefinition(upgradeType: string): ShopUpgradeDefini
 }
 
 export function isLegacyShopUpgradeId(upgradeType: string): boolean {
-  return Boolean(LEGACY_SHOP_UPGRADES_BY_ID[upgradeType as ShopUpgradeId]);
+  return Boolean(LEGACY_SHOP_UPGRADES_BY_ID[upgradeType]);
 }

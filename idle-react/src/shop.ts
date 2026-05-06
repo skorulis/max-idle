@@ -27,7 +27,6 @@ export {
   formatShopUpgradeDescription,
   getCollectGemIdleSecondsMultiplier,
   getConsolidationBonus,
-  getIdleHoarderMultiplier,
   getIdleInterestSeconds,
   getInterestAprPercent,
   getQuickCollectorBonus,

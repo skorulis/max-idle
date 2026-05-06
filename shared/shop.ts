@@ -3,7 +3,6 @@ import {
   ANTI_CONSUMERIST_SHOP_UPGRADE,
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
   CONSOLIDATION_SHOP_UPGRADE,
-  IDLE_HOARDER_SHOP_UPGRADE,
   INTEREST_SHOP_UPGRADE,
   LUCK_SHOP_UPGRADE,
   QUICK_COLLECTOR_SHOP_UPGRADE,
@@ -32,7 +31,6 @@ export type ShopState = {
   another_seconds_multiplier?: number;
   patience?: number;
   restraint: number;
-  idle_hoarder?: number;
   luck: number;
   /** Resets to 0 on collect. Same key as {@link SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST}. */
   collect_gem_time_boost?: number;
@@ -62,7 +60,6 @@ export const DEFAULT_SHOP_STATE: ShopState = {
   [SHOP_UPGRADE_IDS.ANOTHER_SECONDS_MULTIPLIER]: 0,
   [SHOP_UPGRADE_IDS.PATIENCE]: 0,
   [SHOP_UPGRADE_IDS.RESTRAINT]: 0,
-  [SHOP_UPGRADE_IDS.IDLE_HOARDER]: 0,
   [SHOP_UPGRADE_IDS.LUCK]: 0,
   [SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS]: 0,
   [SHOP_UPGRADE_IDS.LEVEL_BONUS]: 0,
@@ -188,14 +185,14 @@ export type LegacyShopUpgradeRefundResult = {
   shop: ShopState;
   idleRefund: number;
   realRefund: number;
-  refundedUpgradeIds: ShopUpgradeId[];
+  refundedUpgradeIds: string[];
 };
 
 export function applyLegacyShopUpgradeRefunds(shop: ShopState): LegacyShopUpgradeRefundResult {
   let nextShop = { ...shop };
   let idleRefund = 0;
   let realRefund = 0;
-  const refundedUpgradeIds: ShopUpgradeId[] = [];
+  const refundedUpgradeIds: string[] = [];
   const purchasedByCurrency: Record<Exclude<ShopCurrencyType, "gem">, number> = {
     [SHOP_CURRENCY_TYPES.IDLE]: getPurchasedShopUpgradeLevelCount(shop, SHOP_CURRENCY_TYPES.IDLE),
     [SHOP_CURRENCY_TYPES.REAL]: getPurchasedShopUpgradeLevelCount(shop, SHOP_CURRENCY_TYPES.REAL)
@@ -324,53 +321,6 @@ export function hasAffordableIdleOrRealTimeShopPurchase(
     }
   }
   return false;
-}
-
-export function getIdleHoarderMaxLevel(): number {
-  return IDLE_HOARDER_SHOP_UPGRADE.maxLevel();
-}
-
-export function getIdleHoarderMaxMultiplierForLevel(level: number): number {
-  const maxLevel = getIdleHoarderMaxLevel();
-  const L = Math.max(0, Math.min(maxLevel, level));
-  if (L <= 0) {
-    return 1;
-  }
-  const bonus = IDLE_HOARDER_SHOP_UPGRADE.levels[L - 1]?.value ?? 0;
-  return 1 + safeNumber(bonus, 0);
-}
-
-function getIdleHoarderRatioThresholdForLevel(level: number): number {
-  const maxLevel = getIdleHoarderMaxLevel();
-  const L = Math.max(0, Math.min(maxLevel, Math.floor(Number(level) || 0)));
-  if (L <= 0) {
-    return Infinity;
-  }
-  const raw = IDLE_HOARDER_SHOP_UPGRADE.levels[L - 1]?.value2;
-  return safeNaturalNumber(raw, 1);
-}
-
-/**
- * Stored-real-time bonus from idle hoarder:
- * - Below tier threshold: ×1
- * - When `realTimeAvailable / secondsSinceLastCollection >=` that level's `value2`: full tier `value` multiplier
- */
-export function getIdleHoarderMultiplier(level: number, realTimeAvailable: number, secondsSinceLastCollection: number): number {
-  const maxMultiplier = getIdleHoarderMaxMultiplierForLevel(level);
-  if (maxMultiplier <= 1) {
-    return 1;
-  }
-  const safeAvailable = safeNaturalNumber(realTimeAvailable, 0);
-  const safeRealtime = safeNaturalNumber(secondsSinceLastCollection, 0);
-  if (safeRealtime <= 0) {
-    return safeAvailable > 0 ? maxMultiplier : 1;
-  }
-  const ratio = safeAvailable / safeRealtime;
-  const threshold = getIdleHoarderRatioThresholdForLevel(level);
-  if (ratio >= threshold) {
-    return maxMultiplier;
-  }
-  return 1;
 }
 
 /**

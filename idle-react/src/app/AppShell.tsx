@@ -77,7 +77,6 @@ const SHOP_ALREADY_OWNED_MESSAGE: Partial<Record<ShopUpgradeId, string>> = {
   restraint: "Restraint is already active.",
   patience: "Patience is already maxed.",
   luck: "Luck is already active.",
-  idle_hoarder: "Idle hoarder is already maxed.",
   worthwhile_achievements: "Worthwhile Achievements is already maxed.",
   anti_consumerist: "Anti-consumerist is already maxed.",
   consolidation: "Consolidation is already maxed.",

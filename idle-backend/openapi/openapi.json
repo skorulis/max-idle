@@ -114,11 +114,6 @@
                 "type": "integer",
                 "minimum": 0
               },
-              "idle_hoarder": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 5
-              },
               "luck": {
                 "type": "integer",
                 "minimum": 0
@@ -660,20 +655,6 @@
               "upgradeType": {
                 "type": "string",
                 "enum": [
-                  "idle_hoarder"
-                ]
-              }
-            },
-            "required": [
-              "upgradeType"
-            ]
-          },
-          {
-            "type": "object",
-            "properties": {
-              "upgradeType": {
-                "type": "string",
-                "enum": [
                   "luck"
                 ]
               }
@@ -783,12 +764,6 @@
                         "type": "string",
                         "enum": [
                           "restraint"
-                        ]
-                      },
-                      {
-                        "type": "string",
-                        "enum": [
-                          "idle_hoarder"
                         ]
                       },
                       {

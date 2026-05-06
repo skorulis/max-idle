@@ -2,8 +2,7 @@ import type { Pool } from "pg";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../../src/app.js";
-import { DEFAULT_SHOP_STATE, getRestraintBonusMultiplier, getShopCurrencyTierPurchaseCostSum } from "@maxidle/shared/shop";
-import { SHOP_CURRENCY_TYPES } from "@maxidle/shared/shopUpgrades";
+import { DEFAULT_SHOP_STATE, getRestraintBonusMultiplier } from "@maxidle/shared/shop";
 import { OBLIGATION_IDS } from "@maxidle/shared/obligations";
 import { TUTORIAL_STEPS } from "@maxidle/shared/tutorialSteps";
 import { createTestPool, resetTestDatabase } from "../testDb.js";
@@ -109,44 +108,6 @@ describe("player routes", () => {
     expect(playerResponse.body.lastDailyRewardCollectedAt).toBeNull();
     expect(playerResponse.body.hasUnseenAchievements).toBe(false);
     expect(playerResponse.body.serverTime).toBeTypeOf("string");
-  });
-
-  it("refunds legacy idle hoarder levels when loading player state", async () => {
-    const app = createApp(pool, config);
-    const authResponse = await request(app).post("/auth/anonymous");
-    const token = authResponse.body.token as string;
-    const userId = authResponse.body.userId as string;
-
-    await pool.query(
-      `
-      UPDATE player_states
-      SET
-        shop = $2::jsonb,
-        real_time_available = 0,
-        real_time_total = 0
-      WHERE user_id = $1
-      `,
-      [userId, JSON.stringify({ ...DEFAULT_SHOP_STATE, idle_hoarder: 2 })]
-    );
-
-    const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
-    expect(playerResponse.status).toBe(200);
-    const expectedRefund = getShopCurrencyTierPurchaseCostSum(SHOP_CURRENCY_TYPES.REAL, 0, 2);
-    expect(playerResponse.body.shop.idle_hoarder).toBe(0);
-    expect(playerResponse.body.realTime.available).toBe(expectedRefund);
-    expect(playerResponse.body.realTime.total).toBe(expectedRefund);
-
-    const dbState = await pool.query<{ shop: unknown; real_time_available: string; real_time_total: string }>(
-      `
-      SELECT shop, real_time_available, real_time_total
-      FROM player_states
-      WHERE user_id = $1
-      `,
-      [userId]
-    );
-    expect((dbState.rows[0]?.shop as { idle_hoarder?: number } | undefined)?.idle_hoarder ?? 0).toBe(0);
-    expect(Number(dbState.rows[0]?.real_time_available ?? 0)).toBe(expectedRefund);
-    expect(Number(dbState.rows[0]?.real_time_total ?? 0)).toBe(expectedRefund);
   });
 
   it("collects elapsed idle time and resets timer", async () => {

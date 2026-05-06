@@ -488,7 +488,7 @@ describe("auth + player lifecycle", () => {
     expect(maxedPurchaseResponse.body.code).toBe("ALREADY_OWNED");
   });
 
-  it("blocks purchasing legacy idle hoarder upgrade", async () => {
+  it("rejects unsupported removed idle hoarder upgrade", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     const token = authResponse.body.token as string;
@@ -497,7 +497,7 @@ describe("auth + player lifecycle", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({ upgradeType: "idle_hoarder" });
     expect(purchaseResponse.status).toBe(400);
-    expect(purchaseResponse.body.code).toBe("LEGACY_UPGRADE_UNAVAILABLE");
+    expect(purchaseResponse.body.error).toBe("Unsupported upgrade type");
   });
 
   it("purchases extra_realtime_wait for 1 gem and shifts last_collected_at back 6h", async () => {
