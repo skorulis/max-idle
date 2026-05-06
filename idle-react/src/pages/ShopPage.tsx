@@ -392,14 +392,13 @@ export function ShopPage({
 
   return (
     <>
-      <section className="card">
-        <h2>Shop</h2>
-        <div className="shop-player-level-card">
+      <section className="card shop-player-level-section">
+        <h2>Player level</h2>
+        <div className="shop-player-level-body">
           <div className="shop-player-level-hero">
             <PlayerLevelBadge level={syncedPlayer.level} size={112} />
           </div>
           <div className="shop-player-level-details">
-            <p className="shop-player-level-title">Player level</p>
             {atMaxPlayerLevel ? (
               <p className="subtle">You have reached the maximum player level.</p>
             ) : nextLevelCost ? (
@@ -445,6 +444,9 @@ export function ShopPage({
             </button>
           </div>
         </div>
+      </section>
+      <section className="card">
+        <h2>Shop</h2>
         <div className="shop-currencies">
           <button
             type="button"

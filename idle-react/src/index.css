@@ -67,16 +67,15 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.shop-player-level-card {
+.card.shop-player-level-section {
+  background: linear-gradient(165deg, #fafafa 0%, #ffffff 55%);
+}
+
+.shop-player-level-body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 20px;
-  padding: 18px;
-  margin-bottom: 20px;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background: linear-gradient(165deg, #fafafa 0%, #ffffff 55%);
 }
 
 .shop-player-level-hero {
@@ -86,13 +85,6 @@ body {
 .shop-player-level-details {
   flex: 1;
   min-width: 220px;
-}
-
-.shop-player-level-title {
-  margin: 0 0 8px;
-  font-size: 18px;
-  font-weight: 600;
-  color: #111827;
 }
 
 .shop-player-level-costs {
