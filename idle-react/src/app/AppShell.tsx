@@ -676,6 +676,7 @@ export function AppShell() {
                   onDebugAddGems={onDebugAddGems}
                   onDebugResetBalances={onDebugResetBalances}
                   onDebugFinalizeTournament={onDebugFinalizeTournament}
+                  onResetTutorial={onResetTutorial}
                 />
               )}
             />
@@ -729,7 +730,6 @@ export function AppShell() {
                 onToggleDailyRewardNotifications={onToggleDailyRewardNotifications}
                 onNavigateLogin={() => navigate("/login")}
                 renderAuthButtons={renderUpgradeAuthButtons}
-                onResetTutorial={onResetTutorial}
               />
             )}
           />

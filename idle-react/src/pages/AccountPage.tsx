@@ -26,7 +26,6 @@ type AccountPageProps = {
   onToggleDailyRewardNotifications: (enabled: boolean) => Promise<void>;
   onNavigateLogin: () => void;
   renderAuthButtons: () => ReactNode;
-  onResetTutorial: () => Promise<void>;
 };
 
 export function AccountPage({
@@ -48,10 +47,8 @@ export function AccountPage({
   onLogout,
   onToggleDailyRewardNotifications,
   onNavigateLogin,
-  renderAuthButtons,
-  onResetTutorial
+  renderAuthButtons
 }: AccountPageProps) {
-  const [tutorialResetPending, setTutorialResetPending] = useState(false);
   const [editingUsername, setEditingUsername] = useState(false);
   const usernameInputRef = useRef<HTMLInputElement>(null);
   const isUpgradeSubmitDisabled = !token || !isValidEmail(upgradeForm.email) || !isValidPassword(upgradeForm.password);
@@ -194,29 +191,6 @@ export function AccountPage({
           Warning: logging out of an anonymous account permanently loses progress and cannot be recovered.
         </p>
       ) : null}
-      <div className="panel" style={{ marginTop: "0.75rem" }}>
-        <h3>Tutorial</h3>
-        <p className="subtle" style={{ marginTop: 0 }}>
-          Show the Max Idle intro steps on the home page again.
-        </p>
-        <button
-          type="button"
-          className="secondary"
-          disabled={tutorialResetPending || authPending}
-          onClick={() => {
-            void (async () => {
-              setTutorialResetPending(true);
-              try {
-                await onResetTutorial();
-              } finally {
-                setTutorialResetPending(false);
-              }
-            })();
-          }}
-        >
-          {tutorialResetPending ? "Resetting..." : "Reset Tutorial"}
-        </button>
-      </div>
       <p className="subtle">Version {APP_VERSION}</p>
     </section>
   );
