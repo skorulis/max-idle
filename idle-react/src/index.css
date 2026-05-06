@@ -53,6 +53,19 @@ body {
   min-width: 0;
 }
 
+.account-username-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.account-username-actions .collect,
+.account-username-actions .secondary {
+  width: auto;
+  margin-top: 0;
+}
+
 .player-level-badge {
   display: inline-flex;
   align-items: center;

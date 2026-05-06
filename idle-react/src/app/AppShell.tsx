@@ -711,6 +711,7 @@ export function AppShell() {
             path="/account"
             element={requireAuthenticatedRoute(
               <AccountPage
+                playerLevel={playerState?.level ?? 0}
                 account={account}
                 token={token}
                 authPending={authPending || socialUpgradePending}

@@ -177,25 +177,30 @@ export function useAppAuthActions({
     setUsernameDraft(value);
   };
 
-  const onSaveUsername = async () => {
+  const onSaveUsername = async (): Promise<boolean> => {
     if (!account) {
-      return;
+      return false;
     }
     const nextUsername = usernameDraft.trim();
-    if (!nextUsername || nextUsername === account.username) {
-      return;
+    if (!nextUsername) {
+      return false;
+    }
+    if (nextUsername === account.username) {
+      return true;
     }
     setUsernamePending(true);
     try {
       await updateUsername(token, nextUsername);
       await refreshAccount(token);
       toast.success("Username updated successfully.");
+      return true;
     } catch (usernameUpdateError) {
       if (usernameUpdateError instanceof Error && usernameUpdateError.message === "USERNAME_TAKEN") {
         toast.error("That username is already taken.");
       } else {
         toast.error(usernameUpdateError instanceof Error ? usernameUpdateError.message : "Could not update username.");
       }
+      return false;
     } finally {
       setUsernamePending(false);
     }

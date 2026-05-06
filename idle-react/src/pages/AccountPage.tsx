@@ -1,10 +1,13 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Pencil } from "lucide-react";
 import { APP_VERSION } from "@maxidle/shared/appVersion";
 import { isValidEmail, isValidPassword } from "@maxidle/shared/authValidation";
 import type { AccountResponse, AuthFormState } from "../app/types";
+import { PlayerLevelBadge } from "../components/PlayerLevelBadge";
 import { SharedAuthPage } from "./LoginPage";
 
 type AccountPageProps = {
+  playerLevel: number;
   account: AccountResponse | null;
   token: string | null;
   authPending: boolean;
@@ -16,7 +19,7 @@ type AccountPageProps = {
   usernameDraft: string;
   upgradeForm: AuthFormState;
   onUsernameChange: (value: string) => void;
-  onSaveUsername: () => Promise<void>;
+  onSaveUsername: () => Promise<boolean>;
   onUpgradeFormChange: (field: "name" | "email" | "password", value: string) => void;
   onUpgrade: () => Promise<void>;
   onLogout: () => Promise<void>;
@@ -27,6 +30,7 @@ type AccountPageProps = {
 };
 
 export function AccountPage({
+  playerLevel,
   account,
   token,
   authPending,
@@ -48,7 +52,15 @@ export function AccountPage({
   onResetTutorial
 }: AccountPageProps) {
   const [tutorialResetPending, setTutorialResetPending] = useState(false);
+  const [editingUsername, setEditingUsername] = useState(false);
+  const usernameInputRef = useRef<HTMLInputElement>(null);
   const isUpgradeSubmitDisabled = !token || !isValidEmail(upgradeForm.email) || !isValidPassword(upgradeForm.password);
+
+  useEffect(() => {
+    if (editingUsername) {
+      usernameInputRef.current?.focus();
+    }
+  }, [editingUsername]);
 
   if (!account) {
     return (
@@ -63,29 +75,74 @@ export function AccountPage({
     );
   }
 
+  const displayedUsername = account.username?.trim() ? account.username : "Player";
+
   return (
     <section className="card">
-      <h2>Account</h2>
       {account.email ? (
         <p>
           <span>Email:</span> {account.email}
         </p>
       ) : null}
-      <h3>Username</h3>
-      <input
-        type="text"
-        placeholder="Username"
-        value={usernameDraft}
-        onChange={(event) => onUsernameChange(event.target.value)}
-        disabled={usernamePending}
-      />
-      <button
-        className="collect"
-        onClick={() => void onSaveUsername()}
-        disabled={usernamePending || authPending || usernameDraft.trim().length === 0 || usernameDraft.trim() === account.username}
-      >
-        {usernamePending ? "Saving..." : "Save username"}
-      </button>
+      <div className="player-page-heading">
+        <PlayerLevelBadge level={playerLevel} size={36} />
+        {editingUsername ? (
+          <input
+            ref={usernameInputRef}
+            type="text"
+            placeholder="Username"
+            value={usernameDraft}
+            onChange={(event) => onUsernameChange(event.target.value)}
+            disabled={usernamePending}
+            className="player-page-heading__title"
+            style={{ margin: 0, flex: 1, minWidth: 0, width: "100%", fontSize: 20, fontWeight: 600 }}
+          />
+        ) : (
+          <h2 className="player-page-heading__title">{displayedUsername}</h2>
+        )}
+        {editingUsername ? (
+          <div className="account-username-actions">
+            <button
+              type="button"
+              className="collect"
+              disabled={usernamePending || authPending || usernameDraft.trim().length === 0}
+              onClick={() => {
+                void (async () => {
+                  const saved = await onSaveUsername();
+                  if (saved) {
+                    setEditingUsername(false);
+                  }
+                })();
+              }}
+            >
+              {usernamePending ? "Saving..." : "Save"}
+            </button>
+            <button
+              type="button"
+              className="secondary"
+              disabled={usernamePending || authPending}
+              onClick={() => {
+                onUsernameChange(account.username ?? "");
+                setEditingUsername(false);
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="info-icon-button"
+            style={{ flexShrink: 0 }}
+            aria-label="Edit username"
+            title="Edit username"
+            disabled={authPending || usernamePending}
+            onClick={() => setEditingUsername(true)}
+          >
+            <Pencil size={15} aria-hidden="true" />
+          </button>
+        )}
+      </div>
       <div className="panel" style={{ marginTop: "0.75rem" }}>
         <h3>Notifications</h3>
         {dailyRewardNotificationsSupported ? (
