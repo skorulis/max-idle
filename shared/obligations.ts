@@ -5,6 +5,7 @@ export const OBLIGATION_IDS = {
   FIRST_PURCHASE: "obl_first_purchase",
   ACHIEVE_SOMETHING: "obl_achieve_something",
   TIME_GEMS: "obl_time_gems",
+  LEVEL_UP: "obl_level_up",
   RAMP_UP: "obl_ramp_up",
   WAIT_IT_OUT: "obl_wait_it_out"
 } as const;
@@ -19,7 +20,9 @@ export type ObligationStatPredicate =
   /** Number of rows in `player_collection_history` (idle collects). */
   | { kind: "collection_count_gte"; count: number }
   /** Matches `player_states.achievement_count` (tiers / levels earned). */
-  | { kind: "achievement_count_gte"; count: number };
+  | { kind: "achievement_count_gte"; count: number }
+  /** Matches `player_states.level` (shop player level; 0 until first purchase). */
+  | { kind: "player_level_gte"; level: number };
 
 export type ObligationCondition = {
   allOf: ObligationStatPredicate[];
@@ -41,6 +44,7 @@ export type ObligationPlayerSnapshot = {
   upgradesPurchased: number;
   collectionCount: number;
   achievementCount: number;
+  playerLevel: number;
 };
 
 function isPredicateMet(predicate: ObligationStatPredicate, s: ObligationPlayerSnapshot): boolean {
@@ -57,6 +61,8 @@ function isPredicateMet(predicate: ObligationStatPredicate, s: ObligationPlayerS
       return s.collectionCount >= predicate.count;
     case "achievement_count_gte":
       return s.achievementCount >= predicate.count;
+    case "player_level_gte":
+      return s.playerLevel >= predicate.level;
     default: {
       const _exhaustive: never = predicate;
       return _exhaustive;
@@ -152,6 +158,16 @@ export const OBLIGATIONS: ObligationDefinition[] = [
     }
   },
   {
+    id: OBLIGATION_IDS.LEVEL_UP,
+    name: "Level up",
+    description:
+      "If you check the shop page now you’ll see that you can now purchase new levels. You’ll get a little bonus for doing so but mostly it’s a great way to show off to your friends how much time you’ve wasted. Go buy yourself a level now.",
+    rewards: [{ type: "idle", value: 10 * SECONDS_PER_MINUTE }],
+    condition: {
+      allOf: [{ kind: "player_level_gte", level: 1 }]
+    }
+  },
+  {
     id: OBLIGATION_IDS.RAMP_UP,
     name: "Ramp up",
     description:
@@ -169,10 +185,10 @@ export const OBLIGATIONS: ObligationDefinition[] = [
     id: OBLIGATION_IDS.WAIT_IT_OUT,
     name: "Wait it out",
     description:
-      "The great thing about idle time is you can get all sorts of bonuses. But real time is a bit harder, that's very much tied into the wall clock. So go take a break and come back when the clock has moved forwards.",
+      "The great thing about idle time is you can get all sorts of bonuses. But real time is a bit harder, that's very much tied into the wall clock. So go take a break and come back when you have 1 hour of real time collected.",
     rewards: [{ type: "text", label: "Unlock tournaments" }, { type: "gem", value: 1 }],
     condition: {
-      allOf: [{ kind: "real_time_total_gte", seconds: 6 * SECONDS_PER_HOUR }]
+      allOf: [{ kind: "real_time_total_gte", seconds: 1 * SECONDS_PER_HOUR }]
     }
   }
 ];

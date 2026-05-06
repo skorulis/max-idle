@@ -15,7 +15,8 @@ const minimalSnapshot: ObligationPlayerSnapshot = {
   timeGemsTotal: 0,
   upgradesPurchased: 0,
   collectionCount: 0,
-  achievementCount: 0
+  achievementCount: 0,
+  playerLevel: 0
 };
 
 describe("getCurrentObligationId", () => {
@@ -57,6 +58,20 @@ describe("getCurrentObligationId", () => {
           OBLIGATION_IDS.TIME_GEMS
         ])
       )
+    ).toBe(OBLIGATION_IDS.LEVEL_UP);
+  });
+
+  it("advances after fifth is completed", () => {
+    expect(
+      getCurrentObligationId(
+        new Set([
+          OBLIGATION_IDS.COLLECT_SOME_TIME,
+          OBLIGATION_IDS.FIRST_PURCHASE,
+          OBLIGATION_IDS.ACHIEVE_SOMETHING,
+          OBLIGATION_IDS.TIME_GEMS,
+          OBLIGATION_IDS.LEVEL_UP
+        ])
+      )
     ).toBe(OBLIGATION_IDS.RAMP_UP);
   });
 
@@ -66,6 +81,7 @@ describe("getCurrentObligationId", () => {
       OBLIGATION_IDS.FIRST_PURCHASE,
       OBLIGATION_IDS.ACHIEVE_SOMETHING,
       OBLIGATION_IDS.TIME_GEMS,
+      OBLIGATION_IDS.LEVEL_UP,
       OBLIGATION_IDS.RAMP_UP,
       OBLIGATION_IDS.WAIT_IT_OUT
     ]);
@@ -76,6 +92,7 @@ describe("getCurrentObligationId", () => {
         [OBLIGATION_IDS.FIRST_PURCHASE]: true,
         [OBLIGATION_IDS.ACHIEVE_SOMETHING]: true,
         [OBLIGATION_IDS.TIME_GEMS]: true,
+        [OBLIGATION_IDS.LEVEL_UP]: true,
         [OBLIGATION_IDS.RAMP_UP]: true,
         [OBLIGATION_IDS.WAIT_IT_OUT]: true
       })
@@ -175,6 +192,18 @@ describe("isObligationConditionMet", () => {
     expect(isObligationConditionMet(waitItOut, { ...minimalSnapshot, realTimeTotal: 6 * 3600 })).toBe(true);
     expect(isObligationConditionMet(waitItOut, { ...minimalSnapshot, realTimeTotal: 6 * 3600 - 1 })).toBe(false);
   });
+
+  it("supports player_level_gte", () => {
+    const lvl: ObligationDefinition = {
+      id: OBLIGATION_IDS.LEVEL_UP,
+      name: "Test",
+      description: "Test",
+      rewards: [],
+      condition: { allOf: [{ kind: "player_level_gte", level: 1 }] }
+    };
+    expect(isObligationConditionMet(lvl, { ...minimalSnapshot, playerLevel: 1 })).toBe(true);
+    expect(isObligationConditionMet(lvl, { ...minimalSnapshot, playerLevel: 0 })).toBe(false);
+  });
 });
 
 describe("isLevelUpgradesUnlocked", () => {
@@ -192,6 +221,7 @@ describe("OBLIGATIONS order", () => {
       OBLIGATION_IDS.FIRST_PURCHASE,
       OBLIGATION_IDS.ACHIEVE_SOMETHING,
       OBLIGATION_IDS.TIME_GEMS,
+      OBLIGATION_IDS.LEVEL_UP,
       OBLIGATION_IDS.RAMP_UP,
       OBLIGATION_IDS.WAIT_IT_OUT
     ]);

@@ -132,7 +132,8 @@ export function HomePage({
         timeGemsTotal: 0,
         upgradesPurchased: 0,
         collectionCount: 0,
-        achievementCount: 0
+        achievementCount: 0,
+        playerLevel: 0
       };
     }
     return {
@@ -141,7 +142,8 @@ export function HomePage({
       timeGemsTotal: playerState.timeGems.total,
       upgradesPurchased: playerState.upgradesPurchased,
       collectionCount: playerState.collectionCount,
-      achievementCount: playerState.achievementCount
+      achievementCount: playerState.achievementCount,
+      playerLevel: playerState.level
     };
   }, [playerState]);
 

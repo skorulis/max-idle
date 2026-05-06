@@ -617,6 +617,7 @@ export function registerPlayerRoutes({
         time_gems_total: number;
         upgrades_purchased: number;
         achievement_count: number;
+        level: number;
         obligations_completed: unknown;
       }>(
         `
@@ -626,6 +627,7 @@ export function registerPlayerRoutes({
           time_gems_total,
           upgrades_purchased,
           achievement_count,
+          level,
           obligations_completed
         FROM player_states
         WHERE user_id = $1
@@ -668,7 +670,8 @@ export function registerPlayerRoutes({
         timeGemsTotal: toNumber(locked.time_gems_total),
         upgradesPurchased: toNumber(locked.upgrades_purchased),
         collectionCount: obligationCollectionCount,
-        achievementCount: toNumber(locked.achievement_count)
+        achievementCount: toNumber(locked.achievement_count),
+        playerLevel: toNumber(locked.level)
       };
       if (!isObligationConditionMet(definition, snapshot)) {
         await client.query("ROLLBACK");
