@@ -236,7 +236,7 @@ describe("formatObligationRequirementLabel", () => {
       "Collect idle time at least once"
     );
     expect(formatObligationRequirementLabel({ kind: "achievement_count_gte", count: 2 })).toBe(
-      "Earn at least 2 achievement tiers"
+      "Earn at least 2 achievements"
     );
     expect(formatObligationRequirementLabel({ kind: "player_level_gte", level: 1 })).toBe("Reach shop player level 1");
   });
