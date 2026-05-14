@@ -400,7 +400,7 @@ export const LEVEL_BONUS_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade
     { cost: 1, value: 0.7 },
     { cost: 1, value: 0.8 },
     { cost: 1, value: 0.9 },
-    { cost: 1, value: 0.1 },
+    { cost: 1, value: 1.0 },
   ],
   currencyType: SHOP_CURRENCY_TYPES.IDLE
 });

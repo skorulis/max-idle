@@ -61,8 +61,8 @@ export function formatObligationRequirementLabel(predicate: ObligationStatPredic
         : `Collect idle time at least ${predicate.count} times`;
     case "achievement_count_gte":
       return predicate.count === 1
-        ? "Earn at least 1 achievement tier"
-        : `Earn at least ${predicate.count} achievement tiers`;
+        ? "Earn at least 1 achievement"
+        : `Earn at least ${predicate.count} achievements`;
     case "player_level_gte":
       return predicate.level === 1
         ? "Reach shop player level 1"
