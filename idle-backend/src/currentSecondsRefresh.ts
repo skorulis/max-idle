@@ -11,6 +11,7 @@ export type PlayerCurrentSecondsSourceRow = {
   achievement_count: number;
   real_time_available: number;
   level: string | number;
+  blackhole_time?: string | number;
   server_time: Date;
 };
 
@@ -25,7 +26,8 @@ export function effectiveIdleSecondsRateFromPlayerRow(
     achievementCount: toNumber(row.achievement_count),
     playerLevel: toNumber(row.level),
     realTimeAvailable: toNumber(row.real_time_available),
-    wallClockMs: row.server_time.getTime()
+    wallClockMs: row.server_time.getTime(),
+    blackholeTimeSeconds: toNumber(row.blackhole_time ?? 0)
   });
 }
 
@@ -42,7 +44,8 @@ export async function persistCurrentSecondsFromPlayerRow(
     row.shop,
     achievementCount,
     toNumber(row.real_time_available),
-    toNumber(row.level)
+    toNumber(row.level),
+    toNumber(row.blackhole_time ?? 0)
   );
   const idleSecondsRate = effectiveIdleSecondsRateFromPlayerRow(row, toNumber);
   await pool.query(
@@ -73,6 +76,7 @@ export async function refreshStoredCurrentIdleSeconds(
       achievement_count,
       real_time_available,
       level,
+      blackhole_time,
       NOW() AS server_time
     FROM player_states
     WHERE user_id = $1

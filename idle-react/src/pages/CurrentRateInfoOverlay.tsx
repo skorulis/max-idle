@@ -11,6 +11,7 @@ import {
   getWorthwhileAchievementsMultiplier,
   getLevelBonusIdleContribution
 } from "../shop";
+import { getBlackHoleTimeDilation } from "@maxidle/shared/blackHole";
 import { getPatienceRate } from "../idleRate";
 import {
   ANTI_CONSUMERIST_SHOP_UPGRADE,
@@ -30,6 +31,7 @@ type CurrentRateInfoOverlayProps = {
   playerLevel: number;
   realTimeAvailable: number;
   estimatedServerNowMs: number;
+  blackholeTime: number;
 };
 
 export function CurrentRateInfoOverlay({
@@ -41,7 +43,8 @@ export function CurrentRateInfoOverlay({
   achievementCount,
   playerLevel,
   realTimeAvailable,
-  estimatedServerNowMs
+  estimatedServerNowMs,
+  blackholeTime
 }: CurrentRateInfoOverlayProps) {
   const shouldShowFactor = (value: number): boolean => value != 0;
 
@@ -83,6 +86,7 @@ export function CurrentRateInfoOverlay({
     const consolidationBonus = getConsolidationBonus(shop);
     const quickCollectorLevel = QUICK_COLLECTOR_SHOP_UPGRADE.currentLevel(shop);
     const quickCollectorBonus = getQuickCollectorBonus(shop, Math.max(0, secondsSinceLastCollection));
+    const blackholeDilation = getBlackHoleTimeDilation(blackholeTime);
 
     return {
       patienceRate,
@@ -97,8 +101,9 @@ export function CurrentRateInfoOverlay({
       consolidationBonus,
       quickCollectorLevel,
       quickCollectorBonus,
+      blackholeDilation
     };
-  }, [achievementCount, estimatedServerNowMs, playerLevel, realTimeAvailable, secondsSinceLastCollection, shop]);
+  }, [achievementCount, blackholeTime, estimatedServerNowMs, playerLevel, realTimeAvailable, secondsSinceLastCollection, shop]);
 
   if (!open) {
     return null;
@@ -119,7 +124,6 @@ export function CurrentRateInfoOverlay({
             <CircleX size={16} aria-hidden="true" />
           </button>
         </div>
-        <p className="subtle">Your effective rate is the sum of these bonuses</p>
         <p className="rate-factor-row">
           <span>Base collection rate</span>
           <span>{factors.secondsMultiplier.toFixed(2)}x</span>
@@ -127,49 +131,55 @@ export function CurrentRateInfoOverlay({
         {shouldShowFactor(factors.patienceRate) ? (
         <p className="rate-factor-row">
           <span>Patience bonus</span>
-          <span>{factors.patienceRate.toFixed(2)}x</span>
+          <span>+{factors.patienceRate.toFixed(2)}x</span>
         </p>
         ) : null}
         {shouldShowFactor(factors.restraintMultiplier) ? (
           <p className="rate-factor-row">
             <span>Restraint multiplier</span>
-            <span>{factors.restraintMultiplier.toFixed(2)}x</span>
+            <span>+{factors.restraintMultiplier.toFixed(2)}x</span>
           </p>
         ) : null}
         {factors.antiConsumeristLevel > 0 ? (
           <p className="rate-factor-row">
             <span>Anti-consumerist multiplier</span>
-            <span>{factors.antiConsumeristMultiplier.toFixed(2)}x</span>
+            <span>+{factors.antiConsumeristMultiplier.toFixed(2)}x</span>
           </p>
         ) : null}
         {factors.consolidationLevel > 0 ? (
           <p className="rate-factor-row">
             <span>Consolidation bonus</span>
-            <span>{factors.consolidationBonus.toFixed(2)}x</span>
+            <span>+{factors.consolidationBonus.toFixed(2)}x</span>
           </p>
         ) : null}
         {factors.quickCollectorLevel > 0 ? (
           <p className="rate-factor-row">
             <span>Quick Collector bonus</span>
-            <span>{factors.quickCollectorBonus.toFixed(2)}x</span>
+            <span>+{factors.quickCollectorBonus.toFixed(2)}x</span>
           </p>
         ) : null}
         {shouldShowFactor(factors.worthwhileAchievementsMultiplier) ? (
           <p className="rate-factor-row">
             <span>Achivement multiplier</span>
-            <span>{factors.worthwhileAchievementsMultiplier.toFixed(2)}x</span>
+            <span>+{factors.worthwhileAchievementsMultiplier.toFixed(2)}x</span>
           </p>
         ) : null}
         {shouldShowFactor(factors.levelBonusContribution) ? (
           <p className="rate-factor-row">
             <span>Level bonus</span>
-            <span>{factors.levelBonusContribution.toFixed(2)}x</span>
+            <span>+{factors.levelBonusContribution.toFixed(2)}x</span>
           </p>
         ) : null}
         {shouldShowFactor(factors.gemBonus) ? (
           <p className="rate-factor-row">
             <span>Time Gem Bonus</span>
-            <span>{factors.gemBonus.toFixed(2)}x</span>
+            <span>+{factors.gemBonus.toFixed(2)}x</span>
+          </p>
+        ) : null}
+        {factors.blackholeDilation > 1 ? (
+          <p className="rate-factor-row">
+            <span>Black hole time dilation</span>
+            <span>x{factors.blackholeDilation.toFixed(2)}x</span>
           </p>
         ) : null}
         <p className="rate-factor-total">

@@ -14,6 +14,7 @@ import {
   getWorthwhileAchievementsMultiplier
 } from "./shop.js";
 import type { ShopState } from "./shop.js";
+import { getBlackHoleTimeDilation } from "./blackHole.js";
 import { PATIENCE_SHOP_UPGRADE } from "./shopUpgrades.js";
 import { safeNaturalNumber, safeNumber } from "./safeNumber.js";
 
@@ -32,6 +33,8 @@ export type IdleCollectionPlayer = {
   realTimeAvailable?: number;
   /** Milliseconds since Unix epoch; required for Anti-consumerist (otherwise that multiplier is treated as ×1). */
   wallClockMs?: number;
+  /** Seconds invested in the black hole; applies time dilation after other multipliers. */
+  blackholeTimeSeconds?: number;
 };
 
 function interpolateRate(start: IdleRateStep, end: IdleRateStep, elapsedSeconds: number): number {
@@ -126,7 +129,8 @@ export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): numbe
     getQuickCollectorBonus(player.shop, safeNaturalNumber(player.secondsSinceLastCollection))
   );
 
-  return secondaryMultiplier;
+  const blackholeDilation = getBlackHoleTimeDilation(safeNaturalNumber(player.blackholeTimeSeconds));
+  return secondaryMultiplier * blackholeDilation;
 }
 
 export function shouldPreserveIdleTimerOnCollect(shop: ShopState, randomValue = Math.random()): boolean {

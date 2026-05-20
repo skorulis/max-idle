@@ -161,6 +161,7 @@ export async function buildPlayerStatePayload(
       achievement_count: row.achievement_count,
       real_time_available: refundedRealAvailable,
       level: row.level,
+      blackhole_time: row.blackhole_time,
       server_time: row.server_time
     };
     const syncedCurrentSeconds = boostedUncollectedIdleSeconds(
@@ -169,7 +170,8 @@ export async function buildPlayerStatePayload(
       refundRateRow.shop,
       toNumber(refundRateRow.achievement_count),
       refundRateRow.real_time_available,
-      toNumber(refundRateRow.level)
+      toNumber(refundRateRow.level),
+      toNumber(refundRateRow.blackhole_time)
     );
     const idleSecondsRateAtRefund = effectiveIdleSecondsRateFromPlayerRow(refundRateRow, toNumber);
     await pool.query(
@@ -544,6 +546,7 @@ export function registerPlayerRoutes({
         tutorial_progress: string;
         obligations_completed: unknown;
         level: number;
+        blackhole_time: string;
       }>(
         `
         SELECT
@@ -561,7 +564,8 @@ export function registerPlayerRoutes({
           last_daily_bonus_claimed_at,
           tutorial_progress,
           obligations_completed,
-          level
+          level,
+          blackhole_time
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -589,7 +593,8 @@ export function registerPlayerRoutes({
         lockedRow.shop,
         collectionAchievementCount,
         toNumber(lockedRow.real_time_available),
-        toNumber(lockedRow.level)
+        toNumber(lockedRow.level),
+        toNumber(lockedRow.blackhole_time)
       );
       const baseRealSecondsCollected = calculateElapsedSeconds(lockedRow.last_collected_at, collectedAt);
       const interestRealSecondsBonus = Math.floor(
@@ -621,6 +626,7 @@ export function registerPlayerRoutes({
         achievement_count: collectionAchievementCount,
         real_time_available: toNumber(lockedRow.real_time_available),
         level: lockedRow.level,
+        blackhole_time: lockedRow.blackhole_time,
         server_time: collectedAt
       };
       const idleSecondsRateAtCollect = effectiveIdleSecondsRateFromPlayerRow(collectRateRow, toNumber);
@@ -750,7 +756,8 @@ export function registerPlayerRoutes({
         achievementCount: achievementCountAfter,
         playerLevel: toNumber(row.level),
         realTimeAvailable: toNumber(row.real_time_available),
-        wallClockMs: collectedAt.getTime()
+        wallClockMs: collectedAt.getTime(),
+        blackholeTimeSeconds: toNumber(lockedRow.blackhole_time)
       });
       await client.query("COMMIT");
       analytics.trackPlayerCollect(
@@ -969,6 +976,7 @@ export function registerPlayerRoutes({
         last_daily_bonus_claimed_at: Date | null;
         tutorial_progress: string;
         obligations_completed: unknown;
+        blackhole_time: string;
       }>(
         `
         SELECT
@@ -989,7 +997,8 @@ export function registerPlayerRoutes({
           last_daily_reward_collected_at,
           last_daily_bonus_claimed_at,
           tutorial_progress,
-          obligations_completed
+          obligations_completed,
+          blackhole_time
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -1122,7 +1131,8 @@ export function registerPlayerRoutes({
         achievementCount: achievementCountAfter,
         playerLevel: toNumber(updatedPlayer.level),
         realTimeAvailable: toNumber(updatedPlayer.real_time_available),
-        wallClockMs: now.getTime()
+        wallClockMs: now.getTime(),
+        blackholeTimeSeconds: toNumber(player.blackhole_time)
       });
       await client.query("COMMIT");
       const collectionCountAfterReward = await getPlayerCollectionCount(pool, userId);

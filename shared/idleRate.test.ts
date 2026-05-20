@@ -217,6 +217,25 @@ describe("getEffectiveIdleSecondsRate", () => {
     expect(getEffectiveIdleSecondsRate(player)).toBeGreaterThan(0);
   });
 
+  it("multiplies by black hole time dilation after other bonuses", () => {
+    const base = getEffectiveIdleSecondsRate({
+      secondsSinceLastCollection: 0,
+      shop: { ...DEFAULT_SHOP_STATE },
+      achievementCount: 0,
+      realTimeAvailable: 0,
+      blackholeTimeSeconds: 0
+    });
+    const dilated = getEffectiveIdleSecondsRate({
+      secondsSinceLastCollection: 0,
+      shop: { ...DEFAULT_SHOP_STATE },
+      achievementCount: 0,
+      realTimeAvailable: 0,
+      blackholeTimeSeconds: 3600
+    });
+    expect(dilated).toBeGreaterThan(base);
+    expect(dilated / base).toBeCloseTo(Math.log10(110), 2);
+  });
+
   it("adds level bonus scaled by player level", () => {
     const base = getEffectiveIdleSecondsRate({
       secondsSinceLastCollection: 0,

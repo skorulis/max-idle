@@ -256,6 +256,7 @@ export function registerDailyBonusRoutes({
         daily_bonuses_collected_count: number;
         tutorial_progress: string;
         obligations_completed: unknown;
+        blackhole_time: string;
       }>(
         `
         SELECT
@@ -277,7 +278,8 @@ export function registerDailyBonusRoutes({
           last_daily_bonus_claimed_at,
           daily_bonuses_collected_count,
           tutorial_progress,
-          obligations_completed
+          obligations_completed,
+          blackhole_time
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -431,7 +433,8 @@ export function registerDailyBonusRoutes({
         achievementCount,
         playerLevel: toNumber(updatedPlayer.level),
         realTimeAvailable: toNumber(updatedPlayer.real_time_available),
-        wallClockMs: now.getTime()
+        wallClockMs: now.getTime(),
+        blackholeTimeSeconds: toNumber(player.blackhole_time)
       });
       await client.query("COMMIT");
       const awardedSeconds =

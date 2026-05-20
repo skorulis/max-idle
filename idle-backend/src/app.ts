@@ -56,6 +56,7 @@ type PlayerCurrentSecondsSyncRow = {
   achievement_count: number;
   level: string;
   shop: ShopState;
+  blackhole_time: string;
   server_time: Date;
 };
 
@@ -74,6 +75,7 @@ export async function syncStalePlayerCurrentSeconds(pool: Pool, limit = 100): Pr
         achievement_count,
         level,
         shop,
+        blackhole_time,
         NOW() AS server_time
       FROM player_states
       ORDER BY current_seconds_last_updated ASC
@@ -91,6 +93,7 @@ export async function syncStalePlayerCurrentSeconds(pool: Pool, limit = 100): Pr
         achievement_count: row.achievement_count,
         real_time_available: row.real_time_available,
         level: row.level,
+        blackhole_time: row.blackhole_time,
         server_time: row.server_time
       };
       const nextCurrentSeconds = boostedUncollectedIdleSeconds(
@@ -99,7 +102,8 @@ export async function syncStalePlayerCurrentSeconds(pool: Pool, limit = 100): Pr
         rateRow.shop,
         achievementCount,
         toNumber(rateRow.real_time_available),
-        toNumber(rateRow.level)
+        toNumber(rateRow.level),
+        toNumber(rateRow.blackhole_time)
       );
       const idleSecondsRate = effectiveIdleSecondsRateFromPlayerRow(rateRow, toNumber);
 
@@ -353,6 +357,7 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
           ps.level,
           ps.max_multiplier,
           ps.shop,
+          ps.blackhole_time,
         NOW() AS server_time
         FROM users u
         INNER JOIN player_states ps ON ps.user_id = u.id
@@ -375,7 +380,8 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
         row.shop,
         achievementCount,
         toNumber(row.real_time_available),
-        toNumber(row.level)
+        toNumber(row.level),
+        toNumber(row.blackhole_time)
       );
       const timeAwaySeconds = calculateElapsedSeconds(row.last_active, row.server_time);
 

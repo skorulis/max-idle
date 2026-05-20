@@ -542,6 +542,7 @@ export function HomePage({
         playerLevel={playerState.level}
         realTimeAvailable={playerState.realTime.available}
         estimatedServerNowMs={estimatedServerNowMs}
+        blackholeTime={playerState.blackholeTime}
       />
     </>
   );

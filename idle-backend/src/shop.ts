@@ -142,6 +142,7 @@ export function registerShopRoutes({
         last_daily_reward_collected_at: Date | null;
         tutorial_progress: string;
         level: string;
+        blackhole_time: string;
       }>(
         `
         SELECT
@@ -161,7 +162,8 @@ export function registerShopRoutes({
           last_collected_at,
           last_daily_reward_collected_at,
           tutorial_progress,
-          level
+          level,
+          blackhole_time
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -286,6 +288,7 @@ export function registerShopRoutes({
         achievement_count: nextAchievementCount,
         real_time_available: nextRealTimeAvailableAfterPurchase,
         level: row.level,
+        blackhole_time: row.blackhole_time,
         server_time: now
       };
       const syncedCurrentSeconds = boostedUncollectedIdleSeconds(
@@ -294,7 +297,8 @@ export function registerShopRoutes({
         purchaseRateRow.shop,
         purchaseRateRow.achievement_count,
         purchaseRateRow.real_time_available,
-        toNumber(purchaseRateRow.level)
+        toNumber(purchaseRateRow.level),
+        toNumber(purchaseRateRow.blackhole_time)
       );
       const idleSecondsRateAtPurchase = effectiveIdleSecondsRateFromPlayerRow(purchaseRateRow, toNumber);
       const updateResult = await client.query<{
@@ -389,7 +393,8 @@ export function registerShopRoutes({
         achievementCount: nextAchievementCount,
         playerLevel: toNumber(updated.level),
         realTimeAvailable: toNumber(updated.real_time_available),
-        wallClockMs: now.getTime()
+        wallClockMs: now.getTime(),
+        blackholeTimeSeconds: toNumber(row.blackhole_time)
       });
       analytics.trackShopPurchase(
         { userId, isAnonymous: identity.claims.isAnonymous },
@@ -469,6 +474,7 @@ export function registerShopRoutes({
         last_collected_at: Date;
         last_daily_reward_collected_at: Date | null;
         tutorial_progress: string;
+        blackhole_time: string;
       }>(
         `
         SELECT
@@ -488,7 +494,8 @@ export function registerShopRoutes({
           current_seconds_last_updated,
           last_collected_at,
           last_daily_reward_collected_at,
-          tutorial_progress
+          tutorial_progress,
+          blackhole_time
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -532,6 +539,7 @@ export function registerShopRoutes({
         achievement_count: achievementCount,
         real_time_available: nextRealTimeAvailable,
         level: currentLevel + 1,
+        blackhole_time: row.blackhole_time,
         server_time: now
       };
       const syncedCurrentSeconds = boostedUncollectedIdleSeconds(
@@ -540,7 +548,8 @@ export function registerShopRoutes({
         levelRateRow.shop,
         levelRateRow.achievement_count,
         levelRateRow.real_time_available,
-        levelRateRow.level
+        levelRateRow.level,
+        toNumber(levelRateRow.blackhole_time)
       );
       const idleSecondsRateAtLevelUp = effectiveIdleSecondsRateFromPlayerRow(levelRateRow, toNumber);
 
@@ -621,7 +630,8 @@ export function registerShopRoutes({
         achievementCount: nextAchievementCount,
         playerLevel: toNumber(updated.level),
         realTimeAvailable: toNumber(updated.real_time_available),
-        wallClockMs: now.getTime()
+        wallClockMs: now.getTime(),
+        blackholeTimeSeconds: toNumber(row.blackhole_time)
       });
       const achievementBonusMultiplier = getWorthwhileAchievementsMultiplier(updated.shop, nextAchievementCount);
       const currentDailyBonusAfter = await getOrCreateCurrentDailyBonus(client, now);
@@ -697,6 +707,7 @@ export function registerShopRoutes({
         tutorial_progress: string;
         obligations_completed: unknown;
         level: string;
+        blackhole_time: string;
       }>(
         `
         SELECT
@@ -714,7 +725,8 @@ export function registerShopRoutes({
           last_daily_reward_collected_at,
           tutorial_progress,
           obligations_completed,
-          level
+          level,
+          blackhole_time
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -735,6 +747,7 @@ export function registerShopRoutes({
         achievement_count: row.achievement_count,
         real_time_available: row.real_time_available,
         level: row.level,
+        blackhole_time: row.blackhole_time,
         server_time: now
       };
       const syncedCurrentSeconds = boostedUncollectedIdleSeconds(
@@ -743,7 +756,8 @@ export function registerShopRoutes({
         gemRateRow.shop,
         toNumber(gemRateRow.achievement_count),
         toNumber(gemRateRow.real_time_available),
-        toNumber(gemRateRow.level)
+        toNumber(gemRateRow.level),
+        toNumber(gemRateRow.blackhole_time)
       );
       const idleSecondsRateAtGemGrant = effectiveIdleSecondsRateFromPlayerRow(gemRateRow, toNumber);
       const updateResult = await client.query<{
@@ -833,7 +847,8 @@ export function registerShopRoutes({
         achievementCount: achievementCountAfter,
         playerLevel: toNumber(row.level),
         realTimeAvailable: toNumber(updated.real_time_available),
-        wallClockMs: now.getTime()
+        wallClockMs: now.getTime(),
+        blackholeTimeSeconds: toNumber(row.blackhole_time)
       });
       res.json({
         idleTime: {

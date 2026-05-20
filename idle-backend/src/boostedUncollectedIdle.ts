@@ -9,7 +9,8 @@ export function boostedUncollectedIdleSeconds(
   shop: ShopState,
   achievementCount: number,
   realTimeAvailable = 0,
-  playerLevel = 0
+  playerLevel = 0,
+  blackholeTimeSeconds = 0
 ): number {
   const elapsedSinceLastCollection = calculateElapsedSeconds(lastCollectedAt, refTime);
   return calculateBoostedIdleSecondsGain({
@@ -18,6 +19,7 @@ export function boostedUncollectedIdleSeconds(
     achievementCount,
     playerLevel,
     realTimeAvailable,
-    wallClockMs: refTime.getTime()
+    wallClockMs: refTime.getTime(),
+    blackholeTimeSeconds
   });
 }

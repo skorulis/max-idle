@@ -27,6 +27,7 @@ type TournamentEntryRow = {
   real_time_available: number;
   achievement_count: number;
   level: string;
+  blackhole_time: string;
 };
 
 export type TournamentEntrySummary = {
@@ -410,6 +411,7 @@ async function getTournamentEntriesForScoring(
     real_time_available: number;
     achievement_count: number;
     level: string;
+    blackhole_time: string;
   }>
 > {
   const result = await client.query<{
@@ -421,6 +423,7 @@ async function getTournamentEntriesForScoring(
     real_time_available: number;
     achievement_count: number;
     level: string;
+    blackhole_time: string;
   }>(
     `
     SELECT
@@ -431,7 +434,8 @@ async function getTournamentEntriesForScoring(
       ps.last_collected_at,
       ps.real_time_available,
       ps.achievement_count,
-      ps.level
+      ps.level,
+      ps.blackhole_time
     FROM tournament_entries te
     INNER JOIN player_states ps ON ps.user_id = te.user_id
     INNER JOIN users u ON u.id = te.user_id
@@ -472,7 +476,8 @@ function scoreAndSortTournamentEntries(
         row.shop,
         achievementCount,
         toNumber(row.real_time_available),
-        toNumber(row.level)
+        toNumber(row.level),
+        toNumber(row.blackhole_time)
       );
       return {
         userId: row.user_id,
@@ -675,7 +680,8 @@ async function finalizeTournamentCore(client: PoolClient, tournament: Tournament
       ps.last_collected_at,
       ps.real_time_available,
       ps.achievement_count,
-      ps.level
+      ps.level,
+      ps.blackhole_time
     FROM tournament_entries te
     INNER JOIN player_states ps ON ps.user_id = te.user_id
     WHERE te.tournament_id = $1
@@ -693,6 +699,7 @@ async function finalizeTournamentCore(client: PoolClient, tournament: Tournament
       achievement_count: row.achievement_count,
       real_time_available: row.real_time_available,
       level: row.level,
+      blackhole_time: row.blackhole_time,
       server_time: now
     };
     const score = boostedUncollectedIdleSeconds(
@@ -701,7 +708,8 @@ async function finalizeTournamentCore(client: PoolClient, tournament: Tournament
       tournamentRateRow.shop,
       achievementCount,
       toNumber(tournamentRateRow.real_time_available),
-      toNumber(tournamentRateRow.level)
+      toNumber(tournamentRateRow.level),
+      toNumber(tournamentRateRow.blackhole_time)
     );
     const idleSecondsRateAtFinalize = effectiveIdleSecondsRateFromPlayerRow(tournamentRateRow, toNumber);
     await client.query(
