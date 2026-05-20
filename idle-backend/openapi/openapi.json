@@ -220,6 +220,10 @@
           "tutorialProgress": {
             "type": "string"
           },
+          "blackholeTime": {
+            "type": "integer",
+            "minimum": 0
+          },
           "obligationsCompleted": {
             "type": "object",
             "additionalProperties": {
@@ -250,6 +254,7 @@
           "dailyBonus",
           "serverTime",
           "tutorialProgress",
+          "blackholeTime",
           "obligationsCompleted",
           "collectionCount"
         ]

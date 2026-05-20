@@ -327,7 +327,7 @@ export function HomePage({
         </div>
       </section>
 
-      <BlackHoleCard />
+      <BlackHoleCard blackholeTime={playerState.blackholeTime} />
 
       {currentObligation ? (
         <section className="card">

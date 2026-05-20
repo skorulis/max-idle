@@ -27,6 +27,10 @@ export function toSyncedState(data: PlayerResponse, previous?: SyncedPlayerState
     serverTimeMs: Date.parse(data.serverTime),
     syncedAtClientMs: Date.now(),
     tutorialProgress: data.tutorialProgress ?? "",
+    blackholeTime:
+      typeof data.blackholeTime === "number" && Number.isFinite(data.blackholeTime)
+        ? Math.max(0, Math.floor(data.blackholeTime))
+        : (previous?.blackholeTime ?? 0),
     obligationsCompleted: data.obligationsCompleted ?? {},
     collectionCount: data.collectionCount ?? 0
   };

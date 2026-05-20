@@ -96,6 +96,7 @@ type PlayerStateRow = {
   last_daily_reward_collected_at: Date | null;
   last_daily_bonus_claimed_at: Date | null;
   tutorial_progress: string;
+  blackhole_time: string;
   obligations_completed: unknown;
   server_time: Date;
 };
@@ -125,6 +126,7 @@ export async function buildPlayerStatePayload(
       last_daily_reward_collected_at,
       last_daily_bonus_claimed_at,
       tutorial_progress,
+      blackhole_time,
       obligations_completed,
       NOW() AS server_time
     FROM player_states
@@ -228,6 +230,7 @@ export async function buildPlayerStatePayload(
     dailyBonus: toDailyBonusResponse(dailyBonus, row.last_daily_bonus_claimed_at),
     serverTime: row.server_time.toISOString(),
     tutorialProgress: row.tutorial_progress ?? "",
+    blackholeTime: toNumber(row.blackhole_time),
     obligationsCompleted: parseObligationsCompleted(row.obligations_completed),
     collectionCount
   };

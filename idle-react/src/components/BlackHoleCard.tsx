@@ -1,9 +1,14 @@
 import { useCallback, useRef } from "react";
 import { Orbit } from "lucide-react";
+import { formatSeconds } from "../formatSeconds";
 import { BlackHoleShaderCanvas } from "./BlackHoleShaderCanvas";
 import "./BlackHoleCard.css";
 
-export function BlackHoleCard() {
+type BlackHoleCardProps = {
+  blackholeTime: number;
+};
+
+export function BlackHoleCard({ blackholeTime }: BlackHoleCardProps) {
   const tapBoostRef = useRef(0);
 
   const handleTap = useCallback(() => {
@@ -32,6 +37,7 @@ export function BlackHoleCard() {
           <Orbit size={18} aria-hidden="true" />
           Black hole
         </h2>
+        <p className="black-hole-card__blackhole-time">Blackhole time: {formatSeconds(blackholeTime)}</p>
         <p className="black-hole-card__dilation">Time dilation: 1.0x</p>
       </div>
       <button

@@ -15,7 +15,8 @@ async function run(): Promise<void> {
       "001_schema.sql",
       "002_obligations_completed.sql",
       "003_player_level.sql",
-      "004_max_multiplier.sql"
+      "004_max_multiplier.sql",
+      "005_blackhole_time.sql"
     ] as const;
     for (const file of migrationFiles) {
       const sql = await readFile(resolve(process.cwd(), "sql", file), "utf-8");

@@ -41,10 +41,15 @@
   color: #fff;
 }
 
+.black-hole-card__blackhole-time,
 .black-hole-card__dilation {
   margin: 8px 0 0;
   font-size: 14px;
   color: rgba(255, 255, 255, 0.85);
+}
+
+.black-hole-card__dilation {
+  margin-top: 4px;
 }
 
 .black-hole-card__feed-button {

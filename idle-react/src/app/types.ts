@@ -62,6 +62,8 @@ export type PlayerResponse = {
   dailyBonus?: DailyBonus | null;
   serverTime: string;
   tutorialProgress: string;
+  /** Seconds invested in the black hole. */
+  blackholeTime: number;
   /** Completed obligation ids mapped to `true`. */
   obligationsCompleted: Record<string, boolean>;
   /** Count of rows in `player_collection_history` (idle collects). */
@@ -224,6 +226,7 @@ export type SyncedPlayerState = {
   serverTimeMs: number;
   syncedAtClientMs: number;
   tutorialProgress: string;
+  blackholeTime: number;
   obligationsCompleted: Record<string, boolean>;
   collectionCount: number;
 };

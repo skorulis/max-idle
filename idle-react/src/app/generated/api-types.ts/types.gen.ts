@@ -54,6 +54,7 @@ export type PlayerState = {
     } | null;
     serverTime: string;
     tutorialProgress: string;
+    blackholeTime: number;
     obligationsCompleted: {
         [key: string]: boolean;
     };
@@ -132,7 +133,7 @@ export type LeaderboardEntry = {
 };
 
 export type LeaderboardResponse = {
-    type: 'current' | 'collected' | 'time_gems';
+    type: 'current' | 'collected' | 'collected_real' | 'max_multiplier' | 'time_gems';
     entries: Array<LeaderboardEntry>;
     currentPlayer: {
         userId: string;
@@ -1070,7 +1071,7 @@ export type GetLeaderboardData = {
     body?: never;
     path?: never;
     query?: {
-        type?: 'current' | 'collected' | 'time_gems';
+        type?: 'current' | 'collected' | 'collected_real' | 'max_multiplier' | 'time_gems';
     };
     url: '/leaderboard';
 };
