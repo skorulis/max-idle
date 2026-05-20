@@ -104,7 +104,7 @@ type PlayerStateRow = {
   last_daily_reward_collected_at: Date | null;
   last_daily_bonus_claimed_at: Date | null;
   tutorial_progress: string;
-  blackhole_time: string;
+  blackhole_time: number;
   blackhole_feeds_today: number;
   blackhole_feed_day_start: Date | null;
   obligations_completed: unknown;
@@ -546,7 +546,7 @@ export function registerPlayerRoutes({
         tutorial_progress: string;
         obligations_completed: unknown;
         level: number;
-        blackhole_time: string;
+        blackhole_time: number;
       }>(
         `
         SELECT
@@ -976,7 +976,7 @@ export function registerPlayerRoutes({
         last_daily_bonus_claimed_at: Date | null;
         tutorial_progress: string;
         obligations_completed: unknown;
-        blackhole_time: string;
+        blackhole_time: number;
       }>(
         `
         SELECT

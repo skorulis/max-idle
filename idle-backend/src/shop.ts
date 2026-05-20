@@ -142,7 +142,7 @@ export function registerShopRoutes({
         last_daily_reward_collected_at: Date | null;
         tutorial_progress: string;
         level: string;
-        blackhole_time: string;
+        blackhole_time: number;
       }>(
         `
         SELECT
@@ -474,7 +474,7 @@ export function registerShopRoutes({
         last_collected_at: Date;
         last_daily_reward_collected_at: Date | null;
         tutorial_progress: string;
-        blackhole_time: string;
+        blackhole_time: number;
       }>(
         `
         SELECT
@@ -707,7 +707,7 @@ export function registerShopRoutes({
         tutorial_progress: string;
         obligations_completed: unknown;
         level: string;
-        blackhole_time: string;
+        blackhole_time: number;
       }>(
         `
         SELECT

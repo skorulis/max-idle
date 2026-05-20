@@ -56,7 +56,7 @@ type PlayerCurrentSecondsSyncRow = {
   achievement_count: number;
   level: string;
   shop: ShopState;
-  blackhole_time: string;
+  blackhole_time: number;
   server_time: Date;
 };
 
@@ -335,6 +335,7 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
         level: string;
         max_multiplier: number;
         shop: ShopState;
+        blackhole_time: number;
         server_time: Date;
       }>(
         `

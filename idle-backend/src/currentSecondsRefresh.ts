@@ -11,7 +11,7 @@ export type PlayerCurrentSecondsSourceRow = {
   achievement_count: number;
   real_time_available: number;
   level: string | number;
-  blackhole_time?: string | number;
+  blackhole_time?: number;
   server_time: Date;
 };
 

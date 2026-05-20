@@ -27,7 +27,7 @@ type TournamentEntryRow = {
   real_time_available: number;
   achievement_count: number;
   level: string;
-  blackhole_time: string;
+  blackhole_time: number;
 };
 
 export type TournamentEntrySummary = {
@@ -411,7 +411,7 @@ async function getTournamentEntriesForScoring(
     real_time_available: number;
     achievement_count: number;
     level: string;
-    blackhole_time: string;
+    blackhole_time: number;
   }>
 > {
   const result = await client.query<{
@@ -423,7 +423,7 @@ async function getTournamentEntriesForScoring(
     real_time_available: number;
     achievement_count: number;
     level: string;
-    blackhole_time: string;
+    blackhole_time: number;
   }>(
     `
     SELECT

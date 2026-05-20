@@ -256,7 +256,7 @@ export function registerDailyBonusRoutes({
         daily_bonuses_collected_count: number;
         tutorial_progress: string;
         obligations_completed: unknown;
-        blackhole_time: string;
+        blackhole_time: number;
       }>(
         `
         SELECT
