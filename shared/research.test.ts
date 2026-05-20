@@ -21,16 +21,16 @@ import {
 describe("formatResearchEffectProgression", () => {
   it("shows current and next formatted values when not at max", () => {
     expect(formatResearchEffectProgression(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 0)).toBe(
-      "10 daily feeds -> 11 daily feeds"
+      "10 -> 11"
     );
   });
 
   it("shows a single value at max level", () => {
-    expect(formatResearchEffectProgression(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 10)).toBe("20 daily feeds");
+    expect(formatResearchEffectProgression(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 10)).toBe("20");
   });
 
   it("formats black hole feed amount with duration units", () => {
-    expect(formatResearchEffectProgression(RESEARCH_BLACK_HOLE_FEED_AMOUNT, 0)).toBe("1m per feed -> 2m per feed");
+    expect(formatResearchEffectProgression(RESEARCH_BLACK_HOLE_FEED_AMOUNT, 0)).toBe("1m -> 2m");
   });
 });
 
