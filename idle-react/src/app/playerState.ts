@@ -31,6 +31,14 @@ export function toSyncedState(data: PlayerResponse, previous?: SyncedPlayerState
       typeof data.blackholeTime === "number" && Number.isFinite(data.blackholeTime)
         ? Math.max(0, Math.floor(data.blackholeTime))
         : (previous?.blackholeTime ?? 0),
+    blackholeFeedsToday:
+      typeof data.blackholeFeedsToday === "number" && Number.isFinite(data.blackholeFeedsToday)
+        ? Math.max(0, Math.floor(data.blackholeFeedsToday))
+        : (previous?.blackholeFeedsToday ?? 0),
+    blackholeFeedsRemainingToday:
+      typeof data.blackholeFeedsRemainingToday === "number" && Number.isFinite(data.blackholeFeedsRemainingToday)
+        ? Math.max(0, Math.floor(data.blackholeFeedsRemainingToday))
+        : (previous?.blackholeFeedsRemainingToday ?? 0),
     obligationsCompleted: data.obligationsCompleted ?? {},
     collectionCount: data.collectionCount ?? 0
   };

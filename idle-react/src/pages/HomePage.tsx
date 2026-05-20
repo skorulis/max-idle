@@ -329,7 +329,11 @@ export function HomePage({
         </div>
       </section>
 
-      <BlackHoleCard blackholeTime={playerState.blackholeTime} onFeedTaps={onFeedBlackHoleTaps} />
+      <BlackHoleCard
+        blackholeTime={playerState.blackholeTime}
+        blackholeFeedsRemainingToday={playerState.blackholeFeedsRemainingToday}
+        onFeedTaps={onFeedBlackHoleTaps}
+      />
 
       {currentObligation ? (
         <section className="card">

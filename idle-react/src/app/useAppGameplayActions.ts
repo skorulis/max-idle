@@ -371,6 +371,8 @@ export function useAppGameplayActions({
     } catch (feedError) {
       if (feedError instanceof Error && feedError.message === "UNAUTHORIZED") {
         clearUnauthorizedSession();
+      } else if (feedError instanceof Error && feedError.message === "BLACKHOLE_FEED_DAILY_LIMIT_EXCEEDED") {
+        setError("Daily black hole feed limit reached.");
       } else {
         const message = feedError instanceof Error ? feedError.message : "Could not feed the black hole";
         setError(message);

@@ -45,7 +45,11 @@ import {
 import { parseObligationsCompleted } from "../obligationsState.js";
 import { getPlayerCollectionCount } from "../playerCollectionCount.js";
 import {
+  BLACKHOLE_DAILY_FEED_LIMIT,
+  getBlackholeFeedsRemainingToday,
+  getBlackholeFeedsToday,
   getBlackholeFeedSeconds,
+  getUtcDayStartMs,
   MAX_BLACKHOLE_FEED_TAPS_PER_REQUEST
 } from "@maxidle/shared/blackHole";
 
@@ -101,6 +105,8 @@ type PlayerStateRow = {
   last_daily_bonus_claimed_at: Date | null;
   tutorial_progress: string;
   blackhole_time: string;
+  blackhole_feeds_today: number;
+  blackhole_feed_day_start: Date | null;
   obligations_completed: unknown;
   server_time: Date;
 };
@@ -131,6 +137,8 @@ export async function buildPlayerStatePayload(
       last_daily_bonus_claimed_at,
       tutorial_progress,
       blackhole_time,
+      blackhole_feeds_today,
+      blackhole_feed_day_start,
       obligations_completed,
       NOW() AS server_time
     FROM player_states
@@ -235,6 +243,16 @@ export async function buildPlayerStatePayload(
     serverTime: row.server_time.toISOString(),
     tutorialProgress: row.tutorial_progress ?? "",
     blackholeTime: toNumber(row.blackhole_time),
+    blackholeFeedsToday: getBlackholeFeedsToday(
+      row.blackhole_feeds_today,
+      row.blackhole_feed_day_start,
+      row.server_time
+    ),
+    blackholeFeedsRemainingToday: getBlackholeFeedsRemainingToday(
+      row.blackhole_feeds_today,
+      row.blackhole_feed_day_start,
+      row.server_time
+    ),
     obligationsCompleted: parseObligationsCompleted(row.obligations_completed),
     collectionCount
   };
@@ -373,21 +391,86 @@ export function registerPlayerRoutes({
         return;
       }
 
-      const feedSeconds = getBlackholeFeedSeconds(taps);
-      const updateResult = await pool.query<{ user_id: string }>(
-        `
-        UPDATE player_states
-        SET
-          blackhole_time = blackhole_time + $2::BIGINT,
-          updated_at = NOW()
-        WHERE user_id = $1
-        RETURNING user_id
-        `,
-        [userId, feedSeconds]
-      );
-      if (!updateResult.rows[0]) {
-        res.status(404).json({ error: "Player state not found" });
-        return;
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        const lockResult = await client.query<{
+          blackhole_feeds_today: number;
+          blackhole_feed_day_start: Date | null;
+          server_time: Date;
+        }>(
+          `
+          SELECT
+            blackhole_feeds_today,
+            blackhole_feed_day_start,
+            NOW() AS server_time
+          FROM player_states
+          WHERE user_id = $1
+          FOR UPDATE
+          `,
+          [userId]
+        );
+        const locked = lockResult.rows[0];
+        if (!locked) {
+          await client.query("ROLLBACK");
+          res.status(404).json({ error: "Player state not found" });
+          return;
+        }
+
+        const feedsToday = getBlackholeFeedsToday(
+          locked.blackhole_feeds_today,
+          locked.blackhole_feed_day_start,
+          locked.server_time
+        );
+        const remainingToday = BLACKHOLE_DAILY_FEED_LIMIT - feedsToday;
+        if (remainingToday <= 0) {
+          await client.query("ROLLBACK");
+          res.status(400).json({
+            error: `Daily black hole feed limit reached (${BLACKHOLE_DAILY_FEED_LIMIT} per UTC day)`,
+            code: "BLACKHOLE_FEED_DAILY_LIMIT_EXCEEDED",
+            blackholeFeedsToday: feedsToday,
+            blackholeFeedsRemainingToday: 0
+          });
+          return;
+        }
+        if (taps > remainingToday) {
+          await client.query("ROLLBACK");
+          res.status(400).json({
+            error: `Only ${remainingToday} feed tap(s) remaining today`,
+            code: "BLACKHOLE_FEED_DAILY_LIMIT_EXCEEDED",
+            blackholeFeedsToday: feedsToday,
+            blackholeFeedsRemainingToday: remainingToday
+          });
+          return;
+        }
+
+        const feedSeconds = getBlackholeFeedSeconds(taps);
+        const feedDayStart = new Date(getUtcDayStartMs(locked.server_time));
+        const newFeedsToday = feedsToday + taps;
+        const updateResult = await client.query<{ user_id: string }>(
+          `
+          UPDATE player_states
+          SET
+            blackhole_time = blackhole_time + $2::BIGINT,
+            blackhole_feeds_today = $3,
+            blackhole_feed_day_start = $4,
+            updated_at = NOW()
+          WHERE user_id = $1
+          RETURNING user_id
+          `,
+          [userId, feedSeconds, newFeedsToday, feedDayStart]
+        );
+        if (!updateResult.rows[0]) {
+          await client.query("ROLLBACK");
+          res.status(404).json({ error: "Player state not found" });
+          return;
+        }
+        await client.query("COMMIT");
+      } catch (error) {
+        await client.query("ROLLBACK").catch(() => {});
+        throw error;
+      } finally {
+        client.release();
       }
 
       const payload = await buildPlayerStatePayload(pool, userId, toNumber);

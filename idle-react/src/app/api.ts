@@ -173,6 +173,10 @@ export async function feedBlackHole(token: string | null, taps: number): Promise
     throw new Error("UNAUTHORIZED");
   }
   if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { code?: string } | null;
+    if (payload?.code === "BLACKHOLE_FEED_DAILY_LIMIT_EXCEEDED") {
+      throw new Error("BLACKHOLE_FEED_DAILY_LIMIT_EXCEEDED");
+    }
     throw new Error(await getErrorMessage(response));
   }
 

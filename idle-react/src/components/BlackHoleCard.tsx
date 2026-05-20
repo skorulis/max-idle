@@ -1,4 +1,5 @@
 import { useCallback, useRef } from "react";
+import { BLACKHOLE_DAILY_FEED_LIMIT } from "@maxidle/shared/blackHole";
 import { Orbit } from "lucide-react";
 import { formatSeconds } from "../formatSeconds";
 import { BlackHoleShaderCanvas } from "./BlackHoleShaderCanvas";
@@ -7,28 +8,45 @@ import "./BlackHoleCard.css";
 
 type BlackHoleCardProps = {
   blackholeTime: number;
+  blackholeFeedsRemainingToday: number;
   onFeedTaps: (taps: number) => Promise<void>;
 };
 
-export function BlackHoleCard({ blackholeTime, onFeedTaps }: BlackHoleCardProps) {
+export function BlackHoleCard({
+  blackholeTime,
+  blackholeFeedsRemainingToday,
+  onFeedTaps
+}: BlackHoleCardProps) {
   const tapBoostRef = useRef(0);
-  const { displayBlackholeTime, timeDilation, registerTap } = useBlackHoleFeed({
-    blackholeTime,
-    onFeedTaps
-  });
+  const { displayBlackholeTime, timeDilation, effectiveFeedsRemaining, atDailyLimit, registerTap } =
+    useBlackHoleFeed({
+      blackholeTime,
+      blackholeFeedsRemainingToday,
+      onFeedTaps
+    });
 
   const handleTap = useCallback(() => {
+    if (atDailyLimit) {
+      return;
+    }
     tapBoostRef.current = 1;
     registerTap();
-  }, [registerTap]);
+  }, [atDailyLimit, registerTap]);
 
   return (
     <section
-      className="card black-hole-card"
-      tabIndex={0}
-      aria-label="Black hole — tap to brighten and feed time"
+      className={"card black-hole-card" + (atDailyLimit ? " black-hole-card--limit-reached" : "")}
+      tabIndex={atDailyLimit ? -1 : 0}
+      aria-label={
+        atDailyLimit
+          ? "Black hole — daily feed limit reached"
+          : "Black hole — tap to brighten and feed time"
+      }
       onClick={handleTap}
       onKeyDown={(event) => {
+        if (atDailyLimit) {
+          return;
+        }
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           handleTap();
@@ -49,6 +67,7 @@ export function BlackHoleCard({ blackholeTime, onFeedTaps }: BlackHoleCardProps)
       <button
         type="button"
         className="black-hole-card__feed-button"
+        disabled={atDailyLimit}
         onClick={(event) => {
           event.stopPropagation();
           handleTap();

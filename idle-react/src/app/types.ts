@@ -64,6 +64,10 @@ export type PlayerResponse = {
   tutorialProgress: string;
   /** Seconds invested in the black hole. */
   blackholeTime: number;
+  /** Feed taps used today (UTC day). */
+  blackholeFeedsToday: number;
+  /** Feed taps remaining today (UTC day). */
+  blackholeFeedsRemainingToday: number;
   /** Completed obligation ids mapped to `true`. */
   obligationsCompleted: Record<string, boolean>;
   /** Count of rows in `player_collection_history` (idle collects). */
@@ -227,6 +231,8 @@ export type SyncedPlayerState = {
   syncedAtClientMs: number;
   tutorialProgress: string;
   blackholeTime: number;
+  blackholeFeedsToday: number;
+  blackholeFeedsRemainingToday: number;
   obligationsCompleted: Record<string, boolean>;
   collectionCount: number;
 };

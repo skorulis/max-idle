@@ -55,6 +55,8 @@ export type PlayerState = {
     serverTime: string;
     tutorialProgress: string;
     blackholeTime: number;
+    blackholeFeedsToday: number;
+    blackholeFeedsRemainingToday: number;
     obligationsCompleted: {
         [key: string]: boolean;
     };

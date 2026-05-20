@@ -5,7 +5,11 @@ import { createApp } from "../../src/app.js";
 import { DEFAULT_SHOP_STATE, getRestraintBonusMultiplier } from "@maxidle/shared/shop";
 import { OBLIGATION_IDS } from "@maxidle/shared/obligations";
 import { TUTORIAL_STEPS } from "@maxidle/shared/tutorialSteps";
-import { BLACKHOLE_FEED_SECONDS_PER_TAP, getBlackholeFeedSeconds } from "@maxidle/shared/blackHole";
+import {
+  BLACKHOLE_DAILY_FEED_LIMIT,
+  BLACKHOLE_FEED_SECONDS_PER_TAP,
+  getBlackholeFeedSeconds
+} from "@maxidle/shared/blackHole";
 import { createTestPool, resetTestDatabase } from "../testDb.js";
 import { createTestAppConfig } from "../testAppConfig.js";
 
@@ -1044,5 +1048,38 @@ describe("player routes", () => {
     const after = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
     expect(after.status).toBe(200);
     expect(after.body.blackholeTime).toBe(getBlackholeFeedSeconds(3));
+    expect(after.body.blackholeFeedsToday).toBe(3);
+    expect(after.body.blackholeFeedsRemainingToday).toBe(BLACKHOLE_DAILY_FEED_LIMIT - 3);
+  });
+
+  it("blackhole feed: enforces daily feed limit of 60 taps per UTC day", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    expect(authResponse.status).toBe(201);
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    const utcDayStart = new Date();
+    utcDayStart.setUTCHours(0, 0, 0, 0);
+    await pool.query(
+      `
+      UPDATE player_states
+      SET blackhole_feeds_today = $2, blackhole_feed_day_start = $3
+      WHERE user_id = $1
+      `,
+      [userId, BLACKHOLE_DAILY_FEED_LIMIT, utcDayStart]
+    );
+
+    const blocked = await request(app)
+      .post("/player/blackhole/feed")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ taps: 1 });
+    expect(blocked.status).toBe(400);
+    expect(blocked.body.code).toBe("BLACKHOLE_FEED_DAILY_LIMIT_EXCEEDED");
+
+    const player = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
+    expect(player.status).toBe(200);
+    expect(player.body.blackholeFeedsToday).toBe(BLACKHOLE_DAILY_FEED_LIMIT);
+    expect(player.body.blackholeFeedsRemainingToday).toBe(0);
   });
 });

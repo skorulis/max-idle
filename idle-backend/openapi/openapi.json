@@ -224,6 +224,16 @@
             "type": "integer",
             "minimum": 0
           },
+          "blackholeFeedsToday": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 60
+          },
+          "blackholeFeedsRemainingToday": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 60
+          },
           "obligationsCompleted": {
             "type": "object",
             "additionalProperties": {
@@ -255,6 +265,8 @@
           "serverTime",
           "tutorialProgress",
           "blackholeTime",
+          "blackholeFeedsToday",
+          "blackholeFeedsRemainingToday",
           "obligationsCompleted",
           "collectionCount"
         ]

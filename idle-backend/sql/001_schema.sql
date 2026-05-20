@@ -46,6 +46,8 @@ CREATE TABLE IF NOT EXISTS player_states (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   tutorial_progress TEXT NOT NULL DEFAULT '',
   blackhole_time BIGINT NOT NULL DEFAULT 0,
+  blackhole_feeds_today INTEGER NOT NULL DEFAULT 0,
+  blackhole_feed_day_start TIMESTAMPTZ,
   obligations_completed JSONB NOT NULL DEFAULT '{}'::jsonb CHECK (
     jsonb_typeof(obligations_completed) = 'object'
     AND NOT jsonb_path_exists(
