@@ -18,20 +18,19 @@ export function BlackHoleCard({ blackholeTime }: BlackHoleCardProps) {
   }, []);
 
   return (
-    <section className="card black-hole-card">
-      <div
-        className="black-hole-card__shader-host"
-        role="button"
-        tabIndex={0}
-        aria-label="Black hole — tap to brighten"
-        onClick={handleTap}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            handleTap();
-          }
-        }}
-      >
+    <section
+      className="card black-hole-card"
+      tabIndex={0}
+      aria-label="Black hole — tap to brighten"
+      onClick={handleTap}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          handleTap();
+        }
+      }}
+    >
+      <div className="black-hole-card__shader-host" aria-hidden="true">
         <BlackHoleShaderCanvas className="black-hole-card__canvas" tapBoostRef={tapBoostRef} />
       </div>
       <div className="black-hole-card__content">
