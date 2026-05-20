@@ -21,6 +21,7 @@ import {
   getMaxIdleCollectionRealtimeSeconds,
   getRestraintMinRealtimeSeconds
 } from "../shop";
+import { BlackHoleCard } from "../components/BlackHoleCard";
 import { FlipDurationDisplay } from "../components/FlipDurationDisplay";
 import { CurrentRateInfoOverlay } from "./CurrentRateInfoOverlay";
 import { TournamentPanel } from "./TournamentPanel";
@@ -325,6 +326,8 @@ export function HomePage({
           </button>
         </div>
       </section>
+
+      <BlackHoleCard />
 
       {currentObligation ? (
         <section className="card">

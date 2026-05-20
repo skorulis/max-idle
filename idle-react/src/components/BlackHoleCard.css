@@ -1,0 +1,36 @@
+.black-hole-card {
+  position: relative;
+  padding: 0;
+  overflow: hidden;
+  background: #000;
+  color: #fff;
+  border-color: #27272a;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+  min-height: 220px;
+}
+
+.black-hole-card__shader-host {
+  position: absolute;
+  inset: 0;
+}
+
+.black-hole-card__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.black-hole-card__content {
+  position: relative;
+  z-index: 1;
+  padding: 24px;
+}
+
+.black-hole-card .section-title-with-icon {
+  margin: 0;
+  color: #fff;
+}
+
+.black-hole-card .section-title-with-icon svg {
+  color: #fff;
+}
