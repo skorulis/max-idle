@@ -194,7 +194,7 @@ const leaderboardEntrySchema = registry.register(
 const leaderboardResponseSchema = registry.register(
   "LeaderboardResponse",
   z.object({
-    type: z.enum(["current", "collected", "collected_real", "time_gems"]),
+    type: z.enum(["current", "collected", "collected_real", "max_multiplier", "time_gems"]),
     entries: z.array(leaderboardEntrySchema),
     currentPlayer: z
       .object({
@@ -1271,7 +1271,7 @@ registry.registerPath({
   summary: "Get leaderboard data",
   request: {
     query: z.object({
-      type: z.enum(["current", "collected", "collected_real", "time_gems"]).optional()
+      type: z.enum(["current", "collected", "collected_real", "max_multiplier", "time_gems"]).optional()
     })
   },
   responses: {

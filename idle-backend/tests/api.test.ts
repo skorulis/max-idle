@@ -409,6 +409,35 @@ describe("auth + player lifecycle", () => {
     }
   });
 
+  it("returns leaderboard ordered by max_multiplier when type is max_multiplier", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(`UPDATE player_states SET max_multiplier = $2 WHERE user_id = $1`, [userId, 9.99]);
+    const midId = await insertLeaderboardPlayer(0, 0);
+    await pool.query(`UPDATE player_states SET max_multiplier = $2 WHERE user_id = $1`, [midId, 4.5]);
+    const lowId = await insertLeaderboardPlayer(0, 0);
+    await pool.query(`UPDATE player_states SET max_multiplier = $2 WHERE user_id = $1`, [lowId, 1.25]);
+
+    const leaderboardResponse = await request(app)
+      .get("/leaderboard")
+      .query({ type: "max_multiplier" })
+      .set("Authorization", `Bearer ${token}`);
+    expect(leaderboardResponse.status).toBe(200);
+    expect(leaderboardResponse.body.type).toBe("max_multiplier");
+    expect(leaderboardResponse.body.entries[0].userId).toBe(userId);
+    expect(leaderboardResponse.body.entries[0].totalIdleSeconds).toBeCloseTo(9.99, 5);
+    expect(leaderboardResponse.body.entries[1].totalIdleSeconds).toBeCloseTo(4.5, 5);
+    expect(leaderboardResponse.body.entries[2].totalIdleSeconds).toBeCloseTo(1.25, 5);
+    for (let i = 1; i < leaderboardResponse.body.entries.length; i += 1) {
+      expect(leaderboardResponse.body.entries[i - 1].totalIdleSeconds).toBeGreaterThanOrEqual(
+        leaderboardResponse.body.entries[i].totalIdleSeconds
+      );
+    }
+  });
+
   it("returns public player profile by id", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");

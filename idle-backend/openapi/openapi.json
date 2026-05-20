@@ -465,6 +465,10 @@
               "level": {
                 "type": "integer",
                 "minimum": 0
+              },
+              "maxMultiplier": {
+                "type": "number",
+                "minimum": 0
               }
             },
             "required": [
@@ -478,7 +482,8 @@
               "timeGems",
               "upgradesPurchased",
               "achievementCount",
-              "level"
+              "level",
+              "maxMultiplier"
             ]
           },
           "meta": {
@@ -539,6 +544,7 @@
               "current",
               "collected",
               "collected_real",
+              "max_multiplier",
               "time_gems"
             ]
           },
@@ -2714,6 +2720,7 @@
                 "current",
                 "collected",
                 "collected_real",
+                "max_multiplier",
                 "time_gems"
               ]
             },

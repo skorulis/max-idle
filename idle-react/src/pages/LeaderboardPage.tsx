@@ -6,6 +6,26 @@ import { formatSeconds } from "../formatSeconds";
 import type { LeaderboardResponse, LeaderboardType } from "../app/types";
 import { RankedPlayerRow } from "./RankedPlayerRow";
 
+function formatLeaderboardValue(leaderboardType: LeaderboardType, value: number): string {
+  if (leaderboardType === "time_gems") {
+    return `${value.toLocaleString()} gem${value === 1 ? "" : "s"}`;
+  }
+  if (leaderboardType === "max_multiplier") {
+    return `${value.toFixed(2)}x`;
+  }
+  return formatSeconds(value);
+}
+
+function leaderboardValueKind(leaderboardType: LeaderboardType): "idle_seconds" | "time_gems" | "max_multiplier" {
+  if (leaderboardType === "time_gems") {
+    return "time_gems";
+  }
+  if (leaderboardType === "max_multiplier") {
+    return "max_multiplier";
+  }
+  return "idle_seconds";
+}
+
 function leaderboardShareText(
   leaderboardType: LeaderboardType,
   currentPlayer: LeaderboardResponse["currentPlayer"]
@@ -27,6 +47,10 @@ function leaderboardShareText(
     case "current": {
       const duration = formatSeconds(currentPlayer.totalIdleSeconds);
       return `${rankPhrase} patiently holding ${duration} of idle time`;
+    }
+    case "max_multiplier": {
+      const multiplier = currentPlayer.totalIdleSeconds.toFixed(2);
+      return `${rankPhrase} with a peak idle multiplier of ${multiplier}x`;
     }
     case "time_gems": {
       const gems = currentPlayer.totalIdleSeconds;
@@ -104,6 +128,14 @@ export function LeaderboardPage({
           >
             Collected real
           </button>
+          <button
+            type="button"
+            className={`secondary${leaderboardType === "max_multiplier" ? " leaderboard-type-active" : ""}`}
+            onClick={() => onTypeChange("max_multiplier")}
+            disabled={leaderboardLoading}
+          >
+            Peak multiplier
+          </button>
         </div>
       </div>
       {leaderboardLoading ? <p>Loading leaderboard...</p> : null}
@@ -118,16 +150,14 @@ export function LeaderboardPage({
                 username={entry.username}
                 totalIdleSeconds={entry.totalIdleSeconds}
                 isCurrentPlayer={entry.isCurrentPlayer}
-                valueKind={leaderboardType === "time_gems" ? "time_gems" : "idle_seconds"}
+                valueKind={leaderboardValueKind(leaderboardType)}
               />
             ))}
           </div>
           {leaderboard.currentPlayer && !leaderboard.currentPlayer.inTop ? (
             <p className="subtle">
               Your rank is #{leaderboard.currentPlayer.rank} with{" "}
-              {leaderboardType === "time_gems"
-                ? `${leaderboard.currentPlayer.totalIdleSeconds.toLocaleString()} gem${leaderboard.currentPlayer.totalIdleSeconds === 1 ? "" : "s"}`
-                : formatSeconds(leaderboard.currentPlayer.totalIdleSeconds)}
+              {formatLeaderboardValue(leaderboardType, leaderboard.currentPlayer.totalIdleSeconds)}
               .
             </p>
           ) : null}
