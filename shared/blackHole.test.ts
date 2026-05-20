@@ -50,7 +50,7 @@ describe("getBlackholeFeedsToday", () => {
 });
 
 describe("getBlackholeFeedSeconds", () => {
-  it("returns 10 minutes per tap", () => {
+  it("returns 1 minute per tap", () => {
     expect(getBlackholeFeedSeconds(1)).toBe(BLACKHOLE_FEED_SECONDS_PER_TAP);
     expect(getBlackholeFeedSeconds(3)).toBe(BLACKHOLE_FEED_SECONDS_PER_TAP * 3);
   });

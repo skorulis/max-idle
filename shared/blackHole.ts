@@ -5,7 +5,7 @@ import { SECONDS_PER_MINUTE } from "./timeConstants.js";
 export const BLACK_HOLE_DILATION_TIME_DIVISOR = 36;
 
 /** Idle seconds added to the black hole per feed tap. */
-export const BLACKHOLE_FEED_SECONDS_PER_TAP = 10 * SECONDS_PER_MINUTE;
+export const BLACKHOLE_FEED_SECONDS_PER_TAP = SECONDS_PER_MINUTE;
 
 /** Upper bound on taps per feed API request (rapid-click batches). */
 export const MAX_BLACKHOLE_FEED_TAPS_PER_REQUEST = 500;

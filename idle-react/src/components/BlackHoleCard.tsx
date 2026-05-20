@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react";
-import { BLACKHOLE_DAILY_FEED_LIMIT } from "@maxidle/shared/blackHole";
 import { Orbit } from "lucide-react";
+import { toast } from "../gameToast";
 import { formatSeconds } from "../formatSeconds";
 import { BlackHoleShaderCanvas } from "./BlackHoleShaderCanvas";
 import { useBlackHoleFeed } from "./useBlackHoleFeed";
@@ -18,7 +18,7 @@ export function BlackHoleCard({
   onFeedTaps
 }: BlackHoleCardProps) {
   const tapBoostRef = useRef(0);
-  const { displayBlackholeTime, timeDilation, effectiveFeedsRemaining, atDailyLimit, registerTap } =
+  const { displayBlackholeTime, timeDilation, atDailyLimit, registerTap } =
     useBlackHoleFeed({
       blackholeTime,
       blackholeFeedsRemainingToday,
@@ -67,9 +67,12 @@ export function BlackHoleCard({
       <button
         type="button"
         className="black-hole-card__feed-button"
-        disabled={atDailyLimit}
         onClick={(event) => {
           event.stopPropagation();
+          if (atDailyLimit) {
+            toast.warning("Blackhole feeding is exhausted until tomorrow");
+            return;
+          }
           handleTap();
         }}
       >

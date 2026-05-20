@@ -64,11 +64,6 @@
   cursor: default;
 }
 
-.black-hole-card--limit-reached .black-hole-card__feed-button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
 .black-hole-card__feed-button {
   position: absolute;
   bottom: 24px;
