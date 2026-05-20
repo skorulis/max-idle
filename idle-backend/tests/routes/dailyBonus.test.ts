@@ -176,7 +176,7 @@ describe("daily bonus routes", () => {
     expect(collect.status).toBe(200);
 
     const state = await pool.query<{
-      daily_bonuses_collected_count: string | number;
+      daily_bonuses_collected_count: number;
       achievement_levels: unknown;
     }>(
       `

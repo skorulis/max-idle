@@ -129,23 +129,23 @@ export function registerShopRoutes({
       const userId = identity.claims.sub;
       await client.query("BEGIN");
       const rowResult = await client.query<{
-        idle_time_total: string;
-        idle_time_available: string;
-        real_time_total: string;
-        real_time_available: string;
-        time_gems_total: string;
-        time_gems_available: string;
-        achievement_count: string;
+        idle_time_total: number;
+        idle_time_available: number;
+        real_time_total: number;
+        real_time_available: number;
+        time_gems_total: number;
+        time_gems_available: number;
+        achievement_count: number;
         has_unseen_achievements: boolean;
         achievement_levels: unknown;
         upgrades_purchased: number;
         shop: ShopState;
-        current_seconds: string;
+        current_seconds: number;
         current_seconds_last_updated: Date;
         last_collected_at: Date;
         last_daily_reward_collected_at: Date | null;
         tutorial_progress: string;
-        level: string;
+        level: number;
         blackhole_time: number;
         research: unknown;
       }>(
@@ -309,15 +309,15 @@ export function registerShopRoutes({
       );
       const idleSecondsRateAtPurchase = effectiveIdleSecondsRateFromPlayerRow(purchaseRateRow, toNumber);
       const updateResult = await client.query<{
-        idle_time_total: string;
-        idle_time_available: string;
-        time_gems_total: string;
-        time_gems_available: string;
-        upgrades_purchased: string;
-        real_time_total: string;
-        real_time_available: string;
+        idle_time_total: number;
+        idle_time_available: number;
+        time_gems_total: number;
+        time_gems_available: number;
+        upgrades_purchased: number;
+        real_time_total: number;
+        real_time_available: number;
         has_unseen_achievements: boolean;
-        current_seconds: string;
+        current_seconds: number;
         current_seconds_last_updated: Date;
         last_collected_at: Date;
         shop: ShopState;
@@ -325,7 +325,7 @@ export function registerShopRoutes({
         last_daily_bonus_claimed_at: Date | null;
         tutorial_progress: string;
         obligations_completed: unknown;
-        level: string;
+        level: number;
       }>(
         `
         UPDATE player_states
@@ -468,19 +468,19 @@ export function registerShopRoutes({
 
       await client.query("BEGIN");
       const rowResult = await client.query<{
-        level: string;
-        idle_time_total: string;
-        idle_time_available: string;
-        real_time_total: string;
-        real_time_available: string;
-        time_gems_total: string;
-        time_gems_available: string;
-        achievement_count: string;
+        level: number;
+        idle_time_total: number;
+        idle_time_available: number;
+        real_time_total: number;
+        real_time_available: number;
+        time_gems_total: number;
+        time_gems_available: number;
+        achievement_count: number;
         has_unseen_achievements: boolean;
         achievement_levels: unknown;
         upgrades_purchased: number;
         shop: ShopState;
-        current_seconds: string;
+        current_seconds: number;
         current_seconds_last_updated: Date;
         last_collected_at: Date;
         last_daily_reward_collected_at: Date | null;
@@ -568,15 +568,15 @@ export function registerShopRoutes({
       const idleSecondsRateAtLevelUp = effectiveIdleSecondsRateFromPlayerRow(levelRateRow, toNumber);
 
       const updateResult = await client.query<{
-        idle_time_total: string;
-        idle_time_available: string;
-        time_gems_total: string;
-        time_gems_available: string;
-        upgrades_purchased: string;
-        real_time_total: string;
-        real_time_available: string;
+        idle_time_total: number;
+        idle_time_available: number;
+        time_gems_total: number;
+        time_gems_available: number;
+        upgrades_purchased: number;
+        real_time_total: number;
+        real_time_available: number;
         has_unseen_achievements: boolean;
-        current_seconds: string;
+        current_seconds: number;
         current_seconds_last_updated: Date;
         last_collected_at: Date;
         shop: ShopState;
@@ -584,7 +584,7 @@ export function registerShopRoutes({
         last_daily_bonus_claimed_at: Date | null;
         tutorial_progress: string;
         obligations_completed: unknown;
-        level: string;
+        level: number;
       }>(
         `
         UPDATE player_states
@@ -710,13 +710,13 @@ export function registerShopRoutes({
       const userId = identity.claims.sub;
       await client.query("BEGIN");
       const rowResult = await client.query<{
-        idle_time_total: string;
-        idle_time_available: string;
-        real_time_total: string;
-        real_time_available: string;
-        time_gems_total: string;
-        time_gems_available: string;
-        achievement_count: string;
+        idle_time_total: number;
+        idle_time_available: number;
+        real_time_total: number;
+        real_time_available: number;
+        time_gems_total: number;
+        time_gems_available: number;
+        achievement_count: number;
         achievement_levels: unknown;
         has_unseen_achievements: boolean;
         shop: ShopState;
@@ -724,7 +724,7 @@ export function registerShopRoutes({
         last_daily_reward_collected_at: Date | null;
         tutorial_progress: string;
         obligations_completed: unknown;
-        level: string;
+        level: number;
         blackhole_time: number;
       }>(
         `
@@ -779,15 +779,15 @@ export function registerShopRoutes({
       );
       const idleSecondsRateAtGemGrant = effectiveIdleSecondsRateFromPlayerRow(gemRateRow, toNumber);
       const updateResult = await client.query<{
-        idle_time_total: string;
-        idle_time_available: string;
-        time_gems_total: string;
-        time_gems_available: string;
-        upgrades_purchased: string;
-        real_time_total: string;
-        real_time_available: string;
+        idle_time_total: number;
+        idle_time_available: number;
+        time_gems_total: number;
+        time_gems_available: number;
+        upgrades_purchased: number;
+        real_time_total: number;
+        real_time_available: number;
         has_unseen_achievements: boolean;
-        current_seconds: string;
+        current_seconds: number;
         current_seconds_last_updated: Date;
         last_collected_at: Date;
         shop: ShopState;

@@ -159,7 +159,7 @@ describe("tournament routes", () => {
     expect(secondEnter.body.enteredNow).toBe(false);
     expect(secondEnter.body.tournament.hasEntered).toBe(true);
 
-    const entryCountResult = await pool.query<{ entry_count: string }>(
+    const entryCountResult = await pool.query<{ entry_count: number }>(
       `
       SELECT COUNT(*) AS entry_count
       FROM tournament_entries
@@ -245,9 +245,9 @@ describe("tournament routes", () => {
 
     const rankingResult = await pool.query<{
       user_id: string;
-      final_rank: string;
-      time_score_seconds: string;
-      gems_awarded: string;
+      final_rank: number;
+      time_score_seconds: number;
+      gems_awarded: number;
     }>(
       `
       SELECT user_id, final_rank, time_score_seconds, gems_awarded
@@ -271,7 +271,7 @@ describe("tournament routes", () => {
     );
     const finalizedTournamentId = Number(finalizedTournamentIdResult.rows[0]?.id ?? 0);
 
-    const gemsBeforeCollect = await pool.query<{ user_id: string; time_gems_total: string }>(
+    const gemsBeforeCollect = await pool.query<{ user_id: string; time_gems_total: number }>(
       `
       SELECT ps.user_id, ps.time_gems_total
       FROM player_states ps
@@ -297,7 +297,7 @@ describe("tournament routes", () => {
       expect(dupCollect.body.code).toBe("NO_TOURNAMENT_REWARD_TO_COLLECT");
     }
 
-    const gemsResult = await pool.query<{ user_id: string; time_gems_total: string }>(
+    const gemsResult = await pool.query<{ user_id: string; time_gems_total: number }>(
       `
       SELECT ps.user_id, ps.time_gems_total
       FROM player_states ps
@@ -310,7 +310,7 @@ describe("tournament routes", () => {
 
     const finalizedAgain = await finalizeDueTournaments(pool, new Date());
     expect(finalizedAgain).toBe(0);
-    const gemSumResult = await pool.query<{ total_gems: string }>(
+    const gemSumResult = await pool.query<{ total_gems: number }>(
       `
       SELECT COALESCE(SUM(ps.time_gems_total), 0) AS total_gems
       FROM player_states ps
@@ -374,7 +374,7 @@ describe("tournament routes", () => {
     );
     expect(finalizedRow.rows[0]?.finalized_at).not.toBeNull();
 
-    const gemsRowAfterFinalize = await pool.query<{ time_gems_total: string; time_gems_available: string }>(
+    const gemsRowAfterFinalize = await pool.query<{ time_gems_total: number; time_gems_available: number }>(
       `SELECT time_gems_total, time_gems_available FROM player_states WHERE user_id = $1`,
       [userId]
     );
@@ -398,7 +398,7 @@ describe("tournament routes", () => {
     expect(collectResponse.status).toBe(200);
     expect(collectResponse.body.gemsCollected).toBe(5);
 
-    const gemsRow = await pool.query<{ time_gems_total: string; time_gems_available: string }>(
+    const gemsRow = await pool.query<{ time_gems_total: number; time_gems_available: number }>(
       `SELECT time_gems_total, time_gems_available FROM player_states WHERE user_id = $1`,
       [userId]
     );

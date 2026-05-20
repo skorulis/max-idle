@@ -103,7 +103,7 @@ describe("achievement routes", () => {
     expect(grantResponse.status).toBe(204);
 
     const achievementState = await pool.query<{
-      achievement_count: string | number;
+      achievement_count: number;
       achievement_levels: unknown;
       has_unseen_achievements: boolean;
     }>(

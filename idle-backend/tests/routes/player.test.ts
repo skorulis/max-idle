@@ -149,8 +149,8 @@ describe("player routes", () => {
 
     const firstHistoryResult = await pool.query<{
       collection_date: Date;
-      real_time: string | number;
-      idle_time: string | number;
+      real_time: number;
+      idle_time: number;
     }>(
       `
       SELECT collection_date, real_time, idle_time
@@ -223,7 +223,7 @@ describe("player routes", () => {
     expect(secondCollect.status).toBe(400);
     expect(secondCollect.body.code).toBe("DAILY_REWARD_NOT_AVAILABLE");
 
-    const state = await pool.query<{ time_gems_total: string; time_gems_available: string; last_daily_reward_collected_at: Date | null }>(
+    const state = await pool.query<{ time_gems_total: number; time_gems_available: number; last_daily_reward_collected_at: Date | null }>(
       `
       SELECT time_gems_total, time_gems_available, last_daily_reward_collected_at
       FROM player_states
@@ -376,7 +376,7 @@ describe("player routes", () => {
     expect(collectResponse.status).toBe(200);
 
     const achievementState = await pool.query<{
-      achievement_count: string | number;
+      achievement_count: number;
       achievement_levels: unknown;
     }>(`SELECT achievement_count, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
     expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);
@@ -408,7 +408,7 @@ describe("player routes", () => {
     expect(collectResponse.status).toBe(200);
 
     const achievementState = await pool.query<{
-      achievement_count: string | number;
+      achievement_count: number;
       achievement_levels: unknown;
     }>(`SELECT achievement_count, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
     expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);
@@ -442,7 +442,7 @@ describe("player routes", () => {
     expect(collectResponse.status).toBe(200);
 
     const achievementState = await pool.query<{
-      achievement_count: string | number;
+      achievement_count: number;
       achievement_levels: unknown;
     }>(`SELECT achievement_count, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
     expect(achievementIdsFromLevels(achievementState.rows[0]?.achievement_levels)).toContain("real_time_streak");
@@ -473,7 +473,7 @@ describe("player routes", () => {
     expect(collectResponse.status).toBe(200);
 
     const achievementState = await pool.query<{
-      achievement_count: string | number;
+      achievement_count: number;
       achievement_levels: unknown;
     }>(`SELECT achievement_count, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
     const completed = achievementIdsFromLevels(achievementState.rows[0]?.achievement_levels);
@@ -514,7 +514,7 @@ describe("player routes", () => {
     expect(collectResponse.status).toBe(200);
 
     const achievementState = await pool.query<{
-      achievement_count: string | number;
+      achievement_count: number;
       achievement_levels: unknown;
     }>(`SELECT achievement_count, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
     expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);

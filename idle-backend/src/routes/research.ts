@@ -21,8 +21,8 @@ type RegisterResearchRoutesOptions = {
 type ResearchRow = {
   research: unknown;
   shop: ShopState;
-  idle_time_available: string;
-  idle_time_total: string;
+  idle_time_available: number;
+  idle_time_total: number;
   server_time: Date;
 };
 
@@ -73,7 +73,7 @@ async function loadAndReconcileResearch(
 
   const unlockedLabCount = getUnlockedLabCount(row.shop);
   let research = parseResearchState(row.research, row.shop);
-  let idleTimeAvailable = Number(row.idle_time_available);
+  let idleTimeAvailable = row.idle_time_available;
   const serverTimeMs = row.server_time.getTime();
 
   const reconciled = reconcileResearchProgress({

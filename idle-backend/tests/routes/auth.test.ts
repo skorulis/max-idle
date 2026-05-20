@@ -79,7 +79,7 @@ describe("auth routes", () => {
     expect(accountResponse.body.username).toBeTypeOf("string");
     expect(accountResponse.body.username.length).toBeGreaterThan(0);
     const achievementState = await pool.query<{
-      achievement_count: string | number;
+      achievement_count: number;
       achievement_levels: unknown;
     }>(`SELECT achievement_count, achievement_levels FROM player_states WHERE user_id = $1`, [accountResponse.body.gameUserId]);
     expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);

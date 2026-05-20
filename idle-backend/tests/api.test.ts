@@ -121,7 +121,7 @@ describe("auth + player lifecycle", () => {
     expect(upgradeResponse.status).toBe(200);
 
     const achievementState = await pool.query<{
-      achievement_count: string | number;
+      achievement_count: number;
       achievement_levels: unknown;
     }>(`SELECT achievement_count, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
     expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);
@@ -150,7 +150,7 @@ describe("auth + player lifecycle", () => {
     expect(accountResponse.body.username).toBe("NewUsername123");
 
     const achievementState = await pool.query<{
-      achievement_count: string | number;
+      achievement_count: number;
       achievement_levels: unknown;
     }>(`SELECT achievement_count, achievement_levels FROM player_states WHERE user_id = $1`, [accountResponse.body.gameUserId]);
     expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(2);
@@ -344,7 +344,7 @@ describe("auth + player lifecycle", () => {
     expect(leaderboardResponse.status).toBe(200);
     expect(leaderboardResponse.body.currentPlayer.totalIdleSeconds).toBeLessThan(999999);
 
-    const storedResult = await pool.query<{ current_seconds: string }>(
+    const storedResult = await pool.query<{ current_seconds: number }>(
       `SELECT current_seconds FROM player_states WHERE user_id = $1`,
       [userId]
     );
@@ -541,8 +541,8 @@ describe("auth + player lifecycle", () => {
     expect(purchaseResponse.body.achievementBonusMultiplier).toBe(0.01);
 
     const achievementState = await pool.query<{
-      upgrades_purchased: string;
-      achievement_count: string;
+      upgrades_purchased: number;
+      achievement_count: number;
       achievement_levels: unknown;
     }>(`SELECT upgrades_purchased, achievement_count, achievement_levels FROM player_states WHERE user_id = $1`, [userId]);
     expect(Number(achievementState.rows[0]?.upgrades_purchased)).toBe(5);
@@ -935,7 +935,7 @@ describe("auth + player lifecycle", () => {
 
     const syncedRows = await pool.query<{
       user_id: string;
-      current_seconds: string;
+      current_seconds: number;
       current_seconds_last_updated: Date;
     }>(
       `

@@ -26,7 +26,7 @@ type TournamentEntryRow = {
   last_collected_at: Date;
   real_time_available: number;
   achievement_count: number;
-  level: string;
+  level: number;
   blackhole_time: number;
 };
 
@@ -410,7 +410,7 @@ async function getTournamentEntriesForScoring(
     last_collected_at: Date;
     real_time_available: number;
     achievement_count: number;
-    level: string;
+    level: number;
     blackhole_time: number;
   }>
 > {
@@ -422,7 +422,7 @@ async function getTournamentEntriesForScoring(
     last_collected_at: Date;
     real_time_available: number;
     achievement_count: number;
-    level: string;
+    level: number;
     blackhole_time: number;
   }>(
     `

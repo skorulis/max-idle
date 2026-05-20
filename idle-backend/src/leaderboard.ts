@@ -70,7 +70,7 @@ export function registerLeaderboardRoutes({
       const leaderboardResult = await pool.query<{
         user_id: string;
         username: string;
-        leaderboard_seconds: string;
+        leaderboard_seconds: number;
       }>(
         `
         SELECT
@@ -93,7 +93,7 @@ export function registerLeaderboardRoutes({
       if (identity) {
         const currentPlayerResult = await pool.query<{
           user_id: string;
-          leaderboard_seconds: string;
+          leaderboard_seconds: number;
         }>(
           `
           SELECT
@@ -111,7 +111,7 @@ export function registerLeaderboardRoutes({
           return;
         }
 
-        const higherRankCountResult = await pool.query<{ higher_count: string }>(
+        const higherRankCountResult = await pool.query<{ higher_count: number }>(
           `SELECT COUNT(*) AS higher_count FROM player_states ps WHERE ${metricExpression} > $1`,
           [currentPlayerRow.leaderboard_seconds]
         );

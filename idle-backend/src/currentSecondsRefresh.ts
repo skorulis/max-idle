@@ -10,7 +10,7 @@ export type PlayerCurrentSecondsSourceRow = {
   shop: ShopState;
   achievement_count: number;
   real_time_available: number;
-  level: string | number;
+  level: number;
   blackhole_time?: number;
   server_time: Date;
 };
