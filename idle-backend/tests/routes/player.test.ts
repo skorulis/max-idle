@@ -75,6 +75,13 @@ describe("player routes", () => {
     ]);
   }
 
+  async function unlockBlackHoleFeature(userId: string): Promise<void> {
+    await pool.query(`UPDATE player_states SET obligations_completed = $2::jsonb WHERE user_id = $1`, [
+      userId,
+      JSON.stringify({ [OBLIGATION_IDS.BLACK_HOLE]: true })
+    ]);
+  }
+
   beforeAll(async () => {
     pool = await createTestPool();
   });
@@ -1020,11 +1027,27 @@ describe("player routes", () => {
     expect(noneLeft.body.code).toBe("OBLIGATION_NOT_CURRENT");
   });
 
+  it("blackhole feed: rejects when the feature is not unlocked", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    expect(authResponse.status).toBe(201);
+    const token = authResponse.body.token as string;
+
+    const blocked = await request(app)
+      .post("/player/blackhole/feed")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ taps: 1 });
+    expect(blocked.status).toBe(403);
+    expect(blocked.body.code).toBe("BLACKHOLE_FEATURE_LOCKED");
+  });
+
   it("blackhole feed: batches taps into blackhole_time and returns updated player state", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     expect(authResponse.status).toBe(201);
     const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+    await unlockBlackHoleFeature(userId);
 
     const before = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
     expect(before.status).toBe(200);
@@ -1058,6 +1081,7 @@ describe("player routes", () => {
     expect(authResponse.status).toBe(201);
     const token = authResponse.body.token as string;
     const userId = authResponse.body.userId as string;
+    await unlockBlackHoleFeature(userId);
 
     const utcDayStart = new Date();
     utcDayStart.setUTCHours(0, 0, 0, 0);

@@ -6,6 +6,7 @@ export const OBLIGATION_IDS = {
   ACHIEVE_SOMETHING: "obl_achieve_something",
   TIME_GEMS: "obl_time_gems",
   LEVEL_UP: "obl_level_up",
+  BLACK_HOLE: "obl_black_hole",
   RAMP_UP: "obl_ramp_up",
   WAIT_IT_OUT: "obl_wait_it_out"
 } as const;
@@ -151,6 +152,10 @@ export function isTournamentFeatureUnlocked(completed: Readonly<Record<string, b
   return completed[OBLIGATION_IDS.WAIT_IT_OUT] === true;
 }
 
+export function isBlackHoleFeatureUnlocked(completed: Readonly<Record<string, boolean | undefined>>): boolean {
+  return completed[OBLIGATION_IDS.BLACK_HOLE] === true;
+}
+
 export function isLevelUpgradesUnlocked(completed: Readonly<Record<string, boolean | undefined>>): boolean {
   return completed[OBLIGATION_IDS.TIME_GEMS] === true;
 }
@@ -225,6 +230,19 @@ export const OBLIGATIONS: ObligationDefinition[] = [
     ],
     condition: {
       allOf: [{ kind: "idle_time_total_gte", seconds: SECONDS_PER_HOUR }]
+    }
+  },
+  {
+    id: OBLIGATION_IDS.BLACK_HOLE,
+    name: "Black hole",
+    description:
+      "Rumour has it there is a place where time goes to die. Reach shop player level 3 and we will let you feed it.",
+    rewards: [
+      { type: "idle", value: 15 * SECONDS_PER_MINUTE },
+      { type: "text", label: "Unlock black hole" }
+    ],
+    condition: {
+      allOf: [{ kind: "player_level_gte", level: 3 }]
     }
   },
   {

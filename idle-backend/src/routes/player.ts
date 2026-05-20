@@ -39,6 +39,7 @@ import type { ObligationReward } from "@maxidle/shared/obligationReward";
 import {
   getCurrentObligationId,
   getObligationDefinition,
+  isBlackHoleFeatureUnlocked,
   isObligationConditionMet,
   type ObligationId
 } from "@maxidle/shared/obligations";
@@ -399,12 +400,14 @@ export function registerPlayerRoutes({
         const lockResult = await client.query<{
           blackhole_feeds_today: number;
           blackhole_feed_day_start: Date | null;
+          obligations_completed: unknown;
           server_time: Date;
         }>(
           `
           SELECT
             blackhole_feeds_today,
             blackhole_feed_day_start,
+            obligations_completed,
             NOW() AS server_time
           FROM player_states
           WHERE user_id = $1
@@ -416,6 +419,16 @@ export function registerPlayerRoutes({
         if (!locked) {
           await client.query("ROLLBACK");
           res.status(404).json({ error: "Player state not found" });
+          return;
+        }
+
+        const obligationsCompleted = parseObligationsCompleted(locked.obligations_completed);
+        if (!isBlackHoleFeatureUnlocked(obligationsCompleted)) {
+          await client.query("ROLLBACK");
+          res.status(403).json({
+            error: "Black hole feature is not unlocked",
+            code: "BLACKHOLE_FEATURE_LOCKED"
+          });
           return;
         }
 

@@ -33,6 +33,7 @@ import {
   getCurrentObligationId,
   getObligationDefinition,
   isObligationConditionMet,
+  isBlackHoleFeatureUnlocked,
   isTournamentFeatureUnlocked,
   OBLIGATION_IDS,
   type ObligationId
@@ -329,11 +330,13 @@ export function HomePage({
         </div>
       </section>
 
-      <BlackHoleCard
-        blackholeTime={playerState.blackholeTime}
-        blackholeFeedsRemainingToday={playerState.blackholeFeedsRemainingToday}
-        onFeedTaps={onFeedBlackHoleTaps}
-      />
+      {isBlackHoleFeatureUnlocked(playerState.obligationsCompleted) ? (
+        <BlackHoleCard
+          blackholeTime={playerState.blackholeTime}
+          blackholeFeedsRemainingToday={playerState.blackholeFeedsRemainingToday}
+          onFeedTaps={onFeedBlackHoleTaps}
+        />
+      ) : null}
 
       {currentObligation ? (
         <section className="card">

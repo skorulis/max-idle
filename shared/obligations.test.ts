@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatObligationRequirementLabel,
   getCurrentObligationId,
+  isBlackHoleFeatureUnlocked,
   isLevelUpgradesUnlocked,
   isObligationConditionMet,
   OBLIGATION_IDS,
@@ -73,6 +74,21 @@ describe("getCurrentObligationId", () => {
           OBLIGATION_IDS.LEVEL_UP
         ])
       )
+    ).toBe(OBLIGATION_IDS.BLACK_HOLE);
+  });
+
+  it("advances after sixth is completed", () => {
+    expect(
+      getCurrentObligationId(
+        new Set([
+          OBLIGATION_IDS.COLLECT_SOME_TIME,
+          OBLIGATION_IDS.FIRST_PURCHASE,
+          OBLIGATION_IDS.ACHIEVE_SOMETHING,
+          OBLIGATION_IDS.TIME_GEMS,
+          OBLIGATION_IDS.LEVEL_UP,
+          OBLIGATION_IDS.BLACK_HOLE
+        ])
+      )
     ).toBe(OBLIGATION_IDS.RAMP_UP);
   });
 
@@ -83,6 +99,7 @@ describe("getCurrentObligationId", () => {
       OBLIGATION_IDS.ACHIEVE_SOMETHING,
       OBLIGATION_IDS.TIME_GEMS,
       OBLIGATION_IDS.LEVEL_UP,
+      OBLIGATION_IDS.BLACK_HOLE,
       OBLIGATION_IDS.RAMP_UP,
       OBLIGATION_IDS.WAIT_IT_OUT
     ]);
@@ -94,6 +111,7 @@ describe("getCurrentObligationId", () => {
         [OBLIGATION_IDS.ACHIEVE_SOMETHING]: true,
         [OBLIGATION_IDS.TIME_GEMS]: true,
         [OBLIGATION_IDS.LEVEL_UP]: true,
+        [OBLIGATION_IDS.BLACK_HOLE]: true,
         [OBLIGATION_IDS.RAMP_UP]: true,
         [OBLIGATION_IDS.WAIT_IT_OUT]: true
       })
@@ -207,6 +225,14 @@ describe("isObligationConditionMet", () => {
   });
 });
 
+describe("isBlackHoleFeatureUnlocked", () => {
+  it("is false until BLACK_HOLE obligation is completed", () => {
+    expect(isBlackHoleFeatureUnlocked({})).toBe(false);
+    expect(isBlackHoleFeatureUnlocked({ [OBLIGATION_IDS.BLACK_HOLE]: false })).toBe(false);
+    expect(isBlackHoleFeatureUnlocked({ [OBLIGATION_IDS.BLACK_HOLE]: true })).toBe(true);
+  });
+});
+
 describe("isLevelUpgradesUnlocked", () => {
   it("is false until TIME_GEMS obligation is completed", () => {
     expect(isLevelUpgradesUnlocked({})).toBe(false);
@@ -250,6 +276,7 @@ describe("OBLIGATIONS order", () => {
       OBLIGATION_IDS.ACHIEVE_SOMETHING,
       OBLIGATION_IDS.TIME_GEMS,
       OBLIGATION_IDS.LEVEL_UP,
+      OBLIGATION_IDS.BLACK_HOLE,
       OBLIGATION_IDS.RAMP_UP,
       OBLIGATION_IDS.WAIT_IT_OUT
     ]);
