@@ -1,3 +1,5 @@
+import { parseResearchState } from "@maxidle/shared/research";
+import { getUnlockedLabCount } from "@maxidle/shared/shop";
 import type { PlayerResponse, SyncedPlayerState, SyncedTournamentState, TournamentCurrentResponse } from "./types";
 
 export function toSyncedState(data: PlayerResponse, previous?: SyncedPlayerState | null): SyncedPlayerState {
@@ -31,6 +33,7 @@ export function toSyncedState(data: PlayerResponse, previous?: SyncedPlayerState
       typeof data.blackholeTime === "number" && Number.isFinite(data.blackholeTime)
         ? Math.max(0, Math.floor(data.blackholeTime))
         : (previous?.blackholeTime ?? 0),
+    research: parseResearchState(data.research, getUnlockedLabCount(data.shop)),
     blackholeFeedsToday:
       typeof data.blackholeFeedsToday === "number" && Number.isFinite(data.blackholeFeedsToday)
         ? Math.max(0, Math.floor(data.blackholeFeedsToday))

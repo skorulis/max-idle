@@ -1,17 +1,28 @@
+import { getResearchBonusAtLevel, getResearchLevel, type ResearchState } from "./research.js";
+import {
+  RESEARCH_BLACK_HOLE_DAILY_FEEDS,
+  RESEARCH_BLACK_HOLE_FEED_AMOUNT,
+  RESEARCH_ITEM_IDS
+} from "./researchItems.js";
 import { safeNaturalNumber } from "./safeNumber.js";
-import { SECONDS_PER_MINUTE } from "./timeConstants.js";
 
 /** Seconds per unit in the black-hole dilation formula (`time / 36`). */
 export const BLACK_HOLE_DILATION_TIME_DIVISOR = 36;
 
-/** Idle seconds added to the black hole per feed tap. */
-export const BLACKHOLE_FEED_SECONDS_PER_TAP = SECONDS_PER_MINUTE;
-
 /** Upper bound on taps per feed API request (rapid-click batches). */
 export const MAX_BLACKHOLE_FEED_TAPS_PER_REQUEST = 500;
 
-/** Max feed taps per UTC calendar day. */
-export const BLACKHOLE_DAILY_FEED_LIMIT = 10;
+/** Max feed taps per UTC calendar day from black hole daily feeds research. */
+export function getBlackholeDailyFeedLimit(research: ResearchState): number {
+  const level = getResearchLevel(research, RESEARCH_ITEM_IDS.BLACK_HOLE_DAILY_FEEDS);
+  return Math.floor(getResearchBonusAtLevel(RESEARCH_BLACK_HOLE_DAILY_FEEDS, level));
+}
+
+/** Idle seconds added to the black hole per feed tap from black hole feed amount research. */
+export function getBlackholeFeedSecondsPerTap(research: ResearchState): number {
+  const level = getResearchLevel(research, RESEARCH_ITEM_IDS.BLACK_HOLE_FEED_AMOUNT);
+  return Math.floor(getResearchBonusAtLevel(RESEARCH_BLACK_HOLE_FEED_AMOUNT, level));
+}
 
 /** UTC midnight for the calendar day containing `date` (ms since epoch). */
 export function getUtcDayStartMs(date: Date | number): number {
@@ -25,7 +36,8 @@ export function getUtcDayStartMs(date: Date | number): number {
 export function getBlackholeFeedsToday(
   feedsToday: number,
   feedDayStart: Date | string | null | undefined,
-  now: Date | number
+  now: Date | number,
+  dailyFeedLimit: number
 ): number {
   if (!feedDayStart) {
     return 0;
@@ -35,22 +47,25 @@ export function getBlackholeFeedsToday(
   if (storedDayMs < getUtcDayStartMs(nowMs)) {
     return 0;
   }
-  return Math.min(BLACKHOLE_DAILY_FEED_LIMIT, Math.max(0, Math.floor(feedsToday)));
+  const limit = Math.max(0, Math.floor(dailyFeedLimit));
+  return Math.min(limit, Math.max(0, Math.floor(feedsToday)));
 }
 
 /** Remaining feed taps for the current UTC day. */
 export function getBlackholeFeedsRemainingToday(
   feedsToday: number,
   feedDayStart: Date | string | null | undefined,
-  now: Date | number
+  now: Date | number,
+  dailyFeedLimit: number
 ): number {
-  return Math.max(0, BLACKHOLE_DAILY_FEED_LIMIT - getBlackholeFeedsToday(feedsToday, feedDayStart, now));
+  const limit = Math.max(0, Math.floor(dailyFeedLimit));
+  return Math.max(0, limit - getBlackholeFeedsToday(feedsToday, feedDayStart, now, limit));
 }
 
 /** Total seconds fed for a batch of taps. */
-export function getBlackholeFeedSeconds(taps: number): number {
+export function getBlackholeFeedSeconds(taps: number, research: ResearchState): number {
   const count = Math.max(0, Math.floor(taps));
-  return count * BLACKHOLE_FEED_SECONDS_PER_TAP;
+  return count * getBlackholeFeedSecondsPerTap(research);
 }
 
 /**

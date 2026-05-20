@@ -93,6 +93,25 @@ const playerStateSchema = registry.register(
       .nullable(),
     serverTime: z.string().datetime(),
     tutorialProgress: z.string(),
+    research: z.object({
+      levels: z.record(z.string(), z.number().int().nonnegative()),
+      labs: z.array(
+        z.object({
+          researchId: z.string().nullable(),
+          startedAtMs: z.number().int().nonnegative().nullable()
+        })
+      ),
+      progress: z.record(
+        z.string(),
+        z.object({
+          level: z.number().int().nonnegative(),
+          elapsedMs: z.number().int().nonnegative()
+        })
+      )
+    }),
+    blackholeTime: z.number().int().nonnegative(),
+    blackholeFeedsToday: z.number().int().nonnegative(),
+    blackholeFeedsRemainingToday: z.number().int().nonnegative(),
     obligationsCompleted: z.record(z.string(), z.boolean()),
     collectionCount: z.number().int().nonnegative()
   })

@@ -104,8 +104,8 @@ function ResearchCatalogRow({
         <p className="subtle">{bonus}</p>
         {!atMax && cost != null && duration != null ? (
           <p className="subtle">
-            Cost <Atom size={14} aria-hidden="true" /> {formatSeconds(cost, 2, "floor")} ·{" "}
-            {formatSeconds(duration, 2, "floor")}
+            Cost <Atom size={14} aria-hidden="true" /> {formatSeconds(cost, 2, "floor")}<br/>
+            Duration {formatSeconds(duration, 2, "floor")}
           </p>
         ) : null}
       </div>

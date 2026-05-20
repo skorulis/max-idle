@@ -8,7 +8,7 @@ import {
   type ResearchState
 } from "@maxidle/shared/research";
 import { getUnlockedLabCount, type ShopState } from "@maxidle/shared/shop";
-import { parseResearchState } from "../researchState.js";
+import { parseResearchState, serializeResearchState } from "../researchState.js";
 
 type RegisterResearchRoutesOptions = {
   app: express.Express;
@@ -32,11 +32,7 @@ export function buildResearchResponse(
   serverTime: Date
 ) {
   return {
-    research: {
-      levels: research.levels,
-      labs: research.labs,
-      progress: research.progress
-    },
+    research: serializeResearchState(research),
     unlockedLabCount: getUnlockedLabCount(shop),
     idleTimeAvailable,
     serverTime: serverTime.toISOString()

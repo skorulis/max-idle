@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { ResearchState } from "@maxidle/shared/research";
 import {
-  BLACKHOLE_DAILY_FEED_LIMIT,
-  BLACKHOLE_FEED_SECONDS_PER_TAP,
+  getBlackholeDailyFeedLimit,
   getBlackholeFeedSeconds,
+  getBlackholeFeedSecondsPerTap,
   getBlackHoleTimeDilation
 } from "@maxidle/shared/blackHole";
 import { toast } from "../gameToast";
@@ -11,15 +12,19 @@ const FEED_DEBOUNCE_MS = 400;
 
 type UseBlackHoleFeedOptions = {
   blackholeTime: number;
+  research: ResearchState;
   blackholeFeedsRemainingToday: number;
   onFeedTaps: (taps: number) => Promise<void>;
 };
 
 export function useBlackHoleFeed({
   blackholeTime,
+  research,
   blackholeFeedsRemainingToday,
   onFeedTaps
 }: UseBlackHoleFeedOptions) {
+  const blackholeDailyFeedLimit = useMemo(() => getBlackholeDailyFeedLimit(research), [research]);
+  const feedSecondsPerTap = useMemo(() => getBlackholeFeedSecondsPerTap(research), [research]);
   const [optimisticSeconds, setOptimisticSeconds] = useState(0);
   const [pendingTapCount, setPendingTapCount] = useState(0);
   const pendingTapsRef = useRef(0);
@@ -57,7 +62,7 @@ export function useBlackHoleFeed({
     pendingTapsRef.current = 0;
     setPendingTapCount(0);
     inFlightRef.current = true;
-    const secondsFed = getBlackholeFeedSeconds(taps);
+    const secondsFed = getBlackholeFeedSeconds(taps, research);
     try {
       await onFeedTapsRef.current(taps);
       setOptimisticSeconds((seconds) => Math.max(0, seconds - secondsFed));
@@ -68,7 +73,7 @@ export function useBlackHoleFeed({
       if (error instanceof Error && error.message === "BLACKHOLE_FEED_DAILY_LIMIT_EXCEEDED") {
         pendingTapsRef.current = 0;
         setPendingTapCount(0);
-        toast.warning(`Daily feed limit reached (${BLACKHOLE_DAILY_FEED_LIMIT} per UTC day).`);
+        toast.warning(`Daily feed limit reached (${blackholeDailyFeedLimit} per UTC day).`);
       }
     } finally {
       inFlightRef.current = false;
@@ -88,13 +93,13 @@ export function useBlackHoleFeed({
 
   const registerTap = () => {
     if (blackholeFeedsRemainingToday - pendingTapsRef.current <= 0) {
-      toast.warning(`Daily feed limit reached (${BLACKHOLE_DAILY_FEED_LIMIT} per UTC day).`);
+      toast.warning(`Daily feed limit reached (${blackholeDailyFeedLimit} per UTC day).`);
       return;
     }
 
     pendingTapsRef.current += 1;
     setPendingTapCount((count) => count + 1);
-    setOptimisticSeconds((seconds) => seconds + BLACKHOLE_FEED_SECONDS_PER_TAP);
+    setOptimisticSeconds((seconds) => seconds + feedSecondsPerTap);
     scheduleFlush();
   };
 

@@ -1,4 +1,5 @@
 import { useCallback, useRef } from "react";
+import type { ResearchState } from "@maxidle/shared/research";
 import { Orbit } from "lucide-react";
 import { toast } from "../gameToast";
 import { formatSeconds } from "../formatSeconds";
@@ -8,12 +9,14 @@ import "./BlackHoleCard.css";
 
 type BlackHoleCardProps = {
   blackholeTime: number;
+  research: ResearchState;
   blackholeFeedsRemainingToday: number;
   onFeedTaps: (taps: number) => Promise<void>;
 };
 
 export function BlackHoleCard({
   blackholeTime,
+  research,
   blackholeFeedsRemainingToday,
   onFeedTaps
 }: BlackHoleCardProps) {
@@ -21,6 +24,7 @@ export function BlackHoleCard({
   const { displayBlackholeTime, timeDilation, atDailyLimit, registerTap } =
     useBlackHoleFeed({
       blackholeTime,
+      research,
       blackholeFeedsRemainingToday,
       onFeedTaps
     });

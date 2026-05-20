@@ -5,9 +5,9 @@ import { createApp } from "../../src/app.js";
 import { DEFAULT_SHOP_STATE, getRestraintBonusMultiplier } from "@maxidle/shared/shop";
 import { OBLIGATION_IDS } from "@maxidle/shared/obligations";
 import { TUTORIAL_STEPS } from "@maxidle/shared/tutorialSteps";
+import { DEFAULT_RESEARCH_STATE } from "@maxidle/shared/research";
 import {
-  BLACKHOLE_DAILY_FEED_LIMIT,
-  BLACKHOLE_FEED_SECONDS_PER_TAP,
+  getBlackholeDailyFeedLimit,
   getBlackholeFeedSeconds
 } from "@maxidle/shared/blackHole";
 import { createTestPool, resetTestDatabase } from "../testDb.js";
@@ -1065,17 +1065,23 @@ describe("player routes", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({ taps: 3 });
     expect(feed.status).toBe(200);
-    expect(feed.body.blackholeTime).toBe(getBlackholeFeedSeconds(3));
-    expect(feed.body.blackholeTime).toBe(BLACKHOLE_FEED_SECONDS_PER_TAP * 3);
+    expect(feed.body.blackholeTime).toBe(getBlackholeFeedSeconds(3, DEFAULT_RESEARCH_STATE));
 
     const after = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
     expect(after.status).toBe(200);
-    expect(after.body.blackholeTime).toBe(getBlackholeFeedSeconds(3));
+    expect(after.body.blackholeTime).toBe(getBlackholeFeedSeconds(3, DEFAULT_RESEARCH_STATE));
     expect(after.body.blackholeFeedsToday).toBe(3);
-    expect(after.body.blackholeFeedsRemainingToday).toBe(BLACKHOLE_DAILY_FEED_LIMIT - 3);
+    expect(after.body.blackholeFeedsRemainingToday).toBe(
+      getBlackholeDailyFeedLimit(DEFAULT_RESEARCH_STATE) - 3
+    );
+    expect(after.body.research).toEqual({
+      levels: {},
+      labs: [],
+      progress: {}
+    });
   });
 
-  it("blackhole feed: enforces daily feed limit of 10 taps per UTC day", async () => {
+  it("blackhole feed: enforces daily feed limit per UTC day from research", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     expect(authResponse.status).toBe(201);
@@ -1091,7 +1097,7 @@ describe("player routes", () => {
       SET blackhole_feeds_today = $2, blackhole_feed_day_start = $3
       WHERE user_id = $1
       `,
-      [userId, BLACKHOLE_DAILY_FEED_LIMIT, utcDayStart]
+      [userId, getBlackholeDailyFeedLimit(DEFAULT_RESEARCH_STATE), utcDayStart]
     );
 
     const blocked = await request(app)
@@ -1103,7 +1109,7 @@ describe("player routes", () => {
 
     const player = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
     expect(player.status).toBe(200);
-    expect(player.body.blackholeFeedsToday).toBe(BLACKHOLE_DAILY_FEED_LIMIT);
+    expect(player.body.blackholeFeedsToday).toBe(getBlackholeDailyFeedLimit(DEFAULT_RESEARCH_STATE));
     expect(player.body.blackholeFeedsRemainingToday).toBe(0);
   });
 });

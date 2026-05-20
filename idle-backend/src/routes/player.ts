@@ -46,13 +46,14 @@ import {
 import { parseObligationsCompleted } from "../obligationsState.js";
 import { getPlayerCollectionCount } from "../playerCollectionCount.js";
 import {
-  BLACKHOLE_DAILY_FEED_LIMIT,
+  getBlackholeDailyFeedLimit,
   getBlackholeFeedsRemainingToday,
   getBlackholeFeedsToday,
   getBlackholeFeedSeconds,
   getUtcDayStartMs,
   MAX_BLACKHOLE_FEED_TAPS_PER_REQUEST
 } from "@maxidle/shared/blackHole";
+import { parseResearchState, serializeResearchState } from "../researchState.js";
 
 const REWARD_SKIPPER_GAP_MS = 48 * 60 * 60 * 1000;
 
@@ -108,9 +109,14 @@ type PlayerStateRow = {
   blackhole_time: number;
   blackhole_feeds_today: number;
   blackhole_feed_day_start: Date | null;
+  research: unknown;
   obligations_completed: unknown;
   server_time: Date;
 };
+
+function parsePlayerResearch(row: { research: unknown; shop: ShopState }) {
+  return parseResearchState(row.research, row.shop);
+}
 
 export async function buildPlayerStatePayload(
   pool: Pool,
@@ -140,6 +146,7 @@ export async function buildPlayerStatePayload(
       blackhole_time,
       blackhole_feeds_today,
       blackhole_feed_day_start,
+      research,
       obligations_completed,
       NOW() AS server_time
     FROM player_states
@@ -216,6 +223,8 @@ export async function buildPlayerStatePayload(
   const currentIdleSeconds = await persistCurrentSecondsFromPlayerRow(pool, userId, row, toNumber);
   const idleSecondsRate = effectiveIdleSecondsRateFromPlayerRow(row, toNumber);
   const dailyBonus = await getOrCreateCurrentDailyBonus(pool, row.server_time);
+  const research = parsePlayerResearch(row);
+  const blackholeDailyFeedLimit = getBlackholeDailyFeedLimit(research);
 
   return {
     idleTime: {
@@ -246,15 +255,18 @@ export async function buildPlayerStatePayload(
     serverTime: row.server_time.toISOString(),
     tutorialProgress: row.tutorial_progress ?? "",
     blackholeTime: toNumber(row.blackhole_time),
+    research: serializeResearchState(research),
     blackholeFeedsToday: getBlackholeFeedsToday(
       row.blackhole_feeds_today,
       row.blackhole_feed_day_start,
-      row.server_time
+      row.server_time,
+      blackholeDailyFeedLimit
     ),
     blackholeFeedsRemainingToday: getBlackholeFeedsRemainingToday(
       row.blackhole_feeds_today,
       row.blackhole_feed_day_start,
-      row.server_time
+      row.server_time,
+      blackholeDailyFeedLimit
     ),
     obligationsCompleted: parseObligationsCompleted(row.obligations_completed),
     collectionCount
@@ -400,6 +412,8 @@ export function registerPlayerRoutes({
         const lockResult = await client.query<{
           blackhole_feeds_today: number;
           blackhole_feed_day_start: Date | null;
+          research: unknown;
+          shop: ShopState;
           obligations_completed: unknown;
           server_time: Date;
         }>(
@@ -407,6 +421,8 @@ export function registerPlayerRoutes({
           SELECT
             blackhole_feeds_today,
             blackhole_feed_day_start,
+            research,
+            shop,
             obligations_completed,
             NOW() AS server_time
           FROM player_states
@@ -432,16 +448,18 @@ export function registerPlayerRoutes({
           return;
         }
 
+        const dailyFeedLimit = getBlackholeDailyFeedLimit(parsePlayerResearch(locked));
         const feedsToday = getBlackholeFeedsToday(
           locked.blackhole_feeds_today,
           locked.blackhole_feed_day_start,
-          locked.server_time
+          locked.server_time,
+          dailyFeedLimit
         );
-        const remainingToday = BLACKHOLE_DAILY_FEED_LIMIT - feedsToday;
+        const remainingToday = dailyFeedLimit - feedsToday;
         if (remainingToday <= 0) {
           await client.query("ROLLBACK");
           res.status(400).json({
-            error: `Daily black hole feed limit reached (${BLACKHOLE_DAILY_FEED_LIMIT} per UTC day)`,
+            error: `Daily black hole feed limit reached (${dailyFeedLimit} per UTC day)`,
             code: "BLACKHOLE_FEED_DAILY_LIMIT_EXCEEDED",
             blackholeFeedsToday: feedsToday,
             blackholeFeedsRemainingToday: 0
@@ -459,7 +477,7 @@ export function registerPlayerRoutes({
           return;
         }
 
-        const feedSeconds = getBlackholeFeedSeconds(taps);
+        const feedSeconds = getBlackholeFeedSeconds(taps, parsePlayerResearch(locked));
         const feedDayStart = new Date(getUtcDayStartMs(locked.server_time));
         const newFeedsToday = feedsToday + taps;
         const updateResult = await client.query<{ user_id: string }>(

@@ -333,6 +333,7 @@ export function HomePage({
       {isBlackHoleFeatureUnlocked(playerState.obligationsCompleted) ? (
         <BlackHoleCard
           blackholeTime={playerState.blackholeTime}
+          research={playerState.research}
           blackholeFeedsRemainingToday={playerState.blackholeFeedsRemainingToday}
           onFeedTaps={onFeedBlackHoleTaps}
         />

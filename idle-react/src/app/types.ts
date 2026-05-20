@@ -65,6 +65,7 @@ export type PlayerResponse = {
   tutorialProgress: string;
   /** Seconds invested in the black hole. */
   blackholeTime: number;
+  research: ResearchState;
   /** Feed taps used today (UTC day). */
   blackholeFeedsToday: number;
   /** Feed taps remaining today (UTC day). */
@@ -239,6 +240,7 @@ export type SyncedPlayerState = {
   syncedAtClientMs: number;
   tutorialProgress: string;
   blackholeTime: number;
+  research: ResearchState;
   blackholeFeedsToday: number;
   blackholeFeedsRemainingToday: number;
   obligationsCompleted: Record<string, boolean>;
