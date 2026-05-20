@@ -87,19 +87,19 @@ function sumObligationRewardDeltas(rewards: ObligationReward[]): { idle: number;
 }
 
 type PlayerStateRow = {
-  idle_time_total: string;
-  idle_time_available: string;
-  real_time_total: string;
+  idle_time_total: number;
+  idle_time_available: number;
+  real_time_total: number;
   real_time_available: number;
-  time_gems_total: string;
-  time_gems_available: string;
-  upgrades_purchased: string;
+  time_gems_total: number;
+  time_gems_available: number;
+  upgrades_purchased: number;
   achievement_count: number;
   has_unseen_achievements: boolean;
-  level: string;
+  level: number;
   shop: ShopState;
   last_collected_at: Date;
-  current_seconds: string;
+  current_seconds: number;
   current_seconds_last_updated: Date;
   last_daily_reward_collected_at: Date | null;
   last_daily_bonus_claimed_at: Date | null;
@@ -200,11 +200,11 @@ export async function buildPlayerStatePayload(
       ]
     );
     row.shop = legacyRefund.shop;
-    row.idle_time_available = String(toNumber(row.idle_time_available) + legacyRefund.idleRefund);
-    row.idle_time_total = String(toNumber(row.idle_time_total) + legacyRefund.idleRefund);
-    row.real_time_available = toNumber(row.real_time_available) + legacyRefund.realRefund;
-    row.real_time_total = String(toNumber(row.real_time_total) + legacyRefund.realRefund);
-    row.current_seconds = String(syncedCurrentSeconds);
+    row.idle_time_available = row.idle_time_available + legacyRefund.idleRefund;
+    row.idle_time_total = row.idle_time_total + legacyRefund.idleRefund;
+    row.real_time_available = row.real_time_available + legacyRefund.realRefund;
+    row.real_time_total = row.real_time_total + legacyRefund.realRefund;
+    row.current_seconds = syncedCurrentSeconds;
     row.current_seconds_last_updated = row.server_time;
   }
 
