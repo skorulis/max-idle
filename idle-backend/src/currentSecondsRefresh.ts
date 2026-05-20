@@ -1,6 +1,8 @@
 import type { Pool } from "pg";
 import type { ShopState } from "@maxidle/shared/shop";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
+import { getEffectiveIdleSecondsRate } from "./idleRate.js";
+import { calculateElapsedSeconds } from "./time.js";
 
 /** Row snapshot with server_time from the same DB clock used for the idle calculation. */
 export type PlayerCurrentSecondsSourceRow = {
@@ -11,6 +13,21 @@ export type PlayerCurrentSecondsSourceRow = {
   level: string | number;
   server_time: Date;
 };
+
+export function effectiveIdleSecondsRateFromPlayerRow(
+  row: PlayerCurrentSecondsSourceRow,
+  toNumber: (value: unknown) => number
+): number {
+  const elapsedSinceLastCollection = calculateElapsedSeconds(row.last_collected_at, row.server_time);
+  return getEffectiveIdleSecondsRate({
+    secondsSinceLastCollection: elapsedSinceLastCollection,
+    shop: row.shop,
+    achievementCount: toNumber(row.achievement_count),
+    playerLevel: toNumber(row.level),
+    realTimeAvailable: toNumber(row.real_time_available),
+    wallClockMs: row.server_time.getTime()
+  });
+}
 
 export async function persistCurrentSecondsFromPlayerRow(
   pool: Pool,
@@ -27,15 +44,17 @@ export async function persistCurrentSecondsFromPlayerRow(
     toNumber(row.real_time_available),
     toNumber(row.level)
   );
+  const idleSecondsRate = effectiveIdleSecondsRateFromPlayerRow(row, toNumber);
   await pool.query(
     `
     UPDATE player_states
     SET
       current_seconds = $2,
-      current_seconds_last_updated = $3
+      current_seconds_last_updated = $3,
+      max_multiplier = GREATEST(max_multiplier::double precision, $4::double precision)
     WHERE user_id = $1
     `,
-    [userId, currentIdleSeconds, row.server_time]
+    [userId, currentIdleSeconds, row.server_time, idleSecondsRate]
   );
   return currentIdleSeconds;
 }

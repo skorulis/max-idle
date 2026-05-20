@@ -11,6 +11,7 @@ import {
   type BetterAuthInstance
 } from "./betterAuth.js";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
+import { effectiveIdleSecondsRateFromPlayerRow } from "./currentSecondsRefresh.js";
 import { calculateElapsedSeconds } from "./time.js";
 import { registerShopRoutes } from "./shop.js";
 import { registerLeaderboardRoutes } from "./leaderboard.js";
@@ -84,24 +85,34 @@ export async function syncStalePlayerCurrentSeconds(pool: Pool, limit = 100): Pr
 
     for (const row of stalePlayersResult.rows) {
       const achievementCount = toNumber(row.achievement_count);
+      const rateRow = {
+        last_collected_at: row.last_collected_at,
+        shop: row.shop,
+        achievement_count: row.achievement_count,
+        real_time_available: row.real_time_available,
+        level: row.level,
+        server_time: row.server_time
+      };
       const nextCurrentSeconds = boostedUncollectedIdleSeconds(
-        row.last_collected_at,
-        row.server_time,
-        row.shop,
+        rateRow.last_collected_at,
+        rateRow.server_time,
+        rateRow.shop,
         achievementCount,
-        toNumber(row.real_time_available),
-        toNumber(row.level)
+        toNumber(rateRow.real_time_available),
+        toNumber(rateRow.level)
       );
+      const idleSecondsRate = effectiveIdleSecondsRateFromPlayerRow(rateRow, toNumber);
 
       await client.query(
         `
         UPDATE player_states
         SET
           current_seconds = $2,
-          current_seconds_last_updated = $3
+          current_seconds_last_updated = $3,
+          max_multiplier = GREATEST(max_multiplier::double precision, $4::double precision)
         WHERE user_id = $1
         `,
-        [row.user_id, nextCurrentSeconds, row.server_time]
+        [row.user_id, nextCurrentSeconds, row.server_time, idleSecondsRate]
       );
     }
 
@@ -318,6 +329,7 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
         last_active: Date;
         achievement_count: string;
         level: string;
+        max_multiplier: number;
         shop: ShopState;
         server_time: Date;
       }>(
@@ -339,6 +351,7 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
           ps.last_active,
           ps.achievement_count,
           ps.level,
+          ps.max_multiplier,
           ps.shop,
         NOW() AS server_time
         FROM users u
@@ -387,7 +400,8 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
           },
           upgradesPurchased: toNumber(row.upgrades_purchased),
           achievementCount: toNumber(row.achievement_count),
-          level: toNumber(row.level)
+          level: toNumber(row.level),
+          maxMultiplier: toNumber(row.max_multiplier)
         },
         meta: {
           serverTime: row.server_time.toISOString()

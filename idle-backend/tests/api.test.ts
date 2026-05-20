@@ -420,6 +420,7 @@ describe("auth + player lifecycle", () => {
       SET
         idle_time_total = 1234,
         upgrades_purchased = 7,
+        max_multiplier = 2.5,
         current_seconds = 0,
         last_collected_at = NOW() - INTERVAL '35 seconds',
         last_active = NOW() - INTERVAL '90 seconds',
@@ -440,6 +441,7 @@ describe("auth + player lifecycle", () => {
     expect(profileResponse.body.player.upgradesPurchased).toBe(7);
     expect(profileResponse.body.player.achievementCount).toBe(0);
     expect(profileResponse.body.player.level).toBe(0);
+    expect(profileResponse.body.player.maxMultiplier).toBe(2.5);
     expect(profileResponse.body.player.timeAwaySeconds).toBeGreaterThanOrEqual(85);
     expect(profileResponse.body.player.timeAwaySeconds).toBeLessThanOrEqual(120);
     expect(profileResponse.body.meta.serverTime).toBeTypeOf("string");

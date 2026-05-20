@@ -12,7 +12,10 @@ import {
 import type { ShopState } from "@maxidle/shared/shop";
 import { SHOP_UPGRADE_IDS } from "@maxidle/shared/shopUpgrades";
 import { boostedUncollectedIdleSeconds } from "../boostedUncollectedIdle.js";
-import { persistCurrentSecondsFromPlayerRow } from "../currentSecondsRefresh.js";
+import {
+  effectiveIdleSecondsRateFromPlayerRow,
+  persistCurrentSecondsFromPlayerRow
+} from "../currentSecondsRefresh.js";
 import { calculateElapsedSeconds } from "../time.js";
 import { getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint, shouldPreserveIdleTimerOnCollect } from "../idleRate.js";
 import {
@@ -138,14 +141,23 @@ export async function buildPlayerStatePayload(
   const legacyRefund = applyLegacyShopUpgradeRefunds(row.shop);
   if (legacyRefund.refundedUpgradeIds.length > 0) {
     const refundedRealAvailable = toNumber(row.real_time_available) + legacyRefund.realRefund;
+    const refundRateRow = {
+      last_collected_at: row.last_collected_at,
+      shop: legacyRefund.shop,
+      achievement_count: row.achievement_count,
+      real_time_available: refundedRealAvailable,
+      level: row.level,
+      server_time: row.server_time
+    };
     const syncedCurrentSeconds = boostedUncollectedIdleSeconds(
-      row.last_collected_at,
-      row.server_time,
-      legacyRefund.shop,
-      toNumber(row.achievement_count),
-      refundedRealAvailable,
-      toNumber(row.level)
+      refundRateRow.last_collected_at,
+      refundRateRow.server_time,
+      refundRateRow.shop,
+      toNumber(refundRateRow.achievement_count),
+      refundRateRow.real_time_available,
+      toNumber(refundRateRow.level)
     );
+    const idleSecondsRateAtRefund = effectiveIdleSecondsRateFromPlayerRow(refundRateRow, toNumber);
     await pool.query(
       `
       UPDATE player_states
@@ -157,6 +169,7 @@ export async function buildPlayerStatePayload(
         real_time_total = real_time_total + $4::BIGINT,
         current_seconds = $5,
         current_seconds_last_updated = $6,
+        max_multiplier = GREATEST(max_multiplier::double precision, $7::double precision),
         updated_at = $6
       WHERE user_id = $1
       `,
@@ -166,7 +179,8 @@ export async function buildPlayerStatePayload(
         legacyRefund.idleRefund,
         legacyRefund.realRefund,
         syncedCurrentSeconds,
-        row.server_time
+        row.server_time,
+        idleSecondsRateAtRefund
       ]
     );
     row.shop = legacyRefund.shop;
@@ -183,15 +197,7 @@ export async function buildPlayerStatePayload(
   const achievementCount = toNumber(row.achievement_count);
   const achievementBonusMultiplier = getWorthwhileAchievementsMultiplier(row.shop, achievementCount);
   const currentIdleSeconds = await persistCurrentSecondsFromPlayerRow(pool, userId, row, toNumber);
-  const elapsedSinceLastCollection = calculateElapsedSeconds(row.last_collected_at, row.server_time);
-  const idleSecondsRate = getEffectiveIdleSecondsRate({
-    secondsSinceLastCollection: elapsedSinceLastCollection,
-    shop: row.shop,
-    achievementCount,
-    playerLevel: toNumber(row.level),
-    realTimeAvailable: toNumber(row.real_time_available),
-    wallClockMs: row.server_time.getTime()
-  });
+  const idleSecondsRate = effectiveIdleSecondsRateFromPlayerRow(row, toNumber);
   const dailyBonus = await getOrCreateCurrentDailyBonus(pool, row.server_time);
 
   return {
@@ -466,6 +472,15 @@ export function registerPlayerRoutes({
       const nextCurrentSeconds = preserveTimer ? collectedSeconds : 0;
       const nextLastCollectedAt = preserveTimer ? lockedRow.last_collected_at : collectedAt;
       const nextShop = withShopUpgradeLevel(lockedRow.shop, SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST, 0);
+      const collectRateRow = {
+        last_collected_at: lockedRow.last_collected_at,
+        shop: lockedRow.shop,
+        achievement_count: collectionAchievementCount,
+        real_time_available: toNumber(lockedRow.real_time_available),
+        level: lockedRow.level,
+        server_time: collectedAt
+      };
+      const idleSecondsRateAtCollect = effectiveIdleSecondsRateFromPlayerRow(collectRateRow, toNumber);
       const updateResult = await client.query<{
         idle_time_total: number;
         idle_time_available: number;
@@ -493,6 +508,7 @@ export function registerPlayerRoutes({
           last_collected_at = $6,
           last_active = $5,
           shop = $7::jsonb,
+          max_multiplier = GREATEST(max_multiplier::double precision, $8::double precision),
           updated_at = $5
         WHERE user_id = $1
         RETURNING
@@ -510,7 +526,16 @@ export function registerPlayerRoutes({
           last_daily_reward_collected_at,
           level
         `,
-        [userId, collectedSeconds, realSecondsCollected, nextCurrentSeconds, collectedAt, nextLastCollectedAt, JSON.stringify(nextShop)]
+        [
+          userId,
+          collectedSeconds,
+          realSecondsCollected,
+          nextCurrentSeconds,
+          collectedAt,
+          nextLastCollectedAt,
+          JSON.stringify(nextShop),
+          idleSecondsRateAtCollect
+        ]
       );
 
       const row = updateResult.rows[0];

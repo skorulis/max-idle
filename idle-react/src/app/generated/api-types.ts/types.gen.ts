@@ -116,6 +116,7 @@ export type PlayerProfileResponse = {
         upgradesPurchased: number;
         achievementCount: number;
         level: number;
+        maxMultiplier: number;
     };
     meta: {
         serverTime: string;

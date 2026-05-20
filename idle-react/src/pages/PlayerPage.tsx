@@ -55,6 +55,9 @@ export function PlayerPage({ publicPlayerLoading, publicPlayerProfile, hasError 
             <span>Current idle time:</span> {formatSeconds(publicPlayerProfile.currentIdleSeconds)}
           </p>
           <p>
+            <span>Peak idle multiplier:</span> {publicPlayerProfile.maxMultiplier.toFixed(2)}x
+          </p>
+          <p>
             <span>Total idle time collected:</span> {formatSeconds(publicPlayerProfile.idleTime.total)}
           </p>
           <p>

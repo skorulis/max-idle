@@ -171,7 +171,8 @@ const playerProfileResponseSchema = registry.register(
       timeGems: timeCurrencyBalancesSchema,
       upgradesPurchased: z.number().int().nonnegative(),
       achievementCount: z.number().int().nonnegative(),
-      level: z.number().int().nonnegative()
+      level: z.number().int().nonnegative(),
+      maxMultiplier: z.number().nonnegative()
     }),
     meta: z.object({
       serverTime: z.string().datetime()

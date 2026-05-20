@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS player_states (
   seconds_multiplier DOUBLE PRECISION NOT NULL DEFAULT 0,
   current_seconds BIGINT NOT NULL DEFAULT 0,
   current_seconds_last_updated TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  max_multiplier DOUBLE PRECISION NOT NULL DEFAULT 0.0,
   last_daily_reward_collected_at TIMESTAMPTZ,
   last_daily_bonus_claimed_at TIMESTAMPTZ,
   last_daily_bonus_claimed_type TEXT,

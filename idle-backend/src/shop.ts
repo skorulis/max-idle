@@ -29,6 +29,7 @@ import {
 import { getPlayerLevelUpgradeCostFromLevel } from "@maxidle/shared/playerLevelCosts";
 import { safeNaturalNumber } from "@maxidle/shared/safeNumber";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
+import { effectiveIdleSecondsRateFromPlayerRow } from "./currentSecondsRefresh.js";
 import {
   getAchievementLevelForValue,
   isAchievementMaxed,
@@ -279,14 +280,23 @@ export function registerShopRoutes({
         : realTimeAvailable + refundTotals.real;
       const nextTimeGemsAvailable =
         boundedUpgrade.currencyType === SHOP_CURRENCY_TYPES.GEM ? timeGemsAvailable - totalCost : timeGemsAvailable;
+      const purchaseRateRow = {
+        last_collected_at: nextLastCollectedAt,
+        shop: nextShopState,
+        achievement_count: nextAchievementCount,
+        real_time_available: nextRealTimeAvailableAfterPurchase,
+        level: row.level,
+        server_time: now
+      };
       const syncedCurrentSeconds = boostedUncollectedIdleSeconds(
-        nextLastCollectedAt,
-        now,
-        nextShopState,
-        nextAchievementCount,
-        nextRealTimeAvailableAfterPurchase,
-        toNumber(row.level)
+        purchaseRateRow.last_collected_at,
+        purchaseRateRow.server_time,
+        purchaseRateRow.shop,
+        purchaseRateRow.achievement_count,
+        purchaseRateRow.real_time_available,
+        toNumber(purchaseRateRow.level)
       );
+      const idleSecondsRateAtPurchase = effectiveIdleSecondsRateFromPlayerRow(purchaseRateRow, toNumber);
       const updateResult = await client.query<{
         idle_time_total: string;
         idle_time_available: string;
@@ -321,7 +331,8 @@ export function registerShopRoutes({
           has_unseen_achievements = has_unseen_achievements OR $11::boolean,
           real_time_available = $12,
           idle_time_total = idle_time_total + $13::BIGINT,
-          real_time_total = real_time_total + $14::BIGINT
+          real_time_total = real_time_total + $14::BIGINT,
+          max_multiplier = GREATEST(max_multiplier::double precision, $15::double precision)
         WHERE user_id = $1
         RETURNING
           idle_time_total,
@@ -356,7 +367,8 @@ export function registerShopRoutes({
           hasNewAchievement,
           nextRealTimeAvailableAfterPurchase,
           legacyRefund.idleRefund,
-          legacyRefund.realRefund
+          legacyRefund.realRefund,
+          idleSecondsRateAtPurchase
         ]
       );
       const updated = updateResult.rows[0];
@@ -514,14 +526,23 @@ export function registerShopRoutes({
       const achievementCount = toNumber(row.achievement_count);
       const nextIdleTimeAvailable = idleTimeAvailable - cost.idleSeconds;
       const nextRealTimeAvailable = realTimeAvailable - cost.realSeconds;
+      const levelRateRow = {
+        last_collected_at: row.last_collected_at,
+        shop: row.shop,
+        achievement_count: achievementCount,
+        real_time_available: nextRealTimeAvailable,
+        level: currentLevel + 1,
+        server_time: now
+      };
       const syncedCurrentSeconds = boostedUncollectedIdleSeconds(
-        row.last_collected_at,
-        now,
-        row.shop,
-        achievementCount,
-        nextRealTimeAvailable,
-        currentLevel + 1
+        levelRateRow.last_collected_at,
+        levelRateRow.server_time,
+        levelRateRow.shop,
+        levelRateRow.achievement_count,
+        levelRateRow.real_time_available,
+        levelRateRow.level
       );
+      const idleSecondsRateAtLevelUp = effectiveIdleSecondsRateFromPlayerRow(levelRateRow, toNumber);
 
       const updateResult = await client.query<{
         idle_time_total: string;
@@ -549,7 +570,8 @@ export function registerShopRoutes({
           idle_time_available = $3,
           real_time_available = $4,
           current_seconds = $5,
-          current_seconds_last_updated = $6
+          current_seconds_last_updated = $6,
+          max_multiplier = GREATEST(max_multiplier::double precision, $7::double precision)
         WHERE user_id = $1
         RETURNING
           level,
@@ -570,7 +592,15 @@ export function registerShopRoutes({
           tutorial_progress,
           obligations_completed
         `,
-        [userId, currentLevel + 1, nextIdleTimeAvailable, nextRealTimeAvailable, syncedCurrentSeconds, now]
+        [
+          userId,
+          currentLevel + 1,
+          nextIdleTimeAvailable,
+          nextRealTimeAvailable,
+          syncedCurrentSeconds,
+          now,
+          idleSecondsRateAtLevelUp
+        ]
       );
 
       const updated = updateResult.rows[0];
@@ -699,14 +729,23 @@ export function registerShopRoutes({
       }
 
       const now = new Date();
+      const gemRateRow = {
+        last_collected_at: row.last_collected_at,
+        shop: row.shop,
+        achievement_count: row.achievement_count,
+        real_time_available: row.real_time_available,
+        level: row.level,
+        server_time: now
+      };
       const syncedCurrentSeconds = boostedUncollectedIdleSeconds(
-        row.last_collected_at,
-        now,
-        row.shop,
-        toNumber(row.achievement_count),
-        toNumber(row.real_time_available),
-        toNumber(row.level)
+        gemRateRow.last_collected_at,
+        gemRateRow.server_time,
+        gemRateRow.shop,
+        toNumber(gemRateRow.achievement_count),
+        toNumber(gemRateRow.real_time_available),
+        toNumber(gemRateRow.level)
       );
+      const idleSecondsRateAtGemGrant = effectiveIdleSecondsRateFromPlayerRow(gemRateRow, toNumber);
       const updateResult = await client.query<{
         idle_time_total: string;
         idle_time_available: string;
@@ -730,7 +769,8 @@ export function registerShopRoutes({
           time_gems_total = time_gems_total + 5,
           time_gems_available = time_gems_available + 5,
           current_seconds = $2,
-          current_seconds_last_updated = $3
+          current_seconds_last_updated = $3,
+          max_multiplier = GREATEST(max_multiplier::double precision, $4::double precision)
         WHERE user_id = $1
         RETURNING
           idle_time_total,
@@ -749,7 +789,7 @@ export function registerShopRoutes({
           tutorial_progress,
           obligations_completed
         `,
-        [userId, syncedCurrentSeconds, now]
+        [userId, syncedCurrentSeconds, now, idleSecondsRateAtGemGrant]
       );
       const updated = updateResult.rows[0];
       if (!updated) {

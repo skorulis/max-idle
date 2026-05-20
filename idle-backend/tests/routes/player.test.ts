@@ -580,6 +580,48 @@ describe("player routes", () => {
     expect(playerResponse.body.achievementBonusMultiplier).toBe(0);
   });
 
+  it("tracks peak idle seconds rate in max_multiplier on refresh and collect", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(
+      `
+      UPDATE player_states
+      SET
+        shop = '{"seconds_multiplier": 10}'::jsonb,
+        current_seconds = 0,
+        max_multiplier = 0,
+        current_seconds_last_updated = NOW() - INTERVAL '120 seconds',
+        last_collected_at = NOW() - INTERVAL '120 seconds'
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+
+    const playerResponse = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
+    expect(playerResponse.status).toBe(200);
+    expect(playerResponse.body.idleSecondsRate).toBeGreaterThan(0);
+
+    const afterRefresh = await pool.query<{ max_multiplier: number }>(
+      `SELECT max_multiplier FROM player_states WHERE user_id = $1`,
+      [userId]
+    );
+    expect(Number(afterRefresh.rows[0]?.max_multiplier ?? 0)).toBeGreaterThan(0);
+
+    await pool.query(`UPDATE player_states SET max_multiplier = 3 WHERE user_id = $1`, [userId]);
+
+    const collectResponse = await request(app).post("/player/collect").set("Authorization", `Bearer ${token}`);
+    expect(collectResponse.status).toBe(200);
+
+    const afterCollect = await pool.query<{ max_multiplier: number }>(
+      `SELECT max_multiplier FROM player_states WHERE user_id = $1`,
+      [userId]
+    );
+    expect(Number(afterCollect.rows[0]?.max_multiplier ?? 0)).toBeGreaterThanOrEqual(3);
+  });
+
   it("applies worthwhile achievements multiplier when shop tier and achievement count are set", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");

@@ -8,6 +8,7 @@ import {
   updatePlayerAchievementLevels
 } from "./achievementUpdates.js";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
+import { effectiveIdleSecondsRateFromPlayerRow } from "./currentSecondsRefresh.js";
 
 const WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -686,14 +687,23 @@ async function finalizeTournamentCore(client: PoolClient, tournament: Tournament
 
   for (const row of entriesResult.rows) {
     const achievementCount = toNumber(row.achievement_count);
+    const tournamentRateRow = {
+      last_collected_at: row.last_collected_at,
+      shop: row.shop,
+      achievement_count: row.achievement_count,
+      real_time_available: row.real_time_available,
+      level: row.level,
+      server_time: now
+    };
     const score = boostedUncollectedIdleSeconds(
-      row.last_collected_at,
-      now,
-      row.shop,
+      tournamentRateRow.last_collected_at,
+      tournamentRateRow.server_time,
+      tournamentRateRow.shop,
       achievementCount,
-      toNumber(row.real_time_available),
-      toNumber(row.level)
+      toNumber(tournamentRateRow.real_time_available),
+      toNumber(tournamentRateRow.level)
     );
+    const idleSecondsRateAtFinalize = effectiveIdleSecondsRateFromPlayerRow(tournamentRateRow, toNumber);
     await client.query(
       `
       UPDATE tournament_entries
@@ -708,10 +718,11 @@ async function finalizeTournamentCore(client: PoolClient, tournament: Tournament
       UPDATE player_states
       SET
         current_seconds = $2,
-        current_seconds_last_updated = $3
+        current_seconds_last_updated = $3,
+        max_multiplier = GREATEST(max_multiplier::double precision, $4::double precision)
       WHERE user_id = $1
       `,
-      [row.user_id, score, now]
+      [row.user_id, score, now, idleSecondsRateAtFinalize]
     );
   }
 
