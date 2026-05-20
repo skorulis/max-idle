@@ -1,4 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type MutableRefObject } from "react";
+
+const BASE_BRIGHTNESS = 2;
+const TAP_BOOST_DECAY_PER_SECOND = 0.5;
 
 const VS_SOURCE = `
   attribute vec2 a_position;
@@ -11,6 +14,7 @@ const FS_SOURCE = `
   precision mediump float;
   uniform float t;
   uniform vec2 r;  // resolution
+  uniform float u_brightness;
 
   // Custom tanh function for vec2 since built-in tanh is unavailable in WebGL GLSL.
   vec2 myTanh(vec2 x) {
@@ -22,6 +26,8 @@ const FS_SOURCE = `
   void main() {
     vec4 o_bg = vec4(0.0);
     vec4 o_anim = vec4(0.0);
+    float brightness = u_brightness;
+    float brightness_inverse = 1.0 / brightness;
 
     // ---------------------------
     // Foreground (Animation) Layer
@@ -44,7 +50,7 @@ const FS_SOURCE = `
                         / animAccum
                         / (0.1 + 0.1 * pow(length(sin(v / 0.3) * 0.2 + c * vec2(1.0, 2.0)) - 1.0, 2.0))
                         / (1.0 + 7.0 * exp(0.3 * c.y - dot(c, c)))
-                        / (0.03 + abs(length(p_anim) - 0.7)) * 0.2);
+                        / (brightness_inverse + abs(length(p_anim) - 0.7)) * 0.2);
       o_anim += animTerm;
     }
 
@@ -98,9 +104,11 @@ function createProgram(gl: WebGLRenderingContext, vsSource: string, fsSource: st
 
 export type BlackHoleShaderCanvasProps = {
   className?: string;
+  /** 0–1 tap impulse; canvas decays this each frame and maps it to brightness above BASE_BRIGHTNESS. */
+  tapBoostRef: MutableRefObject<number>;
 };
 
-export function BlackHoleShaderCanvas({ className }: BlackHoleShaderCanvasProps) {
+export function BlackHoleShaderCanvas({ className, tapBoostRef }: BlackHoleShaderCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -129,6 +137,7 @@ export function BlackHoleShaderCanvas({ className }: BlackHoleShaderCanvasProps)
     const positionLocation = gl.getAttribLocation(program, "a_position");
     const timeLocation = gl.getUniformLocation(program, "t");
     const resolutionLocation = gl.getUniformLocation(program, "r");
+    const brightnessLocation = gl.getUniformLocation(program, "u_brightness");
 
     const vertices = new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]);
     const buffer = gl.createBuffer();
@@ -144,6 +153,7 @@ export function BlackHoleShaderCanvas({ className }: BlackHoleShaderCanvasProps)
     const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     let animationFrameId = 0;
     const startTime = performance.now();
+    let lastFrameTime = startTime;
 
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
@@ -163,10 +173,19 @@ export function BlackHoleShaderCanvas({ className }: BlackHoleShaderCanvasProps)
     resizeObserver.observe(container);
     resize();
 
-    const render = () => {
-      const elapsed = reducedMotionQuery.matches ? 0 : (performance.now() - startTime) / 1000;
+    const render = (now: number) => {
+      const dt = Math.min((now - lastFrameTime) / 1000, 0.1);
+      lastFrameTime = now;
+
+      if (tapBoostRef.current > 0) {
+        tapBoostRef.current = Math.max(0, tapBoostRef.current - TAP_BOOST_DECAY_PER_SECOND * dt);
+      }
+
+      const elapsed = reducedMotionQuery.matches ? 0 : (now - startTime) / 1000;
+      const brightness = BASE_BRIGHTNESS + tapBoostRef.current * 6;
       gl.uniform1f(timeLocation, elapsed);
       gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
+      gl.uniform1f(brightnessLocation, brightness);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       animationFrameId = requestAnimationFrame(render);
     };
@@ -178,7 +197,7 @@ export function BlackHoleShaderCanvas({ className }: BlackHoleShaderCanvasProps)
       gl.deleteBuffer(buffer);
       gl.deleteProgram(program);
     };
-  }, []);
+  }, [tapBoostRef]);
 
   return <canvas ref={canvasRef} className={className} aria-hidden="true" />;
 }

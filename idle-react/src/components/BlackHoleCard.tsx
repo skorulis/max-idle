@@ -1,12 +1,31 @@
+import { useCallback, useRef } from "react";
 import { Orbit } from "lucide-react";
 import { BlackHoleShaderCanvas } from "./BlackHoleShaderCanvas";
 import "./BlackHoleCard.css";
 
 export function BlackHoleCard() {
+  const tapBoostRef = useRef(0);
+
+  const handleTap = useCallback(() => {
+    tapBoostRef.current = 1;
+  }, []);
+
   return (
-    <section className="card black-hole-card">
+    <section
+      className="card black-hole-card"
+      role="button"
+      tabIndex={0}
+      aria-label="Black hole — tap to brighten"
+      onClick={handleTap}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          handleTap();
+        }
+      }}
+    >
       <div className="black-hole-card__shader-host">
-        <BlackHoleShaderCanvas className="black-hole-card__canvas" />
+        <BlackHoleShaderCanvas className="black-hole-card__canvas" tapBoostRef={tapBoostRef} />
       </div>
       <div className="black-hole-card__content">
         <h2 className="section-title-with-icon">
