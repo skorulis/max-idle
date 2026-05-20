@@ -13,6 +13,7 @@ import {
   hasRefundableRealShopPurchases,
   withIdleCurrencyShopUpgradesReset,
   withRealCurrencyShopUpgradesReset,
+  withShopCurrencySpentAdded,
   withShopUpgradeLevel,
 } from "@maxidle/shared/shop";
 import type { ShopState } from "@maxidle/shared/shop";
@@ -243,9 +244,14 @@ export function registerShopRoutes({
             : isRealRefund
               ? withRealCurrencyShopUpgradesReset(shopState)
               : withShopUpgradeLevel(shopState, boundedUpgrade.id, currentLevel + quantity);
-      const nextShopState = shouldRecordLastPurchase
+      let nextShopState = shouldRecordLastPurchase
         ? { ...nextShopStateBase, last_purchase: Math.floor(now.getTime() / 1000) }
         : nextShopStateBase;
+      if (!isPurchaseRefund && boundedUpgrade.currencyType === SHOP_CURRENCY_TYPES.IDLE) {
+        nextShopState = withShopCurrencySpentAdded(nextShopState, SHOP_CURRENCY_TYPES.IDLE, totalCost);
+      } else if (!isPurchaseRefund && boundedUpgrade.currencyType === SHOP_CURRENCY_TYPES.REAL) {
+        nextShopState = withShopCurrencySpentAdded(nextShopState, SHOP_CURRENCY_TYPES.REAL, totalCost);
+      }
       const nextLastCollectedAt = isExtraRealtimeWait
         ? new Date(row.last_collected_at.getTime() - REALTIME_WAIT_EXTENSION_SECONDS * 1000)
         : row.last_collected_at;

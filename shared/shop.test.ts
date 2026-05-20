@@ -3,10 +3,16 @@ import {
   applyLegacyShopUpgradeRefunds,
   getDefaultShopState,
   getLevelBonusIdleContribution,
+  getRecordedShopCurrencySpent,
+  getShopPurchaseRefundTotals,
+  getTotalShopCurrencySpentForPurchaseCount,
   getWorthwhileAchievementsMultiplier,
+  withIdleCurrencyShopUpgradesReset,
+  withRealCurrencyShopUpgradesReset,
+  withShopCurrencySpentAdded,
   withShopUpgradeLevel
 } from "./shop.js";
-import { SHOP_UPGRADE_IDS } from "./shopUpgrades.js";
+import { SHOP_CURRENCY_TYPES, SHOP_UPGRADE_IDS } from "./shopUpgrades.js";
 
 describe("getWorthwhileAchievementsMultiplier", () => {
   it("returns 0 when Worthwhile Achievements has no tier", () => {
@@ -95,5 +101,48 @@ describe("applyLegacyShopUpgradeRefunds", () => {
     expect(result.realRefund).toBe(0);
     expect(result.idleRefund).toBe(0);
     expect(result.refundedUpgradeIds).toEqual([]);
+  });
+});
+
+describe("shop currency spent tracking", () => {
+  it("accumulates recorded spend on purchase", () => {
+    let shop = getDefaultShopState();
+    shop = withShopCurrencySpentAdded(shop, SHOP_CURRENCY_TYPES.IDLE, 100);
+    shop = withShopCurrencySpentAdded(shop, SHOP_CURRENCY_TYPES.IDLE, 50);
+    expect(getRecordedShopCurrencySpent(shop, SHOP_CURRENCY_TYPES.IDLE)).toBe(150);
+  });
+
+  it("refunds max of recalculated total and recorded spend", () => {
+    const shop = withShopUpgradeLevel(
+      {
+        ...getDefaultShopState(),
+        idle_currency_spent: 500
+      },
+      SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER,
+      1
+    );
+    const calculated = getTotalShopCurrencySpentForPurchaseCount(SHOP_CURRENCY_TYPES.IDLE, 1);
+    expect(calculated).toBeLessThan(500);
+    expect(getShopPurchaseRefundTotals(shop).idle).toBe(500);
+  });
+
+  it("clears recorded idle spend on idle refund reset", () => {
+    const shop = withIdleCurrencyShopUpgradesReset({
+      ...getDefaultShopState(),
+      idle_currency_spent: 999,
+      [SHOP_UPGRADE_IDS.SECONDS_MULTIPLIER]: 2
+    });
+    expect(shop.idle_currency_spent).toBe(0);
+    expect(shop.seconds_multiplier).toBe(0);
+  });
+
+  it("clears recorded real spend on real refund reset", () => {
+    const shop = withRealCurrencyShopUpgradesReset({
+      ...getDefaultShopState(),
+      real_currency_spent: 888,
+      [SHOP_UPGRADE_IDS.LUCK]: 1
+    });
+    expect(shop.real_currency_spent).toBe(0);
+    expect(shop.luck).toBe(0);
   });
 });

@@ -52,6 +52,10 @@ export type ShopState = {
    * Set by the server on those purchases only; gem-priced buys do not update this field.
    */
   last_purchase?: number;
+  /** Idle seconds actually paid for idle-priced shop tiers (refund uses max with recalculated total). */
+  idle_currency_spent?: number;
+  /** Real seconds actually paid for real-priced shop tiers (refund uses max with recalculated total). */
+  real_currency_spent?: number;
   [key: string]: unknown;
 };
 
@@ -68,7 +72,9 @@ export const DEFAULT_SHOP_STATE: ShopState = {
   [SHOP_UPGRADE_IDS.ANTI_CONSUMERIST]: 0,
   [SHOP_UPGRADE_IDS.CONSOLIDATION]: 0,
   [SHOP_UPGRADE_IDS.QUICK_COLLECTOR]: 0,
-  [SHOP_UPGRADE_IDS.INTEREST]: 0
+  [SHOP_UPGRADE_IDS.INTEREST]: 0,
+  idle_currency_spent: 0,
+  real_currency_spent: 0
 };
 
 export function getDefaultShopState(): ShopState {
@@ -172,12 +178,48 @@ export function multiplierToLevel(secondsMultiplier: number): number {
   return 0;
 }
 
-export function getShopPurchaseRefundTotals(shop: ShopState): { idle: number; real: number } {
+type IdleOrRealShopCurrency = Exclude<ShopCurrencyType, typeof SHOP_CURRENCY_TYPES.GEM>;
+
+const SHOP_CURRENCY_SPENT_FIELD: Record<IdleOrRealShopCurrency, "idle_currency_spent" | "real_currency_spent"> = {
+  [SHOP_CURRENCY_TYPES.IDLE]: "idle_currency_spent",
+  [SHOP_CURRENCY_TYPES.REAL]: "real_currency_spent"
+};
+
+export function getRecordedShopCurrencySpent(shop: ShopState, currencyType: IdleOrRealShopCurrency): number {
+  return Math.max(0, safeNumber(shop[SHOP_CURRENCY_SPENT_FIELD[currencyType]], 0));
+}
+
+export function withShopCurrencySpentAdded(
+  shop: ShopState,
+  currencyType: IdleOrRealShopCurrency,
+  amount: number
+): ShopState {
+  const added = safeNumber(amount, 0);
+  if (!(added > 0)) {
+    return shop;
+  }
+  const field = SHOP_CURRENCY_SPENT_FIELD[currencyType];
+  return {
+    ...shop,
+    [field]: getRecordedShopCurrencySpent(shop, currencyType) + added
+  };
+}
+
+function getCalculatedShopPurchaseRefundTotals(shop: ShopState): { idle: number; real: number } {
   const idleCount = getPurchasedShopUpgradeLevelCount(shop, SHOP_CURRENCY_TYPES.IDLE);
   const realCount = getPurchasedShopUpgradeLevelCount(shop, SHOP_CURRENCY_TYPES.REAL);
   return {
     idle: getTotalShopCurrencySpentForPurchaseCount(SHOP_CURRENCY_TYPES.IDLE, idleCount),
     real: getTotalShopCurrencySpentForPurchaseCount(SHOP_CURRENCY_TYPES.REAL, realCount)
+  };
+}
+
+/** Refund totals: max of tier-table recalculation and amounts actually paid (survives later price changes). */
+export function getShopPurchaseRefundTotals(shop: ShopState): { idle: number; real: number } {
+  const calculated = getCalculatedShopPurchaseRefundTotals(shop);
+  return {
+    idle: Math.max(calculated.idle, getRecordedShopCurrencySpent(shop, SHOP_CURRENCY_TYPES.IDLE)),
+    real: Math.max(calculated.real, getRecordedShopCurrencySpent(shop, SHOP_CURRENCY_TYPES.REAL))
   };
 }
 
@@ -260,6 +302,7 @@ export function withIdleCurrencyShopUpgradesReset(shop: ShopState): ShopState {
       next[upgrade.id] = defaults[upgrade.id] ?? 0;
     }
   }
+  next.idle_currency_spent = 0;
   return next;
 }
 
@@ -272,6 +315,7 @@ export function withRealCurrencyShopUpgradesReset(shop: ShopState): ShopState {
       next[upgrade.id] = defaults[upgrade.id] ?? 0;
     }
   }
+  next.real_currency_spent = 0;
   return next;
 }
 
