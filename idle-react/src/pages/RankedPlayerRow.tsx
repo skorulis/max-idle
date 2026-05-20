@@ -8,7 +8,7 @@ type RankedPlayerRowProps = {
   totalIdleSeconds: number;
   isCurrentPlayer: boolean;
   /** When set, the numeric column shows time gems or peak multiplier instead of a duration. */
-  valueKind?: "idle_seconds" | "time_gems" | "max_multiplier";
+  valueKind?: "idle_seconds" | "time_gems" | "max_multiplier" | "level";
 };
 
 export function RankedPlayerRow({
@@ -24,7 +24,9 @@ export function RankedPlayerRow({
       ? `${totalIdleSeconds.toLocaleString()} gem${totalIdleSeconds === 1 ? "" : "s"}`
       : valueKind === "max_multiplier"
         ? `${totalIdleSeconds.toFixed(2)}x`
-        : formatSeconds(totalIdleSeconds);
+        : valueKind === "level"
+          ? `Level ${Math.floor(totalIdleSeconds)}`
+          : formatSeconds(totalIdleSeconds);
   return (
     <div className={`leaderboard-row${isCurrentPlayer ? " leaderboard-row-current" : ""}`}>
       <p className="leaderboard-rank">#{rank}</p>

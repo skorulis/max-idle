@@ -225,6 +225,76 @@
           "tutorialProgress": {
             "type": "string"
           },
+          "research": {
+            "type": "object",
+            "properties": {
+              "levels": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "labs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "researchId": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "startedAtMs": {
+                      "type": "integer",
+                      "nullable": true,
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "researchId",
+                    "startedAtMs"
+                  ]
+                }
+              },
+              "progress": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "level": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "elapsedMs": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "level",
+                    "elapsedMs"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "levels",
+              "labs",
+              "progress"
+            ]
+          },
+          "blackholeTime": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "blackholeFeedsToday": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "blackholeFeedsRemainingToday": {
+            "type": "integer",
+            "minimum": 0
+          },
           "obligationsCompleted": {
             "type": "object",
             "additionalProperties": {
@@ -255,6 +325,10 @@
           "dailyBonus",
           "serverTime",
           "tutorialProgress",
+          "research",
+          "blackholeTime",
+          "blackholeFeedsToday",
+          "blackholeFeedsRemainingToday",
           "obligationsCompleted",
           "collectionCount"
         ]
@@ -549,6 +623,7 @@
               "current",
               "collected",
               "collected_real",
+              "level",
               "max_multiplier",
               "time_gems"
             ]
@@ -2856,6 +2931,7 @@
                 "current",
                 "collected",
                 "collected_real",
+                "level",
                 "max_multiplier",
                 "time_gems"
               ]

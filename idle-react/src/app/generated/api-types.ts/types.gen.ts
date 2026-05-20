@@ -55,6 +55,24 @@ export type PlayerState = {
     } | null;
     serverTime: string;
     tutorialProgress: string;
+    research: {
+        levels: {
+            [key: string]: number;
+        };
+        labs: Array<{
+            researchId: string | null;
+            startedAtMs: number | null;
+        }>;
+        progress: {
+            [key: string]: {
+                level: number;
+                elapsedMs: number;
+            };
+        };
+    };
+    blackholeTime: number;
+    blackholeFeedsToday: number;
+    blackholeFeedsRemainingToday: number;
     obligationsCompleted: {
         [key: string]: boolean;
     };
@@ -133,7 +151,7 @@ export type LeaderboardEntry = {
 };
 
 export type LeaderboardResponse = {
-    type: 'current' | 'collected' | 'collected_real' | 'max_multiplier' | 'time_gems';
+    type: 'current' | 'collected' | 'collected_real' | 'level' | 'max_multiplier' | 'time_gems';
     entries: Array<LeaderboardEntry>;
     currentPlayer: {
         userId: string;
@@ -1108,7 +1126,7 @@ export type GetLeaderboardData = {
     body?: never;
     path?: never;
     query?: {
-        type?: 'current' | 'collected' | 'collected_real' | 'max_multiplier' | 'time_gems';
+        type?: 'current' | 'collected' | 'collected_real' | 'level' | 'max_multiplier' | 'time_gems';
     };
     url: '/leaderboard';
 };

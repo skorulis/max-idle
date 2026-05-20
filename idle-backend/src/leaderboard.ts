@@ -27,6 +27,7 @@ export function registerLeaderboardRoutes({
         requestedType === "collected" ||
         requestedType === "collected_real" ||
         requestedType === "current" ||
+        requestedType === "level" ||
         requestedType === "max_multiplier" ||
         requestedType === "time_gems"
           ? requestedType
@@ -45,7 +46,9 @@ export function registerLeaderboardRoutes({
               ? "ps.time_gems_total"
               : leaderboardType === "max_multiplier"
                 ? "ps.max_multiplier"
-                : "ps.current_seconds";
+                : leaderboardType === "level"
+                  ? "ps.level"
+                  : "ps.current_seconds";
 
       let identity: LeaderboardRouteIdentity | null = null;
       try {

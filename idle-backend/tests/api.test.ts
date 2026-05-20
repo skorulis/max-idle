@@ -409,6 +409,35 @@ describe("auth + player lifecycle", () => {
     }
   });
 
+  it("returns leaderboard ordered by level when type is level", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(`UPDATE player_states SET level = $2 WHERE user_id = $1`, [userId, 99]);
+    const midId = await insertLeaderboardPlayer(0, 0);
+    await pool.query(`UPDATE player_states SET level = $2 WHERE user_id = $1`, [midId, 40]);
+    const lowId = await insertLeaderboardPlayer(0, 0);
+    await pool.query(`UPDATE player_states SET level = $2 WHERE user_id = $1`, [lowId, 10]);
+
+    const leaderboardResponse = await request(app)
+      .get("/leaderboard")
+      .query({ type: "level" })
+      .set("Authorization", `Bearer ${token}`);
+    expect(leaderboardResponse.status).toBe(200);
+    expect(leaderboardResponse.body.type).toBe("level");
+    expect(leaderboardResponse.body.entries[0].userId).toBe(userId);
+    expect(leaderboardResponse.body.entries[0].totalIdleSeconds).toBe(99);
+    expect(leaderboardResponse.body.entries[1].totalIdleSeconds).toBe(40);
+    expect(leaderboardResponse.body.entries[2].totalIdleSeconds).toBe(10);
+    for (let i = 1; i < leaderboardResponse.body.entries.length; i += 1) {
+      expect(leaderboardResponse.body.entries[i - 1].totalIdleSeconds).toBeGreaterThanOrEqual(
+        leaderboardResponse.body.entries[i].totalIdleSeconds
+      );
+    }
+  });
+
   it("returns leaderboard ordered by max_multiplier when type is max_multiplier", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");

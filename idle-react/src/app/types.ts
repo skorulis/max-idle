@@ -144,7 +144,7 @@ export type TournamentHistoryItem = {
   gemsAwarded: number | null;
 };
 
-export type LeaderboardType = "current" | "collected" | "collected_real" | "max_multiplier" | "time_gems";
+export type LeaderboardType = "current" | "collected" | "collected_real" | "level" | "max_multiplier" | "time_gems";
 
 export type LeaderboardResponse = {
   type: LeaderboardType;

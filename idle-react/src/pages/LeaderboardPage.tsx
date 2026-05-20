@@ -13,15 +13,21 @@ function formatLeaderboardValue(leaderboardType: LeaderboardType, value: number)
   if (leaderboardType === "max_multiplier") {
     return `${value.toFixed(2)}x`;
   }
+  if (leaderboardType === "level") {
+    return `level ${Math.floor(value)}`;
+  }
   return formatSeconds(value);
 }
 
-function leaderboardValueKind(leaderboardType: LeaderboardType): "idle_seconds" | "time_gems" | "max_multiplier" {
+function leaderboardValueKind(leaderboardType: LeaderboardType): "idle_seconds" | "time_gems" | "max_multiplier" | "level" {
   if (leaderboardType === "time_gems") {
     return "time_gems";
   }
   if (leaderboardType === "max_multiplier") {
     return "max_multiplier";
+  }
+  if (leaderboardType === "level") {
+    return "level";
   }
   return "idle_seconds";
 }
@@ -56,6 +62,10 @@ function leaderboardShareText(
       const gems = currentPlayer.totalIdleSeconds;
       const gemsLabel = `${gems.toLocaleString()} gem${gems === 1 ? "" : "s"}`;
       return `${rankPhrase} after collecting ${gemsLabel}`;
+    }
+    case "level": {
+      const level = Math.floor(currentPlayer.totalIdleSeconds);
+      return `${rankPhrase} at level ${level}`;
     }
     default:
       return null;
@@ -135,6 +145,14 @@ export function LeaderboardPage({
             disabled={leaderboardLoading}
           >
             Peak multiplier
+          </button>
+          <button
+            type="button"
+            className={`secondary${leaderboardType === "level" ? " leaderboard-type-active" : ""}`}
+            onClick={() => onTypeChange("level")}
+            disabled={leaderboardLoading}
+          >
+            Level
           </button>
         </div>
       </div>
