@@ -267,7 +267,7 @@ function reconcileLabSlot(
     const currentLevel = safeNaturalNumber(levels[currentSlot.researchId!]);
     if (isResearchAtMaxLevel(def, currentLevel)) {
       clearSavedProgress(progress, currentSlot.researchId!);
-      currentSlot = { researchId: currentSlot.researchId, startedAtMs: null };
+      currentSlot = { researchId: null, startedAtMs: null };
       break;
     }
 
@@ -283,7 +283,7 @@ function reconcileLabSlot(
     clearSavedProgress(progress, currentSlot.researchId!);
 
     if (isResearchAtMaxLevel(def, nextLevel)) {
-      currentSlot = { researchId: currentSlot.researchId, startedAtMs: null };
+      currentSlot = { researchId: null, startedAtMs: null };
       break;
     }
 

@@ -139,6 +139,44 @@ describe("reconcileResearchProgress", () => {
     expect(result.research.labs[0]?.startedAtMs).toBe(startedAtMs + duration0 + duration1);
   });
 
+  it("clears the lab to offline when the final level completes", () => {
+    const def = RESEARCH_BLACK_HOLE_DAILY_FEEDS;
+    const startedAtMs = 0;
+    const durationMs = getResearchDurationSeconds(def, 9) * 1000;
+    const result = reconcileResearchProgress({
+      research: {
+        levels: { [RESEARCH_ITEM_IDS.BLACK_HOLE_DAILY_FEEDS]: 9 },
+        labs: [{ researchId: RESEARCH_ITEM_IDS.BLACK_HOLE_DAILY_FEEDS, startedAtMs }],
+        progress: {}
+      },
+      unlockedLabCount: 1,
+      serverTimeMs: startedAtMs + durationMs,
+      idleTimeAvailable: 1_000_000
+    });
+    expect(getResearchLevel(result.research, RESEARCH_ITEM_IDS.BLACK_HOLE_DAILY_FEEDS)).toBe(10);
+    expect(result.research.labs[0]).toEqual({ researchId: null, startedAtMs: null });
+  });
+
+  it("clears a maxed-out lab that still has a stale active slot", () => {
+    const result = reconcileResearchProgress({
+      research: {
+        levels: { [RESEARCH_ITEM_IDS.BLACK_HOLE_DAILY_FEEDS]: 10 },
+        labs: [
+          {
+            researchId: RESEARCH_ITEM_IDS.BLACK_HOLE_DAILY_FEEDS,
+            startedAtMs: 1_000_000
+          }
+        ],
+        progress: {}
+      },
+      unlockedLabCount: 1,
+      serverTimeMs: 2_000_000,
+      idleTimeAvailable: 0
+    });
+    expect(result.research.labs[0]).toEqual({ researchId: null, startedAtMs: null });
+    expect(result.levelsGained).toBe(0);
+  });
+
   it("pauses after completion when insufficient idle for next level", () => {
     const startedAtMs = 0;
     const durationMs = getResearchDurationSeconds(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 0) * 1000;
