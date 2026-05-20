@@ -3,6 +3,7 @@ import { Link, Navigate, Route, Routes, useLocation, useMatch, useNavigate } fro
 import { AppNav } from "./AppNav";
 import { toast } from "../gameToast";
 import { calculateBoostedIdleSecondsGain, getEffectiveIdleSecondsRate, isIdleCollectionBlockedByRestraint } from "../idleRate";
+import { FEATURE_FLAGS } from "@maxidle/shared/featureFlags";
 import { OBLIGATION_IDS, isTournamentFeatureUnlocked } from "@maxidle/shared/obligations";
 import { type ShopUpgradeId } from "../shopUpgrades";
 import { AccountPage } from "../pages/AccountPage";
@@ -670,19 +671,21 @@ export function AppShell() {
               />
             )}
           />
-          <Route
-            path="/research"
-            element={requireAuthenticatedRoute(
-              <ResearchPage
-                token={token}
-                research={research}
-                researchLoading={researchLoading}
-                setResearch={setResearch}
-                hasError={error != null}
-                estimatedServerNowMs={estimatedServerNowMs}
-              />
-            )}
-          />
+          {FEATURE_FLAGS.RESEARCH_LABS ? (
+            <Route
+              path="/research"
+              element={requireAuthenticatedRoute(
+                <ResearchPage
+                  token={token}
+                  research={research}
+                  researchLoading={researchLoading}
+                  setResearch={setResearch}
+                  hasError={error != null}
+                  estimatedServerNowMs={estimatedServerNowMs}
+                />
+              )}
+            />
+          ) : null}
           {showDebugFeatures ? (
             <Route
               path="/debug"

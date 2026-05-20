@@ -8,6 +8,7 @@ import {
   ShoppingCart,
   Star
 } from "lucide-react";
+import { FEATURE_FLAGS } from "@maxidle/shared/featureFlags";
 import { useNavigate } from "react-router-dom";
 import GameIcon from "../GameIcon";
 
@@ -45,9 +46,11 @@ export function AppNav({
               ) : null}
             </span>
           </button>
-          <button type="button" className="link" aria-label="Research" onClick={() => navigate("/research")}>
-            <GameIcon icon={FlaskConical} />
-          </button>
+          {FEATURE_FLAGS.RESEARCH_LABS ? (
+            <button type="button" className="link" aria-label="Research" onClick={() => navigate("/research")}>
+              <GameIcon icon={FlaskConical} />
+            </button>
+          ) : null}
           <button type="button" className="link" onClick={() => navigate("/achievements")}>
             <span className="nav-icon-with-dot">
               <GameIcon icon={Star} />

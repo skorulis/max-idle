@@ -83,6 +83,10 @@
     "./researchItems": {
       "types": "./dist/researchItems.d.ts",
       "default": "./dist/researchItems.js"
+    },
+    "./featureFlags": {
+      "types": "./dist/featureFlags.d.ts",
+      "default": "./dist/featureFlags.js"
     }
   }
 }

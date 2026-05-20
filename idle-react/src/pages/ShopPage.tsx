@@ -8,6 +8,7 @@ import {
   Plus,
 } from "lucide-react";
 import { Fragment, useState } from "react";
+import { FEATURE_FLAGS } from "@maxidle/shared/featureFlags";
 import { isLevelUpgradesUnlocked } from "@maxidle/shared/obligations";
 import { getMaxPlayerLevel, getPlayerLevelUpgradeCostFromLevel } from "@maxidle/shared/playerLevelCosts";
 import type { SyncedPlayerState } from "../app/types";
@@ -234,7 +235,8 @@ export function ShopPage({
   const visibleUpgrades = SHOP_UPGRADES.filter(
     (upgrade) =>
       upgrade.currencyType === selectedCurrencyType &&
-      (levelUpgradesUnlocked || upgrade.id !== SHOP_UPGRADE_IDS.LEVEL_BONUS)
+      (levelUpgradesUnlocked || upgrade.id !== SHOP_UPGRADE_IDS.LEVEL_BONUS) &&
+      (FEATURE_FLAGS.RESEARCH_LABS || upgrade.id !== SHOP_UPGRADE_IDS.LAB_SLOTS)
   );
   const visibleUpgradeGroups = groupVisibleShopUpgradesByCategory(visibleUpgrades);
   function getValueDescriptionParts(
