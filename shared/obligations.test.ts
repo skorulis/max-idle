@@ -74,7 +74,7 @@ describe("getCurrentObligationId", () => {
           OBLIGATION_IDS.LEVEL_UP
         ])
       )
-    ).toBe(OBLIGATION_IDS.BLACK_HOLE);
+    ).toBe(OBLIGATION_IDS.RAMP_UP);
   });
 
   it("advances after sixth is completed", () => {
@@ -86,10 +86,26 @@ describe("getCurrentObligationId", () => {
           OBLIGATION_IDS.ACHIEVE_SOMETHING,
           OBLIGATION_IDS.TIME_GEMS,
           OBLIGATION_IDS.LEVEL_UP,
+          OBLIGATION_IDS.RAMP_UP
+        ])
+      )
+    ).toBe(OBLIGATION_IDS.BLACK_HOLE);
+  });
+
+  it("advances after seventh is completed", () => {
+    expect(
+      getCurrentObligationId(
+        new Set([
+          OBLIGATION_IDS.COLLECT_SOME_TIME,
+          OBLIGATION_IDS.FIRST_PURCHASE,
+          OBLIGATION_IDS.ACHIEVE_SOMETHING,
+          OBLIGATION_IDS.TIME_GEMS,
+          OBLIGATION_IDS.LEVEL_UP,
+          OBLIGATION_IDS.RAMP_UP,
           OBLIGATION_IDS.BLACK_HOLE
         ])
       )
-    ).toBe(OBLIGATION_IDS.RAMP_UP);
+    ).toBe(OBLIGATION_IDS.WAIT_IT_OUT);
   });
 
   it("returns null when all complete", () => {
@@ -99,8 +115,8 @@ describe("getCurrentObligationId", () => {
       OBLIGATION_IDS.ACHIEVE_SOMETHING,
       OBLIGATION_IDS.TIME_GEMS,
       OBLIGATION_IDS.LEVEL_UP,
-      OBLIGATION_IDS.BLACK_HOLE,
       OBLIGATION_IDS.RAMP_UP,
+      OBLIGATION_IDS.BLACK_HOLE,
       OBLIGATION_IDS.WAIT_IT_OUT
     ]);
     expect(getCurrentObligationId(done)).toBeNull();
@@ -111,8 +127,8 @@ describe("getCurrentObligationId", () => {
         [OBLIGATION_IDS.ACHIEVE_SOMETHING]: true,
         [OBLIGATION_IDS.TIME_GEMS]: true,
         [OBLIGATION_IDS.LEVEL_UP]: true,
-        [OBLIGATION_IDS.BLACK_HOLE]: true,
         [OBLIGATION_IDS.RAMP_UP]: true,
+        [OBLIGATION_IDS.BLACK_HOLE]: true,
         [OBLIGATION_IDS.WAIT_IT_OUT]: true
       })
     ).toBeNull();
@@ -276,8 +292,8 @@ describe("OBLIGATIONS order", () => {
       OBLIGATION_IDS.ACHIEVE_SOMETHING,
       OBLIGATION_IDS.TIME_GEMS,
       OBLIGATION_IDS.LEVEL_UP,
-      OBLIGATION_IDS.BLACK_HOLE,
       OBLIGATION_IDS.RAMP_UP,
+      OBLIGATION_IDS.BLACK_HOLE,
       OBLIGATION_IDS.WAIT_IT_OUT
     ]);
   });
