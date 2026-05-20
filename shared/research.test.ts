@@ -34,7 +34,7 @@ describe("formatResearchEffectProgression", () => {
   });
 });
 
-describe("getResearchTimeCost and getResearchDurationSeconds", () => {
+describe("getResearchTimeCost", () => {
   it("scales with growthFactor by current level", () => {
     expect(getResearchTimeCost(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 0)).toBe(
       Math.floor(RESEARCH_BLACK_HOLE_DAILY_FEEDS.baseTimeCost)
@@ -42,9 +42,52 @@ describe("getResearchTimeCost and getResearchDurationSeconds", () => {
     expect(getResearchTimeCost(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 1)).toBe(
       Math.floor(RESEARCH_BLACK_HOLE_DAILY_FEEDS.baseTimeCost * RESEARCH_BLACK_HOLE_DAILY_FEEDS.growthFactor)
     );
-    expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 0)).toBe(
-      Math.floor(RESEARCH_BLACK_HOLE_DAILY_FEEDS.baseDuration)
-    );
+  });
+});
+
+describe("getResearchDurationSeconds", () => {
+  describe("Black hole daily feeds (8m base, ×1.15 per level)", () => {
+    it("level 0 → 1 takes 480s (8m)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 0)).toBe(480);
+    });
+
+    it("level 1 → 2 takes 552s (9m 12s)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 1)).toBe(552);
+    });
+
+    it("level 3 → 4 takes 730s (12m 10s)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 3)).toBe(730);
+    });
+
+    it("level 5 → 6 takes 965s (16m 5s)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 5)).toBe(965);
+    });
+
+    it("level 9 → 10 takes 1688s (28m 8s)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 9)).toBe(1688);
+    });
+  });
+
+  describe("Black hole feed amount (10m base, ×1.15 per level)", () => {
+    it("level 0 → 1 takes 600s (10m)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_FEED_AMOUNT, 0)).toBe(600);
+    });
+
+    it("level 1 → 2 takes 690s (11m 30s)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_FEED_AMOUNT, 1)).toBe(690);
+    });
+
+    it("level 3 → 4 takes 912s (15m 12s)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_FEED_AMOUNT, 3)).toBe(912);
+    });
+
+    it("level 5 → 6 takes 1206s (20m 6s)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_FEED_AMOUNT, 5)).toBe(1206);
+    });
+
+    it("level 9 → 10 takes 2110s (35m 10s)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_FEED_AMOUNT, 9)).toBe(2110);
+    });
   });
 });
 

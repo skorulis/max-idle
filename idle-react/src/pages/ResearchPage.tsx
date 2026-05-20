@@ -15,6 +15,7 @@ import { changeResearch, startResearch } from "../app/api";
 import { formatSeconds } from "../formatSeconds";
 import GameIcon from "../GameIcon";
 import { ResearchCatalogOverlay } from "./ResearchCatalogOverlay";
+import { useResearchLabCompletion } from "./useResearchLabCompletion";
 
 type ResearchPageProps = {
   token: string | null;
@@ -78,6 +79,8 @@ export function ResearchPage({
   const [actionError, setActionError] = useState<string | null>(null);
   const [pendingLabIndex, setPendingLabIndex] = useState<number | null>(null);
   const [catalogOverlayLabIndex, setCatalogOverlayLabIndex] = useState<number | null>(null);
+
+  useResearchLabCompletion(token, research, estimatedServerNowMs, setResearch);
 
   const handleSelectResearch = async (labIndex: number, researchId: string) => {
     if (!research) {
