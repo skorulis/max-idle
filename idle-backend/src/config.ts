@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { parseLabSpeedMultiplier } from "@maxidle/shared/labSpeed";
 import type { AppConfig } from "./types.js";
 
 function requiredEnv(name: string): string {
@@ -53,9 +54,12 @@ export function loadConfig(): AppConfig {
   const vapidSubject = optionalTrimmedEnv("VAPID_SUBJECT");
   assertValidVapidConfiguration({ vapidPublicKey, vapidPrivateKey, vapidSubject });
 
+  const labSpeedMultiplier = parseLabSpeedMultiplier(process.env.LAB_SPEED_MULTIPLIER);
+
   return {
     port,
     isProduction: process.env.NODE_ENV === "production",
+    labSpeedMultiplier,
     databaseUrl: requiredEnv("DATABASE_URL"),
     jwtSecret: requiredEnv("JWT_SECRET"),
     amplitudeApiKey: requiredEnv("AMPLITUDE_API_KEY"),

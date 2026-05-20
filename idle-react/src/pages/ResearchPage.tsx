@@ -6,10 +6,12 @@ import {
   getResearchDurationSeconds,
   getResearchLevel,
   getResearchProgress,
+  getResearchRemainingSeconds,
   getResearchTimeCost,
   isResearchAtMaxLevel
 } from "@maxidle/shared/research";
 import { getResearchItemDefinition, type ResearchItemDefinition } from "@maxidle/shared/researchItems";
+import { labSpeedMultiplier } from "../app/labSpeed";
 import type { ResearchResponse } from "../app/types";
 import { changeResearch, startResearch } from "../app/api";
 import { formatSeconds } from "../formatSeconds";
@@ -35,7 +37,13 @@ function getLiveProgress(
   if (startedAtMs == null) {
     return null;
   }
-  return getResearchProgress(def, currentLevel, startedAtMs, estimatedServerNowMs);
+  return getResearchProgress(
+    def,
+    currentLevel,
+    startedAtMs,
+    estimatedServerNowMs,
+    labSpeedMultiplier
+  );
 }
 
 function ResearchProgressBar({
@@ -177,10 +185,17 @@ export function ResearchPage({
                   </p>
                   <ResearchProgressBar
                     fraction={liveProgress}
-                    remainingSeconds={Math.max(
-                      0,
-                      Math.ceil((nextLevelDuration ?? 0) * (1 - liveProgress))
-                    )}
+                    remainingSeconds={
+                      def != null && slot.startedAtMs != null
+                        ? (getResearchRemainingSeconds(
+                            def,
+                            currentLevel,
+                            slot.startedAtMs,
+                            estimatedServerNowMs,
+                            labSpeedMultiplier
+                          ) ?? 0)
+                        : 0
+                    }
                     label={`Research progress for ${def.name}`}
                   />
                   <button

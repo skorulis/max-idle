@@ -15,6 +15,7 @@ type RegisterResearchRoutesOptions = {
   pool: Pool;
   resolveIdentity: (req: express.Request) => Promise<{ claims: { sub: string } }>;
   toNumber: (value: unknown) => number;
+  labSpeedMultiplier: number;
 };
 
 type ResearchRow = {
@@ -42,7 +43,8 @@ export function buildResearchResponse(
 async function loadAndReconcileResearch(
   client: { query: typeof Pool.prototype.query },
   userId: string,
-  forUpdate: boolean
+  forUpdate: boolean,
+  labSpeedMultiplier: number
 ): Promise<{
   row: ResearchRow;
   research: ResearchState;
@@ -78,7 +80,8 @@ async function loadAndReconcileResearch(
     research,
     unlockedLabCount,
     serverTimeMs,
-    idleTimeAvailable
+    idleTimeAvailable,
+    labSpeedMultiplier
   });
 
   research = reconciled.research;
@@ -129,7 +132,8 @@ export function registerResearchRoutes({
   app,
   pool,
   resolveIdentity,
-  toNumber
+  toNumber,
+  labSpeedMultiplier
 }: RegisterResearchRoutesOptions): void {
   app.get("/research", async (req, res, next) => {
     try {
@@ -139,7 +143,7 @@ export function registerResearchRoutes({
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
-        const loaded = await loadAndReconcileResearch(client, userId, true);
+        const loaded = await loadAndReconcileResearch(client, userId, true, labSpeedMultiplier);
         if (!loaded) {
           await client.query("ROLLBACK");
           res.status(404).json({ error: "Player state not found" });
@@ -189,7 +193,7 @@ export function registerResearchRoutes({
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
-        const loaded = await loadAndReconcileResearch(client, userId, true);
+        const loaded = await loadAndReconcileResearch(client, userId, true, labSpeedMultiplier);
         if (!loaded) {
           await client.query("ROLLBACK");
           res.status(404).json({ error: "Player state not found" });
@@ -255,7 +259,7 @@ export function registerResearchRoutes({
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
-        const loaded = await loadAndReconcileResearch(client, userId, true);
+        const loaded = await loadAndReconcileResearch(client, userId, true, labSpeedMultiplier);
         if (!loaded) {
           await client.query("ROLLBACK");
           res.status(404).json({ error: "Player state not found" });
@@ -324,7 +328,7 @@ export function registerResearchRoutes({
       const client = await pool.connect();
       try {
         await client.query("BEGIN");
-        const loaded = await loadAndReconcileResearch(client, userId, true);
+        const loaded = await loadAndReconcileResearch(client, userId, true, labSpeedMultiplier);
         if (!loaded) {
           await client.query("ROLLBACK");
           res.status(404).json({ error: "Player state not found" });

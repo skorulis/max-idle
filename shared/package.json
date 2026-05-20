@@ -76,6 +76,10 @@
       "types": "./dist/blackHole.d.ts",
       "default": "./dist/blackHole.js"
     },
+    "./labSpeed": {
+      "types": "./dist/labSpeed.d.ts",
+      "default": "./dist/labSpeed.js"
+    },
     "./research": {
       "types": "./dist/research.d.ts",
       "default": "./dist/research.js"

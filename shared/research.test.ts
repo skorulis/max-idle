@@ -156,6 +156,31 @@ describe("reconcileResearchProgress", () => {
     expect(result.research.labs[0]?.startedAtMs).toBeNull();
     expect(result.research.labs[0]?.researchId).toBe(RESEARCH_ITEM_IDS.BLACK_HOLE_DAILY_FEEDS);
   });
+
+  it("completes faster when labSpeedMultiplier is above 1", () => {
+    const startedAtMs = 1_000_000;
+    const durationMs = getResearchDurationSeconds(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 0) * 1000;
+    const multiplier = 4;
+    const result = reconcileResearchProgress({
+      research: {
+        levels: {},
+        labs: [
+          {
+            researchId: RESEARCH_ITEM_IDS.BLACK_HOLE_DAILY_FEEDS,
+            startedAtMs
+          }
+        ],
+        progress: {}
+      },
+      unlockedLabCount: 1,
+      serverTimeMs: startedAtMs + durationMs / multiplier,
+      idleTimeAvailable: 0,
+      labSpeedMultiplier: multiplier
+    });
+    expect(getResearchLevel(result.research, RESEARCH_ITEM_IDS.BLACK_HOLE_DAILY_FEEDS)).toBe(1);
+    expect(result.levelsGained).toBe(1);
+    expect(result.research.labs[0]?.startedAtMs).toBeNull();
+  });
 });
 
 describe("stopResearch", () => {

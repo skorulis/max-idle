@@ -7,6 +7,8 @@ export type AuthClaims = {
 export type AppConfig = {
   port: number;
   isProduction: boolean;
+  /** Dev tuning: each wall-clock second counts as this many seconds of lab progress. */
+  labSpeedMultiplier: number;
   databaseUrl: string;
   jwtSecret: string;
   amplitudeApiKey: string;

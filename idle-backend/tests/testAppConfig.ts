@@ -5,6 +5,7 @@ export function createTestAppConfig(overrides?: Partial<AppConfig>): AppConfig {
   return {
     port: 3000,
     isProduction: false,
+    labSpeedMultiplier: 1,
     databaseUrl: "postgres://unused",
     jwtSecret: "test-secret",
     amplitudeApiKey: "test-amplitude-api-key",

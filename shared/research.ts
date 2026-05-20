@@ -1,3 +1,4 @@
+import { getEffectiveLabElapsedMs, normalizeLabSpeedMultiplier } from "./labSpeed.js";
 import {
   getResearchItemDefinition,
   type ResearchItemDefinition
@@ -32,6 +33,8 @@ export type ReconcileResearchProgressInput = {
   unlockedLabCount: number;
   serverTimeMs: number;
   idleTimeAvailable: number;
+  /** Each wall-clock second counts as this many seconds of lab progress (default 1). */
+  labSpeedMultiplier?: number;
 };
 
 export type ReconcileResearchProgressResult = {
@@ -239,7 +242,8 @@ function reconcileLabSlot(
   levels: Record<string, number>,
   progress: Record<string, ResearchProgressEntry>,
   serverTimeMs: number,
-  idleTimeAvailable: number
+  idleTimeAvailable: number,
+  labSpeedMultiplier: number
 ): { slot: ResearchLabSlot; idleTimeDelta: number; levelsGained: number } {
   if (!slot.researchId || slot.startedAtMs == null) {
     return { slot, idleTimeDelta: 0, levelsGained: 0 };
@@ -268,8 +272,8 @@ function reconcileLabSlot(
     }
 
     const durationMs = getResearchDurationMs(def, currentLevel);
-    const elapsedMs = serverTimeMs - currentSlot.startedAtMs;
-    if (elapsedMs < durationMs) {
+    const realElapsedMs = serverTimeMs - currentSlot.startedAtMs;
+    if (getEffectiveLabElapsedMs(realElapsedMs, labSpeedMultiplier) < durationMs) {
       break;
     }
 
@@ -293,7 +297,7 @@ function reconcileLabSlot(
     idleTimeDelta -= nextCost;
     currentSlot = {
       researchId: currentSlot.researchId,
-      startedAtMs: currentSlot.startedAtMs + durationMs
+      startedAtMs: currentSlot.startedAtMs + durationMs / labSpeedMultiplier
     };
   }
 
@@ -304,6 +308,7 @@ export function reconcileResearchProgress(
   input: ReconcileResearchProgressInput
 ): ReconcileResearchProgressResult {
   const research = normalizeResearchState(input.research, input.unlockedLabCount);
+  const labSpeedMultiplier = normalizeLabSpeedMultiplier(input.labSpeedMultiplier);
   const levels = { ...research.levels };
   const progress = { ...research.progress };
   let idleTimeDelta = 0;
@@ -316,7 +321,8 @@ export function reconcileResearchProgress(
       levels,
       progress,
       input.serverTimeMs,
-      idleTimeAvailable
+      idleTimeAvailable,
+      labSpeedMultiplier
     );
     idleTimeDelta += result.idleTimeDelta;
     levelsGained += result.levelsGained;
@@ -502,7 +508,8 @@ export function getResearchProgress(
   def: ResearchItemDefinition,
   currentLevel: number,
   startedAtMs: number | null,
-  serverTimeMs: number
+  serverTimeMs: number,
+  labSpeedMultiplier?: number
 ): number | null {
   if (startedAtMs == null) {
     return null;
@@ -511,8 +518,36 @@ export function getResearchProgress(
   if (durationMs <= 0) {
     return 1;
   }
-  const elapsedMs = Math.max(0, serverTimeMs - startedAtMs);
-  return Math.min(1, elapsedMs / durationMs);
+  const multiplier = normalizeLabSpeedMultiplier(labSpeedMultiplier);
+  const effectiveElapsedMs = getEffectiveLabElapsedMs(serverTimeMs - startedAtMs, multiplier);
+  return Math.min(1, effectiveElapsedMs / durationMs);
+}
+
+/** Wall-clock seconds remaining for the current level, or null if not actively researching. */
+export function getResearchRemainingSeconds(
+  def: ResearchItemDefinition,
+  currentLevel: number,
+  startedAtMs: number | null,
+  serverTimeMs: number,
+  labSpeedMultiplier?: number
+): number | null {
+  const progress = getResearchProgress(
+    def,
+    currentLevel,
+    startedAtMs,
+    serverTimeMs,
+    labSpeedMultiplier
+  );
+  if (progress == null) {
+    return null;
+  }
+  if (progress >= 1) {
+    return 0;
+  }
+
+  const multiplier = normalizeLabSpeedMultiplier(labSpeedMultiplier);
+  const durationSeconds = getResearchDurationSeconds(def, currentLevel);
+  return Math.max(0, Math.ceil((durationSeconds * (1 - progress)) / multiplier));
 }
 
 export function getResearchDisplayBonus(

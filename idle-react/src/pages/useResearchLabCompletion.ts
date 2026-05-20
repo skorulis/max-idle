@@ -5,6 +5,7 @@ import {
   isResearchAtMaxLevel
 } from "@maxidle/shared/research";
 import { getResearchItemDefinition } from "@maxidle/shared/researchItems";
+import { labSpeedMultiplier } from "../app/labSpeed";
 import { getResearch } from "../app/api";
 import type { ResearchResponse } from "../app/types";
 import { toast } from "../gameToast";
@@ -47,7 +48,8 @@ function findPendingCompletions(
       def,
       currentLevel,
       slot.startedAtMs,
-      estimatedServerNowMs
+      estimatedServerNowMs,
+      labSpeedMultiplier
     );
     if (progress == null || progress < 1) {
       return;

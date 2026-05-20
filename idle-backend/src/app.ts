@@ -487,7 +487,8 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
     app,
     pool,
     resolveIdentity: resolveIdentityForRequest,
-    toNumber
+    toNumber,
+    labSpeedMultiplier: config.labSpeedMultiplier
   });
 
   registerLeaderboardRoutes({
