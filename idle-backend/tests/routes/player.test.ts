@@ -5,6 +5,7 @@ import { createApp } from "../../src/app.js";
 import { DEFAULT_SHOP_STATE, getRestraintBonusMultiplier } from "@maxidle/shared/shop";
 import { OBLIGATION_IDS } from "@maxidle/shared/obligations";
 import { TUTORIAL_STEPS } from "@maxidle/shared/tutorialSteps";
+import { BLACKHOLE_FEED_SECONDS_PER_TAP, getBlackholeFeedSeconds } from "@maxidle/shared/blackHole";
 import { createTestPool, resetTestDatabase } from "../testDb.js";
 import { createTestAppConfig } from "../testAppConfig.js";
 
@@ -1013,5 +1014,35 @@ describe("player routes", () => {
       .send({ obligationId: OBLIGATION_IDS.ACHIEVE_SOMETHING });
     expect(noneLeft.status).toBe(400);
     expect(noneLeft.body.code).toBe("OBLIGATION_NOT_CURRENT");
+  });
+
+  it("blackhole feed: batches taps into blackhole_time and returns updated player state", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    expect(authResponse.status).toBe(201);
+    const token = authResponse.body.token as string;
+
+    const before = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
+    expect(before.status).toBe(200);
+    expect(before.body.blackholeTime).toBe(0);
+
+    const invalid = await request(app)
+      .post("/player/blackhole/feed")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ taps: 0 });
+    expect(invalid.status).toBe(400);
+    expect(invalid.body.code).toBe("BLACKHOLE_FEED_TAPS_INVALID");
+
+    const feed = await request(app)
+      .post("/player/blackhole/feed")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ taps: 3 });
+    expect(feed.status).toBe(200);
+    expect(feed.body.blackholeTime).toBe(getBlackholeFeedSeconds(3));
+    expect(feed.body.blackholeTime).toBe(BLACKHOLE_FEED_SECONDS_PER_TAP * 3);
+
+    const after = await request(app).get("/player").set("Authorization", `Bearer ${token}`);
+    expect(after.status).toBe(200);
+    expect(after.body.blackholeTime).toBe(getBlackholeFeedSeconds(3));
   });
 });

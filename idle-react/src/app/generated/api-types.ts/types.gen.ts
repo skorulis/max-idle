@@ -65,6 +65,10 @@ export type TutorialCompleteRequest = {
     tutorialId: string;
 };
 
+export type BlackholeFeedRequest = {
+    taps: number;
+};
+
 export type AccountResponse = {
     isAnonymous: boolean;
     email: string | null;
@@ -608,6 +612,39 @@ export type PostPlayerTutorialCompleteResponses = {
 };
 
 export type PostPlayerTutorialCompleteResponse = PostPlayerTutorialCompleteResponses[keyof PostPlayerTutorialCompleteResponses];
+
+export type PostPlayerBlackholeFeedData = {
+    body: BlackholeFeedRequest;
+    path?: never;
+    query?: never;
+    url: '/player/blackhole/feed';
+};
+
+export type PostPlayerBlackholeFeedErrors = {
+    /**
+     * Invalid taps count
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Player not found
+     */
+    404: ErrorResponse;
+};
+
+export type PostPlayerBlackholeFeedError = PostPlayerBlackholeFeedErrors[keyof PostPlayerBlackholeFeedErrors];
+
+export type PostPlayerBlackholeFeedResponses = {
+    /**
+     * Updated player state
+     */
+    200: PlayerState;
+};
+
+export type PostPlayerBlackholeFeedResponse = PostPlayerBlackholeFeedResponses[keyof PostPlayerBlackholeFeedResponses];
 
 export type PostPlayerTutorialResetData = {
     body?: never;

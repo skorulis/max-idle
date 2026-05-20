@@ -442,6 +442,7 @@ export function AppShell() {
     onCollectDailyReward,
     onCollectObligation,
     onCompleteTutorialStep,
+    onFeedBlackHoleTaps,
     onResetTutorial,
     onCollectDailyBonus,
     onEnterTournament,
@@ -581,6 +582,7 @@ export function AppShell() {
                 availableSurvey={availableSurveyForUi}
                 onNavigateSurvey={() => navigate("/survey")}
                 onCompleteTutorialStep={onCompleteTutorialStep}
+                onFeedBlackHoleTaps={onFeedBlackHoleTaps}
                 collectingObligation={collectingObligation}
                 onCollectObligation={onCollectObligation}
               />

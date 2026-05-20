@@ -44,6 +44,10 @@ import {
 } from "@maxidle/shared/obligations";
 import { parseObligationsCompleted } from "../obligationsState.js";
 import { getPlayerCollectionCount } from "../playerCollectionCount.js";
+import {
+  getBlackholeFeedSeconds,
+  MAX_BLACKHOLE_FEED_TAPS_PER_REQUEST
+} from "@maxidle/shared/blackHole";
 
 const REWARD_SKIPPER_GAP_MS = 48 * 60 * 60 * 1000;
 
@@ -344,6 +348,59 @@ export function registerPlayerRoutes({
       }
       res.json(payload);
     } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/player/blackhole/feed", async (req, res, next) => {
+    try {
+      const identity = await resolveIdentity(req);
+      req.auth = identity.claims;
+      const userId = identity.claims.sub;
+
+      const rawTaps = req.body?.taps;
+      const taps =
+        typeof rawTaps === "number" && Number.isFinite(rawTaps) ? Math.floor(rawTaps) : Number.parseInt(String(rawTaps ?? ""), 10);
+      if (!Number.isFinite(taps) || taps < 1) {
+        res.status(400).json({ error: "taps must be a positive integer", code: "BLACKHOLE_FEED_TAPS_INVALID" });
+        return;
+      }
+      if (taps > MAX_BLACKHOLE_FEED_TAPS_PER_REQUEST) {
+        res.status(400).json({
+          error: `taps cannot exceed ${MAX_BLACKHOLE_FEED_TAPS_PER_REQUEST}`,
+          code: "BLACKHOLE_FEED_TAPS_TOO_MANY"
+        });
+        return;
+      }
+
+      const feedSeconds = getBlackholeFeedSeconds(taps);
+      const updateResult = await pool.query<{ user_id: string }>(
+        `
+        UPDATE player_states
+        SET
+          blackhole_time = blackhole_time + $2::BIGINT,
+          updated_at = NOW()
+        WHERE user_id = $1
+        RETURNING user_id
+        `,
+        [userId, feedSeconds]
+      );
+      if (!updateResult.rows[0]) {
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+
+      const payload = await buildPlayerStatePayload(pool, userId, toNumber);
+      if (!payload) {
+        res.status(404).json({ error: "Player state not found" });
+        return;
+      }
+      res.json(payload);
+    } catch (error) {
+      if (error instanceof Error && error.message === "MISSING_IDENTITY") {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
       next(error);
     }
   });

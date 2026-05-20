@@ -10,6 +10,7 @@ import {
   collectObligation,
   collectTournamentReward,
   completeTutorialStep,
+  feedBlackHole,
   createAnonymousSession,
   debugAddGems,
   debugAddIdleTime,
@@ -358,6 +359,27 @@ export function useAppGameplayActions({
     }
   };
 
+  const onFeedBlackHoleTaps = async (taps: number) => {
+    if (!playerState) {
+      return;
+    }
+    try {
+      const nextPlayer = await feedBlackHole(token, taps);
+      const synced = toSyncedState(nextPlayer, playerState);
+      alignClientClock();
+      setPlayerState(synced);
+    } catch (feedError) {
+      if (feedError instanceof Error && feedError.message === "UNAUTHORIZED") {
+        clearUnauthorizedSession();
+      } else {
+        const message = feedError instanceof Error ? feedError.message : "Could not feed the black hole";
+        setError(message);
+        toast.error("Could not feed the black hole.");
+      }
+      throw feedError;
+    }
+  };
+
   const onCompleteTutorialStep = async (tutorialId: string) => {
     if (!playerState) {
       return;
@@ -528,6 +550,7 @@ export function useAppGameplayActions({
     onCollectDailyReward,
     onCollectObligation,
     onCompleteTutorialStep,
+    onFeedBlackHoleTaps,
     onResetTutorial,
     onCollectDailyBonus,
     onEnterTournament,

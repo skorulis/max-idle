@@ -271,6 +271,19 @@
           "tutorialId"
         ]
       },
+      "BlackholeFeedRequest": {
+        "type": "object",
+        "properties": {
+          "taps": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          }
+        },
+        "required": [
+          "taps"
+        ]
+      },
       "AccountResponse": {
         "type": "object",
         "properties": {
@@ -1923,6 +1936,74 @@
           },
           "400": {
             "description": "Invalid tutorial id or body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Player not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/player/blackhole/feed": {
+      "post": {
+        "tags": [
+          "Player"
+        ],
+        "summary": "Feed batched taps of time into the black hole",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BlackholeFeedRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated player state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid taps count",
             "content": {
               "application/json": {
                 "schema": {

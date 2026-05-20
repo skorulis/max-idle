@@ -154,6 +154,31 @@ export async function submitSurveyAnswer(
   return (await response.json()) as PlayerResponse;
 }
 
+export async function feedBlackHole(token: string | null, taps: number): Promise<PlayerResponse> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json"
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/player/blackhole/feed`, {
+    method: "POST",
+    credentials: "include",
+    headers,
+    body: JSON.stringify({ taps })
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response));
+  }
+
+  return (await response.json()) as PlayerResponse;
+}
+
 export async function completeTutorialStep(token: string | null, tutorialId: string): Promise<PlayerResponse> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json"

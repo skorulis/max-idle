@@ -78,6 +78,7 @@ type HomePageProps = {
   availableSurvey: AvailableSurveySummary | null;
   onNavigateSurvey: () => void;
   onCompleteTutorialStep: (tutorialId: string) => Promise<void>;
+  onFeedBlackHoleTaps: (taps: number) => Promise<void>;
   collectingObligation: boolean;
   onCollectObligation: (obligationId: ObligationId) => Promise<void>;
 };
@@ -114,6 +115,7 @@ export function HomePage({
   availableSurvey,
   onNavigateSurvey,
   onCompleteTutorialStep,
+  onFeedBlackHoleTaps,
   collectingObligation,
   onCollectObligation
 }: HomePageProps) {
@@ -327,7 +329,7 @@ export function HomePage({
         </div>
       </section>
 
-      <BlackHoleCard blackholeTime={playerState.blackholeTime} />
+      <BlackHoleCard blackholeTime={playerState.blackholeTime} onFeedTaps={onFeedBlackHoleTaps} />
 
       {currentObligation ? (
         <section className="card">
