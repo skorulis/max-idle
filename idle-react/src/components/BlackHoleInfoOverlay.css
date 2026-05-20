@@ -1,0 +1,27 @@
+.black-hole-info-dialog {
+  color: #111827;
+}
+
+.black-hole-info-dialog .subtle {
+  color: #6b7280;
+}
+
+.black-hole-info-dialog .black-hole-info-lead {
+  margin: 8px 0 0;
+}
+
+.black-hole-info-dialog .black-hole-info-list {
+  margin: 12px 0 0;
+  padding-left: 1.25rem;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #374151;
+}
+
+.black-hole-info-dialog .black-hole-info-list li + li {
+  margin-top: 8px;
+}
+
+.black-hole-info-dialog .black-hole-info-list strong {
+  color: #111827;
+}

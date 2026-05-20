@@ -34,9 +34,32 @@
   pointer-events: none;
 }
 
+.black-hole-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .black-hole-card .section-title-with-icon {
   margin: 0;
   color: #fff;
+}
+
+.black-hole-card__info-button {
+  pointer-events: auto;
+  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(0, 0, 0, 0.55);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.black-hole-card__info-button:hover {
+  background: rgba(0, 0, 0, 0.75);
+  border-color: rgba(255, 255, 255, 0.65);
+}
+
+.black-hole-card__info-button:focus-visible {
+  outline-color: #fff;
 }
 
 .black-hole-card .section-title-with-icon svg {

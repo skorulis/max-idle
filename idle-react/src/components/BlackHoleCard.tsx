@@ -1,8 +1,9 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { ResearchState } from "@maxidle/shared/research";
-import { Orbit } from "lucide-react";
+import { CircleHelp, Orbit } from "lucide-react";
 import { toast } from "../gameToast";
 import { formatSeconds } from "../formatSeconds";
+import { BlackHoleInfoOverlay } from "./BlackHoleInfoOverlay";
 import { BlackHoleShaderCanvas } from "./BlackHoleShaderCanvas";
 import { useBlackHoleFeed } from "./useBlackHoleFeed";
 import "./BlackHoleCard.css";
@@ -20,6 +21,7 @@ export function BlackHoleCard({
   blackholeFeedsRemainingToday,
   onFeedTaps
 }: BlackHoleCardProps) {
+  const [showInfo, setShowInfo] = useState(false);
   const tapBoostRef = useRef(0);
   const { displayBlackholeTime, timeDilation, atDailyLimit, registerTap } =
     useBlackHoleFeed({
@@ -38,54 +40,71 @@ export function BlackHoleCard({
   }, [atDailyLimit, registerTap]);
 
   return (
-    <section
-      className={"card black-hole-card" + (atDailyLimit ? " black-hole-card--limit-reached" : "")}
-      tabIndex={atDailyLimit ? -1 : 0}
-      aria-label={
-        atDailyLimit
-          ? "Black hole — daily feed limit reached"
-          : "Black hole — tap to brighten and feed time"
-      }
-      onClick={handleTap}
-      onKeyDown={(event) => {
-        if (atDailyLimit) {
-          return;
+    <>
+      <section
+        className={"card black-hole-card" + (atDailyLimit ? " black-hole-card--limit-reached" : "")}
+        tabIndex={atDailyLimit ? -1 : 0}
+        aria-label={
+          atDailyLimit
+            ? "Black hole — daily feed limit reached"
+            : "Black hole — tap to brighten and feed time"
         }
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          handleTap();
-        }
-      }}
-    >
-      <div className="black-hole-card__shader-host" aria-hidden="true">
-        <BlackHoleShaderCanvas
-          className="black-hole-card__canvas"
-          blackholeTime={displayBlackholeTime}
-          tapBoostRef={tapBoostRef}
-        />
-      </div>
-      <div className="black-hole-card__content">
-        <h2 className="section-title-with-icon">
-          <Orbit size={18} aria-hidden="true" />
-          Black hole
-        </h2>
-        <p className="black-hole-card__blackhole-time">Blackhole time: {formatSeconds(displayBlackholeTime)}</p>
-        <p className="black-hole-card__dilation">Time dilation: {timeDilation.toFixed(1)}x</p>
-      </div>
-      <button
-        type="button"
-        className="black-hole-card__feed-button"
-        onClick={(event) => {
-          event.stopPropagation();
+        onClick={handleTap}
+        onKeyDown={(event) => {
           if (atDailyLimit) {
-            toast.warning("Blackhole feeding is exhausted until tomorrow");
             return;
           }
-          handleTap();
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            handleTap();
+          }
         }}
       >
-        Feed
-      </button>
-    </section>
+        <div className="black-hole-card__shader-host" aria-hidden="true">
+          <BlackHoleShaderCanvas
+            className="black-hole-card__canvas"
+            blackholeTime={displayBlackholeTime}
+            tapBoostRef={tapBoostRef}
+          />
+        </div>
+        <div className="black-hole-card__content">
+          <div className="black-hole-card__header">
+            <h2 className="section-title-with-icon">
+              <Orbit size={18} aria-hidden="true" />
+              Black hole
+            </h2>
+            <button
+              type="button"
+              className="info-icon-button black-hole-card__info-button"
+              aria-label="How the black hole works"
+              title="How the black hole works"
+              onClick={(event) => {
+                event.stopPropagation();
+                setShowInfo(true);
+              }}
+            >
+              <CircleHelp size={15} aria-hidden="true" />
+            </button>
+          </div>
+          <p className="black-hole-card__blackhole-time">Blackhole time: {formatSeconds(displayBlackholeTime)}</p>
+          <p className="black-hole-card__dilation">Time dilation: {timeDilation.toFixed(1)}x</p>
+        </div>
+        <button
+          type="button"
+          className="black-hole-card__feed-button"
+          onClick={(event) => {
+            event.stopPropagation();
+            if (atDailyLimit) {
+              toast.warning("Blackhole feeding is exhausted until tomorrow");
+              return;
+            }
+            handleTap();
+          }}
+        >
+          Feed
+        </button>
+      </section>
+      <BlackHoleInfoOverlay open={showInfo} onClose={() => setShowInfo(false)} />
+    </>
   );
 }
