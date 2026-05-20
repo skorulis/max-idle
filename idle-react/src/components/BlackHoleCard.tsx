@@ -80,7 +80,7 @@ export function BlackHoleCard({
           handleTap();
         }}
       >
-        Feed time
+        Feed
       </button>
     </section>
   );
