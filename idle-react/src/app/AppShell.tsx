@@ -17,6 +17,7 @@ import { DebugPage } from "../pages/DebugPage";
 import { DailyBonusPage } from "../pages/DailyBonusPage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { ShopPage } from "../pages/ShopPage";
+import { ResearchPage } from "../pages/ResearchPage";
 import { TournamentPage } from "../pages/TournamentPage";
 import { SurveyPage } from "../pages/SurveyPage";
 import {
@@ -137,6 +138,9 @@ export function AppShell() {
     collectionHistoryLoading,
     tournamentHistory,
     tournamentHistoryLoading,
+    research,
+    researchLoading,
+    setResearch,
     clearRouteDataOnLogout
   } = useAppRouteDataLoaders({
     locationPathname: location.pathname,
@@ -663,6 +667,19 @@ export function AppShell() {
                 onPurchase={onPurchaseUpgrade}
                 onUpgradePlayerLevel={onUpgradePlayerLevel}
                 onNavigateHome={() => navigate("/")}
+              />
+            )}
+          />
+          <Route
+            path="/research"
+            element={requireAuthenticatedRoute(
+              <ResearchPage
+                token={token}
+                research={research}
+                researchLoading={researchLoading}
+                setResearch={setResearch}
+                hasError={error != null}
+                estimatedServerNowMs={estimatedServerNowMs}
               />
             )}
           />

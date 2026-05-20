@@ -1218,3 +1218,100 @@ input {
   letter-spacing: 0.05em;
   color: #374151;
 }
+
+.research-offline-status {
+  margin: 8px 0 16px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #6b7280;
+}
+
+.research-catalog-dialog {
+  max-height: min(80vh, 640px);
+  overflow-y: auto;
+}
+
+.research-progress {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 40px;
+  margin: 12px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+}
+
+.research-progress-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--accent, #6b9fff);
+  border-radius: inherit;
+  transition: width 0.25s linear;
+}
+
+.research-progress-label {
+  position: relative;
+  z-index: 1;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #111827;
+  text-shadow:
+    0 0 6px rgba(255, 255, 255, 0.95),
+    0 1px 2px rgba(255, 255, 255, 0.85);
+  pointer-events: none;
+  user-select: none;
+}
+
+.research-catalog {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+
+.research-catalog-item {
+  margin: 0;
+  width: 100%;
+  min-width: 0;
+}
+
+.research-catalog-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.research-catalog-row > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.research-catalog-row p {
+  margin: 0 0 4px;
+}
+
+.research-catalog-row .research-catalog-select-button {
+  width: auto;
+  margin-top: 0;
+  flex-shrink: 0;
+  font-size: 14px;
+  padding: 10px 14px;
+}

@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetAccountData, GetAccountErrors, GetAccountResponses, GetAchievementsData, GetAchievementsErrors, GetAchievementsResponses, GetHealthData, GetHealthResponses, GetHomeData, GetHomeErrors, GetHomeResponses, GetLeaderboardData, GetLeaderboardErrors, GetLeaderboardResponses, GetPlayerCollectionHistoryData, GetPlayerCollectionHistoryErrors, GetPlayerCollectionHistoryResponses, GetPlayerDailyBonusHistoryData, GetPlayerDailyBonusHistoryErrors, GetPlayerDailyBonusHistoryResponses, GetPlayerData, GetPlayerErrors, GetPlayerResponses, GetPlayersByIdData, GetPlayersByIdErrors, GetPlayersByIdResponses, GetSurveysActiveData, GetSurveysActiveErrors, GetSurveysActiveResponses, GetTournamentCurrentData, GetTournamentCurrentErrors, GetTournamentCurrentResponses, GetTournamentHistoryData, GetTournamentHistoryErrors, GetTournamentHistoryResponses, PostAccountUpgradeData, PostAccountUpgradeErrors, PostAccountUpgradeResponses, PostAccountUsernameData, PostAccountUsernameErrors, PostAccountUsernameResponses, PostAchievementsGrantData, PostAchievementsGrantErrors, PostAchievementsGrantResponses, PostAchievementsSeenData, PostAchievementsSeenErrors, PostAchievementsSeenResponses, PostAuthAnonymousData, PostAuthAnonymousErrors, PostAuthAnonymousResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutData, PostAuthLogoutResponses, PostAuthRegisterData, PostAuthRegisterErrors, PostAuthRegisterResponses, PostPlayerBlackholeFeedData, PostPlayerBlackholeFeedErrors, PostPlayerBlackholeFeedResponses, PostPlayerCollectData, PostPlayerCollectErrors, PostPlayerCollectResponses, PostPlayerDailyBonusCollectData, PostPlayerDailyBonusCollectErrors, PostPlayerDailyBonusCollectResponses, PostPlayerDailyRewardCollectData, PostPlayerDailyRewardCollectErrors, PostPlayerDailyRewardCollectResponses, PostPlayerTutorialCompleteData, PostPlayerTutorialCompleteErrors, PostPlayerTutorialCompleteResponses, PostPlayerTutorialResetData, PostPlayerTutorialResetErrors, PostPlayerTutorialResetResponses, PostShopPurchaseData, PostShopPurchaseErrors, PostShopPurchaseResponses, PostShopUpgradeLevelData, PostShopUpgradeLevelErrors, PostShopUpgradeLevelResponses, PostSurveysAnswerData, PostSurveysAnswerErrors, PostSurveysAnswerResponses, PostTournamentCollectRewardData, PostTournamentCollectRewardErrors, PostTournamentCollectRewardResponses, PostTournamentEnterData, PostTournamentEnterErrors, PostTournamentEnterResponses } from './types.gen';
+import type { GetAccountData, GetAccountErrors, GetAccountResponses, GetAchievementsData, GetAchievementsErrors, GetAchievementsResponses, GetHealthData, GetHealthResponses, GetHomeData, GetHomeErrors, GetHomeResponses, GetLeaderboardData, GetLeaderboardErrors, GetLeaderboardResponses, GetPlayerCollectionHistoryData, GetPlayerCollectionHistoryErrors, GetPlayerCollectionHistoryResponses, GetPlayerDailyBonusHistoryData, GetPlayerDailyBonusHistoryErrors, GetPlayerDailyBonusHistoryResponses, GetPlayerData, GetPlayerErrors, GetPlayerResponses, GetPlayersByIdData, GetPlayersByIdErrors, GetPlayersByIdResponses, GetResearchData, GetResearchErrors, GetResearchResponses, GetSurveysActiveData, GetSurveysActiveErrors, GetSurveysActiveResponses, GetTournamentCurrentData, GetTournamentCurrentErrors, GetTournamentCurrentResponses, GetTournamentHistoryData, GetTournamentHistoryErrors, GetTournamentHistoryResponses, PostAccountUpgradeData, PostAccountUpgradeErrors, PostAccountUpgradeResponses, PostAccountUsernameData, PostAccountUsernameErrors, PostAccountUsernameResponses, PostAchievementsGrantData, PostAchievementsGrantErrors, PostAchievementsGrantResponses, PostAchievementsSeenData, PostAchievementsSeenErrors, PostAchievementsSeenResponses, PostAuthAnonymousData, PostAuthAnonymousErrors, PostAuthAnonymousResponses, PostAuthLoginData, PostAuthLoginErrors, PostAuthLoginResponses, PostAuthLogoutData, PostAuthLogoutResponses, PostAuthRegisterData, PostAuthRegisterErrors, PostAuthRegisterResponses, PostPlayerCollectData, PostPlayerCollectErrors, PostPlayerCollectResponses, PostPlayerDailyBonusCollectData, PostPlayerDailyBonusCollectErrors, PostPlayerDailyBonusCollectResponses, PostPlayerDailyRewardCollectData, PostPlayerDailyRewardCollectErrors, PostPlayerDailyRewardCollectResponses, PostPlayerTutorialCompleteData, PostPlayerTutorialCompleteErrors, PostPlayerTutorialCompleteResponses, PostPlayerTutorialResetData, PostPlayerTutorialResetErrors, PostPlayerTutorialResetResponses, PostResearchChangeData, PostResearchChangeErrors, PostResearchChangeResponses, PostResearchStartData, PostResearchStartErrors, PostResearchStartResponses, PostResearchStopData, PostResearchStopErrors, PostResearchStopResponses, PostShopPurchaseData, PostShopPurchaseErrors, PostShopPurchaseResponses, PostShopUpgradeLevelData, PostShopUpgradeLevelErrors, PostShopUpgradeLevelResponses, PostSurveysAnswerData, PostSurveysAnswerErrors, PostSurveysAnswerResponses, PostTournamentCollectRewardData, PostTournamentCollectRewardErrors, PostTournamentCollectRewardResponses, PostTournamentEnterData, PostTournamentEnterErrors, PostTournamentEnterResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -144,23 +144,6 @@ export const postPlayerTutorialComplete = <ThrowOnError extends boolean = false>
             type: 'apiKey'
         }, { scheme: 'bearer', type: 'http' }],
     url: '/player/tutorial/complete',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
-});
-
-/**
- * Feed batched taps of time into the black hole
- */
-export const postPlayerBlackholeFeed = <ThrowOnError extends boolean = false>(options: Options<PostPlayerBlackholeFeedData, ThrowOnError>) => (options.client ?? client).post<PostPlayerBlackholeFeedResponses, PostPlayerBlackholeFeedErrors, ThrowOnError>({
-    security: [{
-            in: 'cookie',
-            name: 'better-auth.session_token',
-            type: 'apiKey'
-        }, { scheme: 'bearer', type: 'http' }],
-    url: '/player/blackhole/feed',
     ...options,
     headers: {
         'Content-Type': 'application/json',
@@ -409,4 +392,68 @@ export const postShopUpgradeLevel = <ThrowOnError extends boolean = false>(optio
         }, { scheme: 'bearer', type: 'http' }],
     url: '/shop/upgradeLevel',
     ...options
+});
+
+/**
+ * Get research state and reconcile completed levels
+ */
+export const getResearch = <ThrowOnError extends boolean = false>(options?: Options<GetResearchData, ThrowOnError>) => (options?.client ?? client).get<GetResearchResponses, GetResearchErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'better-auth.session_token',
+            type: 'apiKey'
+        }, { scheme: 'bearer', type: 'http' }],
+    url: '/research',
+    ...options
+});
+
+/**
+ * Start researching an item in a lab slot
+ */
+export const postResearchStart = <ThrowOnError extends boolean = false>(options: Options<PostResearchStartData, ThrowOnError>) => (options.client ?? client).post<PostResearchStartResponses, PostResearchStartErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'better-auth.session_token',
+            type: 'apiKey'
+        }, { scheme: 'bearer', type: 'http' }],
+    url: '/research/start',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Switch active research, refunding the current level cost and charging the new one
+ */
+export const postResearchChange = <ThrowOnError extends boolean = false>(options: Options<PostResearchChangeData, ThrowOnError>) => (options.client ?? client).post<PostResearchChangeResponses, PostResearchChangeErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'better-auth.session_token',
+            type: 'apiKey'
+        }, { scheme: 'bearer', type: 'http' }],
+    url: '/research/change',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Stop active research and refund the current level idle cost
+ */
+export const postResearchStop = <ThrowOnError extends boolean = false>(options: Options<PostResearchStopData, ThrowOnError>) => (options.client ?? client).post<PostResearchStopResponses, PostResearchStopErrors, ThrowOnError>({
+    security: [{
+            in: 'cookie',
+            name: 'better-auth.session_token',
+            type: 'apiKey'
+        }, { scheme: 'bearer', type: 'http' }],
+    url: '/research/stop',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });

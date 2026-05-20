@@ -27,6 +27,7 @@ import { registerPlayerCollectionHistoryRoutes } from "./routes/playerCollection
 import { registerHomeRoutes } from "./routes/home.js";
 import { registerSurveyRoutes } from "./routes/surveys.js";
 import { registerTournamentRoutes } from "./routes/tournament.js";
+import { registerResearchRoutes } from "./routes/research.js";
 import { registerNotificationRoutes } from "./routes/notifications.js";
 import type { ShopState } from "@maxidle/shared/shop";
 
@@ -480,6 +481,13 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
     toNumber,
     isProduction: config.isProduction,
     analytics
+  });
+
+  registerResearchRoutes({
+    app,
+    pool,
+    resolveIdentity: resolveIdentityForRequest,
+    toNumber
   });
 
   registerLeaderboardRoutes({

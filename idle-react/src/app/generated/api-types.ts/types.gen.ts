@@ -36,6 +36,7 @@ export type PlayerState = {
         collect_gem_time_boost?: number;
         worthwhile_achievements?: number;
         level_bonus?: number;
+        lab_slots?: number;
         [key: string]: unknown;
     };
     achievementCount: number;
@@ -54,9 +55,6 @@ export type PlayerState = {
     } | null;
     serverTime: string;
     tutorialProgress: string;
-    blackholeTime: number;
-    blackholeFeedsToday: number;
-    blackholeFeedsRemainingToday: number;
     obligationsCompleted: {
         [key: string]: boolean;
     };
@@ -65,10 +63,6 @@ export type PlayerState = {
 
 export type TutorialCompleteRequest = {
     tutorialId: string;
-};
-
-export type BlackholeFeedRequest = {
-    taps: number;
 };
 
 export type AccountResponse = {
@@ -315,6 +309,43 @@ export type EmailAuthRequest = {
 
 export type BetterAuthPassthrough = {
     [key: string]: unknown;
+};
+
+export type ResearchState = {
+    levels: {
+        [key: string]: number;
+    };
+    labs: Array<{
+        researchId: string | null;
+        startedAtMs: number | null;
+    }>;
+    progress: {
+        [key: string]: {
+            level: number;
+            elapsedMs: number;
+        };
+    };
+};
+
+export type ResearchResponse = {
+    research: ResearchState;
+    unlockedLabCount: number;
+    idleTimeAvailable: number;
+    serverTime: string;
+};
+
+export type ResearchStartRequest = {
+    labIndex: number;
+    researchId: string;
+};
+
+export type ResearchStopRequest = {
+    labIndex: number;
+};
+
+export type ResearchChangeRequest = {
+    labIndex: number;
+    researchId: string;
 };
 
 export type GetHealthData = {
@@ -614,39 +645,6 @@ export type PostPlayerTutorialCompleteResponses = {
 };
 
 export type PostPlayerTutorialCompleteResponse = PostPlayerTutorialCompleteResponses[keyof PostPlayerTutorialCompleteResponses];
-
-export type PostPlayerBlackholeFeedData = {
-    body: BlackholeFeedRequest;
-    path?: never;
-    query?: never;
-    url: '/player/blackhole/feed';
-};
-
-export type PostPlayerBlackholeFeedErrors = {
-    /**
-     * Invalid taps count
-     */
-    400: ErrorResponse;
-    /**
-     * Unauthorized
-     */
-    401: ErrorResponse;
-    /**
-     * Player not found
-     */
-    404: ErrorResponse;
-};
-
-export type PostPlayerBlackholeFeedError = PostPlayerBlackholeFeedErrors[keyof PostPlayerBlackholeFeedErrors];
-
-export type PostPlayerBlackholeFeedResponses = {
-    /**
-     * Updated player state
-     */
-    200: PlayerState;
-};
-
-export type PostPlayerBlackholeFeedResponse = PostPlayerBlackholeFeedResponses[keyof PostPlayerBlackholeFeedResponses];
 
 export type PostPlayerTutorialResetData = {
     body?: never;
@@ -1194,3 +1192,131 @@ export type PostShopUpgradeLevelResponses = {
 };
 
 export type PostShopUpgradeLevelResponse = PostShopUpgradeLevelResponses[keyof PostShopUpgradeLevelResponses];
+
+export type GetResearchData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/research';
+};
+
+export type GetResearchErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Player not found
+     */
+    404: ErrorResponse;
+};
+
+export type GetResearchError = GetResearchErrors[keyof GetResearchErrors];
+
+export type GetResearchResponses = {
+    /**
+     * Research state blob and player context
+     */
+    200: ResearchResponse;
+};
+
+export type GetResearchResponse = GetResearchResponses[keyof GetResearchResponses];
+
+export type PostResearchStartData = {
+    body: ResearchStartRequest;
+    path?: never;
+    query?: never;
+    url: '/research/start';
+};
+
+export type PostResearchStartErrors = {
+    /**
+     * Cannot start research
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Player not found
+     */
+    404: ErrorResponse;
+};
+
+export type PostResearchStartError = PostResearchStartErrors[keyof PostResearchStartErrors];
+
+export type PostResearchStartResponses = {
+    /**
+     * Updated research state
+     */
+    200: ResearchResponse;
+};
+
+export type PostResearchStartResponse = PostResearchStartResponses[keyof PostResearchStartResponses];
+
+export type PostResearchChangeData = {
+    body: ResearchChangeRequest;
+    path?: never;
+    query?: never;
+    url: '/research/change';
+};
+
+export type PostResearchChangeErrors = {
+    /**
+     * Cannot change research
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Player not found
+     */
+    404: ErrorResponse;
+};
+
+export type PostResearchChangeError = PostResearchChangeErrors[keyof PostResearchChangeErrors];
+
+export type PostResearchChangeResponses = {
+    /**
+     * Updated research state
+     */
+    200: ResearchResponse;
+};
+
+export type PostResearchChangeResponse = PostResearchChangeResponses[keyof PostResearchChangeResponses];
+
+export type PostResearchStopData = {
+    body: ResearchStopRequest;
+    path?: never;
+    query?: never;
+    url: '/research/stop';
+};
+
+export type PostResearchStopErrors = {
+    /**
+     * Cannot stop research
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: ErrorResponse;
+    /**
+     * Player not found
+     */
+    404: ErrorResponse;
+};
+
+export type PostResearchStopError = PostResearchStopErrors[keyof PostResearchStopErrors];
+
+export type PostResearchStopResponses = {
+    /**
+     * Updated research state
+     */
+    200: ResearchResponse;
+};
+
+export type PostResearchStopResponse = PostResearchStopResponses[keyof PostResearchStopResponses];

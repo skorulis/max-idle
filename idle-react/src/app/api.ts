@@ -10,6 +10,7 @@ import type {
   LeaderboardType,
   PlayerProfileResponse,
   PlayerResponse,
+  ResearchResponse,
   Survey,
   TournamentCollectRewardResponse,
   TournamentCurrentResponse,
@@ -945,6 +946,110 @@ export async function upsertPushSubscription(token: string | null, subscription:
   if (!response.ok) {
     throw new Error("Failed to save push subscription");
   }
+}
+
+export async function getResearch(token: string | null): Promise<ResearchResponse> {
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/research`, {
+    credentials: "include",
+    headers
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response));
+  }
+
+  return (await response.json()) as ResearchResponse;
+}
+
+export async function startResearch(
+  token: string | null,
+  labIndex: number,
+  researchId: string
+): Promise<ResearchResponse> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json"
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/research/start`, {
+    method: "POST",
+    credentials: "include",
+    headers,
+    body: JSON.stringify({ labIndex, researchId })
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response));
+  }
+
+  return (await response.json()) as ResearchResponse;
+}
+
+export async function changeResearch(
+  token: string | null,
+  labIndex: number,
+  researchId: string
+): Promise<ResearchResponse> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json"
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/research/change`, {
+    method: "POST",
+    credentials: "include",
+    headers,
+    body: JSON.stringify({ labIndex, researchId })
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response));
+  }
+
+  return (await response.json()) as ResearchResponse;
+}
+
+export async function stopResearch(token: string | null, labIndex: number): Promise<ResearchResponse> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json"
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/research/stop`, {
+    method: "POST",
+    credentials: "include",
+    headers,
+    body: JSON.stringify({ labIndex })
+  });
+
+  if (response.status === 401) {
+    throw new Error("UNAUTHORIZED");
+  }
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response));
+  }
+
+  return (await response.json()) as ResearchResponse;
 }
 
 export async function deletePushSubscription(token: string | null, endpoint: string): Promise<void> {

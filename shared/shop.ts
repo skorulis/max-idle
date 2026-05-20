@@ -12,6 +12,7 @@ import {
   STORAGE_EXTENSION_SHOP_UPGRADE,
   WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,
   LEVEL_BONUS_SHOP_UPGRADE,
+  LAB_SLOTS_SHOP_UPGRADE,
   SHOP_UPGRADES,
   SHOP_CURRENCY_TYPES,
   SHOP_UPGRADE_DESCRIPTION_VALUE_PLACEHOLDER,
@@ -47,6 +48,8 @@ export type ShopState = {
   quick_collector?: number;
   /** {@link SHOP_UPGRADE_IDS.INTEREST} — APR% for converting available real time into idle-time interest. */
   interest?: number;
+  /** {@link SHOP_UPGRADE_IDS.LAB_SLOTS} — number of unlocked research lab slots. */
+  lab_slots?: number;
   /**
    * UTC Unix timestamp in seconds for the last shop purchase paid with idle or real time.
    * Set by the server on those purchases only; gem-priced buys do not update this field.
@@ -73,12 +76,18 @@ export const DEFAULT_SHOP_STATE: ShopState = {
   [SHOP_UPGRADE_IDS.CONSOLIDATION]: 0,
   [SHOP_UPGRADE_IDS.QUICK_COLLECTOR]: 0,
   [SHOP_UPGRADE_IDS.INTEREST]: 0,
+  [SHOP_UPGRADE_IDS.LAB_SLOTS]: 0,
   idle_currency_spent: 0,
   real_currency_spent: 0
 };
 
 export function getDefaultShopState(): ShopState {
   return { ...DEFAULT_SHOP_STATE };
+}
+
+/** Number of research lab slots unlocked via {@link SHOP_UPGRADE_IDS.LAB_SLOTS}. */
+export function getUnlockedLabCount(shop: ShopState): number {
+  return LAB_SLOTS_SHOP_UPGRADE.currentLevel(shop);
 }
 
 export function withShopUpgradeLevel(shop: ShopState, upgradeId: ShopUpgradeId, level: number): ShopState {

@@ -1,3 +1,4 @@
+import type { ResearchState } from "@maxidle/shared/research";
 import type { ShopState } from "../shop";
 
 export type AuthResponse = {
@@ -72,6 +73,13 @@ export type PlayerResponse = {
   obligationsCompleted: Record<string, boolean>;
   /** Count of rows in `player_collection_history` (idle collects). */
   collectionCount: number;
+};
+
+export type ResearchResponse = {
+  research: ResearchState;
+  unlockedLabCount: number;
+  idleTimeAvailable: number;
+  serverTime: string;
 };
 
 export type LeaderboardEntry = {

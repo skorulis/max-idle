@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyLegacyShopUpgradeRefunds,
   getDefaultShopState,
+  getUnlockedLabCount,
   getLevelBonusIdleContribution,
   getRecordedShopCurrencySpent,
   getShopPurchaseRefundTotals,
@@ -144,5 +145,13 @@ describe("shop currency spent tracking", () => {
     });
     expect(shop.real_currency_spent).toBe(0);
     expect(shop.luck).toBe(0);
+  });
+});
+
+describe("getUnlockedLabCount", () => {
+  it("returns lab_slots shop level", () => {
+    expect(getUnlockedLabCount(getDefaultShopState())).toBe(0);
+    const shop = withShopUpgradeLevel(getDefaultShopState(), SHOP_UPGRADE_IDS.LAB_SLOTS, 2);
+    expect(getUnlockedLabCount(shop)).toBe(2);
   });
 });

@@ -64,7 +64,8 @@ const playerStateSchema = registry.register(
           .int()
           .min(0)
           .max(LEVEL_BONUS_SHOP_UPGRADE.maxLevel())
-          .optional()
+          .optional(),
+        lab_slots: z.number().int().min(0).max(2).optional()
       })
       .catchall(z.unknown()),
     achievementCount: z.number().int().nonnegative(),
@@ -1353,6 +1354,218 @@ registry.registerPath({
     },
     401: {
       description: "Unauthorized",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    }
+  }
+});
+
+const researchLabSlotStateSchema = z.object({
+  researchId: z.string().nullable(),
+  startedAtMs: z.number().int().nonnegative().nullable()
+});
+
+const researchProgressEntrySchema = z.object({
+  level: z.number().int().nonnegative(),
+  elapsedMs: z.number().int().nonnegative()
+});
+
+const researchStateSchema = registry.register(
+  "ResearchState",
+  z.object({
+    levels: z.record(z.string(), z.number().int().nonnegative()),
+    labs: z.array(researchLabSlotStateSchema),
+    progress: z.record(z.string(), researchProgressEntrySchema)
+  })
+);
+
+const researchResponseSchema = registry.register(
+  "ResearchResponse",
+  z.object({
+    research: researchStateSchema,
+    unlockedLabCount: z.number().int().min(0).max(2),
+    idleTimeAvailable: z.number().int().nonnegative(),
+    serverTime: z.string().datetime()
+  })
+);
+
+const researchStartRequestSchema = registry.register(
+  "ResearchStartRequest",
+  z.object({
+    labIndex: z.number().int().nonnegative(),
+    researchId: z.string().min(1)
+  })
+);
+
+const researchStopRequestSchema = registry.register(
+  "ResearchStopRequest",
+  z.object({
+    labIndex: z.number().int().nonnegative()
+  })
+);
+
+registry.registerPath({
+  method: "get",
+  path: "/research",
+  tags: ["Research"],
+  summary: "Get research state and reconcile completed levels",
+  security: authViaCookieOrBearer,
+  responses: {
+    200: {
+      description: "Research state blob and player context",
+      content: {
+        "application/json": { schema: researchResponseSchema }
+      }
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    },
+    404: {
+      description: "Player not found",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    }
+  }
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/research/start",
+  tags: ["Research"],
+  summary: "Start researching an item in a lab slot",
+  security: authViaCookieOrBearer,
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: researchStartRequestSchema
+        }
+      }
+    }
+  },
+  responses: {
+    200: {
+      description: "Updated research state",
+      content: {
+        "application/json": { schema: researchResponseSchema }
+      }
+    },
+    400: {
+      description: "Cannot start research",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    },
+    404: {
+      description: "Player not found",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    }
+  }
+});
+
+const researchChangeRequestSchema = registry.register(
+  "ResearchChangeRequest",
+  z.object({
+    labIndex: z.number().int().nonnegative(),
+    researchId: z.string().min(1)
+  })
+);
+
+registry.registerPath({
+  method: "post",
+  path: "/research/change",
+  tags: ["Research"],
+  summary: "Switch active research, refunding the current level cost and charging the new one",
+  security: authViaCookieOrBearer,
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: researchChangeRequestSchema
+        }
+      }
+    }
+  },
+  responses: {
+    200: {
+      description: "Updated research state",
+      content: {
+        "application/json": { schema: researchResponseSchema }
+      }
+    },
+    400: {
+      description: "Cannot change research",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    },
+    404: {
+      description: "Player not found",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    }
+  }
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/research/stop",
+  tags: ["Research"],
+  summary: "Stop active research and refund the current level idle cost",
+  security: authViaCookieOrBearer,
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: researchStopRequestSchema
+        }
+      }
+    }
+  },
+  responses: {
+    200: {
+      description: "Updated research state",
+      content: {
+        "application/json": { schema: researchResponseSchema }
+      }
+    },
+    400: {
+      description: "Cannot stop research",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    },
+    401: {
+      description: "Unauthorized",
+      content: {
+        "application/json": { schema: errorResponseSchema }
+      }
+    },
+    404: {
+      description: "Player not found",
       content: {
         "application/json": { schema: errorResponseSchema }
       }

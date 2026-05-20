@@ -54,6 +54,9 @@ CREATE TABLE IF NOT EXISTS player_states (
       obligations_completed,
       '$.* ? (@.type() != "boolean")'
     )
+  ),
+  research JSONB NOT NULL DEFAULT '{"levels":{}}'::jsonb CHECK (
+    jsonb_typeof(research) = 'object'
   )
 );
 

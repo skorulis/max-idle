@@ -52,6 +52,10 @@
       "types": "./dist/timeConstants.d.ts",
       "default": "./dist/timeConstants.js"
     },
+    "./formatSeconds": {
+      "types": "./dist/formatSeconds.d.ts",
+      "default": "./dist/formatSeconds.js"
+    },
     "./tutorialSteps": {
       "types": "./dist/tutorialSteps.d.ts",
       "default": "./dist/tutorialSteps.js"
@@ -71,6 +75,14 @@
     "./blackHole": {
       "types": "./dist/blackHole.d.ts",
       "default": "./dist/blackHole.js"
+    },
+    "./research": {
+      "types": "./dist/research.d.ts",
+      "default": "./dist/research.js"
+    },
+    "./researchItems": {
+      "types": "./dist/researchItems.d.ts",
+      "default": "./dist/researchItems.js"
     }
   }
 }

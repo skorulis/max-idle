@@ -56,7 +56,9 @@ export const SHOP_UPGRADE_IDS = {
    */
   QUICK_COLLECTOR: "quick_collector",
   /** APR% used to convert available real time into idle-time interest during idle accumulation. */
-  INTEREST: "interest"
+  INTEREST: "interest",
+  /** Gem upgrade: unlocks research lab slots (1 gem → 1 lab, 5 gems → 2 labs). */
+  LAB_SLOTS: "lab_slots"
 } as const;
 
 export type ShopUpgradeId = (typeof SHOP_UPGRADE_IDS)[keyof typeof SHOP_UPGRADE_IDS];
@@ -313,6 +315,19 @@ export const IDLE_REFUND_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade
   currencyType: SHOP_CURRENCY_TYPES.GEM
 });
 
+export const LAB_SLOTS_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
+  id: SHOP_UPGRADE_IDS.LAB_SLOTS,
+  name: "Research lab",
+  icon: "flask-conical",
+  category: "labs",
+  description: "Unlock a research lab slot",
+  longDescription:
+    "Spend time gems to unlock lab slots where you can research upgrades over real time using idle time.",
+  valueDescription: null,
+  levels: [{ cost: 1, value: 1 }, { cost: 5, value: 2 }],
+  currencyType: SHOP_CURRENCY_TYPES.GEM
+});
+
 export const REAL_REFUND_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade({
   id: SHOP_UPGRADE_IDS.REAL_REFUND,
   name: "Real refund",
@@ -530,6 +545,7 @@ export const SHOP_UPGRADES: ShopUpgradeDefinition[] = [
   CONSOLIDATION_SHOP_UPGRADE,
   EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
   COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
+  LAB_SLOTS_SHOP_UPGRADE,
   IDLE_REFUND_SHOP_UPGRADE,
   REAL_REFUND_SHOP_UPGRADE
 ];
@@ -546,6 +562,7 @@ export const SHOP_UPGRADES_BY_ID: Record<ShopUpgradeId, ShopUpgradeDefinition> =
   [SHOP_UPGRADE_IDS.LUCK]: LUCK_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.EXTRA_REALTIME_WAIT]: EXTRA_REALTIME_WAIT_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.COLLECT_GEM_TIME_BOOST]: COLLECT_GEM_TIME_BOOST_SHOP_UPGRADE,
+  [SHOP_UPGRADE_IDS.LAB_SLOTS]: LAB_SLOTS_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.IDLE_REFUND]: IDLE_REFUND_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.REAL_REFUND]: REAL_REFUND_SHOP_UPGRADE,
   [SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS]: WORTHWHILE_ACHIEVEMENTS_SHOP_UPGRADE,

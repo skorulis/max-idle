@@ -6,6 +6,7 @@ import {
   getDailyBonusHistory,
   getLeaderboard,
   getPublicPlayerProfile,
+  getResearch,
   getTournamentHistory,
   markAchievementsSeen
 } from "./api";
@@ -16,6 +17,7 @@ import type {
   LeaderboardResponse,
   LeaderboardType,
   PlayerProfileResponse,
+  ResearchResponse,
   SyncedPlayerState,
   TournamentHistoryItem
 } from "./types";
@@ -52,6 +54,8 @@ export function useAppRouteDataLoaders({
   const [collectionHistoryLoading, setCollectionHistoryLoading] = useState(false);
   const [tournamentHistory, setTournamentHistory] = useState<TournamentHistoryItem[]>([]);
   const [tournamentHistoryLoading, setTournamentHistoryLoading] = useState(false);
+  const [research, setResearch] = useState<ResearchResponse | null>(null);
+  const [researchLoading, setResearchLoading] = useState(false);
 
   const routePlayerId = useMemo(() => {
     if (!routePlayerIdParam) {
@@ -256,6 +260,41 @@ export function useAppRouteDataLoaders({
   }, [accountGameUserId, locationPathname, setError, token]);
 
   useEffect(() => {
+    if (locationPathname !== "/research") {
+      return;
+    }
+    let cancelled = false;
+    const loadResearch = async () => {
+      setResearchLoading(true);
+      setError(null);
+      try {
+        const nextResearch = await getResearch(token);
+        if (!cancelled) {
+          setResearch(nextResearch);
+        }
+      } catch (researchError) {
+        if (cancelled) {
+          return;
+        }
+        setResearch(null);
+        if (researchError instanceof Error && researchError.message === "UNAUTHORIZED") {
+          setError("Login or start idling to view research.");
+          return;
+        }
+        setError(researchError instanceof Error ? researchError.message : "Failed to load research.");
+      } finally {
+        if (!cancelled) {
+          setResearchLoading(false);
+        }
+      }
+    };
+    void loadResearch();
+    return () => {
+      cancelled = true;
+    };
+  }, [locationPathname, setError, token]);
+
+  useEffect(() => {
     if (locationPathname !== "/achievements" || !playerState?.hasUnseenAchievements) {
       return;
     }
@@ -339,9 +378,13 @@ export function useAppRouteDataLoaders({
     collectionHistoryLoading,
     tournamentHistory,
     tournamentHistoryLoading,
+    research,
+    researchLoading,
+    setResearch,
     clearRouteDataOnLogout: () => {
       setLeaderboard(null);
       setAchievements(null);
+      setResearch(null);
     }
   };
 }

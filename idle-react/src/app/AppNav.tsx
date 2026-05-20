@@ -1,4 +1,13 @@
-import { Bug, CircleHelp, CircleUserRound, Hourglass, Medal, ShoppingCart, Star } from "lucide-react";
+import {
+  Bug,
+  CircleHelp,
+  CircleUserRound,
+  FlaskConical,
+  Hourglass,
+  Medal,
+  ShoppingCart,
+  Star
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import GameIcon from "../GameIcon";
 
@@ -35,6 +44,9 @@ export function AppNav({
                 <span className="nav-icon-dot nav-icon-dot-accent" aria-label="Shop purchase available" role="status" />
               ) : null}
             </span>
+          </button>
+          <button type="button" className="link" aria-label="Research" onClick={() => navigate("/research")}>
+            <GameIcon icon={FlaskConical} />
           </button>
           <button type="button" className="link" onClick={() => navigate("/achievements")}>
             <span className="nav-icon-with-dot">

@@ -131,7 +131,12 @@
               "level_bonus": {
                 "type": "integer",
                 "minimum": 0,
-                "maximum": 9
+                "maximum": 19
+              },
+              "lab_slots": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2
               }
             },
             "required": [
@@ -220,20 +225,6 @@
           "tutorialProgress": {
             "type": "string"
           },
-          "blackholeTime": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "blackholeFeedsToday": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 60
-          },
-          "blackholeFeedsRemainingToday": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 60
-          },
           "obligationsCompleted": {
             "type": "object",
             "additionalProperties": {
@@ -264,9 +255,6 @@
           "dailyBonus",
           "serverTime",
           "tutorialProgress",
-          "blackholeTime",
-          "blackholeFeedsToday",
-          "blackholeFeedsRemainingToday",
           "obligationsCompleted",
           "collectionCount"
         ]
@@ -281,19 +269,6 @@
         },
         "required": [
           "tutorialId"
-        ]
-      },
-      "BlackholeFeedRequest": {
-        "type": "object",
-        "properties": {
-          "taps": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 500
-          }
-        },
-        "required": [
-          "taps"
         ]
       },
       "AccountResponse": {
@@ -1448,6 +1423,137 @@
         "additionalProperties": {
           "nullable": true
         }
+      },
+      "ResearchState": {
+        "type": "object",
+        "properties": {
+          "levels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "labs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "researchId": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "startedAtMs": {
+                  "type": "integer",
+                  "nullable": true,
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "researchId",
+                "startedAtMs"
+              ]
+            }
+          },
+          "progress": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "elapsedMs": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "level",
+                "elapsedMs"
+              ]
+            }
+          }
+        },
+        "required": [
+          "levels",
+          "labs",
+          "progress"
+        ]
+      },
+      "ResearchResponse": {
+        "type": "object",
+        "properties": {
+          "research": {
+            "$ref": "#/components/schemas/ResearchState"
+          },
+          "unlockedLabCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "idleTimeAvailable": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "serverTime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "research",
+          "unlockedLabCount",
+          "idleTimeAvailable",
+          "serverTime"
+        ]
+      },
+      "ResearchStartRequest": {
+        "type": "object",
+        "properties": {
+          "labIndex": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "researchId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "labIndex",
+          "researchId"
+        ]
+      },
+      "ResearchStopRequest": {
+        "type": "object",
+        "properties": {
+          "labIndex": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "labIndex"
+        ]
+      },
+      "ResearchChangeRequest": {
+        "type": "object",
+        "properties": {
+          "labIndex": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "researchId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "labIndex",
+          "researchId"
+        ]
       }
     },
     "parameters": {}
@@ -1948,74 +2054,6 @@
           },
           "400": {
             "description": "Invalid tutorial id or body",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Player not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/player/blackhole/feed": {
-      "post": {
-        "tags": [
-          "Player"
-        ],
-        "summary": "Feed batched taps of time into the black hole",
-        "security": [
-          {
-            "cookieAuth": []
-          },
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BlackholeFeedRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Updated player state",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PlayerState"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid taps count",
             "content": {
               "application/json": {
                 "schema": {
@@ -2956,6 +2994,258 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/research": {
+      "get": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Get research state and reconcile completed levels",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Research state blob and player context",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Player not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/research/start": {
+      "post": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Start researching an item in a lab slot",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResearchStartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated research state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot start research",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Player not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/research/change": {
+      "post": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Switch active research, refunding the current level cost and charging the new one",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResearchChangeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated research state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot change research",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Player not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/research/stop": {
+      "post": {
+        "tags": [
+          "Research"
+        ],
+        "summary": "Stop active research and refund the current level idle cost",
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResearchStopRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated research state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResearchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cannot stop research",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Player not found",
             "content": {
               "application/json": {
                 "schema": {
