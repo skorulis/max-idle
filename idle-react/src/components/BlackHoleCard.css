@@ -7,17 +7,17 @@
   border-color: #27272a;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
   min-height: 220px;
-  cursor: pointer;
-}
-
-.black-hole-card:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 2px;
 }
 
 .black-hole-card__shader-host {
   position: absolute;
   inset: 0;
+  cursor: pointer;
+}
+
+.black-hole-card__shader-host:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -2px;
 }
 
 .black-hole-card__canvas {
@@ -39,4 +39,34 @@
 
 .black-hole-card .section-title-with-icon svg {
   color: #fff;
+}
+
+.black-hole-card__dilation {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.black-hole-card__feed-button {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 14px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.black-hole-card__feed-button:hover {
+  background: rgba(0, 0, 0, 0.8);
+  border-color: rgba(255, 255, 255, 0.65);
+}
+
+.black-hole-card__feed-button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }

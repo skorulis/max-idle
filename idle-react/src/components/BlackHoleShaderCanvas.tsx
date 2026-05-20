@@ -28,6 +28,7 @@ const FS_SOURCE = `
     vec4 o_anim = vec4(0.0);
     float brightness = u_brightness;
     float brightness_inverse = 1.0 / brightness;
+    float spread = 0.9;
 
     // ---------------------------
     // Foreground (Animation) Layer
@@ -35,7 +36,7 @@ const FS_SOURCE = `
     {
       vec2 p_anim = (gl_FragCoord.xy * 2.0 - r) / r.y / 0.9;
       vec2 d = vec2(-1.0, 1.1);
-      float denom = 0.1 + 5.0 / dot(5.0 * p_anim - d, 5.0 * p_anim - d);
+      float denom = spread + 5.0 / dot(5.0 * p_anim - d, 5.0 * p_anim - d);
       vec2 c = p_anim * mat2(1.0, 1.0, d.x / denom, d.y / denom);
       vec2 v = c;
       // Apply a time-varying transformation:
