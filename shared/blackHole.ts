@@ -11,7 +11,7 @@ export const BLACKHOLE_FEED_SECONDS_PER_TAP = SECONDS_PER_MINUTE;
 export const MAX_BLACKHOLE_FEED_TAPS_PER_REQUEST = 500;
 
 /** Max feed taps per UTC calendar day. */
-export const BLACKHOLE_DAILY_FEED_LIMIT = 60;
+export const BLACKHOLE_DAILY_FEED_LIMIT = 10;
 
 /** UTC midnight for the calendar day containing `date` (ms since epoch). */
 export function getUtcDayStartMs(date: Date | number): number {

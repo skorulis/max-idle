@@ -54,7 +54,11 @@ export function BlackHoleCard({
       }}
     >
       <div className="black-hole-card__shader-host" aria-hidden="true">
-        <BlackHoleShaderCanvas className="black-hole-card__canvas" tapBoostRef={tapBoostRef} />
+        <BlackHoleShaderCanvas
+          className="black-hole-card__canvas"
+          blackholeTime={displayBlackholeTime}
+          tapBoostRef={tapBoostRef}
+        />
       </div>
       <div className="black-hole-card__content">
         <h2 className="section-title-with-icon">

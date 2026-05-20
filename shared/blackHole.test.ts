@@ -42,9 +42,9 @@ describe("getBlackholeFeedsToday", () => {
 
   it("returns stored count for the current UTC day", () => {
     const todayStart = new Date(getUtcDayStartMs(Date.UTC(2026, 4, 20, 15)));
-    expect(getBlackholeFeedsToday(12, todayStart, Date.UTC(2026, 4, 20, 23))).toBe(12);
-    expect(getBlackholeFeedsRemainingToday(12, todayStart, Date.UTC(2026, 4, 20, 23))).toBe(
-      BLACKHOLE_DAILY_FEED_LIMIT - 12
+    expect(getBlackholeFeedsToday(8, todayStart, Date.UTC(2026, 4, 20, 23))).toBe(8);
+    expect(getBlackholeFeedsRemainingToday(8, todayStart, Date.UTC(2026, 4, 20, 23))).toBe(
+      BLACKHOLE_DAILY_FEED_LIMIT - 8
     );
   });
 });

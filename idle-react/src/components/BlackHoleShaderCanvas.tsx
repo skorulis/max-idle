@@ -1,6 +1,5 @@
 import { useEffect, useRef, type MutableRefObject } from "react";
 
-const BASE_BRIGHTNESS = 2;
 const TAP_BOOST_DECAY_PER_SECOND = 0.5;
 
 const VS_SOURCE = `
@@ -28,7 +27,7 @@ const FS_SOURCE = `
     vec4 o_anim = vec4(0.0);
     float brightness = u_brightness;
     float brightness_inverse = 1.0 / brightness;
-    float spread = 0.9;
+    float spread = 0.2;
 
     // ---------------------------
     // Foreground (Animation) Layer
@@ -105,12 +104,19 @@ function createProgram(gl: WebGLRenderingContext, vsSource: string, fsSource: st
 
 export type BlackHoleShaderCanvasProps = {
   className?: string;
-  /** 0–1 tap impulse; canvas decays this each frame and maps it to brightness above BASE_BRIGHTNESS. */
+  /** Blackhole time in seconds; base brightness is this / 3600. */
+  blackholeTime: number;
+  /** 0–1 tap impulse; canvas decays this each frame and adds on top of base brightness. */
   tapBoostRef: MutableRefObject<number>;
 };
 
-export function BlackHoleShaderCanvas({ className, tapBoostRef }: BlackHoleShaderCanvasProps) {
+export function BlackHoleShaderCanvas({ className, blackholeTime, tapBoostRef }: BlackHoleShaderCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const blackholeTimeRef = useRef(blackholeTime);
+
+  useEffect(() => {
+    blackholeTimeRef.current = blackholeTime;
+  }, [blackholeTime]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -183,7 +189,7 @@ export function BlackHoleShaderCanvas({ className, tapBoostRef }: BlackHoleShade
       }
 
       const elapsed = reducedMotionQuery.matches ? 0 : (now - startTime) / 1000;
-      const brightness = BASE_BRIGHTNESS + tapBoostRef.current * 6;
+      const brightness = 2 + blackholeTimeRef.current / 3600 + tapBoostRef.current * 6;
       gl.uniform1f(timeLocation, elapsed);
       gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
       gl.uniform1f(brightnessLocation, brightness);

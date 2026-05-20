@@ -1052,7 +1052,7 @@ describe("player routes", () => {
     expect(after.body.blackholeFeedsRemainingToday).toBe(BLACKHOLE_DAILY_FEED_LIMIT - 3);
   });
 
-  it("blackhole feed: enforces daily feed limit of 60 taps per UTC day", async () => {
+  it("blackhole feed: enforces daily feed limit of 10 taps per UTC day", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
     expect(authResponse.status).toBe(201);
