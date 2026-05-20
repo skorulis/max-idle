@@ -9,6 +9,9 @@ import { grantAchievement } from "./achievementUpdates.js";
 import { generateAnonymousUsername, isUsernameTakenError } from "./username.js";
 import { DEFAULT_SHOP_STATE } from "@maxidle/shared/shop";
 
+const SESSION_EXPIRES_IN_SECONDS = 60 * 60 * 24 * 90;
+const SESSION_UPDATE_AGE_SECONDS = 60 * 60 * 24;
+
 function buildSocialProviders(config: AppConfig) {
   const providers: Record<string, { clientId: string; clientSecret: string }> = {};
 
@@ -38,7 +41,11 @@ export function createBetterAuth(pool: Pool, config: AppConfig) {
     emailAndPassword: {
       enabled: true
     },
-    socialProviders: buildSocialProviders(config)
+    socialProviders: buildSocialProviders(config),
+    session: {
+      expiresIn: SESSION_EXPIRES_IN_SECONDS,
+      updateAge: SESSION_UPDATE_AGE_SECONDS
+    }
   });
 }
 
