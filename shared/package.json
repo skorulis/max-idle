@@ -67,6 +67,10 @@
     "./playerLevelCosts": {
       "types": "./dist/playerLevelCosts.d.ts",
       "default": "./dist/playerLevelCosts.js"
+    },
+    "./blackHole": {
+      "types": "./dist/blackHole.d.ts",
+      "default": "./dist/blackHole.js"
     }
   }
 }

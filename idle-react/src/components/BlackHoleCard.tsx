@@ -1,4 +1,5 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
+import { getBlackHoleTimeDilation } from "@maxidle/shared/blackHole";
 import { Orbit } from "lucide-react";
 import { formatSeconds } from "../formatSeconds";
 import { BlackHoleShaderCanvas } from "./BlackHoleShaderCanvas";
@@ -10,6 +11,7 @@ type BlackHoleCardProps = {
 
 export function BlackHoleCard({ blackholeTime }: BlackHoleCardProps) {
   const tapBoostRef = useRef(0);
+  const timeDilation = useMemo(() => getBlackHoleTimeDilation(blackholeTime), [blackholeTime]);
 
   const handleTap = useCallback(() => {
     tapBoostRef.current = 1;
@@ -38,7 +40,7 @@ export function BlackHoleCard({ blackholeTime }: BlackHoleCardProps) {
           Black hole
         </h2>
         <p className="black-hole-card__blackhole-time">Blackhole time: {formatSeconds(blackholeTime)}</p>
-        <p className="black-hole-card__dilation">Time dilation: 1.0x</p>
+        <p className="black-hole-card__dilation">Time dilation: {timeDilation.toFixed(1)}x</p>
       </div>
       <button
         type="button"
