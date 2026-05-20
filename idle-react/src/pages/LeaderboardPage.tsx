@@ -20,6 +20,10 @@ function leaderboardShareText(
       const duration = formatSeconds(currentPlayer.totalIdleSeconds);
       return `${rankPhrase} after collecting ${duration} of idle time`;
     }
+    case "collected_real": {
+      const duration = formatSeconds(currentPlayer.totalIdleSeconds);
+      return `${rankPhrase} after collecting ${duration} of real time`;
+    }
     case "current": {
       const duration = formatSeconds(currentPlayer.totalIdleSeconds);
       return `${rankPhrase} patiently holding ${duration} of idle time`;
@@ -64,31 +68,43 @@ export function LeaderboardPage({
           Start your idle journey
         </button>
       ) : null}
-      <div className="leaderboard-type-toggle">
-        <button
-          type="button"
-          className={`secondary${leaderboardType === "current" ? " leaderboard-type-active" : ""}`}
-          onClick={() => onTypeChange("current")}
-          disabled={leaderboardLoading}
-        >
-          Current idle
-        </button>
-        <button
-          type="button"
-          className={`secondary${leaderboardType === "collected" ? " leaderboard-type-active" : ""}`}
-          onClick={() => onTypeChange("collected")}
-          disabled={leaderboardLoading}
-        >
-          Collected
-        </button>
-        <button
-          type="button"
-          className={`secondary${leaderboardType === "time_gems" ? " leaderboard-type-active" : ""}`}
-          onClick={() => onTypeChange("time_gems")}
-          disabled={leaderboardLoading}
-        >
-          Time gems
-        </button>
+      <div className="leaderboard-type-toggles">
+        <div className="leaderboard-type-toggle">
+          <button
+            type="button"
+            className={`secondary${leaderboardType === "current" ? " leaderboard-type-active" : ""}`}
+            onClick={() => onTypeChange("current")}
+            disabled={leaderboardLoading}
+          >
+            Current idle
+          </button>
+          <button
+            type="button"
+            className={`secondary${leaderboardType === "collected" ? " leaderboard-type-active" : ""}`}
+            onClick={() => onTypeChange("collected")}
+            disabled={leaderboardLoading}
+          >
+            Collected idle
+          </button>
+          <button
+            type="button"
+            className={`secondary${leaderboardType === "time_gems" ? " leaderboard-type-active" : ""}`}
+            onClick={() => onTypeChange("time_gems")}
+            disabled={leaderboardLoading}
+          >
+            Time gems
+          </button>
+        </div>
+        <div className="leaderboard-type-toggle">
+          <button
+            type="button"
+            className={`secondary${leaderboardType === "collected_real" ? " leaderboard-type-active" : ""}`}
+            onClick={() => onTypeChange("collected_real")}
+            disabled={leaderboardLoading}
+          >
+            Collected real
+          </button>
+        </div>
       </div>
       {leaderboardLoading ? <p>Loading leaderboard...</p> : null}
       {!leaderboardLoading && leaderboard ? (

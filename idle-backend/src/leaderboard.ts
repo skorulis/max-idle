@@ -24,7 +24,12 @@ export function registerLeaderboardRoutes({
     try {
       const requestedType = String(req.query.type ?? "current").toLowerCase();
       const leaderboardType =
-        requestedType === "collected" || requestedType === "current" || requestedType === "time_gems" ? requestedType : null;
+        requestedType === "collected" ||
+        requestedType === "collected_real" ||
+        requestedType === "current" ||
+        requestedType === "time_gems"
+          ? requestedType
+          : null;
       if (!leaderboardType) {
         res.status(400).json({ error: "Invalid leaderboard type" });
         return;
@@ -33,9 +38,11 @@ export function registerLeaderboardRoutes({
       const metricExpression =
         leaderboardType === "collected"
           ? "ps.idle_time_total"
-          : leaderboardType === "time_gems"
-            ? "ps.time_gems_total"
-            : "ps.current_seconds";
+          : leaderboardType === "collected_real"
+            ? "ps.real_time_total"
+            : leaderboardType === "time_gems"
+              ? "ps.time_gems_total"
+              : "ps.current_seconds";
 
       let identity: LeaderboardRouteIdentity | null = null;
       try {

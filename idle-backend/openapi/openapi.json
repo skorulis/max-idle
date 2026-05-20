@@ -538,6 +538,7 @@
             "enum": [
               "current",
               "collected",
+              "collected_real",
               "time_gems"
             ]
           },
@@ -2712,6 +2713,7 @@
               "enum": [
                 "current",
                 "collected",
+                "collected_real",
                 "time_gems"
               ]
             },

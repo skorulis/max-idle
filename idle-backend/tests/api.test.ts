@@ -380,6 +380,35 @@ describe("auth + player lifecycle", () => {
     }
   });
 
+  it("returns leaderboard ordered by real_time_total when type is collected_real", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+
+    await pool.query(`UPDATE player_states SET real_time_total = $2 WHERE user_id = $1`, [userId, 999]);
+    const midId = await insertLeaderboardPlayer(0, 0);
+    await pool.query(`UPDATE player_states SET real_time_total = $2 WHERE user_id = $1`, [midId, 400]);
+    const lowId = await insertLeaderboardPlayer(0, 0);
+    await pool.query(`UPDATE player_states SET real_time_total = $2 WHERE user_id = $1`, [lowId, 100]);
+
+    const leaderboardResponse = await request(app)
+      .get("/leaderboard")
+      .query({ type: "collected_real" })
+      .set("Authorization", `Bearer ${token}`);
+    expect(leaderboardResponse.status).toBe(200);
+    expect(leaderboardResponse.body.type).toBe("collected_real");
+    expect(leaderboardResponse.body.entries[0].userId).toBe(userId);
+    expect(leaderboardResponse.body.entries[0].totalIdleSeconds).toBe(999);
+    expect(leaderboardResponse.body.entries[1].totalIdleSeconds).toBe(400);
+    expect(leaderboardResponse.body.entries[2].totalIdleSeconds).toBe(100);
+    for (let i = 1; i < leaderboardResponse.body.entries.length; i += 1) {
+      expect(leaderboardResponse.body.entries[i - 1].totalIdleSeconds).toBeGreaterThanOrEqual(
+        leaderboardResponse.body.entries[i].totalIdleSeconds
+      );
+    }
+  });
+
   it("returns public player profile by id", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
