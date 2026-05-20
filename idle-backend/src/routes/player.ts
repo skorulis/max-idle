@@ -251,7 +251,7 @@ export async function buildPlayerStatePayload(
     currentSecondsLastUpdated: row.server_time.toISOString(),
     lastCollectedAt: row.last_collected_at.toISOString(),
     lastDailyRewardCollectedAt: row.last_daily_reward_collected_at?.toISOString() ?? null,
-    dailyBonus: toDailyBonusResponse(dailyBonus, row.last_daily_bonus_claimed_at),
+    dailyBonus: toDailyBonusResponse(dailyBonus, row.last_daily_bonus_claimed_at, research),
     serverTime: row.server_time.toISOString(),
     tutorialProgress: row.tutorial_progress ?? "",
     blackholeTime: toNumber(row.blackhole_time),
@@ -578,6 +578,7 @@ export function registerPlayerRoutes({
         obligations_completed: unknown;
         level: number;
         blackhole_time: number;
+        research: unknown;
       }>(
         `
         SELECT
@@ -596,7 +597,8 @@ export function registerPlayerRoutes({
           tutorial_progress,
           obligations_completed,
           level,
-          blackhole_time
+          blackhole_time,
+          research
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -825,7 +827,11 @@ export function registerPlayerRoutes({
         currentSecondsLastUpdated: row.current_seconds_last_updated.toISOString(),
         lastCollectedAt: row.last_collected_at.toISOString(),
         lastDailyRewardCollectedAt: row.last_daily_reward_collected_at?.toISOString() ?? null,
-        dailyBonus: toDailyBonusResponse(currentDailyBonus, lockedRow.last_daily_bonus_claimed_at),
+        dailyBonus: toDailyBonusResponse(
+          currentDailyBonus,
+          lockedRow.last_daily_bonus_claimed_at,
+          parsePlayerResearch(lockedRow)
+        ),
         serverTime: row.last_collected_at.toISOString(),
         tutorialProgress: lockedRow.tutorial_progress ?? "",
         obligationsCompleted: parseObligationsCompleted(lockedRow.obligations_completed),
@@ -1008,6 +1014,7 @@ export function registerPlayerRoutes({
         tutorial_progress: string;
         obligations_completed: unknown;
         blackhole_time: number;
+        research: unknown;
       }>(
         `
         SELECT
@@ -1029,7 +1036,8 @@ export function registerPlayerRoutes({
           last_daily_bonus_claimed_at,
           tutorial_progress,
           obligations_completed,
-          blackhole_time
+          blackhole_time,
+          research
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -1043,6 +1051,7 @@ export function registerPlayerRoutes({
         return;
       }
 
+      const playerResearch = parsePlayerResearch(player);
       const now = new Date();
       const currentDailyBonus = await getOrCreateCurrentDailyBonus(client, now);
       const dailyBonusEffectActive = isDailyBonusEffectActiveForUtcDay(
@@ -1202,7 +1211,7 @@ export function registerPlayerRoutes({
         currentSecondsLastUpdated: updatedPlayer.current_seconds_last_updated.toISOString(),
         lastCollectedAt: updatedPlayer.last_collected_at.toISOString(),
         lastDailyRewardCollectedAt: updatedPlayer.last_daily_reward_collected_at?.toISOString() ?? null,
-        dailyBonus: toDailyBonusResponse(currentDailyBonus, updatedPlayer.last_daily_bonus_claimed_at),
+        dailyBonus: toDailyBonusResponse(currentDailyBonus, updatedPlayer.last_daily_bonus_claimed_at, playerResearch),
         serverTime: now.toISOString(),
         tutorialProgress: updatedPlayer.tutorial_progress ?? "",
         obligationsCompleted: parseObligationsCompleted(updatedPlayer.obligations_completed),

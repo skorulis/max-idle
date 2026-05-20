@@ -48,6 +48,7 @@ import type { AnalyticsService } from "./analytics.js";
 import { getOrCreateCurrentDailyBonus, toDailyBonusResponse } from "./routes/dailyBonus.js";
 import { parseObligationsCompleted } from "./obligationsState.js";
 import { getPlayerCollectionCount } from "./playerCollectionCount.js";
+import { parseResearchState } from "./researchState.js";
 
 export {
   getDefaultShopState,
@@ -146,6 +147,7 @@ export function registerShopRoutes({
         tutorial_progress: string;
         level: string;
         blackhole_time: number;
+        research: unknown;
       }>(
         `
         SELECT
@@ -166,7 +168,8 @@ export function registerShopRoutes({
           last_daily_reward_collected_at,
           tutorial_progress,
           level,
-          blackhole_time
+          blackhole_time,
+          research
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -181,6 +184,7 @@ export function registerShopRoutes({
         return;
       }
 
+      const purchaseResearch = parseResearchState(row.research, row.shop);
       const legacyRefund = applyLegacyShopUpgradeRefunds(row.shop);
       const shopState = legacyRefund.shop;
       const idleTimeAvailable = toNumber(row.idle_time_available) + legacyRefund.idleRefund;
@@ -433,7 +437,11 @@ export function registerShopRoutes({
         currentSecondsLastUpdated: updated.current_seconds_last_updated.toISOString(),
         lastCollectedAt: updated.last_collected_at.toISOString(),
         lastDailyRewardCollectedAt: updated.last_daily_reward_collected_at?.toISOString() ?? null,
-        dailyBonus: toDailyBonusResponse(currentDailyBonusAfterPurchase, updated.last_daily_bonus_claimed_at),
+        dailyBonus: toDailyBonusResponse(
+          currentDailyBonusAfterPurchase,
+          updated.last_daily_bonus_claimed_at,
+          purchaseResearch
+        ),
         serverTime: now.toISOString(),
         tutorialProgress: updated.tutorial_progress ?? "",
         obligationsCompleted: parseObligationsCompleted(updated.obligations_completed),
@@ -478,6 +486,7 @@ export function registerShopRoutes({
         last_daily_reward_collected_at: Date | null;
         tutorial_progress: string;
         blackhole_time: number;
+        research: unknown;
       }>(
         `
         SELECT
@@ -498,7 +507,8 @@ export function registerShopRoutes({
           last_collected_at,
           last_daily_reward_collected_at,
           tutorial_progress,
-          blackhole_time
+          blackhole_time,
+          research
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -513,6 +523,7 @@ export function registerShopRoutes({
         return;
       }
 
+      const levelUpgradeResearch = parseResearchState(row.research, row.shop);
       const currentLevel = Math.floor(toNumber(row.level));
       const cost = getPlayerLevelUpgradeCostFromLevel(currentLevel);
       if (!cost) {
@@ -664,7 +675,11 @@ export function registerShopRoutes({
         currentSecondsLastUpdated: updated.current_seconds_last_updated.toISOString(),
         lastCollectedAt: updated.last_collected_at.toISOString(),
         lastDailyRewardCollectedAt: updated.last_daily_reward_collected_at?.toISOString() ?? null,
-        dailyBonus: toDailyBonusResponse(currentDailyBonusAfter, updated.last_daily_bonus_claimed_at),
+        dailyBonus: toDailyBonusResponse(
+          currentDailyBonusAfter,
+          updated.last_daily_bonus_claimed_at,
+          levelUpgradeResearch
+        ),
         serverTime: now.toISOString(),
         tutorialProgress: updated.tutorial_progress ?? "",
         obligationsCompleted: parseObligationsCompleted(updated.obligations_completed),

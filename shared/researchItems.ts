@@ -18,7 +18,8 @@ export type ResearchItemDefinition = {
 
 export const RESEARCH_ITEM_IDS = {
   BLACK_HOLE_DAILY_FEEDS: "research_black_hole_daily_feeds",
-  BLACK_HOLE_FEED_AMOUNT: "research_black_hole_feed_amount"
+  BLACK_HOLE_FEED_AMOUNT: "research_black_hole_feed_amount",
+  DAILY_BONUS_ACTIVATION_COST: "research_daily_bonus_activation_cost"
 } as const;
 
 export type ResearchItemId = (typeof RESEARCH_ITEM_IDS)[keyof typeof RESEARCH_ITEM_IDS];
@@ -49,9 +50,23 @@ export const RESEARCH_BLACK_HOLE_FEED_AMOUNT: ResearchItemDefinition = {
   growthFactor: 1.15
 };
 
+/** Idle seconds required to activate the daily bonus (24h at level 0, −30m per level). */
+export const RESEARCH_DAILY_BONUS_ACTIVATION_COST: ResearchItemDefinition = {
+  id: RESEARCH_ITEM_IDS.DAILY_BONUS_ACTIVATION_COST,
+  name: "Daily bonus activation cost",
+  maximumLevel: 40,
+  zeroLevelBonus: 24 * SECONDS_PER_HOUR,
+  bonusPerLevel: -30 * SECONDS_PER_MINUTE,
+  format: (value) => `${formatSeconds(Math.round(value), 2, "floor")}`,
+  baseTimeCost: 25 * SECONDS_PER_MINUTE,
+  baseDuration: 10 * SECONDS_PER_MINUTE,
+  growthFactor: 1.15
+};
+
 export const RESEARCH_ITEMS: ResearchItemDefinition[] = [
   RESEARCH_BLACK_HOLE_DAILY_FEEDS,
-  RESEARCH_BLACK_HOLE_FEED_AMOUNT
+  RESEARCH_BLACK_HOLE_FEED_AMOUNT,
+  RESEARCH_DAILY_BONUS_ACTIVATION_COST
 ];
 
 export const RESEARCH_ITEMS_BY_ID: Record<string, ResearchItemDefinition> = Object.fromEntries(

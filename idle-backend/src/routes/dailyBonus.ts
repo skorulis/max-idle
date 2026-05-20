@@ -1,7 +1,8 @@
 import express from "express";
 import type { Pool, PoolClient } from "pg";
 import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
-import { DAILY_BONUS_ACTIVATION_IDLE_SECONDS } from "@maxidle/shared/dailyBonus";
+import { getDailyBonusActivationCostIdleSeconds } from "@maxidle/shared/dailyBonus";
+import type { ResearchState } from "@maxidle/shared/research";
 import {
   getSecondsMultiplier,
   getWorthwhileAchievementsMultiplier
@@ -20,6 +21,7 @@ import type { AuthClaims } from "../types.js";
 import type { AnalyticsService } from "../analytics.js";
 import { parseObligationsCompleted } from "../obligationsState.js";
 import { getPlayerCollectionCount } from "../playerCollectionCount.js";
+import { parseResearchState } from "../researchState.js";
 
 /** Types that can be chosen by {@link rollDailyBonus} (excludes legacy types no longer rolled). */
 const DAILY_BONUS_ROLL_TYPES = [
@@ -157,7 +159,8 @@ export async function getOrCreateCurrentDailyBonus(queryable: Queryable, now: Da
 
 export function toDailyBonusResponse(
   bonus: DailyBonusRow,
-  lastDailyBonusClaimedAt: Date | null
+  lastDailyBonusClaimedAt: Date | null,
+  research: ResearchState
 ): DailyBonusResponse {
   return {
     type: bonus.bonus_type,
@@ -165,7 +168,7 @@ export function toDailyBonusResponse(
     date: bonus.bonus_date_utc.toISOString(),
     isCollectable: true,
     isClaimed: lastDailyBonusClaimedAt !== null && lastDailyBonusClaimedAt.getTime() >= bonus.bonus_date_utc.getTime(),
-    activationCostIdleSeconds: DAILY_BONUS_ACTIVATION_IDLE_SECONDS
+    activationCostIdleSeconds: getDailyBonusActivationCostIdleSeconds(research)
   };
 }
 
@@ -257,6 +260,7 @@ export function registerDailyBonusRoutes({
         tutorial_progress: string;
         obligations_completed: unknown;
         blackhole_time: number;
+        research: unknown;
       }>(
         `
         SELECT
@@ -279,7 +283,8 @@ export function registerDailyBonusRoutes({
           daily_bonuses_collected_count,
           tutorial_progress,
           obligations_completed,
-          blackhole_time
+          blackhole_time,
+          research
         FROM player_states
         WHERE user_id = $1
         FOR UPDATE
@@ -314,7 +319,8 @@ export function registerDailyBonusRoutes({
         return;
       }
 
-      const activationCost = DAILY_BONUS_ACTIVATION_IDLE_SECONDS;
+      const research = parseResearchState(player.research, player.shop);
+      const activationCost = getDailyBonusActivationCostIdleSeconds(research);
       if (toNumber(player.idle_time_available) < activationCost) {
         await client.query("ROLLBACK");
         res.status(400).json({
@@ -476,7 +482,7 @@ export function registerDailyBonusRoutes({
         currentSecondsLastUpdated: updatedPlayer.current_seconds_last_updated.toISOString(),
         lastCollectedAt: updatedPlayer.last_collected_at.toISOString(),
         lastDailyRewardCollectedAt: updatedPlayer.last_daily_reward_collected_at?.toISOString() ?? null,
-        dailyBonus: toDailyBonusResponse(currentDailyBonus, updatedPlayer.last_daily_bonus_claimed_at),
+        dailyBonus: toDailyBonusResponse(currentDailyBonus, updatedPlayer.last_daily_bonus_claimed_at, research),
         serverTime: now.toISOString(),
         tutorialProgress: updatedPlayer.tutorial_progress ?? "",
         obligationsCompleted: parseObligationsCompleted(updatedPlayer.obligations_completed),
