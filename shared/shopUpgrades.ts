@@ -390,17 +390,28 @@ export const LEVEL_BONUS_SHOP_UPGRADE: ShopUpgradeDefinition = defineShopUpgrade
   longDescription:
     "Each tier increases how much idle bonus you earn per player level. Raise your player level and purchase tiers here to compound idle income.",
   valueDescription: "%s per player level",
-  zeroLevel: { cost: 0, value: 0.1 },
+  zeroLevel: { cost: 0, value: 0.05 },
   levels: [
+    { cost: 1, value: 0.1 },
+    { cost: 1, value: 0.15 },
     { cost: 1, value: 0.2 },
+    { cost: 1, value: 0.25 },
     { cost: 1, value: 0.3 },
+    { cost: 1, value: 0.35 },
     { cost: 1, value: 0.4 },
+    { cost: 1, value: 0.45 },
     { cost: 1, value: 0.5 },
+    { cost: 1, value: 0.55 },
     { cost: 1, value: 0.6 },
+    { cost: 1, value: 0.65 },
     { cost: 1, value: 0.7 },
+    { cost: 1, value: 0.75 },
     { cost: 1, value: 0.8 },
+    { cost: 1, value: 0.85 },
     { cost: 1, value: 0.9 },
+    { cost: 1, value: 0.95 },
     { cost: 1, value: 1.0 },
+
   ],
   currencyType: SHOP_CURRENCY_TYPES.IDLE
 });

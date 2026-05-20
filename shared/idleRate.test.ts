@@ -251,7 +251,7 @@ describe("getEffectiveIdleSecondsRate", () => {
       playerLevel: 10,
       realTimeAvailable: 0
     });
-    expect(withBonus - base).toBeCloseTo(1, 10);
+    expect(withBonus - base).toBeCloseTo(0.5, 10);
   });
 });
 

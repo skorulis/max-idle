@@ -215,7 +215,7 @@ export function ShopPage({
   }
 
   const syncedPlayer = playerState;
-  const showPlayerLevelPanel = isLevelUpgradesUnlocked(syncedPlayer.obligationsCompleted);
+  const levelUpgradesUnlocked = isLevelUpgradesUnlocked(syncedPlayer.obligationsCompleted);
 
   const nextLevelCost = getPlayerLevelUpgradeCostFromLevel(syncedPlayer.level);
   const maxPlayerLevel = getMaxPlayerLevel();
@@ -231,7 +231,11 @@ export function ShopPage({
   const idlePurchasedLevels = getPurchasedShopUpgradeLevelCount(syncedPlayer.shop, SHOP_CURRENCY_TYPES.IDLE);
   const realPurchasedLevels = getPurchasedShopUpgradeLevelCount(syncedPlayer.shop, SHOP_CURRENCY_TYPES.REAL);
 
-  const visibleUpgrades = SHOP_UPGRADES.filter((upgrade) => upgrade.currencyType === selectedCurrencyType);
+  const visibleUpgrades = SHOP_UPGRADES.filter(
+    (upgrade) =>
+      upgrade.currencyType === selectedCurrencyType &&
+      (levelUpgradesUnlocked || upgrade.id !== SHOP_UPGRADE_IDS.LEVEL_BONUS)
+  );
   const visibleUpgradeGroups = groupVisibleShopUpgradesByCategory(visibleUpgrades);
   function getValueDescriptionParts(
     upgrade: ShopUpgradeDefinition,
@@ -394,7 +398,7 @@ export function ShopPage({
 
   return (
     <>
-      {showPlayerLevelPanel ? (
+      {levelUpgradesUnlocked ? (
         <section className="card">
           <h2>Player level</h2>
           <div className="shop-player-level-body">

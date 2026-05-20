@@ -78,19 +78,19 @@ describe("getWorthwhileAchievementsMultiplier", () => {
 });
 
 describe("getLevelBonusIdleContribution", () => {
-  it("returns 0 when Level bonus has no tier purchased", () => {
+  it("returns 0.5 when Level bonus has no tier purchased", () => {
     const shop = getDefaultShopState();
-    expect(getLevelBonusIdleContribution(shop, 10)).toBe(1);
+    expect(getLevelBonusIdleContribution(shop, 10)).toBe(0.5);
   });
 
   it("returns bonus per level × player level for tier ≥ 1", () => {
     const shop = withShopUpgradeLevel(getDefaultShopState(), SHOP_UPGRADE_IDS.LEVEL_BONUS, 1);
-    expect(getLevelBonusIdleContribution(shop, 5)).toBeCloseTo(1.0, 10);
+    expect(getLevelBonusIdleContribution(shop, 5)).toBeCloseTo(0.5, 10);
   });
 
   it("floors fractional player levels", () => {
     const shop = withShopUpgradeLevel(getDefaultShopState(), SHOP_UPGRADE_IDS.LEVEL_BONUS, 1);
-    expect(getLevelBonusIdleContribution(shop, 5.9)).toBeCloseTo(1.0, 10);
+    expect(getLevelBonusIdleContribution(shop, 5.9)).toBeCloseTo(0.5, 10);
   });
 });
 
