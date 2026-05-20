@@ -29,7 +29,10 @@ import {
 import { getPlayerLevelUpgradeCostFromLevel } from "@maxidle/shared/playerLevelCosts";
 import { safeNaturalNumber } from "@maxidle/shared/safeNumber";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
-import { effectiveIdleSecondsRateFromPlayerRow } from "./currentSecondsRefresh.js";
+import {
+  effectiveIdleSecondsRateFromPlayerRow,
+  type PlayerCurrentSecondsSourceRow
+} from "./currentSecondsRefresh.js";
 import {
   getAchievementLevelForValue,
   isAchievementMaxed,
@@ -741,11 +744,11 @@ export function registerShopRoutes({
       }
 
       const now = new Date();
-      const gemRateRow = {
+      const gemRateRow: PlayerCurrentSecondsSourceRow = {
         last_collected_at: row.last_collected_at,
         shop: row.shop,
-        achievement_count: row.achievement_count,
-        real_time_available: row.real_time_available,
+        achievement_count: toNumber(row.achievement_count),
+        real_time_available: toNumber(row.real_time_available),
         level: row.level,
         blackhole_time: row.blackhole_time,
         server_time: now
