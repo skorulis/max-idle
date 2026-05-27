@@ -32,9 +32,9 @@ export const RESEARCH_BLACK_HOLE_DAILY_FEEDS: ResearchItemDefinition = {
   zeroLevelBonus: 10,
   bonusPerLevel: 1,
   format: (value) => `${Math.round(value)}`,
-  baseTimeCost: 20 * SECONDS_PER_MINUTE,
-  baseDuration: 8 * SECONDS_PER_MINUTE,
-  growthFactor: 1.15
+  baseTimeCost: 1 * SECONDS_PER_HOUR,
+  baseDuration: 2 * SECONDS_PER_HOUR,
+  growthFactor: 2.3
 };
 
 /** Idle seconds added to the black hole each time you feed it (+60s per level after the base). */
@@ -45,9 +45,9 @@ export const RESEARCH_BLACK_HOLE_FEED_AMOUNT: ResearchItemDefinition = {
   zeroLevelBonus: 60,
   bonusPerLevel: 60,
   format: (value) => `${formatSeconds(Math.round(value), 2, "floor")}`,
-  baseTimeCost: 25 * SECONDS_PER_MINUTE,
-  baseDuration: 10 * SECONDS_PER_MINUTE,
-  growthFactor: 1.15
+  baseTimeCost: 1 * SECONDS_PER_HOUR,
+  baseDuration: 2 * SECONDS_PER_HOUR,
+  growthFactor: 2.3
 };
 
 /** Idle seconds required to activate the daily bonus (24h at level 0, −30m per level). */
@@ -58,9 +58,9 @@ export const RESEARCH_DAILY_BONUS_ACTIVATION_COST: ResearchItemDefinition = {
   zeroLevelBonus: 24 * SECONDS_PER_HOUR,
   bonusPerLevel: -30 * SECONDS_PER_MINUTE,
   format: (value) => `${formatSeconds(Math.round(value), 2, "floor")}`,
-  baseTimeCost: 25 * SECONDS_PER_MINUTE,
-  baseDuration: 10 * SECONDS_PER_MINUTE,
-  growthFactor: 1.15
+  baseTimeCost: 1 * SECONDS_PER_HOUR,
+  baseDuration: 4 * SECONDS_PER_HOUR,
+  growthFactor: 1.5
 };
 
 export const RESEARCH_ITEMS: ResearchItemDefinition[] = [

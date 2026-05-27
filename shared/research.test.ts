@@ -15,8 +15,10 @@ import {
 import {
   RESEARCH_BLACK_HOLE_DAILY_FEEDS,
   RESEARCH_BLACK_HOLE_FEED_AMOUNT,
+  RESEARCH_DAILY_BONUS_ACTIVATION_COST,
   RESEARCH_ITEM_IDS
 } from "./researchItems.js";
+import { SECONDS_PER_HOUR, SECONDS_PER_MINUTE } from "./timeConstants.js";
 
 describe("formatResearchEffectProgression", () => {
   it("shows current and next formatted values when not at max", () => {
@@ -32,6 +34,22 @@ describe("formatResearchEffectProgression", () => {
   it("formats black hole feed amount with duration units", () => {
     expect(formatResearchEffectProgression(RESEARCH_BLACK_HOLE_FEED_AMOUNT, 0)).toBe("1m -> 2m");
   });
+
+  it("formats daily bonus activation cost with duration units", () => {
+    expect(formatResearchEffectProgression(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 0)).toBe(
+      "1d -> 23h 30m"
+    );
+  });
+
+  it("shows penultimate and final values one level below max", () => {
+    expect(formatResearchEffectProgression(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 39)).toBe(
+      "4h 30m -> 4h"
+    );
+  });
+
+  it("shows a single value at max level for daily bonus activation cost", () => {
+    expect(formatResearchEffectProgression(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 40)).toBe("4h");
+  });
 });
 
 describe("getResearchTimeCost", () => {
@@ -43,51 +61,98 @@ describe("getResearchTimeCost", () => {
       Math.floor(RESEARCH_BLACK_HOLE_DAILY_FEEDS.baseTimeCost * RESEARCH_BLACK_HOLE_DAILY_FEEDS.growthFactor)
     );
   });
+
+  it("scales daily bonus activation cost with its growth factor", () => {
+    expect(getResearchTimeCost(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 0)).toBe(
+      Math.floor(RESEARCH_DAILY_BONUS_ACTIVATION_COST.baseTimeCost)
+    );
+    expect(getResearchTimeCost(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 1)).toBe(
+      Math.floor(
+        RESEARCH_DAILY_BONUS_ACTIVATION_COST.baseTimeCost *
+          RESEARCH_DAILY_BONUS_ACTIVATION_COST.growthFactor
+      )
+    );
+  });
 });
 
 describe("getResearchDurationSeconds", () => {
-  describe("Black hole daily feeds (8m base, ×1.15 per level)", () => {
-    it("level 0 → 1 takes 480s (8m)", () => {
-      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 0)).toBe(480);
+  describe("Black hole daily feeds (2h base, ×2.3 per level)", () => {
+    it("level 0 → 1 takes 7200s (2h)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 0)).toBe(7200);
     });
 
-    it("level 1 → 2 takes 552s (9m 12s)", () => {
-      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 1)).toBe(552);
+    it("level 1 → 2 takes 16560s (4h 36m)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 1)).toBe(16560);
     });
 
-    it("level 3 → 4 takes 730s (12m 10s)", () => {
-      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 3)).toBe(730);
+    it("level 3 → 4 takes 87602s (1d 20m)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 3)).toBe(87602);
     });
 
-    it("level 5 → 6 takes 965s (16m 5s)", () => {
-      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 5)).toBe(965);
+    it("level 5 → 6 takes 463416s (5d 8h 43m)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 5)).toBe(463416);
     });
 
-    it("level 9 → 10 takes 1688s (28m 8s)", () => {
-      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 9)).toBe(1688);
+    it("level 9 → 10 takes 12968299s (~150d)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 9)).toBe(12968299);
     });
   });
 
-  describe("Black hole feed amount (10m base, ×1.15 per level)", () => {
-    it("level 0 → 1 takes 600s (10m)", () => {
-      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_FEED_AMOUNT, 0)).toBe(600);
+  describe("Black hole feed amount (2h base, ×2.3 per level)", () => {
+    it("level 0 → 1 takes 7200s (2h)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_FEED_AMOUNT, 0)).toBe(7200);
     });
 
-    it("level 1 → 2 takes 690s (11m 30s)", () => {
-      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_FEED_AMOUNT, 1)).toBe(690);
+    it("level 1 → 2 takes 16560s (4h 36m)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_FEED_AMOUNT, 1)).toBe(16560);
     });
 
-    it("level 3 → 4 takes 912s (15m 12s)", () => {
-      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_FEED_AMOUNT, 3)).toBe(912);
+    it("level 3 → 4 takes 87602s (1d 20m)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_FEED_AMOUNT, 3)).toBe(87602);
     });
 
-    it("level 5 → 6 takes 1206s (20m 6s)", () => {
-      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_FEED_AMOUNT, 5)).toBe(1206);
+    it("level 5 → 6 takes 463416s (5d 8h 43m)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_FEED_AMOUNT, 5)).toBe(463416);
     });
 
-    it("level 9 → 10 takes 2110s (35m 10s)", () => {
-      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_FEED_AMOUNT, 9)).toBe(2110);
+    it("level 9 → 10 takes 12968299s (~150d)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_BLACK_HOLE_FEED_AMOUNT, 9)).toBe(12968299);
     });
+  });
+
+  describe("Daily bonus activation cost (4h base, ×1.5 per level)", () => {
+    it("level 0 → 1 takes 14400s (4h)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 0)).toBe(14400);
+    });
+
+    it("level 1 → 2 takes 21600s (6h)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 1)).toBe(21600);
+    });
+
+    it("level 3 → 4 takes 48600s (13h 30m)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 3)).toBe(48600);
+    });
+
+    it("level 5 → 6 takes 109350s (30h 22m 30s)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 5)).toBe(109350);
+    });
+
+    it("level 9 → 10 takes 553584s (~6d 9h 46m)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 9)).toBe(553584);
+    });
+  });
+});
+
+describe("RESEARCH_DAILY_BONUS_ACTIVATION_COST definition", () => {
+  it("reduces activation idle cost by 30 minutes per level from 24h at level 0", () => {
+    const def = RESEARCH_DAILY_BONUS_ACTIVATION_COST;
+    expect(def.zeroLevelBonus).toBe(24 * SECONDS_PER_HOUR);
+    expect(def.bonusPerLevel).toBe(-30 * SECONDS_PER_MINUTE);
+    expect(def.zeroLevelBonus + def.bonusPerLevel * 40).toBe(4 * SECONDS_PER_HOUR);
+  });
+
+  it("allows up to 40 levels", () => {
+    expect(RESEARCH_DAILY_BONUS_ACTIVATION_COST.maximumLevel).toBe(40);
   });
 });
 
