@@ -120,25 +120,33 @@ describe("getResearchDurationSeconds", () => {
     });
   });
 
-  describe("Daily bonus activation cost (4h base, ×1.5 per level)", () => {
+  describe("Daily bonus activation cost (4h base, ×1.25 per level)", () => {
     it("level 0 → 1 takes 14400s (4h)", () => {
       expect(getResearchDurationSeconds(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 0)).toBe(14400);
     });
 
-    it("level 1 → 2 takes 21600s (6h)", () => {
-      expect(getResearchDurationSeconds(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 1)).toBe(21600);
+    it("level 1 → 2 takes 18000s (5h)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 1)).toBe(18000);
     });
 
-    it("level 3 → 4 takes 48600s (13h 30m)", () => {
-      expect(getResearchDurationSeconds(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 3)).toBe(48600);
+    it("level 3 → 4 takes 28125s (7h 48m 45s)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 3)).toBe(28125);
     });
 
-    it("level 5 → 6 takes 109350s (30h 22m 30s)", () => {
-      expect(getResearchDurationSeconds(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 5)).toBe(109350);
+    it("level 5 → 6 takes 43945s (12h 12m 25s)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 5)).toBe(43945);
     });
 
-    it("level 9 → 10 takes 553584s (~6d 9h 46m)", () => {
-      expect(getResearchDurationSeconds(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 9)).toBe(553584);
+    it("level 19 → 20 takes 999200s (~11d)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 19)).toBe(999200);
+    });
+
+    it("level 29 → 30 takes 9305781s (~107d)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 29)).toBe(9305781);
+    });
+
+    it("level 39 → 40 takes 86666847s (~1003d)", () => {
+      expect(getResearchDurationSeconds(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 39)).toBe(86666847);
     });
   });
 });

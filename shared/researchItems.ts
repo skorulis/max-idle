@@ -60,7 +60,7 @@ export const RESEARCH_DAILY_BONUS_ACTIVATION_COST: ResearchItemDefinition = {
   format: (value) => `${formatSeconds(Math.round(value), 2, "floor")}`,
   baseTimeCost: 1 * SECONDS_PER_HOUR,
   baseDuration: 4 * SECONDS_PER_HOUR,
-  growthFactor: 1.5
+  growthFactor: 1.25
 };
 
 export const RESEARCH_ITEMS: ResearchItemDefinition[] = [
