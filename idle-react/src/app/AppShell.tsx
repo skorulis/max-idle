@@ -304,7 +304,8 @@ export function AppShell() {
       achievementCount: playerState.achievementCount,
       playerLevel: playerState.level,
       realTimeAvailable: playerState.realTime.available,
-      wallClockMs: estimatedServerNowMs
+      wallClockMs: estimatedServerNowMs,
+      blackholeTimeSeconds: playerState.blackholeTime
     });
   }, [estimatedServerNowMs, playerState]);
 
