@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "print-scaling": "npm run build && node ../scripts/print-research-scaling.mjs"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
