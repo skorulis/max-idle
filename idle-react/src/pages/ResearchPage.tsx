@@ -144,6 +144,11 @@ export function ResearchPage({
         <p className="subtle">
           Available idle time: {formatSeconds(research.idleTimeAvailable, 2, "floor")}
         </p>
+        {labSpeedMultiplier !== 1 ? (
+          <p className="subtle">
+            Lab speed multiplier: {labSpeedMultiplier}
+          </p>
+        ) : null}
         {actionError ? <p className="message-copy">{actionError}</p> : null}
       </section>
 
