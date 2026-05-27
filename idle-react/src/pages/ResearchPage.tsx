@@ -1,14 +1,12 @@
-import { Atom, FlaskConical } from "lucide-react";
+import { FlaskConical } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   formatResearchEffectProgression,
-  getResearchDurationSeconds,
   getResearchLevel,
   getResearchProgress,
   getResearchRemainingSeconds,
-  getResearchTimeCost,
-  isResearchAtMaxLevel
+  getResearchTimeCost
 } from "@maxidle/shared/research";
 import { getResearchItemDefinition, type ResearchItemDefinition } from "@maxidle/shared/researchItems";
 import { labSpeedMultiplier } from "../app/labSpeed";
@@ -166,11 +164,6 @@ export function ResearchPage({
             def != null && isActive
               ? getLiveProgress(def, currentLevel, slot.startedAtMs, estimatedServerNowMs)
               : null;
-          const atMax = def != null && isResearchAtMaxLevel(def, currentLevel);
-          const nextLevelCost =
-            def != null && !atMax ? getResearchTimeCost(def, currentLevel) : null;
-          const nextLevelDuration =
-            def != null && !atMax ? getResearchDurationSeconds(def, currentLevel) : null;
 
           return (
             <section className="card" key={labIndex}>
@@ -206,38 +199,6 @@ export function ResearchPage({
                   >
                     Change research
                   </button>
-                </>
-              ) : def && !isActive ? (
-                <>
-                  <p>
-                    <strong>{def.name}</strong> — level {currentLevel}/{def.maximumLevel}
-                  </p>
-                  <p className="subtle">
-                    {formatResearchEffectProgression(def, currentLevel)}
-                  </p>
-                  {atMax ? (
-                    <p className="subtle">This research is complete.</p>
-                  ) : (
-                    <>
-                      <p className="subtle">
-                        Next level costs{" "}
-                        <Atom size={14} aria-hidden="true" />{" "}
-                        {formatSeconds(nextLevelCost ?? 0, 2, "floor")} and takes{" "}
-                        {formatSeconds(nextLevelDuration ?? 0, 2, "floor")}.
-                      </p>
-                      <button
-                        type="button"
-                        className="collect"
-                        disabled={isPending}
-                        onClick={() =>
-                          slot.researchId != null &&
-                          void handleSelectResearch(labIndex, slot.researchId)
-                        }
-                      >
-                        Start research
-                      </button>
-                    </>
-                  )}
                 </>
               ) : (
                 <>
