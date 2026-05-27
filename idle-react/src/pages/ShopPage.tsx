@@ -8,6 +8,7 @@ import {
   Plus,
 } from "lucide-react";
 import { Fragment, useState } from "react";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { FEATURE_FLAGS } from "@maxidle/shared/featureFlags";
 import { isLevelUpgradesUnlocked } from "@maxidle/shared/obligations";
 import { getMaxPlayerLevel, getPlayerLevelUpgradeCostFromLevel } from "@maxidle/shared/playerLevelCosts";
@@ -33,6 +34,7 @@ import {
 } from "../shop";
 import GameIcon from "../GameIcon";
 import { getLucidIcon } from "../getLucidIcon";
+import { parseShopCurrencyPathSegment, shopPathForCurrency } from "../shopPaths";
 import { ShopUpgradeInfoOverlay } from "./ShopUpgradeInfoOverlay";
 
 type ShopPageProps = {
@@ -201,8 +203,14 @@ export function ShopPage({
   onUpgradePlayerLevel,
   onNavigateHome
 }: ShopPageProps) {
-  const [selectedCurrencyType, setSelectedCurrencyType] = useState<ShopCurrencyType>(SHOP_CURRENCY_TYPES.IDLE);
+  const navigate = useNavigate();
+  const { currency: currencySegment } = useParams();
+  const selectedCurrencyType = parseShopCurrencyPathSegment(currencySegment);
   const [selectedUpgradeForInfo, setSelectedUpgradeForInfo] = useState<ShopUpgradeDefinition | null>(null);
+
+  if (!selectedCurrencyType) {
+    return <Navigate to={shopPathForCurrency(SHOP_CURRENCY_TYPES.IDLE)} replace />;
+  }
 
   if (!playerState) {
     return (
@@ -442,7 +450,7 @@ export function ShopPage({
             className={`shop-currency-card shop-currency-button${
               selectedCurrencyType === SHOP_CURRENCY_TYPES.IDLE ? " shop-currency-card-active" : ""
             }`}
-            onClick={() => setSelectedCurrencyType(SHOP_CURRENCY_TYPES.IDLE)}
+            onClick={() => navigate(shopPathForCurrency(SHOP_CURRENCY_TYPES.IDLE))}
             aria-pressed={selectedCurrencyType === SHOP_CURRENCY_TYPES.IDLE}
           >
             <p className="shop-currency-title">
@@ -459,7 +467,7 @@ export function ShopPage({
             className={`shop-currency-card shop-currency-button${
               selectedCurrencyType === SHOP_CURRENCY_TYPES.REAL ? " shop-currency-card-active" : ""
             }`}
-            onClick={() => setSelectedCurrencyType(SHOP_CURRENCY_TYPES.REAL)}
+            onClick={() => navigate(shopPathForCurrency(SHOP_CURRENCY_TYPES.REAL))}
             aria-pressed={selectedCurrencyType === SHOP_CURRENCY_TYPES.REAL}
           >
             <p className="shop-currency-title">
@@ -476,7 +484,7 @@ export function ShopPage({
             className={`shop-currency-card shop-currency-button${
               selectedCurrencyType === SHOP_CURRENCY_TYPES.GEM ? " shop-currency-card-active" : ""
             }`}
-            onClick={() => setSelectedCurrencyType(SHOP_CURRENCY_TYPES.GEM)}
+            onClick={() => navigate(shopPathForCurrency(SHOP_CURRENCY_TYPES.GEM))}
             aria-pressed={selectedCurrencyType === SHOP_CURRENCY_TYPES.GEM}
           >
             <p className="shop-currency-title">

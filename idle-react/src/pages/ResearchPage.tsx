@@ -13,6 +13,8 @@ import { labSpeedMultiplier } from "../app/labSpeed";
 import type { ResearchResponse } from "../app/types";
 import { changeResearch, startResearch } from "../app/api";
 import { formatSeconds } from "../formatSeconds";
+import { shopPathForCurrency } from "../shopPaths";
+import { SHOP_CURRENCY_TYPES } from "../shopUpgrades";
 import GameIcon from "../GameIcon";
 import { ResearchCatalogOverlay } from "./ResearchCatalogOverlay";
 import { useResearchLabCompletion } from "./useResearchLabCompletion";
@@ -148,7 +150,11 @@ export function ResearchPage({
       {research.unlockedLabCount === 0 ? (
         <section className="card">
           <p className="subtle">Unlock a research lab from the shop to begin researching upgrades.</p>
-          <button type="button" className="secondary" onClick={() => navigate("/shop")}>
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => navigate(shopPathForCurrency(SHOP_CURRENCY_TYPES.GEM))}
+          >
             Go to shop
           </button>
         </section>

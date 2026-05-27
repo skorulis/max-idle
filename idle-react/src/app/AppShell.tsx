@@ -659,8 +659,9 @@ export function AppShell() {
               />
             )}
           />
+          <Route path="/shop" element={<Navigate to="/shop/idle" replace />} />
           <Route
-            path="/shop"
+            path="/shop/:currency"
             element={requireAuthenticatedRoute(
               <ShopPage
                 playerState={playerState}
