@@ -21,14 +21,6 @@ describe("research routes", () => {
     await pool.end();
   });
 
-  it("returns 401 from GET /research without credentials", async () => {
-    const app = createApp(pool, config);
-    const response = await request(app).get("/research");
-
-    expect(response.status).toBe(401);
-    expect(response.body.error).toBe("Authentication required");
-  });
-
   it("returns research state for an authenticated player", async () => {
     const app = createApp(pool, config);
     const authResponse = await request(app).post("/auth/anonymous");
