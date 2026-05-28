@@ -56,7 +56,7 @@ function ResearchProgressBar({
   label: string;
 }) {
   const pct = Math.min(100, Math.max(0, fraction * 100));
-  const remainingLabel = formatSeconds(remainingSeconds, 2, "ceil");
+  const remainingLabel = formatSeconds(remainingSeconds, undefined, "ceil");
 
   return (
     <div
@@ -133,6 +133,16 @@ export function ResearchPage({
   }
 
   const researchState = research.research;
+  const blockedResearchIds =
+    catalogOverlayLabIndex == null
+      ? new Set<string>()
+      : new Set(
+          researchState.labs
+            .map((slot, index) =>
+              index !== catalogOverlayLabIndex && slot.startedAtMs != null ? slot.researchId : null
+            )
+            .filter((researchId): researchId is string => researchId != null)
+        );
 
   return (
     <>
@@ -251,6 +261,7 @@ export function ResearchPage({
             getResearchTimeCost(currentDef, getResearchLevel(researchState, overlaySlot.researchId))
           );
         })()}
+        blockedResearchIds={blockedResearchIds}
         excludeResearchId={
           catalogOverlayLabIndex != null &&
           researchState.labs[catalogOverlayLabIndex]?.startedAtMs != null

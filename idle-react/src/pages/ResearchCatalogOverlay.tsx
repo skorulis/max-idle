@@ -16,6 +16,7 @@ type ResearchCatalogOverlayProps = {
   labIndex: number | null;
   researchState: ResearchState;
   idleTimeAvailable: number;
+  blockedResearchIds?: Set<string>;
   excludeResearchId?: string | null;
   isChangingActive?: boolean;
   isPending: boolean;
@@ -26,6 +27,7 @@ type ResearchCatalogOverlayProps = {
 type CatalogPickerProps = {
   researchState: ResearchState;
   idleTimeAvailable: number;
+  blockedResearchIds?: Set<string>;
   excludeResearchId?: string | null;
   isPending: boolean;
   onSelect: (researchId: string) => void;
@@ -34,6 +36,7 @@ type CatalogPickerProps = {
 function CatalogPicker({
   researchState,
   idleTimeAvailable,
+  blockedResearchIds,
   excludeResearchId,
   isPending,
   onSelect
@@ -46,6 +49,7 @@ function CatalogPicker({
         const cost = atMax ? null : getResearchTimeCost(def, level);
         const duration = atMax ? null : getResearchDurationSeconds(def, level);
         const isCurrent = def.id === excludeResearchId;
+        const isBlockedByOtherLab = blockedResearchIds?.has(def.id) ?? false;
         const canAfford = cost != null && idleTimeAvailable >= cost;
 
         return (
@@ -59,6 +63,7 @@ function CatalogPicker({
               duration={duration}
               atMax={atMax}
               isCurrent={isCurrent}
+              isBlockedByOtherLab={isBlockedByOtherLab}
               canAfford={canAfford}
               isPending={isPending}
               onSelect={() => onSelect(def.id)}
@@ -79,6 +84,7 @@ function ResearchCatalogRow({
   duration,
   atMax,
   isCurrent,
+  isBlockedByOtherLab,
   canAfford,
   isPending,
   onSelect
@@ -91,6 +97,7 @@ function ResearchCatalogRow({
   duration: number | null;
   atMax: boolean;
   isCurrent: boolean;
+  isBlockedByOtherLab: boolean;
   canAfford: boolean;
   isPending: boolean;
   onSelect: () => void;
@@ -113,11 +120,13 @@ function ResearchCatalogRow({
         <span className="subtle">Complete</span>
       ) : isCurrent ? (
         <span className="subtle">Current</span>
+      ) : isBlockedByOtherLab ? (
+        <span className="subtle">In progress</span>
       ) : (
         <button
           type="button"
           className={`secondary research-catalog-select-button${canAfford ? " shop-upgrade-buy-button-purchasable" : ""}`}
-          disabled={!canAfford || isPending}
+          disabled={!canAfford || isPending || isBlockedByOtherLab}
           onClick={onSelect}
         >
           Research
@@ -132,6 +141,7 @@ export function ResearchCatalogOverlay({
   labIndex,
   researchState,
   idleTimeAvailable,
+  blockedResearchIds,
   excludeResearchId,
   isChangingActive = false,
   isPending,
@@ -179,6 +189,7 @@ export function ResearchCatalogOverlay({
         <CatalogPicker
           researchState={researchState}
           idleTimeAvailable={idleTimeAvailable}
+          blockedResearchIds={blockedResearchIds}
           excludeResearchId={excludeResearchId}
           isPending={isPending}
           onSelect={onSelect}

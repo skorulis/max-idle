@@ -354,6 +354,29 @@ describe("startResearch", () => {
       expect(result.code).toBe("INSUFFICIENT_IDLE_TIME");
     }
   });
+
+  it("rejects when another lab is already actively researching the same item", () => {
+    const cost = getResearchTimeCost(RESEARCH_BLACK_HOLE_DAILY_FEEDS, 0);
+    const result = startResearch({
+      research: {
+        levels: {},
+        labs: [
+          { researchId: RESEARCH_ITEM_IDS.BLACK_HOLE_DAILY_FEEDS, startedAtMs: 1000 },
+          { researchId: null, startedAtMs: null }
+        ],
+        progress: {}
+      },
+      labIndex: 1,
+      researchId: RESEARCH_ITEM_IDS.BLACK_HOLE_DAILY_FEEDS,
+      unlockedLabCount: 2,
+      serverTimeMs: 5000,
+      idleTimeAvailable: cost
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe("RESEARCH_ALREADY_IN_PROGRESS");
+    }
+  });
 });
 
 describe("changeResearch", () => {
@@ -471,6 +494,34 @@ describe("changeResearch", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.code).toBe("SAME_RESEARCH_SELECTED");
+    }
+  });
+
+  it("rejects changing to research already active in another lab", () => {
+    const result = changeResearch({
+      research: {
+        levels: {},
+        labs: [
+          {
+            researchId: RESEARCH_ITEM_IDS.BLACK_HOLE_DAILY_FEEDS,
+            startedAtMs: 1000
+          },
+          {
+            researchId: RESEARCH_ITEM_IDS.BLACK_HOLE_FEED_AMOUNT,
+            startedAtMs: 2000
+          }
+        ],
+        progress: {}
+      },
+      labIndex: 0,
+      researchId: RESEARCH_ITEM_IDS.BLACK_HOLE_FEED_AMOUNT,
+      unlockedLabCount: 2,
+      serverTimeMs: 5000,
+      idleTimeAvailable: 1_000_000
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe("RESEARCH_ALREADY_IN_PROGRESS");
     }
   });
 });

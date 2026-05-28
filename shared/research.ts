@@ -337,6 +337,17 @@ export function reconcileResearchProgress(
   };
 }
 
+function isResearchActiveInAnotherLab(
+  labs: ResearchLabSlot[],
+  labIndex: number,
+  researchId: string
+): boolean {
+  return labs.some(
+    (slot, index) =>
+      index !== labIndex && slot.researchId === researchId && slot.startedAtMs != null
+  );
+}
+
 export function startResearch(input: StartResearchInput): StartResearchResult {
   const def = getResearchItemDefinition(input.researchId);
   if (!def) {
@@ -351,6 +362,10 @@ export function startResearch(input: StartResearchInput): StartResearchResult {
   const slot = research.labs[input.labIndex];
   if (slot.startedAtMs != null) {
     return { ok: false, code: "LAB_ALREADY_RESEARCHING" };
+  }
+
+  if (isResearchActiveInAnotherLab(research.labs, input.labIndex, input.researchId)) {
+    return { ok: false, code: "RESEARCH_ALREADY_IN_PROGRESS" };
   }
 
   const currentLevel = getResearchLevel(research, input.researchId);
@@ -446,6 +461,10 @@ export function changeResearch(input: ChangeResearchInput): StartResearchResult 
 
   if (slot.researchId === input.researchId) {
     return { ok: false, code: "SAME_RESEARCH_SELECTED" };
+  }
+
+  if (isResearchActiveInAnotherLab(research.labs, input.labIndex, input.researchId)) {
+    return { ok: false, code: "RESEARCH_ALREADY_IN_PROGRESS" };
   }
 
   const newLevel = getResearchLevel(research, input.researchId);
