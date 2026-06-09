@@ -44,6 +44,22 @@ body {
   padding: 24px;
 }
 
+.app-footer {
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.app-footer a {
+  color: #6b7280;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.app-footer a:hover {
+  color: #374151;
+  text-decoration: underline;
+}
+
 .card {
   width: min(560px, 100%);
   background: var(--surface-panel-gradient);

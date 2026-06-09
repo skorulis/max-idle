@@ -50,6 +50,16 @@ const TOKEN_KEY = "max-idle-token";
 const UPGRADE_SOCIAL_INTENT_KEY = "max-idle-upgrade-social-intent";
 const CONTEMPLATION_ACHIEVEMENT_HOME_TIME_MS = 10 * 60 * 1000;
 
+function AppFooter() {
+  return (
+    <footer className="app-footer">
+      <a href="https://skorulis.com" target="_blank" rel="noopener noreferrer">
+        skorulis.com
+      </a>
+    </footer>
+  );
+}
+
 function IdleBulletinBody({ content }: { content: BulletinContent }) {
   if (content.kind === "plain") {
     return (
@@ -540,6 +550,7 @@ export function AppShell() {
             <IdleBulletinBody content={displayedContent} />
           </div>
         </section>
+        <AppFooter />
       </main>
     );
   }
@@ -803,6 +814,7 @@ export function AppShell() {
           <IdleBulletinBody content={displayedContent} />
         </div>
       </section>
+      <AppFooter />
     </main>
   );
 }
