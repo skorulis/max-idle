@@ -25,6 +25,7 @@ import {
 import type { ShopCurrencyType } from "../shopUpgrades";
 import {
   formatShopUpgradeDescription,
+  getMaxIdleCollectionRealtimeSeconds,
   getPurchasedShopUpgradeLevelCount,
   getShopCurrencyTierPurchaseCostSum,
   getWorthwhileAchievementsMultiplier,
@@ -258,6 +259,16 @@ export function ShopPage({
     }
     if (level > upgrade.maxLevel()) {
       return null;
+    }
+    if (upgrade.id === SHOP_UPGRADE_IDS.STORAGE_EXTENSION) {
+      const previewShop = withShopUpgradeLevel(
+        playerState.shop,
+        SHOP_UPGRADE_IDS.STORAGE_EXTENSION,
+        Math.max(0, level)
+      );
+      return {
+        value: getMaxIdleCollectionRealtimeSeconds(previewShop, playerState.research)
+      };
     }
     if (upgrade.id === SHOP_UPGRADE_IDS.WORTHWHILE_ACHIEVEMENTS) {
       const achievementCount = safeNaturalNumber(playerState.achievementCount);
