@@ -12,10 +12,7 @@ import {
   ListTodo,
   PiggyBank
 } from "lucide-react";
-import GameIcon from "../GameIcon";
-import { getLucidIcon } from "../getLucidIcon";
 import type { AvailableSurveySummary, SyncedOutstandingTournamentResult, SyncedPlayerState } from "../app/types";
-import { parseCompletedTutorialIds, TUTORIAL_STEPS } from "@maxidle/shared/tutorialSteps";
 import {
   getIdleInterestSeconds,
   getMaxIdleCollectionRealtimeSeconds,
@@ -78,7 +75,6 @@ type HomePageProps = {
   onNavigateLogin: () => void;
   availableSurvey: AvailableSurveySummary | null;
   onNavigateSurvey: () => void;
-  onCompleteTutorialStep: (tutorialId: string) => Promise<void>;
   onFeedBlackHoleTaps: (taps: number) => Promise<void>;
   collectingObligation: boolean;
   onCollectObligation: (obligationId: ObligationId) => Promise<void>;
@@ -115,7 +111,6 @@ export function HomePage({
   onNavigateLogin,
   availableSurvey,
   onNavigateSurvey,
-  onCompleteTutorialStep,
   onFeedBlackHoleTaps,
   collectingObligation,
   onCollectObligation
@@ -123,12 +118,6 @@ export function HomePage({
   const [collectWarningIndex, setCollectWarningIndex] = useState(0);
   const [showRateInfo, setShowRateInfo] = useState(false);
   const [collectFlashNonce, setCollectFlashNonce] = useState(0);
-  const [tutorialSubmitting, setTutorialSubmitting] = useState(false);
-
-  const completedTutorialIds = useMemo(
-    () => parseCompletedTutorialIds(playerState?.tutorialProgress ?? ""),
-    [playerState?.tutorialProgress]
-  );
 
   const obligationSnapshot = useMemo(() => {
     if (!playerState) {
@@ -187,21 +176,33 @@ export function HomePage({
 
   if (!playerState) {
     return (
-      <section className="card">
-        <img
-          className="home-hero-image"
-          src="/og-image.png"
-          width={1424}
-          height={752}
-          alt="A game about doing nothing"
-        />
-        <button className="collect" onClick={() => void onStartIdling()} disabled={starting}>
-          {starting ? "Starting..." : "Start idling"}
-        </button>
-        <button type="button" className="secondary" onClick={onNavigateLogin}>
-          Login
-        </button>
-      </section>
+      <>
+        <section className="card">
+          <img
+            className="home-hero-image"
+            src="/og-image.png"
+            width={1424}
+            height={752}
+            alt="A game about doing nothing"
+          />
+          <button className="collect" onClick={() => void onStartIdling()} disabled={starting}>
+            {starting ? "Starting..." : "Start idling"}
+          </button>
+          <button type="button" className="secondary" onClick={onNavigateLogin}>
+            Login
+          </button>
+        </section>
+        <section className="card">
+          <h2>Welcome to Max Idle!</h2>
+          <p style={{ marginTop: 0 }}>Every second you spend doing nothing is progress.</p>
+          <p>
+            Compete against players around the world in the ultimate test of patience, discipline, and forgetting this
+            tab exists.
+          </p>
+          <p>The leaderboard awaits those who can walk away.</p>
+          <p>This game is still in alpha, so expect frequent changes</p>
+        </section>
+      </>
     );
   }
 
@@ -233,44 +234,8 @@ export function HomePage({
     playerState.timeGems.total > 0;
   const showSurveyCard = availableSurvey && playerState.idleTime.total >= SURVEY_IDLE_TIME_REQUIRED_SECONDS;
 
-  const remainingTutorials = TUTORIAL_STEPS.filter((s) => !completedTutorialIds.has(s.id));
-  const currentTutorial = remainingTutorials[0];
-  const isLastTutorialStep = remainingTutorials.length <= 1;
-
   return (
     <>
-      {currentTutorial ? (
-        <section className="card">
-          <div className="card-section-header">
-            <h2 className="section-title-with-icon">
-              <GameIcon icon={getLucidIcon(currentTutorial.icon)} size={18} />
-              {currentTutorial.title}
-            </h2>
-          </div>
-          
-          <p style={{ marginTop: 0 }}>{currentTutorial.body}</p>
-          <div className="collect-row" style={{ marginTop: "1rem" }}>
-            <button
-              type="button"
-              className="collect collect-primary"
-              disabled={tutorialSubmitting}
-              onClick={() => {
-                void (async () => {
-                  setTutorialSubmitting(true);
-                  try {
-                    await onCompleteTutorialStep(currentTutorial.id);
-                  } finally {
-                    setTutorialSubmitting(false);
-                  }
-                })();
-              }}
-            >
-              {tutorialSubmitting ? "Saving..." : isLastTutorialStep ? "Done" : "Next"}
-            </button>
-          </div>
-        </section>
-      ) : null}
-      
       <section className="card idle-collect-card surface-tint-purple">
         <div className="card-section-header">
           <h2 className="section-title-with-icon">

@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 type DebugPageProps = {
   resettingDailyBonus: boolean;
   onResetDailyBonus: () => Promise<void>;
@@ -9,7 +7,6 @@ type DebugPageProps = {
   onDebugAddGems: () => Promise<void>;
   onDebugResetBalances: () => Promise<void>;
   onDebugFinalizeTournament: () => Promise<void>;
-  onResetTutorial: () => Promise<void>;
 };
 
 export function DebugPage({
@@ -20,11 +17,9 @@ export function DebugPage({
   onDebugAddIdleTime,
   onDebugAddGems,
   onDebugResetBalances,
-  onDebugFinalizeTournament,
-  onResetTutorial
+  onDebugFinalizeTournament
 }: DebugPageProps) {
   const debugBusy = debugPendingAction !== null;
-  const [tutorialResetPending, setTutorialResetPending] = useState(false);
 
   return (
     <section className="card">
@@ -96,27 +91,6 @@ export function DebugPage({
           disabled={debugBusy}
         >
           {debugPendingAction === "tournament" ? "Finalizing..." : "Finalize current tournament"}
-        </button>
-      </div>
-      <div className="panel">
-        <h3>Tutorial</h3>
-        <p className="subtle">Show the Max Idle intro steps on the home page again.</p>
-        <button
-          type="button"
-          className="secondary"
-          disabled={tutorialResetPending || debugBusy}
-          onClick={() => {
-            void (async () => {
-              setTutorialResetPending(true);
-              try {
-                await onResetTutorial();
-              } finally {
-                setTutorialResetPending(false);
-              }
-            })();
-          }}
-        >
-          {tutorialResetPending ? "Resetting..." : "Reset Tutorial"}
         </button>
       </div>
     </section>

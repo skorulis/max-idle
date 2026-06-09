@@ -29,7 +29,6 @@ import {
 import type { AuthClaims } from "../types.js";
 import type { AnalyticsService } from "../analytics.js";
 import { isDailyBonusEffectActiveForUtcDay } from "@maxidle/shared/dailyBonus";
-import { KNOWN_TUTORIAL_IDS, mergedTutorialProgressString } from "@maxidle/shared/tutorialSteps";
 import {
   canCollectDailyReward,
   getOrCreateCurrentDailyBonus,
@@ -301,92 +300,6 @@ export function registerPlayerRoutes({
     }
   });
 
-  app.post("/player/tutorial/complete", async (req, res, next) => {
-    let userId: string;
-    let userIsAnonymous = false;
-    let didCompleteTutorialStep = false;
-    try {
-      const identity = await resolveIdentity(req);
-      req.auth = identity.claims;
-      userId = identity.claims.sub;
-      userIsAnonymous = identity.claims.isAnonymous;
-    } catch (error) {
-      if (error instanceof Error && error.message === "MISSING_IDENTITY") {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-      next(error);
-      return;
-    }
-
-    const tutorialId = typeof req.body?.tutorialId === "string" ? req.body.tutorialId.trim() : "";
-    if (!tutorialId) {
-      res.status(400).json({ error: "tutorialId is required", code: "TUTORIAL_ID_REQUIRED" });
-      return;
-    }
-    if (!KNOWN_TUTORIAL_IDS.has(tutorialId)) {
-      res.status(400).json({ error: "Unknown tutorial id", code: "TUTORIAL_UNKNOWN_ID" });
-      return;
-    }
-
-    const client = await pool.connect();
-    try {
-      await client.query("BEGIN");
-      const lockResult = await client.query<{ tutorial_progress: string }>(
-        `
-        SELECT tutorial_progress
-        FROM player_states
-        WHERE user_id = $1
-        FOR UPDATE
-        `,
-        [userId]
-      );
-      const locked = lockResult.rows[0];
-      if (!locked) {
-        await client.query("ROLLBACK");
-        res.status(404).json({ error: "Player state not found" });
-        return;
-      }
-      const raw = locked.tutorial_progress ?? "";
-      const merged = mergedTutorialProgressString(raw, tutorialId);
-      if (merged !== raw) {
-        didCompleteTutorialStep = true;
-        await client.query(
-          `
-          UPDATE player_states
-          SET tutorial_progress = $2, updated_at = NOW()
-          WHERE user_id = $1
-          `,
-          [userId, merged]
-        );
-      }
-      await client.query("COMMIT");
-      if (didCompleteTutorialStep) {
-        analytics.trackTutorialStepComplete(
-          { userId, isAnonymous: userIsAnonymous },
-          { tutorial_id: tutorialId }
-        );
-      }
-    } catch (error) {
-      await client.query("ROLLBACK").catch(() => {});
-      next(error);
-      return;
-    } finally {
-      client.release();
-    }
-
-    try {
-      const payload = await buildPlayerStatePayload(pool, userId, toNumber);
-      if (!payload) {
-        res.status(404).json({ error: "Player state not found" });
-        return;
-      }
-      res.json(payload);
-    } catch (error) {
-      next(error);
-    }
-  });
-
   app.post("/player/blackhole/feed", async (req, res, next) => {
     try {
       const identity = await resolveIdentity(req);
@@ -508,39 +421,6 @@ export function registerPlayerRoutes({
         client.release();
       }
 
-      const payload = await buildPlayerStatePayload(pool, userId, toNumber);
-      if (!payload) {
-        res.status(404).json({ error: "Player state not found" });
-        return;
-      }
-      res.json(payload);
-    } catch (error) {
-      if (error instanceof Error && error.message === "MISSING_IDENTITY") {
-        res.status(401).json({ error: "Authentication required" });
-        return;
-      }
-      next(error);
-    }
-  });
-
-  app.post("/player/tutorial/reset", async (req, res, next) => {
-    try {
-      const identity = await resolveIdentity(req);
-      req.auth = identity.claims;
-      const userId = identity.claims.sub;
-      const updateResult = await pool.query<{ user_id: string }>(
-        `
-        UPDATE player_states
-        SET tutorial_progress = '', updated_at = NOW()
-        WHERE user_id = $1
-        RETURNING user_id
-        `,
-        [userId]
-      );
-      if (!updateResult.rows[0]) {
-        res.status(404).json({ error: "Player state not found" });
-        return;
-      }
       const payload = await buildPlayerStatePayload(pool, userId, toNumber);
       if (!payload) {
         res.status(404).json({ error: "Player state not found" });

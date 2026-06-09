@@ -9,7 +9,6 @@ import {
   collectIdleTime,
   collectObligation,
   collectTournamentReward,
-  completeTutorialStep,
   feedBlackHole,
   createAnonymousSession,
   debugAddGems,
@@ -20,7 +19,6 @@ import {
   debugResetCurrentDailyBonus,
   enterTournament,
   purchaseUpgrade,
-  resetTutorialProgress,
   upgradePlayerLevel
 } from "./api";
 import type { ObligationId } from "@maxidle/shared/obligations";
@@ -382,47 +380,6 @@ export function useAppGameplayActions({
     }
   };
 
-  const onCompleteTutorialStep = async (tutorialId: string) => {
-    if (!playerState) {
-      return;
-    }
-    setError(null);
-    try {
-      const nextPlayer = await completeTutorialStep(token, tutorialId);
-      const synced = toSyncedState(nextPlayer, playerState);
-      alignClientClock();
-      setPlayerState(synced);
-    } catch (tutorialError) {
-      if (tutorialError instanceof Error && tutorialError.message === "UNAUTHORIZED") {
-        clearUnauthorizedSession();
-      } else {
-        setError(tutorialError instanceof Error ? tutorialError.message : "Could not update tutorial progress");
-        toast.error("Could not save tutorial progress.");
-      }
-    }
-  };
-
-  const onResetTutorial = async () => {
-    if (!playerState) {
-      return;
-    }
-    setError(null);
-    try {
-      const nextPlayer = await resetTutorialProgress(token);
-      const synced = toSyncedState(nextPlayer, playerState);
-      alignClientClock();
-      setPlayerState(synced);
-      toast.success("Tutorial reset. You will see the intro again on the home page.");
-    } catch (tutorialError) {
-      if (tutorialError instanceof Error && tutorialError.message === "UNAUTHORIZED") {
-        clearUnauthorizedSession();
-      } else {
-        setError(tutorialError instanceof Error ? tutorialError.message : "Could not reset tutorial");
-        toast.error("Could not reset tutorial.");
-      }
-    }
-  };
-
   const onCollectDailyBonus = async () => {
     if (!playerState) {
       return;
@@ -551,9 +508,7 @@ export function useAppGameplayActions({
     onDebugFinalizeTournament,
     onCollectDailyReward,
     onCollectObligation,
-    onCompleteTutorialStep,
     onFeedBlackHoleTaps,
-    onResetTutorial,
     onCollectDailyBonus,
     onEnterTournament,
     onCollectTournamentReward,

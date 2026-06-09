@@ -459,9 +459,7 @@ export function AppShell() {
     onDebugFinalizeTournament,
     onCollectDailyReward,
     onCollectObligation,
-    onCompleteTutorialStep,
     onFeedBlackHoleTaps,
-    onResetTutorial,
     onCollectDailyBonus,
     onEnterTournament,
     onCollectTournamentReward,
@@ -600,7 +598,6 @@ export function AppShell() {
                 onNavigateLogin={() => navigate("/login")}
                 availableSurvey={availableSurveyForUi}
                 onNavigateSurvey={() => navigate("/survey")}
-                onCompleteTutorialStep={onCompleteTutorialStep}
                 onFeedBlackHoleTaps={onFeedBlackHoleTaps}
                 collectingObligation={collectingObligation}
                 onCollectObligation={onCollectObligation}
@@ -713,7 +710,6 @@ export function AppShell() {
                   onDebugAddGems={onDebugAddGems}
                   onDebugResetBalances={onDebugResetBalances}
                   onDebugFinalizeTournament={onDebugFinalizeTournament}
-                  onResetTutorial={onResetTutorial}
                 />
               )}
             />

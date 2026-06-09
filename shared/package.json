@@ -57,10 +57,6 @@
       "types": "./dist/formatSeconds.d.ts",
       "default": "./dist/formatSeconds.js"
     },
-    "./tutorialSteps": {
-      "types": "./dist/tutorialSteps.d.ts",
-      "default": "./dist/tutorialSteps.js"
-    },
     "./obligationReward": {
       "types": "./dist/obligationReward.d.ts",
       "default": "./dist/obligationReward.js"
