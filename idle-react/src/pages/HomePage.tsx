@@ -26,11 +26,13 @@ import { toast } from "../gameToast";
 import { getDailyBonusDescription, isDailyRewardDoubledToday } from "../app/dailyBonus";
 import type { SurveyCurrencyType } from "../app/types";
 import {
+  formatObligationDescription,
   formatObligationRequirementLabel,
   getCurrentObligationId,
   getObligationDefinition,
   isObligationConditionMet,
   isBlackHoleFeatureUnlocked,
+  isTimeGeneratorUnlocked,
   isTournamentFeatureUnlocked,
   OBLIGATION_IDS,
   type ObligationId
@@ -45,6 +47,7 @@ const EARLY_COLLECT_WARNING_MESSAGES = [
 const SURVEY_IDLE_TIME_REQUIRED_SECONDS = 6 * 60 * 60;
 
 type HomePageProps = {
+  username: string;
   playerState: SyncedPlayerState | null;
   starting: boolean;
   collecting: boolean;
@@ -81,6 +84,7 @@ type HomePageProps = {
 };
 
 export function HomePage({
+  username,
   playerState,
   starting,
   collecting,
@@ -234,8 +238,60 @@ export function HomePage({
     playerState.timeGems.total > 0;
   const showSurveyCard = availableSurvey && playerState.idleTime.total >= SURVEY_IDLE_TIME_REQUIRED_SECONDS;
 
+  const showTimeGenerator = isTimeGeneratorUnlocked(playerState.obligationsCompleted);
+
   return (
     <>
+      {currentObligation ? (
+        <section className="card">
+          <div className="card-section-header">
+            <h2 className="section-title-with-icon">
+              <ListTodo size={18} aria-hidden="true" />
+              Obligation
+            </h2>
+          </div>
+          <h3 style={{ marginTop: 0, marginBottom: "0.5rem" }}>{currentObligation.name}</h3>
+          <p style={{ marginTop: 0, whiteSpace: "pre-line" }}>
+            {formatObligationDescription(currentObligation.description, username)}
+          </p>
+          {currentObligation.condition.allOf.length > 0 ? (
+            <>
+              <p className="subtle" style={{ marginTop: "1rem", marginBottom: "0.25rem" }}>
+                Requirements
+              </p>
+              <ul style={{ marginTop: 0, paddingLeft: "1.25rem" }}>
+                {currentObligation.condition.allOf.map((predicate, index) => (
+                  <li key={index}>{formatObligationRequirementLabel(predicate)}</li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+          <p className="subtle" style={{ marginTop: "1rem", marginBottom: "0.25rem" }}>
+            Compensation
+          </p>
+          <ul style={{ marginTop: 0, paddingLeft: "1.25rem" }}>
+            {currentObligation.rewards.map((reward, index) => (
+              <li key={index}>
+                {reward.type === "text"
+                  ? reward.label
+                  : formatRewardAmount(reward.type as SurveyCurrencyType, reward.value)}
+              </li>
+            ))}
+          </ul>
+          <div className="collect-row" style={{ marginTop: "1rem" }}>
+            <button
+              type="button"
+              className="collect collect-primary"
+              disabled={!obligationReady || collectingObligation}
+              onClick={() => void onCollectObligation(currentObligation.id)}
+            >
+              {collectingObligation ? "Collecting..." : "Collect compensation"}
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {showTimeGenerator ? (
       <section className="card idle-collect-card surface-tint-purple">
         <div className="card-section-header">
           <h2 className="section-title-with-icon">
@@ -297,6 +353,7 @@ export function HomePage({
           </button>
         </div>
       </section>
+      ) : null}
 
       {isBlackHoleFeatureUnlocked(playerState.obligationsCompleted) ? (
         <BlackHoleCard
@@ -305,49 +362,6 @@ export function HomePage({
           blackholeFeedsRemainingToday={playerState.blackholeFeedsRemainingToday}
           onFeedTaps={onFeedBlackHoleTaps}
         />
-      ) : null}
-
-      {currentObligation ? (
-        <section className="card">
-          <div className="card-section-header">
-            <h2 className="section-title-with-icon">
-              <ListTodo size={18} aria-hidden="true" />
-              Obligation
-            </h2>
-          </div>
-          <h3 style={{ marginTop: 0, marginBottom: "0.5rem" }}>{currentObligation.name}</h3>
-          <p style={{ marginTop: 0 }}>{currentObligation.description}</p>
-          <p className="subtle" style={{ marginTop: "1rem", marginBottom: "0.25rem" }}>
-            Requirements
-          </p>
-          <ul style={{ marginTop: 0, paddingLeft: "1.25rem" }}>
-            {currentObligation.condition.allOf.map((predicate, index) => (
-              <li key={index}>{formatObligationRequirementLabel(predicate)}</li>
-            ))}
-          </ul>
-          <p className="subtle" style={{ marginTop: "1rem", marginBottom: "0.25rem" }}>
-            Compensation
-          </p>
-          <ul style={{ marginTop: 0, paddingLeft: "1.25rem" }}>
-            {currentObligation.rewards.map((reward, index) => (
-              <li key={index}>
-                {reward.type === "text"
-                  ? reward.label
-                  : formatRewardAmount(reward.type as SurveyCurrencyType, reward.value)}
-              </li>
-            ))}
-          </ul>
-          <div className="collect-row" style={{ marginTop: "1rem" }}>
-            <button
-              type="button"
-              className="collect collect-primary"
-              disabled={!obligationReady || collectingObligation}
-              onClick={() => void onCollectObligation(currentObligation.id)}
-            >
-              {collectingObligation ? "Collecting..." : "Collect compensation"}
-            </button>
-          </div>
-        </section>
       ) : null}
 
       {showSpendableTimeSection ? (

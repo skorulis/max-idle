@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatObligationDescription,
   formatObligationRequirementLabel,
   getCurrentObligationId,
   isBlackHoleFeatureUnlocked,
   isLevelUpgradesUnlocked,
   isObligationConditionMet,
+  isTimeGeneratorUnlocked,
   OBLIGATION_IDS,
   OBLIGATIONS,
   type ObligationDefinition,
@@ -23,25 +25,48 @@ const minimalSnapshot: ObligationPlayerSnapshot = {
 
 describe("getCurrentObligationId", () => {
   it("returns first obligation id when none completed", () => {
-    expect(getCurrentObligationId(new Set())).toBe(OBLIGATION_IDS.COLLECT_SOME_TIME);
-    expect(getCurrentObligationId({})).toBe(OBLIGATION_IDS.COLLECT_SOME_TIME);
+    expect(getCurrentObligationId(new Set())).toBe(OBLIGATION_IDS.BASIC_COGNITIVE_CHECK);
+    expect(getCurrentObligationId({})).toBe(OBLIGATION_IDS.BASIC_COGNITIVE_CHECK);
   });
 
   it("advances after first is completed", () => {
-    expect(getCurrentObligationId(new Set([OBLIGATION_IDS.COLLECT_SOME_TIME]))).toBe(OBLIGATION_IDS.FIRST_PURCHASE);
-    expect(getCurrentObligationId({ [OBLIGATION_IDS.COLLECT_SOME_TIME]: true })).toBe(OBLIGATION_IDS.FIRST_PURCHASE);
+    expect(getCurrentObligationId(new Set([OBLIGATION_IDS.BASIC_COGNITIVE_CHECK]))).toBe(
+      OBLIGATION_IDS.COLLECT_SOME_TIME
+    );
+    expect(getCurrentObligationId({ [OBLIGATION_IDS.BASIC_COGNITIVE_CHECK]: true })).toBe(
+      OBLIGATION_IDS.COLLECT_SOME_TIME
+    );
   });
 
   it("advances after second is completed", () => {
     expect(
-      getCurrentObligationId(new Set([OBLIGATION_IDS.COLLECT_SOME_TIME, OBLIGATION_IDS.FIRST_PURCHASE]))
-    ).toBe(OBLIGATION_IDS.ACHIEVE_SOMETHING);
+      getCurrentObligationId(new Set([OBLIGATION_IDS.BASIC_COGNITIVE_CHECK, OBLIGATION_IDS.COLLECT_SOME_TIME]))
+    ).toBe(OBLIGATION_IDS.FIRST_PURCHASE);
+    expect(
+      getCurrentObligationId({
+        [OBLIGATION_IDS.BASIC_COGNITIVE_CHECK]: true,
+        [OBLIGATION_IDS.COLLECT_SOME_TIME]: true
+      })
+    ).toBe(OBLIGATION_IDS.FIRST_PURCHASE);
   });
 
   it("advances after third is completed", () => {
     expect(
       getCurrentObligationId(
         new Set([
+          OBLIGATION_IDS.BASIC_COGNITIVE_CHECK,
+          OBLIGATION_IDS.COLLECT_SOME_TIME,
+          OBLIGATION_IDS.FIRST_PURCHASE
+        ])
+      )
+    ).toBe(OBLIGATION_IDS.ACHIEVE_SOMETHING);
+  });
+
+  it("advances after fourth is completed", () => {
+    expect(
+      getCurrentObligationId(
+        new Set([
+          OBLIGATION_IDS.BASIC_COGNITIVE_CHECK,
           OBLIGATION_IDS.COLLECT_SOME_TIME,
           OBLIGATION_IDS.FIRST_PURCHASE,
           OBLIGATION_IDS.ACHIEVE_SOMETHING
@@ -50,10 +75,11 @@ describe("getCurrentObligationId", () => {
     ).toBe(OBLIGATION_IDS.TIME_GEMS);
   });
 
-  it("advances after fourth is completed", () => {
+  it("advances after fifth is completed", () => {
     expect(
       getCurrentObligationId(
         new Set([
+          OBLIGATION_IDS.BASIC_COGNITIVE_CHECK,
           OBLIGATION_IDS.COLLECT_SOME_TIME,
           OBLIGATION_IDS.FIRST_PURCHASE,
           OBLIGATION_IDS.ACHIEVE_SOMETHING,
@@ -63,10 +89,11 @@ describe("getCurrentObligationId", () => {
     ).toBe(OBLIGATION_IDS.LEVEL_UP);
   });
 
-  it("advances after fifth is completed", () => {
+  it("advances after sixth is completed", () => {
     expect(
       getCurrentObligationId(
         new Set([
+          OBLIGATION_IDS.BASIC_COGNITIVE_CHECK,
           OBLIGATION_IDS.COLLECT_SOME_TIME,
           OBLIGATION_IDS.FIRST_PURCHASE,
           OBLIGATION_IDS.ACHIEVE_SOMETHING,
@@ -77,10 +104,11 @@ describe("getCurrentObligationId", () => {
     ).toBe(OBLIGATION_IDS.RAMP_UP);
   });
 
-  it("advances after sixth is completed", () => {
+  it("advances after seventh is completed", () => {
     expect(
       getCurrentObligationId(
         new Set([
+          OBLIGATION_IDS.BASIC_COGNITIVE_CHECK,
           OBLIGATION_IDS.COLLECT_SOME_TIME,
           OBLIGATION_IDS.FIRST_PURCHASE,
           OBLIGATION_IDS.ACHIEVE_SOMETHING,
@@ -92,10 +120,11 @@ describe("getCurrentObligationId", () => {
     ).toBe(OBLIGATION_IDS.BLACK_HOLE);
   });
 
-  it("advances after seventh is completed", () => {
+  it("advances after eighth is completed", () => {
     expect(
       getCurrentObligationId(
         new Set([
+          OBLIGATION_IDS.BASIC_COGNITIVE_CHECK,
           OBLIGATION_IDS.COLLECT_SOME_TIME,
           OBLIGATION_IDS.FIRST_PURCHASE,
           OBLIGATION_IDS.ACHIEVE_SOMETHING,
@@ -110,6 +139,7 @@ describe("getCurrentObligationId", () => {
 
   it("returns null when all complete", () => {
     const done = new Set([
+      OBLIGATION_IDS.BASIC_COGNITIVE_CHECK,
       OBLIGATION_IDS.COLLECT_SOME_TIME,
       OBLIGATION_IDS.FIRST_PURCHASE,
       OBLIGATION_IDS.ACHIEVE_SOMETHING,
@@ -122,6 +152,7 @@ describe("getCurrentObligationId", () => {
     expect(getCurrentObligationId(done)).toBeNull();
     expect(
       getCurrentObligationId({
+        [OBLIGATION_IDS.BASIC_COGNITIVE_CHECK]: true,
         [OBLIGATION_IDS.COLLECT_SOME_TIME]: true,
         [OBLIGATION_IDS.FIRST_PURCHASE]: true,
         [OBLIGATION_IDS.ACHIEVE_SOMETHING]: true,
@@ -137,10 +168,10 @@ describe("getCurrentObligationId", () => {
   it("ignores false entries in record", () => {
     expect(
       getCurrentObligationId({
-        [OBLIGATION_IDS.COLLECT_SOME_TIME]: false,
-        [OBLIGATION_IDS.FIRST_PURCHASE]: false
+        [OBLIGATION_IDS.BASIC_COGNITIVE_CHECK]: false,
+        [OBLIGATION_IDS.COLLECT_SOME_TIME]: false
       })
-    ).toBe(OBLIGATION_IDS.COLLECT_SOME_TIME);
+    ).toBe(OBLIGATION_IDS.BASIC_COGNITIVE_CHECK);
   });
 });
 
@@ -166,6 +197,17 @@ describe("isObligationConditionMet", () => {
     expect(isObligationConditionMet(synth, { ...minimalSnapshot, idleTimeTotal: 100, upgradesPurchased: 1 })).toBe(
       false
     );
+  });
+
+  it("treats empty allOf as always met", () => {
+    const none: ObligationDefinition = {
+      id: OBLIGATION_IDS.BASIC_COGNITIVE_CHECK,
+      name: "Test",
+      description: "Test",
+      rewards: [],
+      condition: { allOf: [] }
+    };
+    expect(isObligationConditionMet(none, minimalSnapshot)).toBe(true);
   });
 
   it("supports collection_count_gte", () => {
@@ -257,6 +299,20 @@ describe("isLevelUpgradesUnlocked", () => {
   });
 });
 
+describe("isTimeGeneratorUnlocked", () => {
+  it("is false until BASIC_COGNITIVE_CHECK obligation is completed", () => {
+    expect(isTimeGeneratorUnlocked({})).toBe(false);
+    expect(isTimeGeneratorUnlocked({ [OBLIGATION_IDS.BASIC_COGNITIVE_CHECK]: false })).toBe(false);
+    expect(isTimeGeneratorUnlocked({ [OBLIGATION_IDS.BASIC_COGNITIVE_CHECK]: true })).toBe(true);
+  });
+});
+
+describe("formatObligationDescription", () => {
+  it("substitutes username placeholder", () => {
+    expect(formatObligationDescription("Hi {username}. Welcome.", "Alex")).toBe("Hi Alex. Welcome.");
+  });
+});
+
 describe("formatObligationRequirementLabel", () => {
   it("formats each predicate kind", () => {
     expect(formatObligationRequirementLabel({ kind: "idle_time_total_gte", seconds: 3600 })).toBe(
@@ -287,6 +343,7 @@ describe("formatObligationRequirementLabel", () => {
 describe("OBLIGATIONS order", () => {
   it("matches design queue order", () => {
     expect(OBLIGATIONS.map((d) => d.id)).toEqual([
+      OBLIGATION_IDS.BASIC_COGNITIVE_CHECK,
       OBLIGATION_IDS.COLLECT_SOME_TIME,
       OBLIGATION_IDS.FIRST_PURCHASE,
       OBLIGATION_IDS.ACHIEVE_SOMETHING,

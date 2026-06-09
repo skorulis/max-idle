@@ -568,6 +568,7 @@ export function AppShell() {
             path="/"
             element={
               <HomePage
+                username={account?.username?.trim() ? account.username : "Player"}
                 playerState={playerState}
                 starting={starting}
                 collecting={collecting}

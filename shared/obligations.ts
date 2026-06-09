@@ -1,6 +1,7 @@
 import type { ObligationReward } from "./obligationReward.js";
 import { SECONDS_PER_HOUR, SECONDS_PER_MINUTE } from "./timeConstants.js";
 export const OBLIGATION_IDS = {
+  BASIC_COGNITIVE_CHECK: "obl_basic_cognitive_check",
   COLLECT_SOME_TIME: "obl_collect_some_time",
   FIRST_PURCHASE: "obl_first_purchase",
   ACHIEVE_SOMETHING: "obl_achieve_something",
@@ -160,7 +161,26 @@ export function isLevelUpgradesUnlocked(completed: Readonly<Record<string, boole
   return completed[OBLIGATION_IDS.TIME_GEMS] === true;
 }
 
+export function isTimeGeneratorUnlocked(completed: Readonly<Record<string, boolean | undefined>>): boolean {
+  return completed[OBLIGATION_IDS.BASIC_COGNITIVE_CHECK] === true;
+}
+
+/** Substitutes `{username}` in obligation copy. */
+export function formatObligationDescription(description: string, username: string): string {
+  return description.replaceAll("{username}", username);
+}
+
 export const OBLIGATIONS: ObligationDefinition[] = [
+  {
+    id: OBLIGATION_IDS.BASIC_COGNITIVE_CHECK,
+    name: "Basic cognitive check",
+    description:
+      "Hi {username}. That's an odd name but I'm not here to judge.\n\nYou are about to begin a long, uneventful journey in pursuit of Idle Time, which is the foundation of everything in Max Idle. The more you accumulate, the better you're doing, which is convenient because accumulating it requires almost no effort whatsoever.\n\nBefore we can trust you with such responsibility, please press the button below to verify that you're smarter than a decorative houseplant.",
+    rewards: [{ type: "text", label: "Unlock Time Generator" }],
+    condition: {
+      allOf: []
+    }
+  },
   {
     id: OBLIGATION_IDS.COLLECT_SOME_TIME,
     name: "Collect some time",
