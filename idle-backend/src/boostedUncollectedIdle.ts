@@ -1,3 +1,5 @@
+import type { ResearchState } from "@maxidle/shared/research";
+import { DEFAULT_RESEARCH_STATE } from "@maxidle/shared/research";
 import type { ShopState } from "@maxidle/shared/shop";
 import { calculateBoostedIdleSecondsGain } from "./idleRate.js";
 import { calculateElapsedSeconds } from "./time.js";
@@ -10,7 +12,8 @@ export function boostedUncollectedIdleSeconds(
   achievementCount: number,
   realTimeAvailable = 0,
   playerLevel = 0,
-  blackholeTimeSeconds = 0
+  blackholeTimeSeconds = 0,
+  research: ResearchState = DEFAULT_RESEARCH_STATE
 ): number {
   const elapsedSinceLastCollection = calculateElapsedSeconds(lastCollectedAt, refTime);
   return calculateBoostedIdleSecondsGain({
@@ -20,6 +23,7 @@ export function boostedUncollectedIdleSeconds(
     playerLevel,
     realTimeAvailable,
     wallClockMs: refTime.getTime(),
-    blackholeTimeSeconds
+    blackholeTimeSeconds,
+    research
   });
 }

@@ -13,6 +13,7 @@ import {
   getSecondsMultiplier,
   getWorthwhileAchievementsMultiplier
 } from "./shop.js";
+import type { ResearchState } from "./research.js";
 import type { ShopState } from "./shop.js";
 import { getBlackHoleTimeDilation } from "./blackHole.js";
 import { PATIENCE_SHOP_UPGRADE } from "./shopUpgrades.js";
@@ -35,6 +36,7 @@ export type IdleCollectionPlayer = {
   wallClockMs?: number;
   /** Seconds invested in the black hole; applies time dilation after other multipliers. */
   blackholeTimeSeconds?: number;
+  research?: ResearchState;
 };
 
 function interpolateRate(start: IdleRateStep, end: IdleRateStep, elapsedSeconds: number): number {
@@ -96,7 +98,7 @@ export function calculateBoostedIdleSecondsGain(player: IdleCollectionPlayer): n
     elapsedSeconds
   );
   const total = Math.floor(baseTotal + interestSeconds);
-  return Math.min(total, getMaxIdleCollectionRealtimeSeconds(player.shop));
+  return Math.min(total, getMaxIdleCollectionRealtimeSeconds(player.shop, player.research));
 }
 
 /** Combines secondary bonuses additively: 1 + Σ bᵢ (each `bᵢ` is excess over ×1; base seconds multipliers pass `sum − 1` first). */

@@ -12,6 +12,7 @@ import {
 } from "./betterAuth.js";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 import { effectiveIdleSecondsRateFromPlayerRow } from "./currentSecondsRefresh.js";
+import { parseResearchState } from "./researchState.js";
 import { calculateElapsedSeconds } from "./time.js";
 import { registerShopRoutes } from "./shop.js";
 import { registerLeaderboardRoutes } from "./leaderboard.js";
@@ -58,6 +59,7 @@ type PlayerCurrentSecondsSyncRow = {
   level: number;
   shop: ShopState;
   blackhole_time: number;
+  research: unknown;
   server_time: Date;
 };
 
@@ -77,6 +79,7 @@ export async function syncStalePlayerCurrentSeconds(pool: Pool, limit = 100): Pr
         level,
         shop,
         blackhole_time,
+        research,
         NOW() AS server_time
       FROM player_states
       ORDER BY current_seconds_last_updated ASC
@@ -88,6 +91,7 @@ export async function syncStalePlayerCurrentSeconds(pool: Pool, limit = 100): Pr
 
     for (const row of stalePlayersResult.rows) {
       const achievementCount = toNumber(row.achievement_count);
+      const research = parseResearchState(row.research, row.shop);
       const rateRow = {
         last_collected_at: row.last_collected_at,
         shop: row.shop,
@@ -104,7 +108,8 @@ export async function syncStalePlayerCurrentSeconds(pool: Pool, limit = 100): Pr
         achievementCount,
         toNumber(rateRow.real_time_available),
         toNumber(rateRow.level),
-        toNumber(rateRow.blackhole_time)
+        toNumber(rateRow.blackhole_time),
+        research
       );
       const idleSecondsRate = effectiveIdleSecondsRateFromPlayerRow(rateRow, toNumber);
 
@@ -337,6 +342,7 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
         max_multiplier: number;
         shop: ShopState;
         blackhole_time: number;
+        research: unknown;
         server_time: Date;
       }>(
         `
@@ -360,6 +366,7 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
           ps.max_multiplier,
           ps.shop,
           ps.blackhole_time,
+          ps.research,
         NOW() AS server_time
         FROM users u
         INNER JOIN player_states ps ON ps.user_id = u.id
@@ -376,6 +383,7 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
 
       const accountAgeSeconds = calculateElapsedSeconds(row.created_at, row.server_time);
       const achievementCount = toNumber(row.achievement_count);
+      const playerResearch = parseResearchState(row.research, row.shop);
       const currentIdleSeconds = boostedUncollectedIdleSeconds(
         row.last_collected_at,
         row.server_time,
@@ -383,7 +391,8 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
         achievementCount,
         toNumber(row.real_time_available),
         toNumber(row.level),
-        toNumber(row.blackhole_time)
+        toNumber(row.blackhole_time),
+        playerResearch
       );
       const timeAwaySeconds = calculateElapsedSeconds(row.last_active, row.server_time);
 

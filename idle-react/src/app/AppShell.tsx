@@ -305,7 +305,8 @@ export function AppShell() {
       playerLevel: playerState.level,
       realTimeAvailable: playerState.realTime.available,
       wallClockMs: estimatedServerNowMs,
-      blackholeTimeSeconds: playerState.blackholeTime
+      blackholeTimeSeconds: playerState.blackholeTime,
+      research: playerState.research
     });
   }, [estimatedServerNowMs, playerState]);
 

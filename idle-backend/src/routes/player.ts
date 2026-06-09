@@ -161,6 +161,7 @@ export async function buildPlayerStatePayload(
   }
 
   const legacyRefund = applyLegacyShopUpgradeRefunds(row.shop);
+  const playerResearch = parsePlayerResearch(row);
   if (legacyRefund.refundedUpgradeIds.length > 0) {
     const refundedRealAvailable = toNumber(row.real_time_available) + legacyRefund.realRefund;
     const refundRateRow = {
@@ -179,7 +180,8 @@ export async function buildPlayerStatePayload(
       toNumber(refundRateRow.achievement_count),
       refundRateRow.real_time_available,
       toNumber(refundRateRow.level),
-      toNumber(refundRateRow.blackhole_time)
+      toNumber(refundRateRow.blackhole_time),
+      playerResearch
     );
     const idleSecondsRateAtRefund = effectiveIdleSecondsRateFromPlayerRow(refundRateRow, toNumber);
     await pool.query(
@@ -620,6 +622,7 @@ export function registerPlayerRoutes({
         currentDailyBonus.bonus_date_utc
       );
       const collectionAchievementCount = toNumber(lockedRow.achievement_count);
+      const collectionResearch = parseResearchState(lockedRow.research, lockedRow.shop);
       const baseCollectedSeconds = boostedUncollectedIdleSeconds(
         lockedRow.last_collected_at,
         collectedAt,
@@ -627,7 +630,8 @@ export function registerPlayerRoutes({
         collectionAchievementCount,
         toNumber(lockedRow.real_time_available),
         toNumber(lockedRow.level),
-        toNumber(lockedRow.blackhole_time)
+        toNumber(lockedRow.blackhole_time),
+        collectionResearch
       );
       const baseRealSecondsCollected = calculateElapsedSeconds(lockedRow.last_collected_at, collectedAt);
       const interestRealSecondsBonus = Math.floor(

@@ -9,6 +9,7 @@ import {
 } from "./achievementUpdates.js";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 import { effectiveIdleSecondsRateFromPlayerRow } from "./currentSecondsRefresh.js";
+import { parseResearchState } from "./researchState.js";
 
 const WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -28,6 +29,7 @@ type TournamentEntryRow = {
   achievement_count: number;
   level: number;
   blackhole_time: number;
+  research: unknown;
 };
 
 export type TournamentEntrySummary = {
@@ -412,6 +414,7 @@ async function getTournamentEntriesForScoring(
     achievement_count: number;
     level: number;
     blackhole_time: number;
+    research: unknown;
   }>
 > {
   const result = await client.query<{
@@ -424,6 +427,7 @@ async function getTournamentEntriesForScoring(
     achievement_count: number;
     level: number;
     blackhole_time: number;
+    research: unknown;
   }>(
     `
     SELECT
@@ -435,7 +439,8 @@ async function getTournamentEntriesForScoring(
       ps.real_time_available,
       ps.achievement_count,
       ps.level,
-      ps.blackhole_time
+      ps.blackhole_time,
+      ps.research
     FROM tournament_entries te
     INNER JOIN player_states ps ON ps.user_id = te.user_id
     INNER JOIN users u ON u.id = te.user_id
@@ -470,6 +475,7 @@ function scoreAndSortTournamentEntries(
   return rows
     .map((row) => {
       const achievementCount = toNumber(row.achievement_count);
+      const research = parseResearchState(row.research, row.shop);
       const score = boostedUncollectedIdleSeconds(
         row.last_collected_at,
         now,
@@ -477,7 +483,8 @@ function scoreAndSortTournamentEntries(
         achievementCount,
         toNumber(row.real_time_available),
         toNumber(row.level),
-        toNumber(row.blackhole_time)
+        toNumber(row.blackhole_time),
+        research
       );
       return {
         userId: row.user_id,
@@ -681,7 +688,8 @@ async function finalizeTournamentCore(client: PoolClient, tournament: Tournament
       ps.real_time_available,
       ps.achievement_count,
       ps.level,
-      ps.blackhole_time
+      ps.blackhole_time,
+      ps.research
     FROM tournament_entries te
     INNER JOIN player_states ps ON ps.user_id = te.user_id
     WHERE te.tournament_id = $1
@@ -693,6 +701,7 @@ async function finalizeTournamentCore(client: PoolClient, tournament: Tournament
 
   for (const row of entriesResult.rows) {
     const achievementCount = toNumber(row.achievement_count);
+    const research = parseResearchState(row.research, row.shop);
     const tournamentRateRow = {
       last_collected_at: row.last_collected_at,
       shop: row.shop,
@@ -709,7 +718,8 @@ async function finalizeTournamentCore(client: PoolClient, tournament: Tournament
       achievementCount,
       toNumber(tournamentRateRow.real_time_available),
       toNumber(tournamentRateRow.level),
-      toNumber(tournamentRateRow.blackhole_time)
+      toNumber(tournamentRateRow.blackhole_time),
+      research
     );
     const idleSecondsRateAtFinalize = effectiveIdleSecondsRateFromPlayerRow(tournamentRateRow, toNumber);
     await client.query(

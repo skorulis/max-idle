@@ -1,7 +1,9 @@
 import type { Pool } from "pg";
+import type { ResearchState } from "@maxidle/shared/research";
 import type { ShopState } from "@maxidle/shared/shop";
 import { boostedUncollectedIdleSeconds } from "./boostedUncollectedIdle.js";
 import { getEffectiveIdleSecondsRate } from "./idleRate.js";
+import { parseResearchState } from "./researchState.js";
 import { calculateElapsedSeconds } from "./time.js";
 
 /** Row snapshot with server_time from the same DB clock used for the idle calculation. */
@@ -12,6 +14,7 @@ export type PlayerCurrentSecondsSourceRow = {
   real_time_available: number;
   level: number;
   blackhole_time?: number;
+  research?: unknown;
   server_time: Date;
 };
 
@@ -38,6 +41,7 @@ export async function persistCurrentSecondsFromPlayerRow(
   toNumber: (value: unknown) => number
 ): Promise<number> {
   const achievementCount = toNumber(row.achievement_count);
+  const research = parseResearchState(row.research, row.shop);
   const currentIdleSeconds = boostedUncollectedIdleSeconds(
     row.last_collected_at,
     row.server_time,
@@ -45,7 +49,8 @@ export async function persistCurrentSecondsFromPlayerRow(
     achievementCount,
     toNumber(row.real_time_available),
     toNumber(row.level),
-    toNumber(row.blackhole_time ?? 0)
+    toNumber(row.blackhole_time ?? 0),
+    research
   );
   const idleSecondsRate = effectiveIdleSecondsRateFromPlayerRow(row, toNumber);
   await pool.query(
@@ -77,6 +82,7 @@ export async function refreshStoredCurrentIdleSeconds(
       real_time_available,
       level,
       blackhole_time,
+      research,
       NOW() AS server_time
     FROM player_states
     WHERE user_id = $1

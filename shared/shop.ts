@@ -24,6 +24,11 @@ import {
   getTotalShopCurrencySpentForPurchaseCount,
 } from "./shopCurrencyCostTable.js";
 import type { ShopCurrencyType, ShopUpgradeDefinition, ShopUpgradeId } from "./shopUpgrades.js";
+import { getResearchBonusAtLevel, getResearchLevel, type ResearchState } from "./research.js";
+import {
+  RESEARCH_ITEM_IDS,
+  RESEARCH_TEMPORAL_EXPANSE
+} from "./researchItems.js";
 import { safeNaturalNumber, safeNumber } from "./safeNumber.js";
 import { SECONDS_PER_WEEK, SECONDS_PER_YEAR } from "./timeConstants.js";
 
@@ -167,12 +172,16 @@ export function getLuckPreserveChance(shop: ShopState): number {
  * Reference wall-clock window for the storage ceiling: boosted idle never exceeds what this many real seconds would produce
  * (same multipliers), with tier-specific caps from the shop definition.
  */
-export function getMaxIdleCollectionRealtimeSeconds(shop: ShopState): number {
+export function getMaxIdleCollectionRealtimeSeconds(
+  shop: ShopState,
+  research: ResearchState = { levels: {}, labs: [], progress: {} }
+): number {
   const level = STORAGE_EXTENSION_SHOP_UPGRADE.currentLevel(shop);
-  if (level <= 0) {
-    return 2 * SECONDS_PER_WEEK;
-  }
-  return STORAGE_EXTENSION_SHOP_UPGRADE.levels[level - 1]?.value ?? 0;
+  const shopCap =
+    level <= 0 ? 2 * SECONDS_PER_WEEK : (STORAGE_EXTENSION_SHOP_UPGRADE.levels[level - 1]?.value ?? 0);
+  const temporalExpanseLevel = getResearchLevel(research, RESEARCH_ITEM_IDS.TEMPORAL_EXPANSE);
+  const researchBonus = getResearchBonusAtLevel(RESEARCH_TEMPORAL_EXPANSE, temporalExpanseLevel);
+  return shopCap + researchBonus;
 }
 
 export function multiplierToLevel(secondsMultiplier: number): number {

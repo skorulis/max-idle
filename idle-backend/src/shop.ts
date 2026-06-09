@@ -305,7 +305,8 @@ export function registerShopRoutes({
         purchaseRateRow.achievement_count,
         purchaseRateRow.real_time_available,
         toNumber(purchaseRateRow.level),
-        toNumber(purchaseRateRow.blackhole_time)
+        toNumber(purchaseRateRow.blackhole_time),
+        purchaseResearch
       );
       const idleSecondsRateAtPurchase = effectiveIdleSecondsRateFromPlayerRow(purchaseRateRow, toNumber);
       const updateResult = await client.query<{
@@ -563,7 +564,8 @@ export function registerShopRoutes({
         levelRateRow.achievement_count,
         levelRateRow.real_time_available,
         levelRateRow.level,
-        toNumber(levelRateRow.blackhole_time)
+        toNumber(levelRateRow.blackhole_time),
+        levelUpgradeResearch
       );
       const idleSecondsRateAtLevelUp = effectiveIdleSecondsRateFromPlayerRow(levelRateRow, toNumber);
 

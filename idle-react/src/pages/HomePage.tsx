@@ -214,7 +214,10 @@ export function HomePage({
       ? Math.max(0, restraintRequiredRealtimeSeconds - realtimeElapsedSeconds)
       : 0;
 
-  const maxUncollectedIdleSeconds = getMaxIdleCollectionRealtimeSeconds(playerState.shop);
+  const maxUncollectedIdleSeconds = getMaxIdleCollectionRealtimeSeconds(
+    playerState.shop,
+    playerState.research
+  );
   const maxIdleCollectionReached = uncollectedIdleSeconds >= maxUncollectedIdleSeconds;
   const currentInterestSeconds = getIdleInterestSeconds(
     playerState.shop,

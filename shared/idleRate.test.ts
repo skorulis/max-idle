@@ -8,6 +8,7 @@ import {
 } from "./idleRate.js";
 import { DEFAULT_SHOP_STATE, getIdleInterestSeconds, getMaxIdleCollectionRealtimeSeconds } from "./shop.js";
 import type { ShopState } from "./shop.js";
+import { RESEARCH_ITEM_IDS, RESEARCH_TEMPORAL_EXPANSE } from "./researchItems.js";
 import { SHOP_UPGRADE_IDS } from "./shopUpgrades.js";
 import { getQuickCollectorBonus } from "./shop.js";
 import { SECONDS_PER_DAY, SECONDS_PER_HOUR } from "./timeConstants.js";
@@ -160,6 +161,34 @@ describe("luck + boosted gain", () => {
       achievementCount: 0
     });
     expect(extendedUncapped).toBeGreaterThan(baseCapped);
+  });
+
+  it("extends the storage window with temporal expanse research", () => {
+    const week = 7 * 24 * 60 * 60;
+    const shop: ShopState = DEFAULT_SHOP_STATE;
+    const elapsedPastBaseCap = 3 * week;
+    const baseCapped = calculateBoostedIdleSecondsGain({
+      secondsSinceLastCollection: elapsedPastBaseCap,
+      shop,
+      achievementCount: 0
+    });
+    const withResearch = calculateBoostedIdleSecondsGain({
+      secondsSinceLastCollection: elapsedPastBaseCap,
+      shop,
+      achievementCount: 0,
+      research: { levels: { [RESEARCH_ITEM_IDS.TEMPORAL_EXPANSE]: 1 }, labs: [], progress: {} }
+    });
+    expect(withResearch).toBeGreaterThan(baseCapped);
+    expect(getMaxIdleCollectionRealtimeSeconds(shop)).toBe(2 * week);
+    expect(
+      getMaxIdleCollectionRealtimeSeconds(shop, {
+        levels: { [RESEARCH_ITEM_IDS.TEMPORAL_EXPANSE]: 1 },
+        labs: [],
+        progress: {}
+      })
+    ).toBe(3 * week);
+    expect(RESEARCH_TEMPORAL_EXPANSE.maximumLevel).toBe(100);
+    expect(RESEARCH_TEMPORAL_EXPANSE.bonusPerLevel).toBe(week);
   });
 });
 
