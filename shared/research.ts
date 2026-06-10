@@ -97,6 +97,15 @@ export function getResearchLevel(state: ResearchState, researchId: string): numb
   return safeNaturalNumber(state.levels[researchId]);
 }
 
+/** Sum of completed levels across all research tracks. */
+export function totalResearchLevelsCompleted(state: ResearchState): number {
+  let total = 0;
+  for (const level of Object.values(state.levels)) {
+    total += safeNaturalNumber(level);
+  }
+  return total;
+}
+
 export function isResearchAtMaxLevel(def: ResearchItemDefinition, currentLevel: number): boolean {
   return safeNaturalNumber(currentLevel) >= def.maximumLevel;
 }

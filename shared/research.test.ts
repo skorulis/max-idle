@@ -10,7 +10,8 @@ import {
   getResearchTimeCost,
   reconcileResearchProgress,
   startResearch,
-  stopResearch
+  stopResearch,
+  totalResearchLevelsCompleted
 } from "./research.js";
 import {
   RESEARCH_BLACK_HOLE_DAILY_FEEDS,
@@ -161,6 +162,25 @@ describe("RESEARCH_DAILY_BONUS_ACTIVATION_COST definition", () => {
 
   it("allows up to 40 levels", () => {
     expect(RESEARCH_DAILY_BONUS_ACTIVATION_COST.maximumLevel).toBe(40);
+  });
+});
+
+describe("totalResearchLevelsCompleted", () => {
+  it("sums completed levels across all research tracks", () => {
+    expect(
+      totalResearchLevelsCompleted({
+        levels: {
+          [RESEARCH_ITEM_IDS.BLACK_HOLE_DAILY_FEEDS]: 3,
+          [RESEARCH_ITEM_IDS.TEMPORAL_EXPANSE]: 5
+        },
+        labs: [],
+        progress: {}
+      })
+    ).toBe(8);
+  });
+
+  it("returns 0 for empty research state", () => {
+    expect(totalResearchLevelsCompleted(DEFAULT_RESEARCH_STATE)).toBe(0);
   });
 });
 

@@ -1,6 +1,7 @@
 import type { SyncedPlayerState } from "../app/types";
 import { formatSeconds } from "../formatSeconds";
 import { getMaxIdleCollectionRealtimeSeconds } from "../shop";
+import { totalResearchLevelsCompleted } from "@maxidle/shared/research";
 
 type StatsPageProps = {
   playerState: SyncedPlayerState | null;
@@ -23,7 +24,8 @@ export function StatsPage({ playerState, effectiveIdleSecondsRate }: StatsPagePr
     { label: "Maximum idle collection", value: formatSeconds(maxIdleCollection) },
     { label: "Current idle multiplier", value: `${effectiveIdleSecondsRate.toFixed(2)}x` },
     { label: "Total achievements", value: String(playerState.achievementCount) },
-    { label: "Total number of collections", value: String(playerState.collectionCount) }
+    { label: "Total number of collections", value: String(playerState.collectionCount) },
+    { label: "Lab levels completed", value: String(totalResearchLevelsCompleted(playerState.research)) }
   ];
 
   return (

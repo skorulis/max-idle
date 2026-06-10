@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { Pencil } from "lucide-react";
 import { APP_VERSION } from "@maxidle/shared/appVersion";
 import { isValidEmail, isValidPassword } from "@maxidle/shared/authValidation";
@@ -49,6 +50,7 @@ export function AccountPage({
   onNavigateLogin,
   renderAuthButtons
 }: AccountPageProps) {
+  const navigate = useNavigate();
   const [editingUsername, setEditingUsername] = useState(false);
   const usernameInputRef = useRef<HTMLInputElement>(null);
   const isUpgradeSubmitDisabled = !token || !isValidEmail(upgradeForm.email) || !isValidPassword(upgradeForm.password);
@@ -183,6 +185,9 @@ export function AccountPage({
           </div>
         </>
       ) : null}
+      <button type="button" className="secondary" onClick={() => navigate("/stats")}>
+        View stats
+      </button>
       <button type="button" className="secondary" onClick={() => void onLogout()} disabled={authPending}>
         {authPending ? "Logging out..." : "Logout"}
       </button>
