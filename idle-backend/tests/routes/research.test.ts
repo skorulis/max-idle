@@ -54,7 +54,7 @@ describe("research routes", () => {
         userId,
         JSON.stringify({ ...DEFAULT_SHOP_STATE, lab_slots: 1 }),
         JSON.stringify({
-          levels: {},
+          levels: { [RESEARCH_ITEM_IDS.BLACK_HOLE_DAILY_FEEDS]: 4 },
           labs: [{ researchId: RESEARCH_ITEM_IDS.BLACK_HOLE_DAILY_FEEDS, startedAtMs }],
           progress: {}
         })
@@ -64,7 +64,7 @@ describe("research routes", () => {
     const response = await request(app).get("/research").set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(200);
-    expect(response.body.research.levels[RESEARCH_ITEM_IDS.BLACK_HOLE_DAILY_FEEDS]).toBe(1);
+    expect(response.body.research.levels[RESEARCH_ITEM_IDS.BLACK_HOLE_DAILY_FEEDS]).toBe(5);
 
     const achievementState = await pool.query<{
       achievement_count: number;

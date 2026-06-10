@@ -60,7 +60,7 @@ describe("achievement routes", () => {
     expect(response.status).toBe(200);
     expect(response.body.completedCount).toBe(0);
     expect(response.body.earningsBonusMultiplier).toBe(0);
-    expect(response.body.achievements).toHaveLength(11);
+    expect(response.body.achievements).toHaveLength(12);
     expect(response.body.achievements[0].id).toBe("account_creation");
     expect(response.body.achievements[1].id).toBe("username_selected");
     expect(response.body.achievements[2].id).toBe("beginner_shopper");
@@ -84,6 +84,10 @@ describe("achievement routes", () => {
     expect(response.body.achievements[10].id).toBe("daily_bonus_collector");
     expect(response.body.achievements[10].maxLevel).toBe(5);
     expect(response.body.achievements[10].level).toBe(0);
+    expect(response.body.achievements[11].id).toBe("lab_levels_completed");
+    expect(response.body.achievements[11].maxLevel).toBe(10);
+    expect(response.body.achievements[11].level).toBe(0);
+    expect(response.body.achievements[11].clientDriven).toBe(false);
     const collectionAchievement = response.body.achievements.find((achievement: { id: string }) => achievement.id === "collection_count");
     expect(collectionAchievement?.level).toBe(0);
     expect(collectionAchievement?.maxLevel).toBe(3);
