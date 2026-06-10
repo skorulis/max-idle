@@ -15,6 +15,7 @@ export {
   getRestraintBonusMultiplier,
   formatRestraintBlockedCollectMessage,
   getRestraintMinRealtimeSeconds,
+  getBaseCollectionRateResearchBonus,
   getMaxIdleCollectionRealtimeSeconds,
   getSecondsMultiplier,
   getShopPurchaseRefundTotals,

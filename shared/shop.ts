@@ -26,6 +26,7 @@ import {
 import type { ShopCurrencyType, ShopUpgradeDefinition, ShopUpgradeId } from "./shopUpgrades.js";
 import { getResearchBonusAtLevel, getResearchLevel, type ResearchState } from "./research.js";
 import {
+  RESEARCH_BASE_COLLECTION_RATE,
   RESEARCH_ITEM_IDS,
   RESEARCH_TEMPORAL_EXPANSE
 } from "./researchItems.js";
@@ -182,6 +183,14 @@ export function getMaxIdleCollectionRealtimeSeconds(
   const temporalExpanseLevel = getResearchLevel(research, RESEARCH_ITEM_IDS.TEMPORAL_EXPANSE);
   const researchBonus = getResearchBonusAtLevel(RESEARCH_TEMPORAL_EXPANSE, temporalExpanseLevel);
   return shopCap + researchBonus;
+}
+
+/** Additive bonus to the base collection rate from base collection rate research. */
+export function getBaseCollectionRateResearchBonus(
+  research: ResearchState = { levels: {}, labs: [], progress: {} }
+): number {
+  const level = getResearchLevel(research, RESEARCH_ITEM_IDS.BASE_COLLECTION_RATE);
+  return getResearchBonusAtLevel(RESEARCH_BASE_COLLECTION_RATE, level);
 }
 
 export function multiplierToLevel(secondsMultiplier: number): number {

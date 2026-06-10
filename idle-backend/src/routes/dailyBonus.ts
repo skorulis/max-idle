@@ -440,7 +440,8 @@ export function registerDailyBonusRoutes({
         playerLevel: toNumber(updatedPlayer.level),
         realTimeAvailable: toNumber(updatedPlayer.real_time_available),
         wallClockMs: now.getTime(),
-        blackholeTimeSeconds: toNumber(player.blackhole_time)
+        blackholeTimeSeconds: toNumber(player.blackhole_time),
+        research
       });
       await client.query("COMMIT");
       const awardedSeconds =

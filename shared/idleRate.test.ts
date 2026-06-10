@@ -8,7 +8,12 @@ import {
 } from "./idleRate.js";
 import { DEFAULT_SHOP_STATE, getIdleInterestSeconds, getMaxIdleCollectionRealtimeSeconds } from "./shop.js";
 import type { ShopState } from "./shop.js";
-import { RESEARCH_ITEM_IDS, RESEARCH_TEMPORAL_EXPANSE } from "./researchItems.js";
+import {
+  RESEARCH_BASE_COLLECTION_RATE,
+  RESEARCH_ITEM_IDS,
+  RESEARCH_TEMPORAL_EXPANSE
+} from "./researchItems.js";
+import { getBaseCollectionRateResearchBonus } from "./shop.js";
 import { SHOP_UPGRADE_IDS } from "./shopUpgrades.js";
 import { getQuickCollectorBonus } from "./shop.js";
 import { SECONDS_PER_DAY, SECONDS_PER_HOUR } from "./timeConstants.js";
@@ -281,6 +286,38 @@ describe("getEffectiveIdleSecondsRate", () => {
       realTimeAvailable: 0
     });
     expect(withBonus - base).toBeCloseTo(0.5, 10);
+  });
+
+  it("adds base collection rate research bonus per completed level", () => {
+    const basePlayer = {
+      secondsSinceLastCollection: 0,
+      shop: { ...DEFAULT_SHOP_STATE },
+      achievementCount: 0,
+      realTimeAvailable: 0
+    };
+    const baseRate = getEffectiveIdleSecondsRate(basePlayer);
+
+    const level5Research = {
+      levels: { [RESEARCH_ITEM_IDS.BASE_COLLECTION_RATE]: 5 },
+      labs: [],
+      progress: {}
+    };
+    expect(getBaseCollectionRateResearchBonus(level5Research)).toBeCloseTo(0.05, 10);
+    expect(
+      getEffectiveIdleSecondsRate({ ...basePlayer, research: level5Research }) - baseRate
+    ).toBeCloseTo(0.05, 10);
+
+    const maxResearch = {
+      levels: { [RESEARCH_ITEM_IDS.BASE_COLLECTION_RATE]: 100 },
+      labs: [],
+      progress: {}
+    };
+    expect(getBaseCollectionRateResearchBonus(maxResearch)).toBeCloseTo(1, 10);
+    expect(
+      getEffectiveIdleSecondsRate({ ...basePlayer, research: maxResearch }) - baseRate
+    ).toBeCloseTo(1, 10);
+    expect(RESEARCH_BASE_COLLECTION_RATE.maximumLevel).toBe(100);
+    expect(RESEARCH_BASE_COLLECTION_RATE.bonusPerLevel).toBe(0.01);
   });
 });
 

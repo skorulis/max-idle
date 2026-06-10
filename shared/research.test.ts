@@ -14,6 +14,7 @@ import {
   totalResearchLevelsCompleted
 } from "./research.js";
 import {
+  RESEARCH_BASE_COLLECTION_RATE,
   RESEARCH_BLACK_HOLE_DAILY_FEEDS,
   RESEARCH_BLACK_HOLE_FEED_AMOUNT,
   RESEARCH_DAILY_BONUS_ACTIVATION_COST,
@@ -50,6 +51,10 @@ describe("formatResearchEffectProgression", () => {
 
   it("shows a single value at max level for daily bonus activation cost", () => {
     expect(formatResearchEffectProgression(RESEARCH_DAILY_BONUS_ACTIVATION_COST, 40)).toBe("4h");
+  });
+
+  it("formats base collection rate research with two decimal places", () => {
+    expect(formatResearchEffectProgression(RESEARCH_BASE_COLLECTION_RATE, 0)).toBe("0.00 -> 0.01");
   });
 });
 

@@ -544,6 +544,7 @@ export function registerPlayerRoutes({
         real_time_available: toNumber(lockedRow.real_time_available),
         level: lockedRow.level,
         blackhole_time: lockedRow.blackhole_time,
+        research: lockedRow.research,
         server_time: collectedAt
       };
       const idleSecondsRateAtCollect = effectiveIdleSecondsRateFromPlayerRow(collectRateRow, toNumber);
@@ -674,7 +675,8 @@ export function registerPlayerRoutes({
         playerLevel: toNumber(row.level),
         realTimeAvailable: toNumber(row.real_time_available),
         wallClockMs: collectedAt.getTime(),
-        blackholeTimeSeconds: toNumber(lockedRow.blackhole_time)
+        blackholeTimeSeconds: toNumber(lockedRow.blackhole_time),
+        research: collectionResearch
       });
       await client.query("COMMIT");
       analytics.trackPlayerCollect(
@@ -1056,7 +1058,8 @@ export function registerPlayerRoutes({
         playerLevel: toNumber(updatedPlayer.level),
         realTimeAvailable: toNumber(updatedPlayer.real_time_available),
         wallClockMs: now.getTime(),
-        blackholeTimeSeconds: toNumber(player.blackhole_time)
+        blackholeTimeSeconds: toNumber(player.blackhole_time),
+        research: playerResearch
       });
       await client.query("COMMIT");
       const collectionCountAfterReward = await getPlayerCollectionCount(pool, userId);

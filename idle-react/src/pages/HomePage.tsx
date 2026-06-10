@@ -529,6 +529,7 @@ export function HomePage({
         realTimeAvailable={playerState.realTime.available}
         estimatedServerNowMs={estimatedServerNowMs}
         blackholeTime={playerState.blackholeTime}
+        research={playerState.research}
       />
     </>
   );

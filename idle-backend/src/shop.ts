@@ -296,6 +296,7 @@ export function registerShopRoutes({
         real_time_available: nextRealTimeAvailableAfterPurchase,
         level: row.level,
         blackhole_time: row.blackhole_time,
+        research: row.research,
         server_time: now
       };
       const syncedCurrentSeconds = boostedUncollectedIdleSeconds(
@@ -402,7 +403,8 @@ export function registerShopRoutes({
         playerLevel: toNumber(updated.level),
         realTimeAvailable: toNumber(updated.real_time_available),
         wallClockMs: now.getTime(),
-        blackholeTimeSeconds: toNumber(row.blackhole_time)
+        blackholeTimeSeconds: toNumber(row.blackhole_time),
+        research: purchaseResearch
       });
       analytics.trackShopPurchase(
         { userId, isAnonymous: identity.claims.isAnonymous },
@@ -555,6 +557,7 @@ export function registerShopRoutes({
         real_time_available: nextRealTimeAvailable,
         level: currentLevel + 1,
         blackhole_time: row.blackhole_time,
+        research: row.research,
         server_time: now
       };
       const syncedCurrentSeconds = boostedUncollectedIdleSeconds(
@@ -647,7 +650,8 @@ export function registerShopRoutes({
         playerLevel: toNumber(updated.level),
         realTimeAvailable: toNumber(updated.real_time_available),
         wallClockMs: now.getTime(),
-        blackholeTimeSeconds: toNumber(row.blackhole_time)
+        blackholeTimeSeconds: toNumber(row.blackhole_time),
+        research: levelUpgradeResearch
       });
       const achievementBonusMultiplier = getWorthwhileAchievementsMultiplier(updated.shop, nextAchievementCount);
       const currentDailyBonusAfter = await getOrCreateCurrentDailyBonus(client, now);

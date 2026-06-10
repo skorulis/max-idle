@@ -21,7 +21,8 @@ export const RESEARCH_ITEM_IDS = {
   BLACK_HOLE_DAILY_FEEDS: "research_black_hole_daily_feeds",
   BLACK_HOLE_FEED_AMOUNT: "research_black_hole_feed_amount",
   DAILY_BONUS_ACTIVATION_COST: "research_daily_bonus_activation_cost",
-  TEMPORAL_EXPANSE: "research_temporal_expanse"
+  TEMPORAL_EXPANSE: "research_temporal_expanse",
+  BASE_COLLECTION_RATE: "research_base_collection_rate"
 } as const;
 
 export type ResearchItemId = (typeof RESEARCH_ITEM_IDS)[keyof typeof RESEARCH_ITEM_IDS];
@@ -68,6 +69,20 @@ export const RESEARCH_TEMPORAL_EXPANSE: ResearchItemDefinition = {
   growthFactor: 1.05
 };
 
+/** Additive bonus to the base collection rate (+0.01 per level). */
+export const RESEARCH_BASE_COLLECTION_RATE: ResearchItemDefinition = {
+  id: RESEARCH_ITEM_IDS.BASE_COLLECTION_RATE,
+  name: "Base Collection Rate",
+  description: "Increases your base collection rate",
+  maximumLevel: 100,
+  zeroLevelBonus: 0,
+  bonusPerLevel: 0.01,
+  format: (value) => value.toFixed(2),
+  baseTimeCost: 1 * SECONDS_PER_HOUR,
+  baseDuration: 4 * SECONDS_PER_HOUR,
+  growthFactor: 1.05
+};
+
 /** Idle seconds required to activate the daily bonus (24h at level 0, −30m per level). */
 export const RESEARCH_DAILY_BONUS_ACTIVATION_COST: ResearchItemDefinition = {
   id: RESEARCH_ITEM_IDS.DAILY_BONUS_ACTIVATION_COST,
@@ -86,7 +101,8 @@ export const RESEARCH_ITEMS: ResearchItemDefinition[] = [
   RESEARCH_BLACK_HOLE_DAILY_FEEDS,
   RESEARCH_BLACK_HOLE_FEED_AMOUNT,
   RESEARCH_DAILY_BONUS_ACTIVATION_COST,
-  RESEARCH_TEMPORAL_EXPANSE
+  RESEARCH_TEMPORAL_EXPANSE,
+  RESEARCH_BASE_COLLECTION_RATE
 ];
 
 export const RESEARCH_ITEMS_BY_ID: Record<string, ResearchItemDefinition> = Object.fromEntries(

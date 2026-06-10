@@ -23,6 +23,7 @@ export function effectiveIdleSecondsRateFromPlayerRow(
   toNumber: (value: unknown) => number
 ): number {
   const elapsedSinceLastCollection = calculateElapsedSeconds(row.last_collected_at, row.server_time);
+  const research = parseResearchState(row.research, row.shop);
   return getEffectiveIdleSecondsRate({
     secondsSinceLastCollection: elapsedSinceLastCollection,
     shop: row.shop,
@@ -30,7 +31,8 @@ export function effectiveIdleSecondsRateFromPlayerRow(
     playerLevel: toNumber(row.level),
     realTimeAvailable: toNumber(row.real_time_available),
     wallClockMs: row.server_time.getTime(),
-    blackholeTimeSeconds: toNumber(row.blackhole_time ?? 0)
+    blackholeTimeSeconds: toNumber(row.blackhole_time ?? 0),
+    research
   });
 }
 

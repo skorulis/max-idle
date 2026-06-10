@@ -9,6 +9,7 @@ import {
   getQuickCollectorBonus,
   getRestraintBonusMultiplier,
   getRestraintMinRealtimeSeconds,
+  getBaseCollectionRateResearchBonus,
   getLevelBonusIdleContribution,
   getSecondsMultiplier,
   getWorthwhileAchievementsMultiplier
@@ -121,6 +122,7 @@ export function getEffectiveIdleSecondsRate(player: IdleCollectionPlayer): numbe
 
   const secondaryMultiplier = combineIdleSecondaryMultipliers(
     getSecondsMultiplier(player.shop),
+    getBaseCollectionRateResearchBonus(player.research),
     getRestraintBonusMultiplier(player.shop),
     getCollectGemIdleSecondsMultiplier(player.shop),
     getAntiConsumeristMultiplier(player.shop, player.wallClockMs ?? 0),

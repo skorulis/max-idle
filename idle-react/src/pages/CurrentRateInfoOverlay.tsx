@@ -1,8 +1,10 @@
 import { useEffect, useMemo } from "react";
 import { CircleX } from "lucide-react";
+import type { ResearchState } from "@maxidle/shared/research";
 import type { ShopState } from "../shop";
 import {
   getAntiConsumeristMultiplier,
+  getBaseCollectionRateResearchBonus,
   getCollectGemIdleSecondsMultiplier,
   getConsolidationBonus,
   getQuickCollectorBonus,
@@ -32,6 +34,7 @@ type CurrentRateInfoOverlayProps = {
   realTimeAvailable: number;
   estimatedServerNowMs: number;
   blackholeTime: number;
+  research?: ResearchState;
 };
 
 export function CurrentRateInfoOverlay({
@@ -44,7 +47,8 @@ export function CurrentRateInfoOverlay({
   playerLevel,
   realTimeAvailable,
   estimatedServerNowMs,
-  blackholeTime
+  blackholeTime,
+  research
 }: CurrentRateInfoOverlayProps) {
   const shouldShowFactor = (value: number): boolean => value != 0;
 
@@ -71,7 +75,7 @@ export function CurrentRateInfoOverlay({
       achievementCount,
       realTimeAvailable
     });
-    const secondsMultiplier = getSecondsMultiplier(shop);
+    const secondsMultiplier = getSecondsMultiplier(shop) + getBaseCollectionRateResearchBonus(research);
     const gemBonus = getCollectGemIdleSecondsMultiplier(shop)
     const restraintMultiplier = getRestraintBonusMultiplier(shop);
     const antiConsumeristLevel = ANTI_CONSUMERIST_SHOP_UPGRADE.currentLevel(shop);
@@ -103,7 +107,7 @@ export function CurrentRateInfoOverlay({
       quickCollectorBonus,
       blackholeDilation
     };
-  }, [achievementCount, blackholeTime, estimatedServerNowMs, playerLevel, realTimeAvailable, secondsSinceLastCollection, shop]);
+  }, [achievementCount, blackholeTime, estimatedServerNowMs, playerLevel, realTimeAvailable, research, secondsSinceLastCollection, shop]);
 
   if (!open) {
     return null;
