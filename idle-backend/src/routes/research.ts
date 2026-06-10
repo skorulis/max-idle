@@ -1,13 +1,22 @@
 import express from "express";
 import type { Pool } from "pg";
+import { ACHIEVEMENT_IDS } from "@maxidle/shared/achievements";
 import {
   changeResearch,
   reconcileResearchProgress,
   startResearch,
   stopResearch,
+  totalResearchLevelsCompleted,
   type ResearchState
 } from "@maxidle/shared/research";
 import { getUnlockedLabCount, type ShopState } from "@maxidle/shared/shop";
+import {
+  getAchievementLevelForValue,
+  mergeAchievementLevels,
+  normalizeAchievementLevels,
+  sumAchievementLevels,
+  type AchievementLevelEntry
+} from "../achievementUpdates.js";
 import { parseResearchState, serializeResearchState } from "../researchState.js";
 
 type RegisterResearchRoutesOptions = {
@@ -24,7 +33,53 @@ type ResearchRow = {
   idle_time_available: number;
   idle_time_total: number;
   server_time: Date;
+  achievement_levels: unknown;
+  achievement_count: number;
+  has_unseen_achievements: boolean;
 };
+
+type ResearchAchievementUpdate = {
+  achievementLevels: AchievementLevelEntry[];
+  achievementCount: number;
+  hasNewAchievement: boolean;
+};
+
+function computeLabLevelAchievements(
+  research: ResearchState,
+  achievementLevels: unknown,
+  achievementCount: number,
+  serverTime: Date,
+  levelsGained: number
+): ResearchAchievementUpdate {
+  const normalizedAchievementLevels = normalizeAchievementLevels(achievementLevels, serverTime);
+  if (levelsGained <= 0) {
+    return {
+      achievementLevels: normalizedAchievementLevels,
+      achievementCount,
+      hasNewAchievement: false
+    };
+  }
+
+  const labLevelsCompleted = totalResearchLevelsCompleted(research);
+  const labLevelAchievementLevel = getAchievementLevelForValue(
+    ACHIEVEMENT_IDS.LAB_LEVELS_COMPLETED,
+    labLevelsCompleted
+  );
+  const nextAchievementLevels =
+    labLevelAchievementLevel > 0
+      ? mergeAchievementLevels(
+          achievementLevels,
+          new Map([[ACHIEVEMENT_IDS.LAB_LEVELS_COMPLETED, labLevelAchievementLevel]]),
+          serverTime
+        )
+      : normalizedAchievementLevels;
+  const nextAchievementCount = sumAchievementLevels(nextAchievementLevels);
+  return {
+    achievementLevels: nextAchievementLevels,
+    achievementCount: nextAchievementCount,
+    hasNewAchievement: nextAchievementCount > achievementCount
+  };
+}
 
 export function buildResearchResponse(
   research: ResearchState,
@@ -50,6 +105,7 @@ async function loadAndReconcileResearch(
   research: ResearchState;
   idleTimeAvailable: number;
   idleTimeDelta: number;
+  levelsGained: number;
 } | null> {
   const lockClause = forUpdate ? "FOR UPDATE" : "";
   const result = await client.query<ResearchRow>(
@@ -59,6 +115,9 @@ async function loadAndReconcileResearch(
       shop,
       idle_time_available,
       idle_time_total,
+      achievement_levels,
+      achievement_count,
+      has_unseen_achievements,
       NOW() AS server_time
     FROM player_states
     WHERE user_id = $1
@@ -91,7 +150,8 @@ async function loadAndReconcileResearch(
     row,
     research,
     idleTimeAvailable,
-    idleTimeDelta: reconciled.idleTimeDelta
+    idleTimeDelta: reconciled.idleTimeDelta,
+    levelsGained: reconciled.levelsGained
   };
 }
 
@@ -100,31 +160,46 @@ async function persistResearchState(
   userId: string,
   research: ResearchState,
   idleTimeDelta: number,
-  serverTime: Date
+  serverTime: Date,
+  achievementUpdate?: ResearchAchievementUpdate
 ): Promise<void> {
-  if (idleTimeDelta === 0) {
-    await client.query(
-      `
-      UPDATE player_states
-      SET research = $2::jsonb, updated_at = $3
-      WHERE user_id = $1
-      `,
-      [userId, JSON.stringify(research), serverTime]
+  const params: unknown[] = [userId, JSON.stringify(research)];
+  const setClauses = ["research = $2::jsonb"];
+  let paramIndex = 3;
+
+  if (idleTimeDelta !== 0) {
+    setClauses.push(
+      `idle_time_available = GREATEST(0, idle_time_available + $${paramIndex}::BIGINT)`,
+      `idle_time_total = CASE WHEN $${paramIndex}::BIGINT > 0 THEN idle_time_total + $${paramIndex}::BIGINT ELSE idle_time_total END`
     );
-    return;
+    params.push(idleTimeDelta);
+    paramIndex += 1;
   }
+
+  if (achievementUpdate?.hasNewAchievement) {
+    setClauses.push(
+      `achievement_levels = $${paramIndex}::jsonb`,
+      `achievement_count = $${paramIndex + 1}`,
+      `has_unseen_achievements = has_unseen_achievements OR $${paramIndex + 2}::boolean`
+    );
+    params.push(
+      JSON.stringify(achievementUpdate.achievementLevels),
+      achievementUpdate.achievementCount,
+      true
+    );
+    paramIndex += 3;
+  }
+
+  setClauses.push(`updated_at = $${paramIndex}`);
+  params.push(serverTime);
 
   await client.query(
     `
     UPDATE player_states
-    SET
-      research = $2::jsonb,
-      idle_time_available = GREATEST(0, idle_time_available + $3::BIGINT),
-      idle_time_total = CASE WHEN $3::BIGINT > 0 THEN idle_time_total + $3::BIGINT ELSE idle_time_total END,
-      updated_at = $4
+    SET ${setClauses.join(", ")}
     WHERE user_id = $1
     `,
-    [userId, JSON.stringify(research), idleTimeDelta, serverTime]
+    params
   );
 }
 
@@ -150,12 +225,21 @@ export function registerResearchRoutes({
           return;
         }
 
+        const achievementUpdate = computeLabLevelAchievements(
+          loaded.research,
+          loaded.row.achievement_levels,
+          toNumber(loaded.row.achievement_count),
+          loaded.row.server_time,
+          loaded.levelsGained
+        );
+
         await persistResearchState(
           client,
           userId,
           loaded.research,
           loaded.idleTimeDelta,
-          loaded.row.server_time
+          loaded.row.server_time,
+          achievementUpdate.hasNewAchievement ? achievementUpdate : undefined
         );
 
         await client.query("COMMIT");
@@ -222,12 +306,21 @@ export function registerResearchRoutes({
         research = startResult.research;
         idleTimeAvailable += startResult.idleTimeDelta;
 
+        const achievementUpdate = computeLabLevelAchievements(
+          research,
+          loaded.row.achievement_levels,
+          toNumber(loaded.row.achievement_count),
+          loaded.row.server_time,
+          loaded.levelsGained
+        );
+
         await persistResearchState(
           client,
           userId,
           research,
           loaded.idleTimeDelta + startResult.idleTimeDelta,
-          loaded.row.server_time
+          loaded.row.server_time,
+          achievementUpdate.hasNewAchievement ? achievementUpdate : undefined
         );
 
         await client.query("COMMIT");
@@ -285,12 +378,21 @@ export function registerResearchRoutes({
         research = stopResult.research;
         idleTimeAvailable += stopResult.idleTimeDelta;
 
+        const achievementUpdate = computeLabLevelAchievements(
+          research,
+          loaded.row.achievement_levels,
+          toNumber(loaded.row.achievement_count),
+          loaded.row.server_time,
+          loaded.levelsGained
+        );
+
         await persistResearchState(
           client,
           userId,
           research,
           loaded.idleTimeDelta + stopResult.idleTimeDelta,
-          loaded.row.server_time
+          loaded.row.server_time,
+          achievementUpdate.hasNewAchievement ? achievementUpdate : undefined
         );
 
         await client.query("COMMIT");
@@ -357,12 +459,21 @@ export function registerResearchRoutes({
         research = changeResult.research;
         idleTimeAvailable += changeResult.idleTimeDelta;
 
+        const achievementUpdate = computeLabLevelAchievements(
+          research,
+          loaded.row.achievement_levels,
+          toNumber(loaded.row.achievement_count),
+          loaded.row.server_time,
+          loaded.levelsGained
+        );
+
         await persistResearchState(
           client,
           userId,
           research,
           loaded.idleTimeDelta + changeResult.idleTimeDelta,
-          loaded.row.server_time
+          loaded.row.server_time,
+          achievementUpdate.hasNewAchievement ? achievementUpdate : undefined
         );
 
         await client.query("COMMIT");

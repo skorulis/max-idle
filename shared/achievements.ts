@@ -16,7 +16,8 @@ export const ACHIEVEMENT_IDS = {
   CONTEMPLATION: "contemplation",
   REWARD_SKIPPER: "reward_skipper",
   GEM_HOARDER: "gem_hoarder",
-  DAILY_BONUS_COLLECTOR: "daily_bonus_collector"
+  DAILY_BONUS_COLLECTOR: "daily_bonus_collector",
+  LAB_LEVELS_COMPLETED: "lab_levels_completed"
 } as const;
 
 /** Minimum `time_gems_available` to earn Gem Hoarder */
@@ -165,6 +166,25 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
       { value: 27, name: "Frequent ritualist" },
       { value: 41, name: "Long time ritualist" },
       { value: 77, name: "Big gem earner" }
+    ]
+  },
+  {
+    id: ACHIEVEMENT_IDS.LAB_LEVELS_COMPLETED,
+    name: "Lab researcher",
+    description: "Complete %s lab research levels.",
+    icon: "atom",
+    clientDriven: false,
+    levels: [
+      { value: 5, name: "First discovery" },
+      { value: 10, name: "Lab rookie" },
+      { value: 25, name: "Apprentice researcher" },
+      { value: 50, name: "Junior scientist" },
+      { value: 100, name: "Research associate" },
+      { value: 200, name: "Senior associate" },
+      { value: 300, name: "Lead researcher" },
+      { value: 500, name: "Principal scientist" },
+      { value: 1000, name: "Lab director" },
+      { value: 2000, name: "Master researcher" }
     ]
   }
 ];
