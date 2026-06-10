@@ -30,6 +30,7 @@ import { registerSurveyRoutes } from "./routes/surveys.js";
 import { registerTournamentRoutes } from "./routes/tournament.js";
 import { registerResearchRoutes } from "./routes/research.js";
 import { registerNotificationRoutes } from "./routes/notifications.js";
+import { registerRootRoutes } from "./routes/root.js";
 import type { ShopState } from "@maxidle/shared/shop";
 
 function toNumber(value: unknown): number {
@@ -274,6 +275,7 @@ export function createApp(pool: Pool, config: AppConfig, analytics: AnalyticsSer
   app.get("/health", (_req, res) => {
     res.json({ ok: true });
   });
+  registerRootRoutes(app);
   registerApiDocumentation(app);
 
   const resolveIdentityForRequest = async (req: express.Request) => {
