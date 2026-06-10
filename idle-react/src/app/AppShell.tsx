@@ -20,6 +20,7 @@ import { RegisterPage } from "../pages/RegisterPage";
 import { ShopPage } from "../pages/ShopPage";
 import { ResearchPage } from "../pages/ResearchPage";
 import { TournamentPage } from "../pages/TournamentPage";
+import { StatsPage } from "../pages/StatsPage";
 import { SurveyPage } from "../pages/SurveyPage";
 import {
   completeSocialUpgrade,
@@ -800,6 +801,15 @@ export function AppShell() {
                 hasError={Boolean(error)}
               />
             }
+          />
+          <Route
+            path="/stats"
+            element={requireAuthenticatedRoute(
+              <StatsPage
+                playerState={playerState}
+                effectiveIdleSecondsRate={effectiveIdleSecondsRate}
+              />
+            )}
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
