@@ -16,7 +16,7 @@ function formatLeaderboardValue(leaderboardType: LeaderboardType, value: number)
   if (leaderboardType === "level") {
     return `level ${Math.floor(value)}`;
   }
-  return formatSeconds(value);
+  return formatSeconds(value, 2, "floor");
 }
 
 function leaderboardValueKind(leaderboardType: LeaderboardType): "idle_seconds" | "time_gems" | "max_multiplier" | "level" {
@@ -43,15 +43,15 @@ function leaderboardShareText(
 
   switch (leaderboardType) {
     case "collected": {
-      const duration = formatSeconds(currentPlayer.totalIdleSeconds);
+      const duration = formatSeconds(currentPlayer.totalIdleSeconds, 2, "floor");
       return `${rankPhrase} after collecting ${duration} of idle time`;
     }
     case "collected_real": {
-      const duration = formatSeconds(currentPlayer.totalIdleSeconds);
+      const duration = formatSeconds(currentPlayer.totalIdleSeconds, 2, "floor");
       return `${rankPhrase} after collecting ${duration} of real time`;
     }
     case "current": {
-      const duration = formatSeconds(currentPlayer.totalIdleSeconds);
+      const duration = formatSeconds(currentPlayer.totalIdleSeconds, 2, "floor");
       return `${rankPhrase} patiently holding ${duration} of idle time`;
     }
     case "max_multiplier": {

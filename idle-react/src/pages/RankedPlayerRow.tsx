@@ -26,7 +26,7 @@ export function RankedPlayerRow({
         ? `${totalIdleSeconds.toFixed(2)}x`
         : valueKind === "level"
           ? `Level ${Math.floor(totalIdleSeconds)}`
-          : formatSeconds(totalIdleSeconds);
+          : formatSeconds(totalIdleSeconds, 2, "floor");
   return (
     <div className={`leaderboard-row${isCurrentPlayer ? " leaderboard-row-current" : ""}`}>
       <p className="leaderboard-rank">#{rank}</p>
