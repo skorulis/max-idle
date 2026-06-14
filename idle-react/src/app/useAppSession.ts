@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getAccount, getCurrentTournament, getHome, getPlayer } from "./api";
 import { alignClientClock } from "./clientClock";
 import { toSyncedState, toSyncedTournamentState } from "./playerState";
-import type { AccountResponse, AvailableSurveySummary, SyncedPlayerState, SyncedTournamentState } from "./types";
+import type { AccountResponse, AvailableSurveySummary, HomeResponse, SyncedPlayerState, SyncedTournamentState } from "./types";
 
 type UseAppSessionParams = {
   tokenStorageKey: string;
@@ -59,7 +59,7 @@ export function useAppSession({ tokenStorageKey }: UseAppSessionParams) {
     }
   }, []);
 
-  const refreshHome = useCallback(async (currentToken: string | null) => {
+  const refreshHome = useCallback(async (currentToken: string | null): Promise<HomeResponse> => {
     const home = await getHome(currentToken);
     const synced = toSyncedState(home.player);
     alignClientClock();
@@ -72,6 +72,7 @@ export function useAppSession({ tokenStorageKey }: UseAppSessionParams) {
       setTournamentState(null);
     }
     setAvailableSurvey(home.availableSurvey ?? null);
+    return home;
   }, []);
 
   useEffect(() => {

@@ -2,12 +2,11 @@ import { useEffect, useRef } from "react";
 import {
   getResearchLevel,
   getResearchProgress,
-  isResearchAtMaxLevel
+  isResearchAtMaxLevel,
+  type ResearchState
 } from "@maxidle/shared/research";
 import { getResearchItemDefinition } from "@maxidle/shared/researchItems";
 import { labSpeedMultiplier } from "../app/labSpeed";
-import { getResearch } from "../app/api";
-import type { ResearchResponse } from "../app/types";
 import { toast } from "../gameToast";
 
 type PendingCompletion = {
@@ -18,18 +17,25 @@ type PendingCompletion = {
   name: string;
 };
 
+type UseResearchLabCompletionParams = {
+  token: string | null;
+  research: ResearchState | null;
+  estimatedServerNowMs: number;
+  onSync: () => Promise<ResearchState>;
+};
+
 function buildCompletionKey(labIndex: number, researchId: string, startedAtMs: number): string {
   return `${labIndex}:${researchId}:${startedAtMs}`;
 }
 
 function findPendingCompletions(
-  research: ResearchResponse,
+  research: ResearchState,
   estimatedServerNowMs: number,
   reconcilingKeys: Set<string>
 ): PendingCompletion[] {
   const pending: PendingCompletion[] = [];
 
-  research.research.labs.forEach((slot, labIndex) => {
+  research.labs.forEach((slot, labIndex) => {
     if (slot.researchId == null || slot.startedAtMs == null) {
       return;
     }
@@ -39,7 +45,7 @@ function findPendingCompletions(
       return;
     }
 
-    const currentLevel = getResearchLevel(research.research, slot.researchId);
+    const currentLevel = getResearchLevel(research, slot.researchId);
     if (isResearchAtMaxLevel(def, currentLevel)) {
       return;
     }
@@ -72,9 +78,9 @@ function findPendingCompletions(
   return pending;
 }
 
-function toastForCompletedLevels(after: ResearchResponse, pending: PendingCompletion[]): void {
+function toastForCompletedLevels(after: ResearchState, pending: PendingCompletion[]): void {
   for (const item of pending) {
-    const levelAfter = getResearchLevel(after.research, item.researchId);
+    const levelAfter = getResearchLevel(after, item.researchId);
     if (levelAfter <= item.levelBefore) {
       continue;
     }
@@ -83,13 +89,13 @@ function toastForCompletedLevels(after: ResearchResponse, pending: PendingComple
   }
 }
 
-/** When a lab timer finishes on the client, sync via GET /research so the server records completion. */
-export function useResearchLabCompletion(
-  token: string | null,
-  research: ResearchResponse | null,
-  estimatedServerNowMs: number,
-  setResearch: React.Dispatch<React.SetStateAction<ResearchResponse | null>>
-): void {
+/** When a lab timer finishes on the client, sync with the server so completion is recorded. */
+export function useResearchLabCompletion({
+  token,
+  research,
+  estimatedServerNowMs,
+  onSync
+}: UseResearchLabCompletionParams): void {
   const reconcilingKeysRef = useRef(new Set<string>());
 
   useEffect(() => {
@@ -97,11 +103,7 @@ export function useResearchLabCompletion(
       return;
     }
 
-    const pending = findPendingCompletions(
-      research,
-      estimatedServerNowMs,
-      reconcilingKeysRef.current
-    );
+    const pending = findPendingCompletions(research, estimatedServerNowMs, reconcilingKeysRef.current);
     if (pending.length === 0) {
       return;
     }
@@ -112,9 +114,8 @@ export function useResearchLabCompletion(
 
     void (async () => {
       try {
-        const data = await getResearch(token);
-        setResearch(data);
-        toastForCompletedLevels(data, pending);
+        const syncedResearch = await onSync();
+        toastForCompletedLevels(syncedResearch, pending);
       } catch {
         for (const item of pending) {
           reconcilingKeysRef.current.delete(item.key);
@@ -122,5 +123,5 @@ export function useResearchLabCompletion(
         toast.error("Could not sync completed research.");
       }
     })();
-  }, [estimatedServerNowMs, research, setResearch, token]);
+  }, [estimatedServerNowMs, onSync, research, token]);
 }

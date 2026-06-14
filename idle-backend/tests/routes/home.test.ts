@@ -5,6 +5,8 @@ import { createApp } from "../../src/app.js";
 import { createTestPool, resetTestDatabase } from "../testDb.js";
 import { createTestAppConfig } from "../testAppConfig.js";
 import { OBLIGATION_IDS } from "@maxidle/shared/obligations";
+import { RESEARCH_ITEM_IDS } from "@maxidle/shared/researchItems";
+import { DEFAULT_SHOP_STATE } from "@maxidle/shared/shop";
 
 describe("home routes", () => {
   const config = createTestAppConfig();
@@ -70,5 +72,56 @@ describe("home routes", () => {
     const app = createApp(pool, config);
     const homeResponse = await request(app).get("/home");
     expect(homeResponse.status).toBe(401);
+  });
+
+  it("reconciles completed research levels on GET /home", async () => {
+    const app = createApp(pool, config);
+    const authResponse = await request(app).post("/auth/anonymous");
+    const token = authResponse.body.token as string;
+    const userId = authResponse.body.userId as string;
+    const startedAtMs = 1;
+
+    await pool.query(
+      `
+      UPDATE player_states
+      SET
+        shop = $2::jsonb,
+        research = $3::jsonb
+      WHERE user_id = $1
+      `,
+      [
+        userId,
+        JSON.stringify({ ...DEFAULT_SHOP_STATE, lab_slots: 1 }),
+        JSON.stringify({
+          levels: { [RESEARCH_ITEM_IDS.BLACK_HOLE_DAILY_FEEDS]: 4 },
+          labs: [{ researchId: RESEARCH_ITEM_IDS.BLACK_HOLE_DAILY_FEEDS, startedAtMs }],
+          progress: {}
+        })
+      ]
+    );
+
+    const homeResponse = await request(app).get("/home").set("Authorization", `Bearer ${token}`);
+
+    expect(homeResponse.status).toBe(200);
+    expect(homeResponse.body.player.research.levels[RESEARCH_ITEM_IDS.BLACK_HOLE_DAILY_FEEDS]).toBe(5);
+
+    const achievementState = await pool.query<{
+      achievement_count: number;
+      achievement_levels: unknown;
+      has_unseen_achievements: boolean;
+    }>(
+      `
+      SELECT achievement_count, achievement_levels, has_unseen_achievements
+      FROM player_states
+      WHERE user_id = $1
+      `,
+      [userId]
+    );
+    const levels = achievementState.rows[0]?.achievement_levels as Array<{ id: string; level: number }>;
+    expect(Number(achievementState.rows[0]?.achievement_count ?? 0)).toBe(1);
+    expect(levels).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "lab_levels_completed", level: 1 })])
+    );
+    expect(achievementState.rows[0]?.has_unseen_achievements).toBe(true);
   });
 });

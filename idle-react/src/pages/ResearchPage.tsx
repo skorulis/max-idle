@@ -1,5 +1,5 @@
 import { FlaskConical } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   formatResearchEffectProgression,
@@ -11,7 +11,7 @@ import {
 import { getResearchItemDefinition, type ResearchItemDefinition } from "@maxidle/shared/researchItems";
 import { labSpeedMultiplier } from "../app/labSpeed";
 import type { ResearchResponse } from "../app/types";
-import { changeResearch, startResearch } from "../app/api";
+import { changeResearch, getResearch, startResearch } from "../app/api";
 import { formatSeconds } from "../formatSeconds";
 import { shopPathForCurrency } from "../shopPaths";
 import { SHOP_CURRENCY_TYPES } from "../shopUpgrades";
@@ -88,7 +88,18 @@ export function ResearchPage({
   const [pendingLabIndex, setPendingLabIndex] = useState<number | null>(null);
   const [catalogOverlayLabIndex, setCatalogOverlayLabIndex] = useState<number | null>(null);
 
-  useResearchLabCompletion(token, research, estimatedServerNowMs, setResearch);
+  const syncResearch = useCallback(async () => {
+    const data = await getResearch(token);
+    setResearch(data);
+    return data.research;
+  }, [setResearch, token]);
+
+  useResearchLabCompletion({
+    token,
+    research: research?.research ?? null,
+    estimatedServerNowMs,
+    onSync: syncResearch
+  });
 
   const handleSelectResearch = async (labIndex: number, researchId: string) => {
     if (!research) {

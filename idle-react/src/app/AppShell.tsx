@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactElement } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { Link, Navigate, Route, Routes, useLocation, useMatch, useNavigate } from "react-router-dom";
 import { AppNav } from "./AppNav";
 import { toast } from "../gameToast";
@@ -19,6 +19,7 @@ import { DailyBonusPage } from "../pages/DailyBonusPage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { ShopPage } from "../pages/ShopPage";
 import { ResearchPage } from "../pages/ResearchPage";
+import { useResearchLabCompletion } from "../pages/useResearchLabCompletion";
 import { TournamentPage } from "../pages/TournamentPage";
 import { StatsPage } from "../pages/StatsPage";
 import { SurveyPage } from "../pages/SurveyPage";
@@ -203,6 +204,19 @@ export function AppShell() {
 
   const tournamentFeatureUnlocked = Boolean(playerState && isTournamentFeatureUnlocked(playerState.obligationsCompleted));
 
+  const previousPathnameRef = useRef(location.pathname);
+  useEffect(() => {
+    const navigatedToHome =
+      location.pathname === "/" && previousPathnameRef.current !== "/";
+    previousPathnameRef.current = location.pathname;
+    if (!navigatedToHome || !token) {
+      return;
+    }
+    void refreshHome(token).catch(() => {
+      // Keep existing state if refresh fails.
+    });
+  }, [location.pathname, refreshHome, token]);
+
   useEffect(() => {
     if (location.pathname !== "/tournament" || !tournamentFeatureUnlocked) {
       return;
@@ -302,6 +316,21 @@ export function AppShell() {
     }
     return playerState.serverTimeMs + (clientNowMs - playerState.syncedAtClientMs);
   }, [playerState, clientNowMs]);
+
+  const syncPlayerResearch = useCallback(async () => {
+    if (!token) {
+      throw new Error("UNAUTHORIZED");
+    }
+    const home = await refreshHome(token);
+    return home.player.research;
+  }, [refreshHome, token]);
+
+  useResearchLabCompletion({
+    token,
+    research: FEATURE_FLAGS.RESEARCH_LABS ? (playerState?.research ?? null) : null,
+    estimatedServerNowMs,
+    onSync: syncPlayerResearch
+  });
 
   const uncollectedIdleSeconds = useMemo(() => {
     if (!playerState) {

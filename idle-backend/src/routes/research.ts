@@ -155,6 +155,58 @@ async function loadAndReconcileResearch(
   };
 }
 
+export type ReconciledResearchResult = {
+  row: ResearchRow;
+  research: ResearchState;
+  idleTimeAvailable: number;
+};
+
+export async function reconcileAndPersistResearchForUser(
+  pool: Pool,
+  userId: string,
+  labSpeedMultiplier: number,
+  toNumber: (value: unknown) => number
+): Promise<ReconciledResearchResult | null> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const loaded = await loadAndReconcileResearch(client, userId, true, labSpeedMultiplier);
+    if (!loaded) {
+      await client.query("ROLLBACK");
+      return null;
+    }
+
+    const achievementUpdate = computeLabLevelAchievements(
+      loaded.research,
+      loaded.row.achievement_levels,
+      toNumber(loaded.row.achievement_count),
+      loaded.row.server_time,
+      loaded.levelsGained
+    );
+
+    await persistResearchState(
+      client,
+      userId,
+      loaded.research,
+      loaded.idleTimeDelta,
+      loaded.row.server_time,
+      achievementUpdate.hasNewAchievement ? achievementUpdate : undefined
+    );
+
+    await client.query("COMMIT");
+    return {
+      row: loaded.row,
+      research: loaded.research,
+      idleTimeAvailable: loaded.idleTimeAvailable
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function persistResearchState(
   client: { query: typeof Pool.prototype.query },
   userId: string,
@@ -215,48 +267,20 @@ export function registerResearchRoutes({
       const identity = await resolveIdentity(req);
       const userId = identity.claims.sub;
 
-      const client = await pool.connect();
-      try {
-        await client.query("BEGIN");
-        const loaded = await loadAndReconcileResearch(client, userId, true, labSpeedMultiplier);
-        if (!loaded) {
-          await client.query("ROLLBACK");
-          res.status(404).json({ error: "Player state not found" });
-          return;
-        }
-
-        const achievementUpdate = computeLabLevelAchievements(
-          loaded.research,
-          loaded.row.achievement_levels,
-          toNumber(loaded.row.achievement_count),
-          loaded.row.server_time,
-          loaded.levelsGained
-        );
-
-        await persistResearchState(
-          client,
-          userId,
-          loaded.research,
-          loaded.idleTimeDelta,
-          loaded.row.server_time,
-          achievementUpdate.hasNewAchievement ? achievementUpdate : undefined
-        );
-
-        await client.query("COMMIT");
-        res.json(
-          buildResearchResponse(
-            loaded.research,
-            loaded.row.shop,
-            loaded.idleTimeAvailable,
-            loaded.row.server_time
-          )
-        );
-      } catch (error) {
-        await client.query("ROLLBACK");
-        throw error;
-      } finally {
-        client.release();
+      const loaded = await reconcileAndPersistResearchForUser(pool, userId, labSpeedMultiplier, toNumber);
+      if (!loaded) {
+        res.status(404).json({ error: "Player state not found" });
+        return;
       }
+
+      res.json(
+        buildResearchResponse(
+          loaded.research,
+          loaded.row.shop,
+          loaded.idleTimeAvailable,
+          loaded.row.server_time
+        )
+      );
     } catch (error) {
       next(error);
     }

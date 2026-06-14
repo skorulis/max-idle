@@ -36,7 +36,7 @@ type UseAppGameplayActionsParams = {
   refreshAccount: (token: string | null) => Promise<void>;
   refreshPlayer: (token: string | null) => Promise<void>;
   refreshTournament: (token: string | null) => Promise<void>;
-  refreshHome: (token: string | null) => Promise<void>;
+  refreshHome: (token: string | null) => Promise<import("./types").HomeResponse>;
   isCollectBlockedByRestraint: boolean;
   restraintCollectBlockedMessage: string;
   tokenStorageKey: string;

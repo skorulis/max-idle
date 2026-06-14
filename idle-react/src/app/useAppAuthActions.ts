@@ -13,7 +13,7 @@ type UseAppAuthActionsParams = {
   setAccount: (value: AccountResponse | null) => void;
   setStatus: (message: string) => void;
   setError: (message: string | null) => void;
-  refreshHome: (token: string | null) => Promise<void>;
+  refreshHome: (token: string | null) => Promise<import("./types").HomeResponse>;
   refreshAccount: (token: string | null) => Promise<void>;
   account: AccountResponse | null;
   usernameDraft: string;

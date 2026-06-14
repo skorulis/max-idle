@@ -6,6 +6,7 @@ import { finalizeDueTournaments, getCurrentTournamentForUser } from "../tourname
 import type { BetterAuthSession } from "./account.js";
 import { buildAccountPayloadForIdentity } from "./account.js";
 import { buildPlayerStatePayload } from "./player.js";
+import { reconcileAndPersistResearchForUser } from "./research.js";
 import { getAvailableSurveySummaryForUser } from "./surveys.js";
 
 type RegisterHomeRoutesOptions = {
@@ -14,6 +15,7 @@ type RegisterHomeRoutesOptions = {
   resolveIdentity: (req: express.Request) => Promise<{ claims: AuthClaims; session: BetterAuthSession }>;
   toNumber: (value: unknown) => number;
   socialConfig: { googleEnabled: boolean; appleEnabled: boolean };
+  labSpeedMultiplier: number;
 };
 
 export function registerHomeRoutes({
@@ -21,7 +23,8 @@ export function registerHomeRoutes({
   pool,
   resolveIdentity,
   toNumber,
-  socialConfig
+  socialConfig,
+  labSpeedMultiplier
 }: RegisterHomeRoutesOptions): void {
   app.get("/home", async (req, res, next) => {
     try {
@@ -40,6 +43,7 @@ export function registerHomeRoutes({
       const userId = identity.claims.sub;
       await pool.query(`UPDATE player_states SET last_active = NOW(), updated_at = NOW() WHERE user_id = $1`, [userId]);
       await finalizeDueTournaments(pool);
+      await reconcileAndPersistResearchForUser(pool, userId, labSpeedMultiplier, toNumber);
 
       const playerPayload = await buildPlayerStatePayload(pool, userId, toNumber);
 
